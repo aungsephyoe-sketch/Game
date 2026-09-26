@@ -76,14 +76,25 @@ namespace HashiraChronicles
             yield return new WaitForSeconds(0.4f);
             GameEvents.RaiseBanner("MISSION " + Def.id, Def.name);
             yield return new WaitForSeconds(1.6f);
+            // First-time tutorial prompts on the very first mission.
+            var gm = GameManager.Instance;
+            if (Def.id == "1-1" && gm != null && !gm.Data.IsMissionCleared("1-1"))
+            {
+                GameEvents.RaiseBanner("TAP ATTACK TO COMBO", "Hold to charge · attack right after a dodge for a dash strike");
+                yield return new WaitForSeconds(2.4f);
+                GameEvents.RaiseBanner("RED ZONES = INCOMING ATTACK", "Dodge through at the last moment, or tap GUARD just before the hit to parry");
+                yield return new WaitForSeconds(2.4f);
+            }
             started = true;
 
             for (WaveIndex = 0; WaveIndex < Def.waves.Count; WaveIndex++)
             {
                 if (Finished) yield break;
                 GameEvents.RaiseBanner("WAVE " + (WaveIndex + 1) + " / " + Def.waves.Count, "");
+                if (GameManager.Instance != null) GameManager.Instance.Audio.SetMusicState(MusicState.Combat);
                 yield return SpawnWave(Def.waves[WaveIndex]);
                 while (alive.Count > 0 && !Finished) yield return null;
+                if (GameManager.Instance != null && WaveIndex < Def.waves.Count - 1) GameManager.Instance.Audio.SetMusicState(MusicState.Explore);
                 yield return new WaitForSeconds(0.8f);
             }
 
@@ -92,6 +103,7 @@ namespace HashiraChronicles
                 InBossStage = true;
                 var bossDef = GameDatabase.GetEnemy(Def.bossId);
                 GameEvents.RaiseBanner("WARNING", bossDef.displayName + " approaches");
+                if (GameManager.Instance != null) GameManager.Instance.Audio.SetMusicState(MusicState.Boss);
                 if (GameManager.Instance != null) GameManager.Instance.Audio.Play("roar", 1f);
                 if (CameraController.Instance != null) CameraController.Instance.Shake(0.4f);
                 yield return new WaitForSeconds(1.8f);
@@ -184,8 +196,15 @@ namespace HashiraChronicles
         IEnumerator EndRoutine(string reason)
         {
             var gm = GameManager.Instance;
+            var active = battle.Team.Active;
+            if (Victory && active != null && active.IsAlive)
+            {
+                active.PlayVictory();
+                if (CameraController.Instance != null) CameraController.Instance.PlayUltimateCinematic(active.transform, 2.4f);
+            }
             if (Victory)
             {
+                if (gm != null) gm.Audio.SetMusicState(MusicState.Victory);
                 TimeController.SlowMotion(0.25f, 1.2f);
                 GameEvents.RaiseBanner("MISSION CLEAR", Def.name);
                 if (gm != null) gm.Audio.Play("victory", 1f);
@@ -193,6 +212,8 @@ namespace HashiraChronicles
             else
             {
                 GameEvents.RaiseBanner("DEFEAT", reason);
+                if (gm != null) gm.Audio.SetMusicState(MusicState.Defeat);
+                if (active != null && active.IsAlive) active.PlayDefeat();
                 if (gm != null) gm.Audio.Play("defeat", 1f);
             }
             if (reason != "Retreated") yield return new WaitForSecondsRealtime(2.6f);

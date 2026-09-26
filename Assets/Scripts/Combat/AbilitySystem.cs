@@ -35,7 +35,9 @@ namespace HashiraChronicles
                 stagger = ab.stagger,
                 hitStop = ultimate ? 0.02f : 0.045f,
                 shake = ultimate ? 0.3f : 0.2f,
-                color = ElementChart.ColorOf(pc.Element)
+                color = ElementChart.ColorOf(pc.Element),
+                heavy = !ultimate && ab.stagger >= 5f,
+                launch = !ultimate && ab.shape == AbilityShape.Spin
             };
         }
 
@@ -45,6 +47,7 @@ namespace HashiraChronicles
             Color color = tag.color;
             float scale = ultimate ? 1.35f : 1f;
             VFX.Breath(pc.Position, color, ultimate ? 70 : 30);
+            ElementFlourish(pc, color, ultimate);
 
             switch (ab.shape)
             {
@@ -53,6 +56,46 @@ namespace HashiraChronicles
                 case AbilityShape.Wave: yield return Wave(pc, ab, tag, tally, scale); break;
                 case AbilityShape.Burst: yield return Burst(pc, ab, tag, tally, scale); break;
                 case AbilityShape.MultiSlash: yield return MultiSlash(pc, ab, tag, tally, scale); break;
+            }
+        }
+
+        /// <summary>Each breathing style gets its own signature flourish on top of the shape's effects.</summary>
+        static void ElementFlourish(PlayerCharacter pc, Color color, bool ultimate)
+        {
+            Vector3 p = pc.Position;
+            float scale = ultimate ? 1.6f : 1f;
+            switch (pc.Element)
+            {
+                case Element.Water:
+                    // Rolling tide rings.
+                    VFX.Shockwave(p, 2.2f * scale, new Color(0.5f, 0.8f, 1f), 0.45f);
+                    VFX.Shockwave(p, 3.4f * scale, new Color(0.3f, 0.6f, 1f), 0.6f);
+                    break;
+                case Element.Flame:
+                    VFX.Pillar(p, new Color(1f, 0.5f, 0.1f), 3.5f * scale, 0.4f);
+                    VFX.Breath(p, new Color(1f, 0.35f, 0.05f), ultimate ? 60 : 25);
+                    break;
+                case Element.Thunder:
+                    // Lightning strikes around the slayer.
+                    for (int i = 0; i < (ultimate ? 6 : 3); i++)
+                    {
+                        Vector3 o = p + Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * Random.Range(1f, 3f * scale);
+                        VFX.Pillar(o, new Color(1f, 0.95f, 0.5f), 8f, 0.15f);
+                    }
+                    VFX.ImpactLight(p + Vector3.up * 2f, new Color(1f, 0.95f, 0.6f), 8f, 0.2f);
+                    break;
+                case Element.Beast:
+                    // Claw marks.
+                    for (int i = 0; i < 3; i++)
+                        VFX.Slash(p + pc.transform.forward * 1.2f, pc.transform.forward, 2f * scale, 60f, -30f + i * 30f, new Color(0.8f, 0.7f, 1f), 0.25f);
+                    break;
+                case Element.Light:
+                    VFX.BurstDisc(p, 3f * scale, new Color(1f, 0.9f, 0.6f), 0.5f);
+                    VFX.Pillar(p, new Color(1f, 0.95f, 0.8f), 6f * scale, 0.5f);
+                    break;
+                default:
+                    VFX.Smoke(p, new Color(0.3f, 0.1f, 0.4f, 0.7f), 16);
+                    break;
             }
         }
 

@@ -12,6 +12,8 @@ namespace HashiraChronicles
         public static event System.Action<string, string> Banner;
         public static event System.Action PerfectDodge;
         public static event System.Action<OwnedCharacter> CharacterUpgraded;
+        /// <summary>Heavy impact (0..1 strength) – drives impact frames and speed lines in the HUD.</summary>
+        public static event System.Action<float> Impact;
 
         public static void RaiseDamageDealt(DamageInfo info, Combatant target) { var h = DamageDealt; if (h != null) h(info, target); }
         public static void RaiseEnemyKilled(EnemyController e) { var h = EnemyKilled; if (h != null) h(e); }
@@ -21,6 +23,7 @@ namespace HashiraChronicles
         public static void RaiseUltimateFinished(PlayerCharacter p, float total) { var h = UltimateFinished; if (h != null) h(p, total); }
         public static void RaiseBanner(string title, string subtitle) { var h = Banner; if (h != null) h(title, subtitle); }
         public static void RaisePerfectDodge() { var h = PerfectDodge; if (h != null) h(); }
+        public static void RaiseImpact(float strength) { var h = Impact; if (h != null) h(strength); }
         public static void RaiseCharacterUpgraded(OwnedCharacter c) { var h = CharacterUpgraded; if (h != null) h(c); }
     }
 }

@@ -25,6 +25,7 @@ namespace HashiraChronicles
         Equipment,
         Battle,
         Results,
-        ComingSoon
+        ComingSoon,
+        Settings
     }
 }

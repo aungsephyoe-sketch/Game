@@ -5,6 +5,7 @@ Shader "Hashira/Toon"
     Properties
     {
         _Color ("Color", Color) = (1,1,1,1)
+        _MainTex ("Texture", 2D) = "white" {}
         _ShadowColor ("Shadow Tint", Color) = (0.55,0.5,0.72,1)
         _RimColor ("Rim Color", Color) = (1,1,1,1)
         _RimPower ("Rim Power", Range(0.5, 8)) = 3.5
@@ -32,6 +33,8 @@ Shader "Hashira/Toon"
             #include "AutoLight.cginc"
 
             fixed4 _Color;
+            sampler2D _MainTex;
+            float4 _MainTex_ST;
             fixed4 _ShadowColor;
             fixed4 _RimColor;
             fixed4 _Emission;
@@ -46,6 +49,7 @@ Shader "Hashira/Toon"
                 float3 worldPos : TEXCOORD1;
                 SHADOW_COORDS(2)
                 UNITY_FOG_COORDS(3)
+                float2 uv : TEXCOORD4;
             };
 
             v2f vert (appdata_base v)
@@ -54,6 +58,7 @@ Shader "Hashira/Toon"
                 o.pos = UnityObjectToClipPos(v.vertex);
                 o.worldNormal = UnityObjectToWorldNormal(v.normal);
                 o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
+                o.uv = TRANSFORM_TEX(v.texcoord.xy, _MainTex);
                 TRANSFER_SHADOW(o)
                 UNITY_TRANSFER_FOG(o, o.pos);
                 return o;
@@ -68,7 +73,7 @@ Shader "Hashira/Toon"
                 float shadow = SHADOW_ATTENUATION(i);
                 float lit = smoothstep(0.0, 0.05, ndl) * smoothstep(0.3, 0.5, shadow);
 
-                fixed3 baseCol = _Color.rgb;
+                fixed3 baseCol = tex2D(_MainTex, i.uv).rgb * _Color.rgb;
                 fixed3 ambient = ShadeSH9(float4(n, 1.0));
                 fixed3 col = lerp(baseCol * _ShadowColor.rgb, baseCol * _LightColor0.rgb, lit);
                 col += baseCol * ambient * 0.35;

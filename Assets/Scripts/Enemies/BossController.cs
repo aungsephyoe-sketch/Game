@@ -77,6 +77,17 @@ namespace HashiraChronicles
             return p;
         }
 
+        public override void OnParried(PlayerCharacter by)
+        {
+            // Parries still reward the player, but can't cancel phase changes or the break window.
+            if (superArmor || Exhausted)
+            {
+                visual.Flash(Color.white, 1f);
+                return;
+            }
+            base.OnParried(by);
+        }
+
         protected override bool CanBeStaggered() { return !superArmor && !Exhausted; }
 
         protected override void Think(float dt)

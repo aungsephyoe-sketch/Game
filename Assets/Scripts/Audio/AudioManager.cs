@@ -3,35 +3,68 @@ using UnityEngine;
 
 namespace HashiraChronicles
 {
+    public enum MusicState { None, Menu, Explore, Combat, Boss, Victory, Defeat }
+
     /// <summary>
-    /// Sound effects and music. Everything is synthesised at startup (noise bursts, sweeps, Karplus-Strong
-    /// plucks, taiko drums) so the prototype needs no audio files. Swap Generate() for AudioClip assets later;
-    /// callers only use Play("id") / PlayMusic().
+    /// Sound effects and adaptive music, all synthesised at startup (noise bursts, sweeps, Karplus-Strong
+    /// plucks, taiko drums) so the game ships without audio files. Music crossfades between states
+    /// (menu → explore → combat → boss → victory/defeat), a heartbeat layer fades in at low HP, and music
+    /// ducks under ultimates. Swap Generate() for licensed/commissioned AudioClips later – callers only use
+    /// Play("id") and SetMusicState().
     /// </summary>
     public class AudioManager : MonoBehaviour
     {
         const int Rate = 22050;
+        const float CrossfadeSeconds = 1.6f;
 
         readonly Dictionary<string, AudioClip> clips = new Dictionary<string, AudioClip>();
         readonly Dictionary<string, float> lastPlayed = new Dictionary<string, float>();
+        readonly Dictionary<MusicState, AudioClip> tracks = new Dictionary<MusicState, AudioClip>();
         AudioSource sfx;
-        AudioSource music;
-        AudioClip battleMusic, menuMusic;
+        AudioSource musicA, musicB, heartbeat;
+        AudioSource currentMusic;
+        MusicState state = MusicState.None;
+        float duckUntil;
+        float fade = 1f;
         System.Random rng = new System.Random(1234);
 
-        public float SfxVolume = 0.8f;
-        public float MusicVolume = 0.35f;
+        public float SfxVolume { get { return GameSettings.SfxVolume; } }
+        public float MusicVolume { get { return GameSettings.MusicVolume * 0.5f; } }
+        public MusicState State { get { return state; } }
 
         void Awake()
         {
             sfx = gameObject.AddComponent<AudioSource>();
             sfx.playOnAwake = false;
-            music = gameObject.AddComponent<AudioSource>();
-            music.loop = true;
-            music.playOnAwake = false;
-            music.volume = MusicVolume;
+            musicA = MakeMusicSource();
+            musicB = MakeMusicSource();
+            heartbeat = MakeMusicSource();
             Generate();
-            PlayMusic(false);
+            heartbeat.clip = clips["heartbeat"];
+            heartbeat.volume = 0f;
+            heartbeat.Play();
+            GameEvents.UltimateStarted += OnUltimate;
+            SetMusicState(MusicState.Menu);
+        }
+
+        void OnDestroy()
+        {
+            GameEvents.UltimateStarted -= OnUltimate;
+        }
+
+        AudioSource MakeMusicSource()
+        {
+            var a = gameObject.AddComponent<AudioSource>();
+            a.loop = true;
+            a.playOnAwake = false;
+            a.volume = 0f;
+            a.ignoreListenerPause = true;
+            return a;
+        }
+
+        void OnUltimate(PlayerCharacter pc, AbilityDefinition ab)
+        {
+            duckUntil = Time.unscaledTime + 1.6f;
         }
 
         public void Play(string id, float volume = 1f)
@@ -46,13 +79,46 @@ namespace HashiraChronicles
             sfx.PlayOneShot(clip, volume * SfxVolume);
         }
 
+        /// <summary>Kept for older callers: true = combat, false = menu.</summary>
         public void PlayMusic(bool battle)
         {
-            var clip = battle ? battleMusic : menuMusic;
-            if (music.clip == clip && music.isPlaying) return;
-            music.clip = clip;
-            music.volume = MusicVolume;
-            music.Play();
+            SetMusicState(battle ? MusicState.Explore : MusicState.Menu);
+        }
+
+        public void SetMusicState(MusicState next)
+        {
+            if (next == state) return;
+            state = next;
+            AudioClip clip;
+            if (!tracks.TryGetValue(next, out clip)) return;
+            var target = currentMusic == musicA ? musicB : musicA;
+            target.clip = clip;
+            target.loop = next != MusicState.Victory && next != MusicState.Defeat;
+            target.volume = 0f;
+            target.Play();
+            currentMusic = target;
+            fade = 0f;
+        }
+
+        void Update()
+        {
+            float dt = Time.unscaledDeltaTime;
+            fade = Mathf.MoveTowards(fade, 1f, dt / CrossfadeSeconds);
+            float duck = Time.unscaledTime < duckUntil ? 0.35f : 1f;
+            float vol = MusicVolume * duck;
+            var other = currentMusic == musicA ? musicB : musicA;
+            if (currentMusic != null) currentMusic.volume = Mathf.Lerp(currentMusic.volume, vol * fade, 1f - Mathf.Exp(-dt * 8f));
+            other.volume = Mathf.MoveTowards(other.volume, 0f, dt * Mathf.Max(0.05f, MusicVolume) / CrossfadeSeconds * 1.5f);
+            if (other.volume <= 0f && other.isPlaying) other.Stop();
+
+            // Low-health layer: heartbeat fades in under 30% HP of the active slayer.
+            float danger = 0f;
+            var b = BattleController.Current;
+            if (b != null && b.Team != null && b.Team.Active != null && b.Team.Active.IsAlive && !b.Finished)
+                danger = Mathf.Clamp01((0.3f - b.Team.Active.Health.Normalized) / 0.3f);
+            heartbeat.volume = Mathf.MoveTowards(heartbeat.volume, danger * GameSettings.SfxVolume * 0.8f, dt * 0.8f);
+            if (currentMusic != null && danger > 0f) currentMusic.pitch = Mathf.Lerp(1f, 0.97f, danger);
+            else if (currentMusic != null) currentMusic.pitch = 1f;
         }
 
         // ------------------------------------------------------------------ Synthesis
@@ -172,8 +238,20 @@ namespace HashiraChronicles
             AddPluck(b, 0f, scale[4], 0.8f, 1.5f); AddPluck(b, 0.3f, scale[1], 0.8f, 1.5f); AddPluck(b, 0.6f, scale[0] * 0.5f, 0.9f, 1.2f);
             Make("defeat", b, 0.7f);
 
-            battleMusic = BuildBattleMusic(scale);
-            menuMusic = BuildMenuMusic(scale);
+            // New feedback sounds.
+            b = Buffer(0.12f); AddNoise(b, 0, 0.08f, 0.6f, 40f, 0.2f); AddTone(b, 0, 0.1f, 90f, 60f, 0.5f, 30f); Make("step", b, 0.5f);
+            b = Buffer(0.2f); AddTone(b, 0, 0.2f, 520f, 480f, 0.4f, 18f); AddNoise(b, 0, 0.05f, 0.3f, 50f, 0.9f); Make("guard", b, 0.4f);
+            b = Buffer(0.35f); AddTone(b, 0, 0.35f, 1240f, 1180f, 0.6f, 10f); AddTone(b, 0, 0.3f, 1860f, 1800f, 0.35f, 12f); AddNoise(b, 0, 0.06f, 0.7f, 45f, 1f); Make("block", b, 0.7f);
+            b = Buffer(0.9f); AddTone(b, 0, 0.9f, 1568f, 1568f, 0.6f, 4f); AddTone(b, 0, 0.8f, 2349f, 2349f, 0.4f, 5f); AddTone(b, 0, 0.7f, 3136f, 3136f, 0.25f, 6f); AddNoise(b, 0, 0.08f, 1f, 35f, 1f); AddTaiko(b, 0f, 0.6f); Make("parry", b, 0.9f);
+            b = Buffer(0.4f); AddTone(b, 0, 0.4f, 70f, 35f, 1f, 9f); AddNoise(b, 0, 0.25f, 0.7f, 14f, 0.2f); Make("thud", b, 0.8f);
+            b = Buffer(1.0f); AddTone(b, 0f, 0.18f, 60f, 40f, 1f, 18f); AddTone(b, 0.22f, 0.18f, 55f, 38f, 0.7f, 18f); Make("heartbeat", b, 0.9f);
+
+            tracks[MusicState.Menu] = BuildMenuMusic(scale);
+            tracks[MusicState.Explore] = BuildExploreMusic(scale);
+            tracks[MusicState.Combat] = BuildBattleMusic(scale);
+            tracks[MusicState.Boss] = BuildBossMusic(scale);
+            tracks[MusicState.Victory] = clips["victory"];
+            tracks[MusicState.Defeat] = clips["defeat"];
         }
 
         AudioClip BuildBattleMusic(float[] scale)
@@ -223,6 +301,63 @@ namespace HashiraChronicles
             MakeLoopable(b);
             Normalize(b, 0.5f);
             var clip = AudioClip.Create("menu_music", b.Length, 1, Rate, false);
+            clip.SetData(b, 0);
+            return clip;
+        }
+
+        /// <summary>Calm, sparse koto over a drone – between waves.</summary>
+        AudioClip BuildExploreMusic(float[] scale)
+        {
+            const float bpm = 84f;
+            float beat = 60f / bpm;
+            int bars = 6;
+            var b = Buffer(bars * 4 * beat);
+            int[] melody = { 0, 2, 3, 4, 3, 2, 5, 4, 3, 2, 0, 1 };
+            for (int i = 0; i < bars * 4; i++)
+            {
+                float t = i * beat;
+                if (i % 2 == 0) AddPluck(b, t, scale[melody[(i / 2) % melody.Length]], 0.35f, beat * 3f, 0.997f);
+                if (i % 8 == 0) AddPluck(b, t, scale[0] * 0.5f, 0.3f, beat * 6f, 0.999f);
+                if (i % 4 == 2) AddNoise(b, t, 0.05f, 0.06f, 50f, 1f);
+            }
+            AddTone(b, 0f, b.Length / (float)Rate, 73.4f, 73.4f, 0.12f, 0f, 1.5f);
+            MakeLoopable(b);
+            Normalize(b, 0.45f);
+            var clip = AudioClip.Create("explore_music", b.Length, 1, Rate, false);
+            clip.SetData(b, 0);
+            return clip;
+        }
+
+        /// <summary>Driving 150 bpm taiko + low saw drone + urgent shamisen – boss fights.</summary>
+        AudioClip BuildBossMusic(float[] scale)
+        {
+            const float bpm = 150f;
+            float beat = 60f / bpm;
+            int bars = 8;
+            var b = Buffer(bars * 4 * beat);
+            int[] melody = { 0, 1, 0, 4, 3, 1, 0, 1, 5, 4, 3, 1, 0, 1, 2, 1 };
+            for (int bar = 0; bar < bars; bar++)
+            {
+                float t0 = bar * 4 * beat;
+                for (int k = 0; k < 4; k++) AddTaiko(b, t0 + k * beat, k % 2 == 0 ? 1f : 0.7f);
+                AddTaiko(b, t0 + beat * 3.5f, 0.6f);
+                for (int k = 0; k < 8; k++) AddNoise(b, t0 + k * beat * 0.5f, 0.04f, 0.15f, 70f, 1f);
+                for (int n = 0; n < 8; n++)
+                {
+                    int note = melody[(bar * 8 + n) % melody.Length];
+                    AddPluck(b, t0 + n * beat * 0.5f, scale[note], 0.3f, beat, 0.99f);
+                }
+            }
+            // Menacing detuned saw drone.
+            for (int i = 0; i < b.Length; i++)
+            {
+                float t = (float)i / Rate;
+                float saw = ((t * 55f) % 1f) * 2f - 1f + (((t * 55.6f) % 1f) * 2f - 1f);
+                b[i] += saw * 0.05f;
+            }
+            MakeLoopable(b);
+            Normalize(b, 0.6f);
+            var clip = AudioClip.Create("boss_music", b.Length, 1, Rate, false);
             clip.SetData(b, 0);
             return clip;
         }

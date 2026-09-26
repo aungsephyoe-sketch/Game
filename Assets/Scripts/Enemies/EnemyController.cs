@@ -11,7 +11,7 @@ namespace HashiraChronicles
     /// </summary>
     public class EnemyController : Combatant
     {
-        protected enum State { Spawning, Chase, Attacking, Staggered, Dead }
+        protected enum State { Spawning, Chase, Attacking, Staggered, Airborne, Down, Dead }
 
         const int MaxSimultaneousAttackers = 3;
         static int attackTokensInUse;
@@ -37,6 +37,12 @@ namespace HashiraChronicles
         float strafeSign = 1f;
         float strafeTimer;
         float zigzagPhase;
+        float slotAngle;
+        float dodgeCooldown;
+        float height;
+        float verticalVelocity;
+        float downTimer;
+        bool alerted;
 
         protected PlayerCharacter Player
         {
@@ -68,6 +74,8 @@ namespace HashiraChronicles
             attackTimer = Random.Range(0.6f, 1.6f);
             strafeSign = Random.value < 0.5f ? -1f : 1f;
             zigzagPhase = Random.Range(0f, 100f);
+            slotAngle = Random.Range(0f, 360f);
+            dodgeCooldown = Random.Range(2f, 5f);
             StartCoroutine(SpawnRoutine());
         }
 
@@ -86,6 +94,12 @@ namespace HashiraChronicles
             }
             transform.position = end;
             if (state == State.Spawning) state = State.Chase;
+            // Detection beat: a "!" pop so the player reads that this demon has spotted them.
+            if (!alerted && !IsBoss)
+            {
+                alerted = true;
+                DamageNumbers.SpawnText(Position + Vector3.up * (2.6f * Def.scale), "!", new Color(1f, 0.35f, 0.3f), 60f);
+            }
         }
 
         protected virtual void Update()
@@ -101,6 +115,7 @@ namespace HashiraChronicles
 
             poiseResetTimer -= dt;
             if (poiseResetTimer <= 0f) poiseDamage = 0f;
+            dodgeCooldown -= dt;
 
             switch (state)
             {
@@ -111,12 +126,38 @@ namespace HashiraChronicles
                 case State.Chase:
                     Think(dt);
                     break;
+                case State.Airborne:
+                    verticalVelocity -= 22f * dt;
+                    height += verticalVelocity * dt;
+                    if (height <= 0f)
+                    {
+                        height = 0f;
+                        verticalVelocity = 0f;
+                        state = State.Down;
+                        downTimer = 0.55f;
+                        visual.Knockdown();
+                        VFX.Dust(Position, 6);
+                        if (GameManager.Instance != null) GameManager.Instance.Audio.Play("thud", 0.4f);
+                    }
+                    break;
+                case State.Down:
+                    downTimer -= dt;
+                    if (downTimer <= 0f)
+                    {
+                        visual.GetUp(0.35f);
+                        state = State.Staggered;
+                        staggerTimer = 0.35f;
+                    }
+                    break;
             }
 
-            Separate();
-            var p = transform.position;
-            p.y = 0f;
-            if (state != State.Spawning) transform.position = BattleController.ClampToArena(p);
+            if (state != State.Airborne) Separate();
+            if (state != State.Spawning)
+            {
+                var p = BattleController.ClampToArena(transform.position);
+                p.y = height;
+                transform.position = p;
+            }
         }
 
         /// <summary>Default brain: approach, keep spacing, attack when in range and a token is free.</summary>
@@ -129,11 +170,14 @@ namespace HashiraChronicles
             float dist = to.magnitude;
             attackTimer -= dt;
 
+            if (TryEvade(player, to, dist)) return;
+
             float desired = Def.archetype == EnemyArchetype.Ranged ? 7f : Def.attackRange * 0.8f;
             Vector3 move = Vector3.zero;
             if (Def.archetype == EnemyArchetype.Ranged)
             {
                 if (dist > desired + 1.5f) move = to.normalized;
+                else if (dist < 3.5f) move = -to.normalized * 1.6f; // flee when a slayer closes in
                 else if (dist < desired - 2f) move = -to.normalized;
                 strafeTimer -= dt;
                 if (strafeTimer <= 0f) { strafeTimer = Random.Range(1.5f, 3f); strafeSign = -strafeSign; }
@@ -146,8 +190,17 @@ namespace HashiraChronicles
             }
             else if (!CanAttackNow())
             {
-                // Waiting for a token: circle the player instead of queueing into them.
-                move = Vector3.Cross(Vector3.up, to.normalized) * strafeSign * 0.5f;
+                // Waiting for a token: hold a surround slot so demons flank instead of stacking up.
+                slotAngle += strafeSign * dt * 25f;
+                Vector3 slot = player.Position + Quaternion.Euler(0f, slotAngle, 0f) * Vector3.forward * (Def.attackRange + 1.4f);
+                Vector3 toSlot = slot - Position;
+                toSlot.y = 0f;
+                move = toSlot.magnitude > 0.3f ? toSlot.normalized * 0.7f : Vector3.zero;
+            }
+            else if (dist > desired * 0.6f)
+            {
+                // Closing in for an attack: approach from the assigned flank.
+                move = to.normalized;
             }
 
             if (move.sqrMagnitude > 0.001f)
@@ -161,6 +214,37 @@ namespace HashiraChronicles
             float range = Def.archetype == EnemyArchetype.Ranged ? Def.attackRange : Def.attackRange + player.Radius;
             if (dist <= range && attackTimer <= 0f && TryTakeToken())
                 BeginAttack(ArchetypeAttack(player));
+        }
+
+        /// <summary>Fast and elite demons read the player's swing and hop back out of range.</summary>
+        bool TryEvade(PlayerCharacter player, Vector3 to, float dist)
+        {
+            if (dodgeCooldown > 0f || dist > 3.2f) return false;
+            if (Def.archetype != EnemyArchetype.Fast && Def.archetype != EnemyArchetype.Elite) return false;
+            bool threatened = player.Action == PlayerCharacter.ActionKind.Attack || player.Action == PlayerCharacter.ActionKind.Charged;
+            if (!threatened) return false;
+            dodgeCooldown = Random.Range(3f, 6f);
+            if (Random.value > 0.35f) return false;
+            BeginAttack(EvadeRoutine(-to.normalized + Vector3.Cross(Vector3.up, to.normalized) * strafeSign * 0.6f));
+            return true;
+        }
+
+        IEnumerator EvadeRoutine(Vector3 dir)
+        {
+            dir.y = 0f;
+            dir.Normalize();
+            Health.GrantInvulnerability(0.25f);
+            visual.Dodge(dir, 0.2f);
+            VFX.Dust(Position, 4);
+            Vector3 start = Position;
+            float t = 0f;
+            while (t < 0.2f)
+            {
+                t += Time.deltaTime;
+                transform.position = start + dir * 3.2f * Mathf.Clamp01(t / 0.2f);
+                yield return null;
+            }
+            yield return new WaitForSeconds(0.15f);
         }
 
         protected bool CanAttackNow()
@@ -349,18 +433,61 @@ namespace HashiraChronicles
 
         // ------------------------------------------------------------------ Damage & death
 
+        bool IsLight { get { return Def.archetype == EnemyArchetype.Normal || Def.archetype == EnemyArchetype.Fast || Def.archetype == EnemyArchetype.Ranged; } }
+
         public override void OnHitReceived(DamageInfo info)
         {
             visual.Flash(Color.white, 1f);
             float weight = IsBoss ? 0.1f : Mathf.Max(0.3f, 1f / Def.scale);
+            if (state == State.Down) weight *= 0.3f;
             knockVelocity += info.knockback * weight * 2f;
-            poiseDamage += info.staggerPower;
+            // Elemental weakness breaks guard faster.
+            poiseDamage += info.staggerPower * (info.elementMultiplier > 1.01f ? 1.5f : 1f);
             poiseResetTimer = 3f;
-            if (state != State.Spawning && poiseDamage > Def.poise && CanBeStaggered())
+            if (state == State.Spawning || state == State.Dead) return;
+
+            if (state == State.Airborne)
+            {
+                // Juggle: every hit keeps a launched demon up a little longer.
+                verticalVelocity = Mathf.Max(verticalVelocity, 4.5f);
+                return;
+            }
+            if (!IsBoss && info.launch && IsLight && state != State.Down)
+            {
+                Launch(7.5f);
+                return;
+            }
+            if (!IsBoss && info.heavy && (IsLight || poiseDamage > Def.poise) && CanBeStaggered())
+            {
+                Launch(IsLight ? 5f : 3f);
+                return;
+            }
+            if (poiseDamage > Def.poise && CanBeStaggered())
             {
                 poiseDamage = 0f;
                 Stagger(IsBoss ? 1.2f : 0.45f);
+                if (info.source != null) visual.Hit(info.source.Position - Position);
             }
+            else if (info.source != null && state != State.Down) visual.Hit(info.source.Position - Position);
+        }
+
+        void Launch(float upSpeed)
+        {
+            CancelAttack();
+            state = State.Airborne;
+            verticalVelocity = upSpeed;
+            visual.SetMoving(0f);
+            visual.Hit(-transform.forward);
+        }
+
+        /// <summary>The player parried this demon's attack: long stagger, attack cancelled.</summary>
+        public virtual void OnParried(PlayerCharacter by)
+        {
+            if (state == State.Dead) return;
+            poiseDamage = 0f;
+            visual.Flash(Color.white, 1f);
+            Stagger(IsBoss ? 1.4f : 1.3f);
+            knockVelocity += (Position - by.Position).normalized * (IsBoss ? 1f : 4f);
         }
 
         protected virtual bool CanBeStaggered() { return true; }
@@ -377,6 +504,10 @@ namespace HashiraChronicles
         protected virtual void OnDied()
         {
             state = State.Dead;
+            height = 0f;
+            var gp = transform.position;
+            gp.y = 0f;
+            transform.position = gp;
             CancelAttack();
             StopAllCoroutines();
             ClearTelegraphs();

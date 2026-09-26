@@ -7,7 +7,7 @@ namespace HashiraChronicles
     /// Multi-touch battle controls: floating virtual joystick on the left, attack / skills / ultimate / dodge
     /// on the right, tap portraits to switch. Mouse and keyboard work too for editor and desktop testing:
     ///   WASD/Arrows move · J attack (hold = charge) · Space/K dodge · 1 2 3 or U I O skills · L/R ultimate
-    ///   Q/E or Tab switch · Esc/P pause.
+    ///   F/Shift guard (tap just before a hit = parry) · Q/E or Tab switch · Esc/P pause.
     /// </summary>
     [DefaultExecutionOrder(-100)]
     public class MobileControls : MonoBehaviour
@@ -25,11 +25,12 @@ namespace HashiraChronicles
         public bool JoystickActive { get { return joyFinger != None; } }
         public Vector2 JoystickCenter { get; private set; }
         public Vector2 JoystickKnob { get; private set; }
-        /// <summary>Visual press feedback per control: 0 attack, 1 dodge, 2-4 skills, 5 ultimate.</summary>
-        public readonly float[] Pressed = new float[6];
+        /// <summary>Visual press feedback per control: 0 attack, 1 dodge, 2-4 skills, 5 ultimate, 6 guard.</summary>
+        public readonly float[] Pressed = new float[7];
 
         int joyFinger = None;
         int attackFinger = None;
+        int guardFinger = None;
         bool prevAttackHeld;
         readonly List<Pointer> pointers = new List<Pointer>();
 
@@ -41,7 +42,7 @@ namespace HashiraChronicles
 
             if (gm == null || gm.CurrentScreen != GameScreen.Battle)
             {
-                joyFinger = attackFinger = None;
+                joyFinger = attackFinger = guardFinger = None;
                 prevAttackHeld = false;
                 Current = s;
                 return;
@@ -60,6 +61,7 @@ namespace HashiraChronicles
                     default:
                         if (p.id == joyFinger) joyFinger = None;
                         if (p.id == attackFinger) attackFinger = None;
+                        if (p.id == guardFinger) guardFinger = None;
                         break;
                 }
             }
@@ -76,6 +78,7 @@ namespace HashiraChronicles
             }
 
             bool held = attackFinger != None;
+            s.guardHeld = guardFinger != None;
             ReadKeyboard(ref s, ref held);
             s.attackHeld = held;
             s.attackUp = prevAttackHeld && !held;
@@ -114,6 +117,7 @@ namespace HashiraChronicles
 
             if (HudLayout.Attack.Contains(p.pos)) { attackFinger = p.id; s.attackDown = true; Pressed[0] = 1f; return; }
             if (HudLayout.Dodge.Contains(p.pos)) { s.dodgeDown = true; Pressed[1] = 1f; return; }
+            if (HudLayout.Guard.Contains(p.pos)) { guardFinger = p.id; s.guardDown = true; Pressed[6] = 1f; return; }
             for (int i = 0; i < 3; i++)
             {
                 if (!HudLayout.Skill(i).Contains(p.pos)) continue;
@@ -164,6 +168,8 @@ namespace HashiraChronicles
             if (Input.GetKeyDown(KeyCode.Alpha2) || Input.GetKeyDown(KeyCode.I)) { s.skill2Down = true; Pressed[3] = 1f; }
             if (Input.GetKeyDown(KeyCode.Alpha3) || Input.GetKeyDown(KeyCode.O)) { s.skill3Down = true; Pressed[4] = 1f; }
             if (Input.GetKeyDown(KeyCode.L) || Input.GetKeyDown(KeyCode.R)) { s.ultimateDown = true; Pressed[5] = 1f; }
+            if (Input.GetKeyDown(KeyCode.F) || Input.GetKeyDown(KeyCode.LeftShift)) { s.guardDown = true; Pressed[6] = 1f; }
+            if (Input.GetKey(KeyCode.F) || Input.GetKey(KeyCode.LeftShift)) s.guardHeld = true;
 
             var b = BattleController.Current;
             if (b != null && b.Team != null && b.Team.Members.Count > 0)

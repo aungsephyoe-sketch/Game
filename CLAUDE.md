@@ -24,4 +24,10 @@ nuget_dir=/tmp/unityref && mkdir -p $nuget_dir && cd $nuget_dir && \
 cd <repo> && REFS=$(ls /tmp/unityref/lib/net45/*.dll | grep -v 'UnityEngine.dll$' | sed 's/^/-r:/' | tr '\n' ' ')
 mcs -langversion:Latest -target:library -out:/tmp/game.dll $REFS $(find Assets/Scripts -name '*.cs' -not -path '*/Editor/*')
 ```
-Editor scripts (`Assets/Scripts/Editor`) need the UnityEditor assembly and can only be checked in Unity.
+Editor scripts can be checked too, against the monolithic 2021.1 references in NuGet `Unity3D.SDK`
+(`lib/UnityEngine.dll` + `lib/UnityEditor.dll`) by compiling *all* scripts together. `NamedBuildTarget`
+(2021.2+) is the one expected error there. Unity 6.6 turns some obsolete APIs into errors (e.g.
+`Object.GetInstanceID`): avoid obsolete members even when these older references accept them.
+
+Art: rigged models load from `Resources/Characters/<id>` / `Resources/Enemies/<id>` via `CharacterVisual`;
+see docs/ART_PIPELINE.md.

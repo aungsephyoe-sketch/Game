@@ -4,16 +4,26 @@ using UnityEngine;
 namespace HashiraChronicles
 {
     /// <summary>
-    /// One Demon Slayer on the field: movement, 5-hit combo, charged attack, dodge with i-frames
-    /// (and perfect-dodge slow motion), three breathing forms and a cinematic ultimate.
+    /// One slayer on the field. Built around responsiveness:
+    ///  • Input buffer (0.28 s): a press made slightly early is never dropped – it fires as soon as it's legal.
+    ///  • Cancel windows: combos cancel into skills, dodge, guard and movement after their active frames.
+    ///  • 5-hit combo, hold-to-charge heavy, dash attack (attack out of a dodge), sprint after sustained movement.
+    ///  • Guard (hold) with parry (tap just before a hit), dodge with i-frames and perfect-dodge slow motion.
+    ///  • Hit stun and knockdown with quick-rise (dodge while down), super armour during skills, invulnerable ultimates.
     /// </summary>
     public class PlayerCharacter : Combatant
     {
-        public enum ActionKind { None, Attack, Charged, Skill, Dodge, Ultimate, SwitchIn }
+        public enum ActionKind { None, Attack, Charged, DashAttack, Skill, Dodge, Ultimate, SwitchIn, HitStun, Knockdown }
+
+        enum Buffered { None, Attack, Dodge, Skill0, Skill1, Skill2, Ultimate }
 
         public const float UltMax = 100f;
         const float ChargeStart = 0.3f;
         const float ChargeFull = 0.8f;
+        const float BufferWindow = 0.28f;
+        const float ParryWindow = 0.18f;
+        const float DashAttackWindow = 0.3f;
+        const float SprintDelay = 0.45f;
 
         public CharacterDefinition Def { get; private set; }
         public OwnedCharacter Owned { get; private set; }
@@ -24,20 +34,33 @@ namespace HashiraChronicles
         public bool UltReady { get { return UltGauge >= UltMax; } }
         public float ChargeAmount { get; private set; }
         public int ComboStep { get { return comboIndex; } }
-        public bool CanSwitchOut { get { return Action != ActionKind.Ultimate && IsAlive; } }
+        public bool Guarding { get; private set; }
+        public bool Sprinting { get; private set; }
+        public bool CanSwitchOut { get { return Action != ActionKind.Ultimate && Action != ActionKind.Knockdown && IsAlive; } }
 
         Coroutine actionRoutine;
         int comboIndex;
         float comboResetTimer;
         bool attackQueued;
+        bool canMoveCancel;
         float attackHeldTime;
         bool attackHeldLast;
         float dodgeCooldown;
+        float lastDodgeEnd = -10f;
         float lastPerfectDodge = -10f;
+        float guardPressedAt = -10f;
+        float lastParry = -10f;
+        float knockdownAt;
+        float moveTime;
+        float stepTimer;
         Vector3 knockVelocity;
         Vector3 moveInput;
+        Buffered buffered;
+        float bufferedAt;
+        bool ultimateActive;
 
         Color ElementColor { get { return ElementChart.ColorOf(Def.element); } }
+        AudioManager Audio { get { return GameManager.Instance != null ? GameManager.Instance.Audio : null; } }
 
         public void Init(CharacterDefinition def, OwnedCharacter owned, StatBlock stats)
         {
@@ -50,10 +73,17 @@ namespace HashiraChronicles
             Health.Init(stats.hp);
             Health.Evaded += OnEvaded;
             Health.Died += OnDied;
+            Health.Filter = GuardFilter;
             Visual = CharacterVisual.BuildHero(def, transform);
         }
 
         float SkillLevelMult(int index) { return CharacterSystem.SkillLevelMultiplier(Owned.skillLevels[index]); }
+
+        void Play(string id, float vol)
+        {
+            var a = Audio;
+            if (a != null) a.Play(id, vol);
+        }
 
         public void TickCooldowns(float dt)
         {
@@ -69,49 +99,42 @@ namespace HashiraChronicles
             moveInput = new Vector3(input.move.x, 0f, input.move.y);
             if (moveInput.sqrMagnitude > 1f) moveInput.Normalize();
 
-            if (Action != ActionKind.None)
-            {
-                comboResetTimer = 0.7f;
-            }
+            if (Action != ActionKind.None) comboResetTimer = 0.7f;
             else if (comboResetTimer > 0f)
             {
                 comboResetTimer -= dt;
                 if (comboResetTimer <= 0f) comboIndex = 0;
             }
 
-            // Dodge cancels everything except the ultimate – responsiveness first.
-            if (input.dodgeDown && dodgeCooldown <= 0f && Action != ActionKind.Ultimate && Action != ActionKind.Dodge)
-            {
-                StartAction(DodgeRoutine(), ActionKind.Dodge);
-                return;
-            }
-
-            if (input.ultimateDown && UltReady && Action != ActionKind.Ultimate && Action != ActionKind.Dodge)
-            {
-                StartAction(UltimateRoutine(), ActionKind.Ultimate);
-                return;
-            }
-
-            for (int i = 0; i < 3; i++)
-            {
-                if (!input.SkillDown(i) || Cooldowns[i] > 0f) continue;
-                if (Action == ActionKind.None || Action == ActionKind.Attack || Action == ActionKind.SwitchIn)
-                {
-                    StartAction(SkillRoutine(i), ActionKind.Skill);
-                    return;
-                }
-            }
-
-            // Tap = combo, hold = charged attack.
-            if (input.attackDown)
+            // Record the newest press; priority order resolves same-frame presses.
+            if (input.dodgeDown) Buffer(Buffered.Dodge);
+            else if (input.ultimateDown) Buffer(Buffered.Ultimate);
+            else if (input.skill1Down) Buffer(Buffered.Skill0);
+            else if (input.skill2Down) Buffer(Buffered.Skill1);
+            else if (input.skill3Down) Buffer(Buffered.Skill2);
+            else if (input.attackDown)
             {
                 attackHeldTime = 0f;
-                if (Action == ActionKind.None) StartAction(ComboRoutine(), ActionKind.Attack);
-                else if (Action == ActionKind.Attack) attackQueued = true;
+                Buffer(Buffered.Attack);
             }
+            if (input.guardDown) guardPressedAt = Time.time;
+
+            ConsumeBuffer();
+
+            // Guard is a held stance available whenever the slayer is free.
+            bool wantGuard = input.guardHeld && Action == ActionKind.None;
+            if (wantGuard != Guarding)
+            {
+                Guarding = wantGuard;
+                Visual.Guard(Guarding);
+                if (Guarding) Play("guard", 0.35f);
+            }
+
+            // Hold attack = charge (only while otherwise idle).
             bool held = input.attackHeld;
             if (held) attackHeldTime += dt;
-            ChargeAmount = held && Action == ActionKind.None ? Mathf.Clamp01((attackHeldTime - ChargeStart) / (ChargeFull - ChargeStart)) : 0f;
+            ChargeAmount = held && Action == ActionKind.None && !Guarding
+                ? Mathf.Clamp01((attackHeldTime - ChargeStart) / (ChargeFull - ChargeStart)) : 0f;
             if (!held && attackHeldLast && Action == ActionKind.None && attackHeldTime >= ChargeFull)
             {
                 attackHeldTime = 0f;
@@ -120,19 +143,125 @@ namespace HashiraChronicles
             attackHeldLast = held;
             Visual.SetCharge(ChargeAmount, ElementColor);
 
-            if (Action == ActionKind.None)
-            {
-                float speed = Stats.speed * (ChargeAmount > 0f ? 0.4f : 1f);
-                if (moveInput.sqrMagnitude > 0.01f)
-                {
-                    transform.position = BattleController.ClampToArena(transform.position + moveInput * speed * dt);
-                    Face(moveInput, 18f * dt);
-                }
-                Visual.SetMoving(moveInput.magnitude);
-            }
+            // Movement cancels the tail of normal attacks so the character never feels stuck.
+            // (Never when the next hit is already queued – players often hold the stick while tapping attack.)
+            if (canMoveCancel && !attackQueued && buffered == Buffered.None && !input.attackHeld && moveInput.sqrMagnitude > 0.2f &&
+                (Action == ActionKind.Attack || Action == ActionKind.DashAttack))
+                StopAction();
+
+            if (Action == ActionKind.None) Move(dt);
             else
             {
+                moveTime = 0f;
+                Sprinting = false;
                 Visual.SetMoving(0f);
+            }
+        }
+
+        void Move(float dt)
+        {
+            bool moving = moveInput.sqrMagnitude > 0.01f;
+            moveTime = moving ? moveTime + dt : 0f;
+            Sprinting = moving && !Guarding && ChargeAmount <= 0f && moveTime > SprintDelay && moveInput.magnitude > 0.7f;
+
+            float speed = Stats.speed;
+            if (Guarding) speed *= 0.35f;
+            else if (ChargeAmount > 0f) speed *= 0.4f;
+            else if (Sprinting) speed *= 1.35f;
+
+            if (moving)
+            {
+                transform.position = BattleController.ClampToArena(transform.position + moveInput * speed * dt);
+                if (!Guarding) Face(moveInput, 20f * dt);
+                stepTimer -= dt;
+                if (stepTimer <= 0f)
+                {
+                    stepTimer = Sprinting ? 0.24f : 0.32f;
+                    Play("step", Sprinting ? 0.3f : 0.18f);
+                    if (Sprinting) VFX.Dust(Position, 3);
+                }
+            }
+            if (Guarding)
+            {
+                var near = Nearest(CombatTeam.Enemy, Position, 8f);
+                if (near != null) Face(near.Position - Position, 14f * dt);
+            }
+            Visual.SetMoving(moveInput.magnitude, Sprinting);
+        }
+
+        void Buffer(Buffered b)
+        {
+            buffered = b;
+            bufferedAt = Time.time;
+        }
+
+        void ConsumeBuffer()
+        {
+            if (buffered == Buffered.None) return;
+            if (Time.time - bufferedAt > BufferWindow) { buffered = Buffered.None; return; }
+
+            switch (buffered)
+            {
+                case Buffered.Dodge:
+                    if (CanDodge()) { buffered = Buffered.None; StartAction(DodgeRoutine(), ActionKind.Dodge); }
+                    break;
+                case Buffered.Ultimate:
+                    if (UltReady && CanUseAbility(true)) { buffered = Buffered.None; StartAction(UltimateRoutine(), ActionKind.Ultimate); }
+                    else if (!UltReady) buffered = Buffered.None;
+                    break;
+                case Buffered.Skill0:
+                case Buffered.Skill1:
+                case Buffered.Skill2:
+                    int i = buffered - Buffered.Skill0;
+                    if (Cooldowns[i] > 0f) { buffered = Buffered.None; break; }
+                    if (CanUseAbility(false)) { buffered = Buffered.None; StartAction(SkillRoutine(i), ActionKind.Skill); }
+                    break;
+                case Buffered.Attack:
+                    if (Action == ActionKind.Attack || Action == ActionKind.DashAttack)
+                    {
+                        attackQueued = true;
+                        buffered = Buffered.None;
+                    }
+                    else if (Action == ActionKind.None)
+                    {
+                        buffered = Buffered.None;
+                        if (Time.time - lastDodgeEnd < DashAttackWindow) StartAction(DashAttackRoutine(), ActionKind.DashAttack);
+                        else StartAction(ComboRoutine(), ActionKind.Attack);
+                    }
+                    // During a dodge the press stays buffered and becomes a dash attack when the dodge ends.
+                    break;
+            }
+        }
+
+        bool CanDodge()
+        {
+            if (dodgeCooldown > 0f) return false;
+            switch (Action)
+            {
+                case ActionKind.Ultimate:
+                case ActionKind.Dodge:
+                    return false;
+                case ActionKind.Knockdown:
+                    return Time.time - knockdownAt > 0.35f; // quick rise
+                default:
+                    return true;
+            }
+        }
+
+        bool CanUseAbility(bool ultimate)
+        {
+            switch (Action)
+            {
+                case ActionKind.None:
+                case ActionKind.Attack:
+                case ActionKind.DashAttack:
+                case ActionKind.SwitchIn:
+                    return true;
+                case ActionKind.Charged:
+                case ActionKind.Skill:
+                    return ultimate;
+                default:
+                    return false;
             }
         }
 
@@ -152,13 +281,13 @@ namespace HashiraChronicles
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), Mathf.Clamp01(t));
         }
 
-        /// <summary>Soft aim assist: faces the nearest demon, preferring the stick direction.</summary>
+        /// <summary>Soft aim assist: faces the best demon, preferring the stick direction.</summary>
         Combatant AutoAim(float range)
         {
             Combatant best = null;
             float bestScore = float.MaxValue;
             Vector3 stick = moveInput.sqrMagnitude > 0.05f ? moveInput.normalized : Vector3.zero;
-            foreach (var c in Combatant.All)
+            foreach (var c in All)
             {
                 if (c.Team == Team || !c.IsAlive) continue;
                 Vector3 to = c.Position - Position;
@@ -177,6 +306,11 @@ namespace HashiraChronicles
         void StartAction(IEnumerator routine, ActionKind kind)
         {
             StopAction();
+            if (Guarding)
+            {
+                Guarding = false;
+                Visual.Guard(false);
+            }
             Action = kind;
             actionRoutine = StartCoroutine(Wrap(routine));
         }
@@ -186,6 +320,7 @@ namespace HashiraChronicles
             yield return routine;
             Action = ActionKind.None;
             actionRoutine = null;
+            canMoveCancel = false;
         }
 
         void StopAction()
@@ -193,15 +328,14 @@ namespace HashiraChronicles
             if (actionRoutine != null) StopCoroutine(actionRoutine);
             actionRoutine = null;
             if (Action == ActionKind.Ultimate) FinishUltimateEffects();
+            if (Action == ActionKind.Knockdown) Visual.GetUp(0.15f);
             Action = ActionKind.None;
             attackQueued = false;
+            canMoveCancel = false;
         }
 
         // ------------------------------------------------------------------ Normal attacks
 
-        static readonly float[] SwingFrom = { -110f, 100f, -40f, 120f, -150f };
-        static readonly float[] SwingTo = { 100f, -110f, 60f, -120f, 150f };
-        static readonly float[] SwingPitch = { 20f, 10f, 70f, 5f, 15f };
         static readonly float[] SlashRoll = { 10f, -15f, 70f, -5f, 0f };
 
         IEnumerator ComboRoutine()
@@ -209,57 +343,101 @@ namespace HashiraChronicles
             while (true)
             {
                 attackQueued = false;
+                canMoveCancel = false;
                 int step = comboIndex;
                 bool finisher = step >= Def.comboMultipliers.Length - 1;
                 float spd = Def.attackSpeed;
                 var target = AutoAim(5.5f);
 
-                // Lunge toward the target so combos connect.
                 float lunge = 0.35f;
                 if (target != null)
                 {
                     float d = Vector3.Distance(target.Position, Position) - target.Radius - 1.2f;
-                    lunge = Mathf.Clamp(d, 0f, 1.6f);
+                    lunge = Mathf.Clamp(d, 0f, 1.8f);
                 }
-                Visual.Swing(SwingFrom[step % 5], SwingTo[step % 5], 0.12f / spd, SwingPitch[step % 5]);
-                if (finisher) Visual.Spin(0.18f);
+                Visual.Attack(step, 0.12f / spd);
+                float windup = 0.07f / spd;
                 float t = 0f;
                 Vector3 start = Position;
-                while (t < 0.08f / spd)
+                while (t < windup)
                 {
                     t += Time.deltaTime;
-                    transform.position = BattleController.ClampToArena(start + transform.forward * lunge * Mathf.Clamp01(t / (0.08f / spd)));
+                    transform.position = BattleController.ClampToArena(start + transform.forward * lunge * Mathf.Clamp01(t / windup));
                     yield return null;
                 }
 
                 var tag = AttackTag.Basic(Def.comboMultipliers[step], ElementColor);
-                float range = 2.6f, arc = 160f;
+                float range = 2.7f, arc = 170f;
                 if (finisher)
                 {
-                    tag.knockback = 5f;
-                    tag.stagger = 3f;
-                    tag.hitStop = 0.07f;
-                    tag.shake = 0.3f;
-                    range = 3.2f;
+                    tag.knockback = 6f;
+                    tag.stagger = 5f;
+                    tag.hitStop = 0.08f;
+                    tag.shake = 0.35f;
+                    tag.heavy = true;
+                    range = 3.3f;
                     arc = 360f;
                 }
+                else if (step == 2)
+                {
+                    tag.stagger = 1.6f;
+                    tag.launch = true; // third hit pops light demons into the air for juggles
+                }
                 CombatSystem.HitArc(this, Position, transform.forward, range, arc, tag);
-                VFX.Slash(Position, transform.forward, range, finisher ? 330f : 150f, SlashRoll[step % 5], ElementColor, 0.2f);
+                VFX.Slash(Position, transform.forward, range, finisher ? 330f : 160f, SlashRoll[step % 5], ElementColor, 0.2f);
                 if (finisher) VFX.Shockwave(Position, range, ElementColor, 0.3f);
-                if (GameManager.Instance != null) GameManager.Instance.Audio.Play("slash", 0.5f);
+                Play(finisher ? "heavy" : "slash", finisher ? 0.7f : 0.5f);
 
                 comboIndex = finisher ? 0 : step + 1;
 
-                float recovery = (finisher ? 0.42f : 0.22f) / spd;
+                float recovery = (finisher ? 0.4f : 0.2f) / spd;
+                float cancelAt = (finisher ? 0.22f : 0.07f) / spd;
                 float r = 0f;
                 while (r < recovery)
                 {
                     r += Time.deltaTime;
-                    // Queued input chains immediately once the swing is committed – snappy combos.
-                    if (attackQueued && r > 0.08f / spd && !finisher) break;
+                    if (r >= cancelAt) canMoveCancel = true;
+                    if (attackQueued && r >= cancelAt) break;
                     yield return null;
                 }
                 if (!attackQueued) yield break;
+            }
+        }
+
+        IEnumerator DashAttackRoutine()
+        {
+            canMoveCancel = false;
+            AutoAim(7f);
+            Visual.DashAttack(0.14f);
+            Play("dash", 0.6f);
+            var tag = AttackTag.Basic(1.3f, ElementColor);
+            tag.stagger = 2.5f;
+            tag.knockback = 3f;
+            var hit = new System.Collections.Generic.HashSet<Combatant>();
+            Vector3 start = Position;
+            Vector3 dir = transform.forward;
+            float t = 0f;
+            while (t < 0.14f)
+            {
+                t += Time.deltaTime;
+                transform.position = BattleController.ClampToArena(start + dir * 4.2f * Mathf.Clamp01(t / 0.14f));
+                CombatSystem.HitRadius(this, Position, 1.6f, tag, hit);
+                yield return null;
+            }
+            VFX.Flash(MeshFactory.Line(), start + Vector3.up, Quaternion.LookRotation(dir), new Vector3(1.2f, 1f, 4.2f), new Vector3(0.05f, 1f, 4.2f), ElementColor, 0.25f);
+            comboIndex = 1; // flows straight into the 2nd combo hit
+            float r = 0f;
+            while (r < 0.2f)
+            {
+                r += Time.deltaTime;
+                if (r > 0.06f) canMoveCancel = true;
+                if (attackQueued) break;
+                yield return null;
+            }
+            if (attackQueued)
+            {
+                Action = ActionKind.Attack;
+                yield return ComboRoutine();
             }
         }
 
@@ -267,43 +445,47 @@ namespace HashiraChronicles
         {
             AutoAim(6f);
             Visual.SetCharge(0f, ElementColor);
-            Visual.Swing(-160f, 160f, 0.16f, 25f);
+            Visual.HeavyAttack(0.16f);
             yield return new WaitForSeconds(0.06f);
             var tag = AttackTag.Basic(Def.chargedMultiplier, ElementColor);
-            tag.knockback = 7f;
-            tag.stagger = 6f;
-            tag.hitStop = 0.09f;
-            tag.shake = 0.4f;
-            CombatSystem.HitArc(this, Position, transform.forward, 4.2f, 200f, tag);
-            VFX.Slash(Position, transform.forward, 4.2f, 200f, 0f, ElementColor, 0.3f);
+            tag.knockback = 8f;
+            tag.stagger = 7f;
+            tag.hitStop = 0.1f;
+            tag.shake = 0.45f;
+            tag.heavy = true;
+            CombatSystem.HitArc(this, Position, transform.forward, 4.4f, 210f, tag);
+            VFX.Slash(Position, transform.forward, 4.4f, 210f, 0f, ElementColor, 0.3f);
             VFX.Breath(Position + transform.forward * 2f, ElementColor, 30);
-            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("heavy", 0.8f);
+            VFX.Dust(Position + transform.forward * 1.5f, 10);
+            Play("heavy", 0.9f);
             UltGauge = Mathf.Min(UltMax, UltGauge + 3f);
-            yield return new WaitForSeconds(0.35f);
+            yield return new WaitForSeconds(0.32f);
             comboIndex = 0;
         }
 
-        // ------------------------------------------------------------------ Dodge
+        // ------------------------------------------------------------------ Dodge / guard / parry
 
         IEnumerator DodgeRoutine()
         {
             Vector3 dir = moveInput.sqrMagnitude > 0.05f ? moveInput.normalized : -transform.forward;
-            dodgeCooldown = 0.45f;
+            dodgeCooldown = 0.4f;
             const float duration = 0.2f;
-            Health.GrantInvulnerability(0.32f);
-            VFX.Smoke(Position, new Color(0.9f, 0.9f, 1f, 0.5f), 8);
-            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("dodge", 0.6f);
+            Health.GrantInvulnerability(0.3f);
+            Visual.Dodge(dir, duration);
+            VFX.Dust(Position, 6);
+            Play("dodge", 0.6f);
             Vector3 start = Position;
             float t = 0f;
             while (t < duration)
             {
                 t += Time.deltaTime;
                 float k = 1f - Mathf.Pow(1f - Mathf.Clamp01(t / duration), 2f);
-                transform.position = BattleController.ClampToArena(start + dir * 4.2f * k);
+                transform.position = BattleController.ClampToArena(start + dir * 4.5f * k);
                 yield return null;
             }
             if (moveInput.sqrMagnitude > 0.05f) Face(moveInput, 1f);
-            yield return new WaitForSeconds(0.05f);
+            lastDodgeEnd = Time.time;
+            yield return new WaitForSeconds(0.04f);
         }
 
         void OnEvaded(DamageInfo info)
@@ -315,8 +497,47 @@ namespace HashiraChronicles
             TimeController.SlowMotion(0.25f, 0.6f);
             Health.GrantInvulnerability(0.4f);
             DamageNumbers.SpawnText(Position + Vector3.up * 2.4f, "PERFECT DODGE", new Color(0.6f, 0.9f, 1f), 48f);
-            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("perfect", 0.8f);
+            Play("perfect", 0.8f);
             GameEvents.RaisePerfectDodge();
+        }
+
+        /// <summary>Guard blocks frontal hits (20% chip damage); pressing guard just before a hit parries it.</summary>
+        bool GuardFilter(ref DamageInfo info)
+        {
+            if (!Guarding || info.source == null || info.source.Team == Team) return true;
+            Vector3 to = info.source.Position - Position;
+            to.y = 0f;
+            if (to.sqrMagnitude > 0.01f && Vector3.Dot(transform.forward, to.normalized) < 0.1f) return true;
+
+            if (Time.time - guardPressedAt <= ParryWindow && Time.unscaledTime - lastParry > 0.3f)
+            {
+                Parry(info.source);
+                return false;
+            }
+            info.amount = Mathf.Max(1f, Mathf.Round(info.amount * 0.2f));
+            info.blocked = true;
+            info.staggerPower = 0f;
+            info.knockback *= 0.35f;
+            VFX.HitSpark(Position + Vector3.up * 1.1f + transform.forward * 0.5f, new Color(1f, 0.9f, 0.6f), 10);
+            Play("block", 0.6f);
+            return true;
+        }
+
+        void Parry(Combatant attacker)
+        {
+            lastParry = Time.unscaledTime;
+            Health.GrantInvulnerability(0.35f);
+            var e = attacker as EnemyController;
+            if (e != null) e.OnParried(this);
+            UltGauge = Mathf.Min(UltMax, UltGauge + 15f);
+            TimeController.SlowMotion(0.2f, 0.45f);
+            VFX.HitSpark(Position + Vector3.up * 1.2f + transform.forward * 0.6f, Color.white, 30);
+            VFX.Shockwave(Position, 2.5f, Color.white, 0.25f);
+            VFX.ImpactLight(Position + Vector3.up, Color.white, 6f, 0.2f);
+            DamageNumbers.SpawnText(Position + Vector3.up * 2.4f, "PARRY!", new Color(1f, 0.95f, 0.5f), 56f);
+            if (CameraController.Instance != null) CameraController.Instance.Punch(0.9f, 0.25f);
+            GameEvents.RaiseImpact(0.6f);
+            Play("parry", 1f);
         }
 
         // ------------------------------------------------------------------ Skills & ultimate
@@ -326,8 +547,9 @@ namespace HashiraChronicles
             var ab = Def.skills[index];
             Cooldowns[index] = ab.cooldown;
             AutoAim(ab.shape == AbilityShape.Wave || ab.shape == AbilityShape.Dash ? ab.range + 2f : 7f);
+            Visual.Skill(index, 0.4f);
             GameEvents.RaiseSkillUsed(this, ab);
-            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("skill", 0.7f);
+            Play("skill", 0.7f);
             yield return AbilitySystem.Execute(this, ab, SkillLevelMult(index), false, new DamageTally());
         }
 
@@ -339,12 +561,15 @@ namespace HashiraChronicles
             Health.PushInvulnerable();
             ultimateActive = true;
             GameEvents.RaiseUltimateStarted(this, ab);
-            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("ultimate", 1f);
-            if (CameraController.Instance != null) CameraController.Instance.SetZoom(0.45f, 8f);
-            TimeController.SlowMotion(0.12f, 0.9f);
+            Play("ultimate", 1f);
+            Visual.Ultimate();
+            if (CameraController.Instance != null) CameraController.Instance.PlayUltimateCinematic(transform, 0.95f);
+            SceneLighting.UltimateMood(ElementColor, 1.8f);
+            TimeController.SlowMotion(0.12f, 0.95f);
             VFX.Breath(Position, ElementColor, 80);
+            VFX.ImpactLight(Position + Vector3.up * 1.5f, ElementColor, 8f, 1f);
             Visual.SetCharge(1f, ElementColor);
-            yield return new WaitForSecondsRealtime(0.9f);
+            yield return new WaitForSecondsRealtime(0.95f);
 
             Visual.SetCharge(0f, ElementColor);
             if (CameraController.Instance != null)
@@ -352,6 +577,7 @@ namespace HashiraChronicles
                 CameraController.Instance.SetZoom(1.15f, 3f);
                 CameraController.Instance.Shake(0.6f);
             }
+            GameEvents.RaiseImpact(1f);
             var tally = new DamageTally();
             yield return AbilitySystem.Execute(this, ab, SkillLevelMult(3), true, tally);
             yield return new WaitForSeconds(0.2f);
@@ -359,16 +585,20 @@ namespace HashiraChronicles
             GameEvents.RaiseUltimateFinished(this, tally.total);
         }
 
-        bool ultimateActive;
-
         void FinishUltimateEffects()
         {
             if (!ultimateActive) return;
             ultimateActive = false;
             Health.PopInvulnerable();
             Visual.SetCharge(0f, ElementColor);
-            if (CameraController.Instance != null) CameraController.Instance.SetZoom(1f, 3f);
+            if (CameraController.Instance != null)
+            {
+                CameraController.Instance.EndCinematic();
+                CameraController.Instance.SetZoom(1f, 3f);
+            }
         }
+
+        // ------------------------------------------------------------------ Switching
 
         /// <summary>Tag-in attack when switched onto the field.</summary>
         public void OnSwitchIn()
@@ -387,8 +617,8 @@ namespace HashiraChronicles
             tag.knockback = 4f;
             tag.stagger = 3f;
             CombatSystem.HitRadius(this, Position, 3.2f, tag);
-            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("switch", 0.7f);
-            yield return new WaitForSeconds(0.25f);
+            Play("switch", 0.7f);
+            yield return new WaitForSeconds(0.2f);
         }
 
         public void OnSwitchOut()
@@ -397,24 +627,68 @@ namespace HashiraChronicles
             ChargeAmount = 0f;
             attackHeldLast = false;
             comboIndex = 0;
+            buffered = Buffered.None;
+            Guarding = false;
+            Sprinting = false;
             knockVelocity = Vector3.zero;
             Visual.SetCharge(0f, ElementColor);
             Visual.ResetPose();
         }
 
-        // ------------------------------------------------------------------ Damage
+        // ------------------------------------------------------------------ End of battle
+
+        public void PlayVictory()
+        {
+            StopAction();
+            Guarding = false;
+            Visual.SetMoving(0f);
+            Visual.Victory();
+        }
+
+        public void PlayDefeat()
+        {
+            StopAction();
+            Visual.Defeat();
+        }
+
+        // ------------------------------------------------------------------ Damage reactions
 
         public override void OnHitReceived(DamageInfo info)
         {
+            if (info.blocked)
+            {
+                Visual.Flash(Color.white, 0.4f);
+                knockVelocity += info.knockback;
+                return;
+            }
             Visual.Flash(new Color(1f, 0.2f, 0.2f), 1f);
             UltGauge = Mathf.Min(UltMax, UltGauge + 4f);
             knockVelocity += info.knockback * 1.5f;
-            // Heavy hits interrupt normal attacks and charging (never dodges/skills/ultimates).
-            if (info.staggerPower >= 3f && (Action == ActionKind.Attack || Action == ActionKind.None))
-            {
-                StopAction();
-                attackHeldTime = 0f;
-            }
+            if (Action == ActionKind.Ultimate || Action == ActionKind.Skill || Action == ActionKind.Knockdown) return; // super armour
+
+            Vector3 from = info.source != null ? info.source.Position - Position : -transform.forward;
+            bool heavy = info.staggerPower >= 4f && info.amount >= Health.Max * 0.08f;
+            if (heavy) StartAction(KnockdownRoutine(from), ActionKind.Knockdown);
+            else if (info.staggerPower >= 2.5f && Action != ActionKind.Dodge) StartAction(HitStunRoutine(from, 0.26f), ActionKind.HitStun);
+            else Visual.Hit(from);
+        }
+
+        IEnumerator HitStunRoutine(Vector3 from, float duration)
+        {
+            Visual.Hit(from);
+            yield return new WaitForSeconds(duration);
+        }
+
+        IEnumerator KnockdownRoutine(Vector3 from)
+        {
+            knockdownAt = Time.time;
+            Health.GrantInvulnerability(1.15f); // never juggle the player
+            Visual.Knockdown();
+            Play("thud", 0.7f);
+            VFX.Dust(Position, 8);
+            yield return new WaitForSeconds(0.75f);
+            Visual.GetUp(0.35f);
+            yield return new WaitForSeconds(0.35f);
         }
 
         public override void OnDealtDamage(DamageInfo info, Combatant target)

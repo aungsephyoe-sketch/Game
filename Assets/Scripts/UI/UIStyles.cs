@@ -15,7 +15,7 @@ namespace HashiraChronicles
         public static readonly Color Bad = new Color(1f, 0.4f, 0.4f);
 
         public static GUIStyle Title, H1, H2, Body, Small, Center, CenterSmall, Right, Button, ButtonBig, ButtonSmall, Big;
-        public static Texture2D White, Circle, Ring;
+        public static Texture2D White, Circle, Ring, Vignette;
 
         static readonly Dictionary<int, GUIStyle> sized = new Dictionary<int, GUIStyle>();
 
@@ -25,6 +25,7 @@ namespace HashiraChronicles
             White = MaterialFactory.White;
             Circle = MakeCircle(128, 0f);
             Ring = MakeCircle(128, 0.84f);
+            Vignette = MakeVignette(128);
 
             Body = Label(30, FontStyle.Normal, TextAnchor.UpperLeft, Color.white);
             Small = Label(24, FontStyle.Normal, TextAnchor.UpperLeft, TextDim);
@@ -93,6 +94,23 @@ namespace HashiraChronicles
             var t = new Texture2D(1, 1);
             c.a = 1f;
             t.SetPixel(0, 0, c);
+            t.Apply();
+            return t;
+        }
+
+        static Texture2D MakeVignette(int n)
+        {
+            var t = new Texture2D(n, n, TextureFormat.RGBA32, false);
+            t.wrapMode = TextureWrapMode.Clamp;
+            var px = new Color[n * n];
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float dx = (x + 0.5f) / n * 2f - 1f, dy = (y + 0.5f) / n * 2f - 1f;
+                    float d = Mathf.Clamp01((Mathf.Sqrt(dx * dx + dy * dy) - 0.55f) / 0.6f);
+                    px[y * n + x] = new Color(1f, 1f, 1f, d * d);
+                }
+            t.SetPixels(px);
             t.Apply();
             return t;
         }

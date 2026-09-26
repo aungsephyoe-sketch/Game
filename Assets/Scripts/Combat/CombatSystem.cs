@@ -14,6 +14,10 @@ namespace HashiraChronicles
         public float hitStop;
         public float shake;
         public Color color;
+        /// <summary>Big hit: impact frame, camera punch, impact light, knocks light demons down.</summary>
+        public bool heavy;
+        /// <summary>Pops light demons into the air (juggle).</summary>
+        public bool launch;
 
         public static AttackTag Basic(float mult, Color color)
         {
@@ -84,6 +88,7 @@ namespace HashiraChronicles
         public static float HitArc(Combatant attacker, Vector3 origin, Vector3 forward, float range, float arcDegrees, AttackTag tag,
             HashSet<Combatant> exclude = null)
         {
+            if (attacker.Team == CombatTeam.Player) Breakable.HitInArc(origin, forward, range, arcDegrees);
             var targets = Query(attacker, origin, forward, range, arcDegrees);
             float total = 0f;
             // Copy because applying damage can kill/disable targets and mutate the registry.
@@ -114,8 +119,10 @@ namespace HashiraChronicles
             if (dir.sqrMagnitude < 0.001f) dir = attacker.transform.forward;
             info.knockback = dir.normalized * tag.knockback;
 
-            if (!target.Health.TakeDamage(info)) return 0f;
+            if (!target.Health.TakeDamage(ref info)) return 0f;
 
+            info.launch = tag.launch;
+            info.heavy = tag.heavy;
             target.OnHitReceived(info);
             attacker.OnDealtDamage(info, target);
 
@@ -127,7 +134,16 @@ namespace HashiraChronicles
                 GameManager.Instance.Audio.Play(info.crit ? "crit" : "hit", playerHit ? 0.8f : 0.55f);
             TimeController.HitStop(info.crit ? tag.hitStop * 1.6f : tag.hitStop);
             if (CameraController.Instance != null)
-                CameraController.Instance.Shake(playerHit ? 0.35f : (info.crit ? tag.shake * 1.5f : tag.shake));
+                CameraController.Instance.Shake(info.blocked ? 0.08f : playerHit ? 0.35f : (info.crit ? tag.shake * 1.5f : tag.shake));
+
+            // Heavy impacts get the full treatment: impact frame, zoom punch, light flash, dust.
+            if (!playerHit && (tag.heavy || (info.crit && tag.isUltimate)))
+            {
+                GameEvents.RaiseImpact(tag.isUltimate ? 0.35f : 0.55f);
+                if (CameraController.Instance != null) CameraController.Instance.Punch(0.6f, 0.18f);
+                VFX.ImpactLight(hitPos, tag.color, 5f, 0.18f);
+                VFX.Dust(target.Position, 6);
+            }
 
             GameEvents.RaiseDamageDealt(info, target);
             return info.amount;

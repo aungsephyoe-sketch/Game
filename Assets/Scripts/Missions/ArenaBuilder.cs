@@ -39,10 +39,11 @@ namespace HashiraChronicles
             var trunkMat = MaterialFactory.Toon(new Color(0.16f, 0.1f, 0.1f));
             var leafMat = MaterialFactory.Toon(theme.foliage, 0.02f, theme.foliage * 0.15f);
             var rng = new System.Random(7);
-            for (int i = 0; i < 26; i++)
+            int trees = Mathf.RoundToInt(26 * GameSettings.SceneryDensity);
+            for (int i = 0; i < trees; i++)
             {
                 float a = (float)(rng.NextDouble() * Mathf.PI * 2f);
-                float r = 20f + (float)rng.NextDouble() * 9f;
+                float r = 28f + (float)rng.NextDouble() * 8f;
                 var pos = new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r);
                 float h = 3f + (float)rng.NextDouble() * 3f;
                 MeshFactory.Primitive(PrimitiveType.Cylinder, root.transform, pos + Vector3.up * h * 0.5f, new Vector3(0.5f, h * 0.5f, 0.5f), trunkMat);
@@ -58,6 +59,7 @@ namespace HashiraChronicles
                 MaterialFactory.Toon(new Color(1f, 0.95f, 0.8f), 0f, new Color(1f, 0.95f, 0.8f)));
             moon.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
+            ArenaDecor.Build(theme, root.transform, theme.GetHashCode());
             if (theme.petals) BuildPetals(root.transform, theme.foliage);
 
             RenderSettings.fog = true;
@@ -67,6 +69,8 @@ namespace HashiraChronicles
             RenderSettings.fogEndDistance = 75f;
             RenderSettings.ambientLight = Color.Lerp(theme.sky, Color.white, 0.25f);
             if (Camera.main != null) Camera.main.backgroundColor = theme.sky;
+            // Merge the hundreds of static set pieces into a few draw calls (big win on mobile).
+            StaticBatchingUtility.Combine(root);
             return root;
         }
 

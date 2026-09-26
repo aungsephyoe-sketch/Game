@@ -43,6 +43,7 @@ namespace HashiraChronicles
             Screen.autorotateToLandscapeRight = true;
             QualitySettings.shadowDistance = 45f;
 
+            GameSettings.Load();
             GameDatabase.EnsureBuilt();
             Data = SaveSystem.Load();
 
@@ -79,6 +80,9 @@ namespace HashiraChronicles
             cam.farClipPlane = 200f;
             Cam = cam.GetComponent<CameraController>();
             if (Cam == null) Cam = cam.gameObject.AddComponent<CameraController>();
+            if (cam.GetComponent<PostFX>() == null) cam.gameObject.AddComponent<PostFX>();
+            cam.allowHDR = false;
+            cam.allowMSAA = true;
         }
 
         void SetupLight()
@@ -107,8 +111,18 @@ namespace HashiraChronicles
 
         public void GoTo(GameScreen screen)
         {
+            if (screen != GameScreen.Battle && CurrentScreen == GameScreen.Results) Audio.SetMusicState(MusicState.Menu);
             CurrentScreen = screen;
             if (screen != GameScreen.Battle && Stage != null) Stage.Show(Data);
+        }
+
+        GameScreen settingsReturn = GameScreen.MainMenu;
+        public GameScreen SettingsReturn { get { return settingsReturn; } }
+
+        public void OpenSettings()
+        {
+            settingsReturn = CurrentScreen;
+            GoTo(GameScreen.Settings);
         }
 
         public void ShowComingSoon(string feature)
@@ -150,7 +164,6 @@ namespace HashiraChronicles
             if (Battle != null) Destroy(Battle.gameObject);
             Battle = null;
             TimeController.ResetAll();
-            Audio.PlayMusic(false);
             GoTo(GameScreen.Results);
         }
 

@@ -34,6 +34,7 @@ namespace HashiraChronicles
             GameEvents.SkillUsed += OnSkillUsed;
             GameEvents.UltimateStarted += OnUltimateStarted;
             GameEvents.UltimateFinished += OnUltimateFinished;
+            GameEvents.Impact += OnImpact;
         }
 
         void OnDisable()
@@ -42,6 +43,16 @@ namespace HashiraChronicles
             GameEvents.SkillUsed -= OnSkillUsed;
             GameEvents.UltimateStarted -= OnUltimateStarted;
             GameEvents.UltimateFinished -= OnUltimateFinished;
+            GameEvents.Impact -= OnImpact;
+        }
+
+        float impactTime = -10f;
+        float impactStrength;
+
+        void OnImpact(float strength)
+        {
+            impactTime = Time.unscaledTime;
+            impactStrength = Mathf.Clamp01(strength);
         }
 
         void OnBanner(string title, string sub)
@@ -111,6 +122,7 @@ namespace HashiraChronicles
                 case GameScreen.Battle: DrawBattleHUD(); break;
                 case GameScreen.Results: DrawResults(); break;
                 case GameScreen.ComingSoon: DrawComingSoon(); break;
+                case GameScreen.Settings: DrawSettings(); break;
             }
 
             if (Time.unscaledTime < toastUntil)
@@ -185,6 +197,7 @@ namespace HashiraChronicles
             Currencies(new Rect(safe.xMax - 980f, safe.y + 28f, 960f, 60f));
             if (Btn(new Rect(safe.xMax - 300f, H - 110f, 280f, 70f), "Daily Missions", UIStyles.ButtonSmall))
                 gm.ShowComingSoon("Daily missions — Phase 3");
+            if (Btn(new Rect(safe.xMax - 300f, H - 270f, 280f, 70f), "Settings", UIStyles.ButtonSmall)) gm.OpenSettings();
             if (Btn(new Rect(safe.xMax - 300f, H - 190f, 280f, 70f), "Reset Save", UIStyles.ButtonSmall))
             {
                 if (Time.unscaledTime - resetArmed < 3f) { gm.ResetSave(); Toast("Progress reset."); }

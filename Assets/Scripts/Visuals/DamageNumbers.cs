@@ -22,6 +22,7 @@ namespace HashiraChronicles
 
         public static void Spawn(Vector3 pos, float amount, bool crit, float elementMultiplier, bool playerHit)
         {
+            if (!GameSettings.ShowDamageNumbers && !playerHit) return;
             if (Entries.Count > 60) Entries.RemoveAt(0);
             var e = new Entry
             {

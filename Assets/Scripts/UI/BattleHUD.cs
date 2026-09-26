@@ -11,12 +11,15 @@ namespace HashiraChronicles
             if (b == null || b.Team == null || b.Mission == null) return;
             var cam = Camera.main;
 
+            DrawLowHealth(b);
             DrawEnemyBars(cam);
             DrawDamageNumbers(cam);
+            DrawImpactFrame();
             DrawObjectives(b);
             DrawPortraits(b);
             DrawBossBar(b);
             DrawCombo(b);
+            DrawPlayerBars(b);
             DrawControls(b);
             DrawCallouts();
 
@@ -96,6 +99,12 @@ namespace HashiraChronicles
             float pulse = 1f + 0.15f * Mathf.Clamp01(b.ComboTimer - 1.9f) * 3f;
             var style = UIStyles.Sized(UIStyles.Right, Mathf.RoundToInt(64f * pulse));
             UIStyles.Outlined(new Rect(safe.xMax - 560f, H * 0.32f, 520f, 90f), b.Combo + " <size=34>HITS</size>", style, UIStyles.Gold, 3f);
+            string rank = b.Combo >= 100 ? "LEGENDARY" : b.Combo >= 50 ? "AWESOME!" : b.Combo >= 25 ? "GREAT!" : b.Combo >= 10 ? "GOOD" : "";
+            if (rank != "")
+            {
+                Color rc = b.Combo >= 100 ? new Color(1f, 0.4f, 1f) : b.Combo >= 50 ? new Color(1f, 0.45f, 0.3f) : b.Combo >= 25 ? new Color(0.4f, 0.9f, 1f) : Color.white;
+                UIStyles.Outlined(new Rect(safe.xMax - 560f, H * 0.32f + 80f, 520f, 50f), rank, UIStyles.Sized(UIStyles.Right, 34), rc, 3f);
+            }
         }
 
         void DrawControls(BattleController b)
@@ -116,6 +125,7 @@ namespace HashiraChronicles
             if (pc.ChargeAmount > 0f) UIStyles.CircleFill(atk.center, atk.radius, pc.ChargeAmount, new Color(el.r, el.g, el.b, 0.45f));
 
             DrawButton(HudLayout.Dodge, "DODGE", "", 0f, controls.Pressed[1], new Color(0.7f, 0.8f, 1f));
+            DrawButton(HudLayout.Guard, "GUARD", pc.Guarding ? "PARRY: TAP" : "", 0f, Mathf.Max(controls.Pressed[6], pc.Guarding ? 0.6f : 0f), new Color(0.9f, 0.9f, 0.6f));
 
             for (int i = 0; i < 3; i++)
             {
@@ -248,16 +258,81 @@ namespace HashiraChronicles
             }
         }
 
+        bool pauseSettings;
+
         void DrawPauseMenu()
         {
             UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(0f, 0f, 0f, 0.6f));
-            var r = new Rect(W * 0.5f - 450f, H * 0.5f - 330f, 900f, 660f);
+            if (pauseSettings)
+            {
+                DrawSettingsPanel(new Rect(W * 0.5f - 800f, 60f, 1600f, H - 230f), true);
+                if (Btn(new Rect(W * 0.5f - 250f, H - 150f, 500f, 100f), "BACK", UIStyles.ButtonBig)) pauseSettings = false;
+                return;
+            }
+            var r = new Rect(W * 0.5f - 450f, H * 0.5f - 400f, 900f, 800f);
             UIStyles.PanelBox(r);
             GUI.Label(new Rect(r.x, r.y + 30f, r.width, 80f), "PAUSED", UIStyles.Big);
             GUI.Label(new Rect(r.x + 60f, r.y + 130f, r.width - 120f, 200f),
-                "Keyboard: WASD move · J attack (hold = charge) · Space dodge\n1 2 3 skills · R ultimate · Q/E switch slayer · Esc pause", UIStyles.CenterSmall);
+                "Keyboard: WASD move · J attack (hold = charge) · Space dodge · F guard/parry\n1 2 3 skills · R ultimate · Q/E switch slayer · Esc pause", UIStyles.CenterSmall);
             if (Btn(new Rect(r.x + 150f, r.y + 330f, r.width - 300f, 110f), "RESUME", UIStyles.ButtonBig)) gm.TogglePause();
-            if (Btn(new Rect(r.x + 150f, r.y + 470f, r.width - 300f, 110f), "RETREAT")) gm.RetreatFromBattle();
+            if (Btn(new Rect(r.x + 150f, r.y + 470f, r.width - 300f, 110f), "SETTINGS")) pauseSettings = true;
+            if (Btn(new Rect(r.x + 150f, r.y + 610f, r.width - 300f, 110f), "RETREAT")) gm.RetreatFromBattle();
+        }
+
+        /// <summary>Big HP + energy bars for the active slayer (bottom centre).</summary>
+        void DrawPlayerBars(BattleController b)
+        {
+            var pc = b.Team.Active;
+            if (pc == null) return;
+            float w = Mathf.Min(760f, W - 1500f);
+            if (w < 380f) w = 380f;
+            var r = new Rect(W * 0.5f - w * 0.5f, H - 88f - (H - safe.yMax), w, 26f);
+            float hp = pc.Health.Normalized;
+            Color hc = hp > 0.5f ? new Color(0.35f, 0.9f, 0.45f) : hp > 0.25f ? new Color(1f, 0.8f, 0.25f) : UIStyles.Bad;
+            UIStyles.Bar(r, hp, hc);
+            UIStyles.Outlined(new Rect(r.x, r.y - 38f, w, 36f), pc.Def.displayName + "   <size=22>" + Mathf.CeilToInt(pc.Health.Current).ToString("N0") + " / " +
+                Mathf.CeilToInt(pc.Health.Max).ToString("N0") + "</size>", UIStyles.Sized(UIStyles.CenterSmall, 26), Color.white, 2f);
+            Color el = ElementChart.ColorOf(pc.Element);
+            UIStyles.Bar(new Rect(r.x, r.yMax + 6f, w, 14f), pc.UltGauge / PlayerCharacter.UltMax, pc.UltReady ? UIStyles.Gold : el);
+            if (pc.Sprinting) UIStyles.Colored(new Rect(r.xMax + 12f, r.y - 4f, 200f, 34f), "» SPRINT", UIStyles.Sized(UIStyles.Body, 24), new Color(0.8f, 0.9f, 1f));
+        }
+
+        /// <summary>Impact frame (flash) + radial speed lines on heavy hits, parries and ultimates.</summary>
+        void DrawImpactFrame()
+        {
+            float age = Time.unscaledTime - impactTime;
+            if (age > 0.3f) return;
+            if (age < 0.05f) UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(1f, 1f, 1f, 0.28f * impactStrength));
+            else if (age < 0.09f) UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(0f, 0f, 0f, 0.18f * impactStrength));
+            float a = (1f - age / 0.3f) * impactStrength;
+            var center = new Vector2(W * 0.5f, H * 0.5f);
+            var saved = GUI.matrix;
+            var rng = new System.Random(Mathf.FloorToInt(impactTime * 1000f));
+            int lines = 28;
+            for (int i = 0; i < lines; i++)
+            {
+                float angle = (float)rng.NextDouble() * 360f;
+                float inner = H * (0.42f + (float)rng.NextDouble() * 0.2f);
+                float len = H * (0.3f + (float)rng.NextDouble() * 0.5f);
+                float thick = 2f + (float)rng.NextDouble() * 5f;
+                GUI.matrix = saved;
+                GUIUtility.RotateAroundPivot(angle, center);
+                UIStyles.Rect(new Rect(center.x + inner, center.y - thick * 0.5f, len, thick), new Color(1f, 1f, 1f, 0.55f * a));
+            }
+            GUI.matrix = saved;
+        }
+
+        void DrawLowHealth(BattleController b)
+        {
+            var pc = b.Team.Active;
+            if (pc == null || !pc.IsAlive) return;
+            float danger = Mathf.Clamp01((0.3f - pc.Health.Normalized) / 0.3f);
+            if (danger <= 0f) return;
+            float pulse = 0.55f + 0.45f * Mathf.Sin(Time.unscaledTime * 6f);
+            var old = GUI.color;
+            GUI.color = new Color(0.9f, 0.05f, 0.05f, danger * pulse * 0.8f);
+            GUI.DrawTexture(new Rect(0f, 0f, W, H), UIStyles.Vignette);
+            GUI.color = old;
         }
     }
 }

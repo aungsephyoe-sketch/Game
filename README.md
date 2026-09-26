@@ -30,12 +30,28 @@ To test on a phone, switch the platform to Android/iOS in **File → Build Setti
 | Attack combo (5 hits) | ATTACK | J |
 | Charged attack | Hold ATTACK, release | Hold J |
 | Dodge (i-frames, **perfect dodge** slows time) | DODGE | Space / K |
+| Dash attack | ATTACK right after a dodge | J after Space |
+| Guard (hold) / **Parry** (tap just before a hit) | GUARD | F / Left Shift |
+| Sprint | Keep moving ~0.5 s | Keep moving |
 | Breathing forms 1–3 | 1 / 2 / 3 | 1 2 3 or U I O |
 | Ultimate | ULT (when gauge is full) | R / L |
 | Switch slayer | Tap a portrait | Q / E / Tab |
 | Pause | II | Esc / P |
 
 ## What's in the slice
+
+**Polish pass (v0.2):**
+- Input buffering and cancel windows (combo → skill/dodge/guard/move), dash attacks, sprint, guard and parry,
+  hit stun, knockdown with quick-rise, super armour on skills.
+- Demons flank using surround slots, fast/elite ones dodge your swings, ranged ones flee, "!" detection pops,
+  launches and air juggles, knockdowns, parry staggers, elemental weakness breaks guard faster.
+- Camera frames enemies and the boss, punches in on heavy hits, and switches to an orbiting cinematic angle for ultimates and victories.
+- Impact frames, speed lines, radial blur, bloom and colour grading (High/Ultra), impact lights, dust, per-element ability flourishes.
+- Arenas get houses, a torii gate, flickering stone lanterns, grass, fireflies and breakable crates/barrels (sometimes heal), all static-batched.
+- Adaptive music that crossfades explore → combat → boss → victory/defeat, a low-HP heartbeat, ducking under ultimates, plus new SFX.
+- Settings: Low/Medium/High/Ultra graphics (auto-detected), music/SFX volume, camera shake, damage numbers.
+- Rigged-model support: drop Higgsfield/Mixamo characters in `Assets/Art/…` and run **Hashira Chronicles → Build Character Prefabs**.
+  See [docs/ART_PIPELINE.md](docs/ART_PIPELINE.md).
 
 - **Combat**: responsive 5-hit combos with aim assist and lunges, charged attack, dodge cancel,
   i-frames and perfect-dodge slow motion, hit-stop, screen shake, sword trails, damage numbers,

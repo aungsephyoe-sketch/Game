@@ -14,7 +14,14 @@ namespace HashiraChronicles
         public bool isUltimate;
         /// <summary>Ignores invulnerability (e.g. falling hazards). Nothing uses it for dodgeable attacks.</summary>
         public bool unavoidable;
+        /// <summary>Set by a guard filter when the hit was blocked (reduced damage, no flinch).</summary>
+        public bool blocked;
+        public bool heavy;
+        public bool launch;
     }
+
+    /// <summary>Lets a combatant modify or cancel incoming damage (guard / parry). Return false to cancel.</summary>
+    public delegate bool DamageFilter(ref DamageInfo info);
 
     /// <summary>HP pool with invulnerability windows (dodge i-frames, ultimates) and damage/death events.</summary>
     public class HealthSystem : MonoBehaviour
@@ -33,6 +40,7 @@ namespace HashiraChronicles
         /// <summary>Fired when an attack connects during invulnerability – used for perfect dodges.</summary>
         public event System.Action<DamageInfo> Evaded;
         public event System.Action Died;
+        public DamageFilter Filter;
 
         public void Init(float max, float current = -1f)
         {
@@ -49,8 +57,10 @@ namespace HashiraChronicles
         public void PushInvulnerable() { invulnerableLocks++; }
         public void PopInvulnerable() { invulnerableLocks = Mathf.Max(0, invulnerableLocks - 1); }
 
-        /// <summary>Returns true if the damage was applied.</summary>
-        public bool TakeDamage(DamageInfo info)
+        public bool TakeDamage(DamageInfo info) { return TakeDamage(ref info); }
+
+        /// <summary>Returns true if the damage was applied. The filter may reduce info.amount.</summary>
+        public bool TakeDamage(ref DamageInfo info)
         {
             if (IsDead) return false;
             if (Invulnerable && !info.unavoidable)
@@ -59,6 +69,7 @@ namespace HashiraChronicles
                 if (ev != null) ev(info);
                 return false;
             }
+            if (Filter != null && !info.unavoidable && !Filter(ref info)) return false;
             Current = Mathf.Max(0f, Current - info.amount);
             var dmg = Damaged;
             if (dmg != null) dmg(info);

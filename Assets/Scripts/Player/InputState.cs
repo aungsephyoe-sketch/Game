@@ -10,6 +10,8 @@ namespace HashiraChronicles
         public bool attackHeld;
         public bool attackUp;
         public bool dodgeDown;
+        public bool guardDown;
+        public bool guardHeld;
         public bool skill1Down;
         public bool skill2Down;
         public bool skill3Down;

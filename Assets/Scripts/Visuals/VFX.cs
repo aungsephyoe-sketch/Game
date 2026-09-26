@@ -9,7 +9,8 @@ namespace HashiraChronicles
     public static class VFX
     {
         static Transform root;
-        static ParticleSystem sparks, embers, smoke;
+        static ParticleSystem sparks, embers, smoke, dust;
+        static Mesh cylinder;
 
         static void Ensure()
         {
@@ -20,6 +21,7 @@ namespace HashiraChronicles
             sparks = CreateSystem("Sparks", true, 0.18f, 0.4f, 5f, 12f, 0.06f, 0.16f, 0.6f);
             embers = CreateSystem("Embers", false, 0.5f, 1.1f, 0.6f, 3f, 0.12f, 0.35f, -0.15f);
             smoke = CreateSystem("Smoke", false, 0.6f, 1.2f, 0.5f, 1.8f, 0.6f, 1.4f, -0.05f, true);
+            dust = CreateSystem("Dust", false, 0.4f, 0.9f, 0.6f, 2.2f, 0.35f, 0.9f, -0.02f, true);
         }
 
         static ParticleSystem CreateSystem(string name, bool stretched, float lifeMin, float lifeMax, float speedMin, float speedMax,
@@ -74,6 +76,7 @@ namespace HashiraChronicles
         static void Emit(ParticleSystem ps, Vector3 pos, Color color, int count, float sizeMul = 1f)
         {
             Ensure();
+            count = Mathf.Max(1, Mathf.RoundToInt(count * GameSettings.ParticleScale));
             var p = new ParticleSystem.EmitParams
             {
                 position = pos,
@@ -110,17 +113,21 @@ namespace HashiraChronicles
         public static FlashFx Flash(Mesh mesh, Vector3 pos, Quaternion rot, Vector3 fromScale, Vector3 toScale, Color color, float duration)
         {
             Ensure();
-            var go = new GameObject("Flash");
-            go.transform.SetPositionAndRotation(pos, rot);
-            go.transform.localScale = fromScale;
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var mr = go.AddComponent<MeshRenderer>();
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            mr.receiveShadows = false;
-            mr.material = MaterialFactory.Additive(color);
-            var fx = go.AddComponent<FlashFx>();
-            fx.Setup(mr.material, color, fromScale, toScale, duration);
+            var fx = FlashFx.Get(mesh);
+            fx.Play(pos, rot, fromScale, toScale, color, duration);
             return fx;
+        }
+
+        /// <summary>Kicked-up ground dust for sprints, dodges, landings and heavy impacts.</summary>
+        public static void Dust(Vector3 pos, int count = 6)
+        {
+            Emit(dust, pos + Vector3.up * 0.15f, new Color(0.62f, 0.55f, 0.48f, 0.45f), count);
+        }
+
+        /// <summary>Brief coloured point light at an impact (budgeted by graphics tier).</summary>
+        public static void ImpactLight(Vector3 pos, Color color, float range, float duration)
+        {
+            ImpactLightFx.Spawn(pos, color, range, duration);
         }
 
         /// <summary>A crescent sword arc in front of the attacker. roll tilts the slash plane.</summary>
@@ -147,16 +154,9 @@ namespace HashiraChronicles
 
         public static void Pillar(Vector3 pos, Color color, float height = 6f, float duration = 0.5f)
         {
-            Ensure();
-            var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            var c = go.GetComponent<Collider>();
-            if (c != null) Object.Destroy(c);
-            go.transform.position = pos + Vector3.up * height * 0.5f;
-            var mr = go.GetComponent<MeshRenderer>();
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            mr.material = MaterialFactory.Additive(color);
-            var fx = go.AddComponent<FlashFx>();
-            fx.Setup(mr.material, color, new Vector3(1.4f, height * 0.5f, 1.4f), new Vector3(0.05f, height * 0.5f, 0.05f), duration);
+            if (cylinder == null) cylinder = Resources.GetBuiltinResource<Mesh>("Cylinder.fbx");
+            Flash(cylinder, pos + Vector3.up * height * 0.5f, Quaternion.identity,
+                new Vector3(1.4f, height * 0.5f, 1.4f), new Vector3(0.05f, height * 0.5f, 0.05f), color, duration);
         }
     }
 }
