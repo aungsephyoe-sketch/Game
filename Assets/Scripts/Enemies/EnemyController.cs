@@ -36,6 +36,7 @@ namespace HashiraChronicles
         Vector3 knockVelocity;
         float strafeSign = 1f;
         float strafeTimer;
+        float zigzagPhase;
 
         protected PlayerCharacter Player
         {
@@ -66,6 +67,7 @@ namespace HashiraChronicles
             visual = CharacterVisual.BuildDemon(def, transform);
             attackTimer = Random.Range(0.6f, 1.6f);
             strafeSign = Random.value < 0.5f ? -1f : 1f;
+            zigzagPhase = Random.Range(0f, 100f);
             StartCoroutine(SpawnRoutine());
         }
 
@@ -140,7 +142,7 @@ namespace HashiraChronicles
             else if (dist > desired)
             {
                 move = to.normalized;
-                if (Def.archetype == EnemyArchetype.Fast) move += Vector3.Cross(Vector3.up, move) * Mathf.Sin(Time.time * 4f + GetInstanceID()) * 0.7f;
+                if (Def.archetype == EnemyArchetype.Fast) move += Vector3.Cross(Vector3.up, move) * Mathf.Sin(Time.time * 4f + zigzagPhase) * 0.7f;
             }
             else if (!CanAttackNow())
             {

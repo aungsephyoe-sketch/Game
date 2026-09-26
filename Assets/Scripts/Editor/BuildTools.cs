@@ -44,7 +44,7 @@ namespace HashiraChronicles.EditorTools
         public static void BuildAndroid()
         {
             ProjectSetup.RunFromMenu();
-            PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.aungsephyoe.hashirachronicles");
+            PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Android, "com.aungsephyoe.hashirachronicles");
             Build(BuildTarget.Android, "Builds/Android/HashiraChronicles.apk");
         }
 

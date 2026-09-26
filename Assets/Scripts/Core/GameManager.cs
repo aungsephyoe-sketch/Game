@@ -19,9 +19,9 @@ namespace HashiraChronicles
         public BattleController Battle { get; private set; }
         public MenuStage Stage { get; private set; }
 
-        public MissionDefinition SelectedMission;
+        [System.NonSerialized] public MissionDefinition SelectedMission;
         public string SelectedCharacterId;
-        public BattleResult LastResult;
+        [System.NonSerialized] public BattleResult LastResult;
         public string ComingSoonFeature = "";
 
         void Awake()
