@@ -171,6 +171,11 @@ namespace HashiraChronicles
                 }
             }
 
+            if (gm.CurrentEncounter != null)
+            {
+                DrawEncounter(gm.CurrentEncounter);
+                return;
+            }
             if (gm.Map.Traveling)
             {
                 var r = new Rect(W * 0.5f - 420f, H - 190f, 840f, 100f);
@@ -224,6 +229,27 @@ namespace HashiraChronicles
             }
         }
 
+        void DrawEncounter(Encounter e)
+        {
+            float k = Mathf.Clamp01(Enter(0f, 0.3f));
+            var r = new Rect(W * 0.5f - 560f, H - 470f + (1f - k) * 80f, 1120f, 400f);
+            UIStyles.PanelBox(r, e.battle ? UIStyles.Crimson : UIStyles.Gold);
+            UIStyles.Outlined(new Rect(r.x + 40f, r.y + 24f, r.width - 80f, 70f), e.title, UIStyles.Sized(UIStyles.H1, 48), e.battle ? UIStyles.Bad : UIStyles.Gold, 2f);
+            GUI.Label(new Rect(r.x + 40f, r.y + 104f, r.width - 80f, 150f), e.text, UIStyles.Sized(UIStyles.Body, 28));
+            if (e.battle)
+                GUI.Label(new Rect(r.x + 40f, r.y + 236f, r.width - 80f, 40f), "<color=#AAAAAA>Enemy Lv." + e.level + " · win for crystals and materials, then continue your journey</color>", UIStyles.Small);
+            if (Btn(new Rect(r.x + 40f, r.yMax - 120f, 500f, 96f), e.accept, UIStyles.ButtonBig))
+            {
+                string msg = gm.ResolveEncounter(true);
+                if (!string.IsNullOrEmpty(msg)) Toast(msg);
+            }
+            if (Btn(new Rect(r.xMax - 540f, r.yMax - 120f, 500f, 96f), e.decline, UIStyles.Button))
+            {
+                string msg = gm.ResolveEncounter(false);
+                if (!string.IsNullOrEmpty(msg)) Toast(msg);
+            }
+        }
+
         bool RegionHasOpenBoss(string regionId)
         {
             foreach (var m in GameDatabase.MissionsInRegion(regionId))
@@ -264,6 +290,7 @@ namespace HashiraChronicles
                 case MissionType.Treasure: return "<color=#FFD36B>◆ TREASURE</color>";
                 case MissionType.Event: return "<color=#FF9CFF>✦ EVENT</color>";
                 case MissionType.Training: return "<color=#9CF29C>TRAINING</color>";
+                case MissionType.Encounter: return "<color=#FF9C7A>ENCOUNTER</color>";
                 default: return "<color=#FFFFFF>STORY</color>";
             }
         }
@@ -294,6 +321,12 @@ namespace HashiraChronicles
             float mx = x + 480f, mw = safe.xMax - mx - 30f;
             var head = new Rect(mx, safe.y + 140f, mw, 130f);
             UIStyles.PanelBox(head, UIStyles.Gold);
+            var chArt = ArtLibrary.Chapter(chapter);
+            if (chArt != null)
+            {
+                ArtLibrary.DrawCover(new Rect(head.x + 3f, head.y + 3f, head.width - 6f, head.height - 6f), chArt, 0.9f);
+                UIStyles.Rect(new Rect(head.x + 3f, head.y + 3f, head.width - 6f, head.height - 6f), new Color(0f, 0f, 0f, 0.5f));
+            }
             GUI.Label(new Rect(head.x + 24f, head.y + 12f, mw - 48f, 50f), chapter.title, UIStyles.H1);
             GUI.Label(new Rect(head.x + 24f, head.y + 70f, mw - 48f, 56f), "<i>" + chapter.synopsis + "</i>", UIStyles.Small);
             float my = head.yMax + 16f;
@@ -334,7 +367,14 @@ namespace HashiraChronicles
             if (m == null) { gm.GoTo(GameScreen.WorldMap); return; }
             var d = gm.Data;
             var prog = d.GetMission(m.id);
-            UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(0f, 0f, 0f, 0.35f));
+            // The destination itself, painted (Higgsfield key art), behind the page.
+            var regionArt = ArtLibrary.Region(m.regionId);
+            if (regionArt != null)
+            {
+                ArtLibrary.DrawCover(new Rect(0f, 0f, W, H), regionArt, Enter(0f, 0.8f));
+                UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(0f, 0f, 0f, 0.5f));
+            }
+            else UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(0f, 0f, 0f, 0.35f));
             TopBar(m.type == MissionType.Training ? "TRAINING" : "MISSION " + m.MissionLabel, GameScreen.WorldMap);
             bool unlocked = d.IsMissionUnlocked(m);
 
@@ -362,11 +402,17 @@ namespace HashiraChronicles
                 (m.allies > 0 ? "   ·   <color=#7FD8FF>" + m.allies + " allied soldiers</color>" : "") + (m.sealPuzzle ? "   ·   <color=#7FD8FF>Seal puzzle</color>" : ""), UIStyles.Small);
             y += 46f;
 
-            // Enemies.
+            // The road ahead.
+            if (!m.training)
+            {
+                GUI.Label(new Rect(x, y, w, 44f), "<color=#FFD36B>ROUTE</color>  <size=19>" + RouteFor(m) + "</size>", UIStyles.Sized(UIStyles.Small, 20));
+                y += 46f;
+            }
+
+            // Bestiary: the demons on this road (concept art + how to beat them).
             GUI.Label(new Rect(x, y, w, 36f), "ENEMIES", UIStyles.Sized(UIStyles.H2, 28));
-            y += 36f;
-            GUI.Label(new Rect(x, y, w, 64f), EnemySummary(m), UIStyles.Sized(UIStyles.Small, 21));
-            y += 64f;
+            y += 38f;
+            y = DrawBestiary(m, new Rect(x, y, w, 84f)) + 8f;
 
             // Boss info.
             var bosses = new List<string>(m.preBosses);
@@ -375,11 +421,14 @@ namespace HashiraChronicles
             {
                 var b = GameDatabase.GetEnemy(bid);
                 if (b == null) continue;
-                var br = new Rect(x, y, w, 76f);
-                UIStyles.Rect(br, new Color(0.35f, 0.04f, 0.06f, 0.55f));
-                GUI.Label(new Rect(br.x + 14f, br.y + 4f, w - 28f, 36f), "<color=#FF6060>☠ BOSS</color>  " + b.displayName + " — <i>" + b.bossTitle + "</i>  " + ElementTag(b.element), UIStyles.Sized(UIStyles.Body, 24));
-                GUI.Label(new Rect(br.x + 14f, br.y + 38f, w - 28f, 36f), "<color=#CCCCCC>" + b.description + "</color>", UIStyles.Sized(UIStyles.Small, 19));
-                y += 84f;
+                var br = new Rect(x, y, w, 72f);
+                UIStyles.Rect(br, new Color(0.35f, 0.04f, 0.06f, 0.6f));
+                var art = ArtLibrary.Monster(b);
+                float tx = br.x + 12f;
+                if (art != null) { ArtLibrary.DrawCover(new Rect(br.x + 4f, br.y + 4f, 64f, 64f), art); tx = br.x + 80f; }
+                GUI.Label(new Rect(tx, br.y + 2f, br.xMax - tx - 8f, 34f), "<color=#FF6060>☠ BOSS</color>  " + b.displayName + " — <i>" + b.bossTitle + "</i>  " + ElementTag(b.element), UIStyles.Sized(UIStyles.Body, 23));
+                GUI.Label(new Rect(tx, br.y + 36f, br.xMax - tx - 8f, 34f), "<color=#FFB0A0>Weakness:</color> <color=#CCCCCC>" + b.weakness + "</color>", UIStyles.Sized(UIStyles.Small, 18));
+                y += 78f;
             }
 
             // Objectives + rewards.
@@ -426,6 +475,52 @@ namespace HashiraChronicles
                          m.regionId != d.currentRegion && System.Array.IndexOf(MapStage.RouteOrder, m.regionId) >= 0 && m.type != MissionType.Training && m.type != MissionType.Event
                              ? "TRAVEL & PLAY" : "PLAY", UIStyles.ButtonBig, 0.35f, true, true, 60f))
                 gm.BeginMission(m);
+        }
+
+        static readonly Dictionary<string, string> routeCache = new Dictionary<string, string>();
+
+        static string RouteFor(MissionDefinition m)
+        {
+            string r;
+            if (!routeCache.TryGetValue(m.id, out r))
+            {
+                r = Journey.Build(m).RouteText();
+                if (!string.IsNullOrEmpty(m.bossId)) r += "  <color=#FF6060>☠</color>";
+                routeCache[m.id] = r;
+            }
+            return r;
+        }
+
+        /// <summary>One card per enemy type: concept art (when available), name, role and the trick to beating it.</summary>
+        float DrawBestiary(MissionDefinition m, Rect row)
+        {
+            var seen = new List<string>();
+            foreach (var wv in m.waves)
+                foreach (var sp in wv.spawns)
+                    if (!seen.Contains(sp.enemyId)) seen.Add(sp.enemyId);
+            float cw = Mathf.Min(300f, (row.width - (seen.Count - 1) * 8f) / Mathf.Max(1, seen.Count));
+            string tip = null;
+            for (int i = 0; i < seen.Count; i++)
+            {
+                var e = GameDatabase.GetEnemy(seen[i]);
+                if (e == null) continue;
+                var r = new Rect(row.x + i * (cw + 8f), row.y, cw, row.height);
+                UIStyles.Rect(r, new Color(0f, 0f, 0f, 0.45f));
+                UIStyles.Rect(new Rect(r.x, r.yMax - 3f, r.width, 3f), ElementChart.ColorOf(e.element));
+                var art = ArtLibrary.Monster(e);
+                float tx = r.x + 8f;
+                if (art != null) { ArtLibrary.DrawCover(new Rect(r.x + 3f, r.y + 3f, 74f, 74f), art); tx = r.x + 84f; }
+                GUI.Label(new Rect(tx, r.y + 6f, r.xMax - tx - 4f, 50f), e.displayName, UIStyles.Sized(UIStyles.Body, 21));
+                GUI.Label(new Rect(tx, r.y + 50f, r.xMax - tx - 4f, 28f), ElementTag(e.element) + " <color=#999999>" + e.archetype + "</color>", UIStyles.Sized(UIStyles.Small, 17));
+                if (r.Contains(Event.current.mousePosition)) tip = e.displayName + ": " + e.weakness;
+            }
+            float y = row.yMax;
+            if (tip != null)
+            {
+                GUI.Label(new Rect(row.x, y + 2f, row.width, 30f), "<color=#FFD36B>" + tip + "</color>", UIStyles.Sized(UIStyles.Small, 18));
+                y += 28f;
+            }
+            return y;
         }
 
         static string EnemySummary(MissionDefinition m)
@@ -536,6 +631,15 @@ namespace HashiraChronicles
             float by = panel.yMax - 124f, bw = 370f, gap = 22f;
             float bx = panel.x + (panel.width - (bw * 4f + gap * 3f)) * 0.5f;
             var next = NextMission(r.mission);
+            if (r.mission.type == MissionType.Encounter)
+            {
+                // An encounter interrupted a journey: pick the road back up.
+                string cont = gm.PendingMission != null ? "CONTINUE JOURNEY ▶" : "CONTINUE ▶";
+                if (AnimBtn(new Rect(bx, by, bw * 2f + gap, 100f), cont, UIStyles.ButtonBig, 1.2f, true, true, 0f)) gm.ContinueJourney();
+                if (AnimBtn(new Rect(bx + (bw + gap) * 2f, by, bw, 100f), "RETURN TO MAP", UIStyles.Button, 1.3f, true, false, 0f)) { gm.PendingMission = null; gm.GoTo(GameScreen.WorldMap); }
+                if (AnimBtn(new Rect(bx + (bw + gap) * 3f, by, bw, 100f), "CHARACTERS", UIStyles.Button, 1.4f, true, false, 0f)) gm.GoTo(GameScreen.Characters);
+                return;
+            }
             if (r.victory)
             {
                 if (next != null && AnimBtn(new Rect(bx, by, bw, 100f), "NEXT MISSION ▶", UIStyles.ButtonBig, 1.2f, true, true, 0f))

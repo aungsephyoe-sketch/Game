@@ -96,6 +96,13 @@ namespace HashiraChronicles
             if (k < 1f) UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(1f, 1f, 1f, (1f - k) * 0.8f));
             var card = new Rect(safe.xMax - 820f + (1f - k) * 400f, H * 0.5f - 200f, 760f, 400f);
             UIStyles.Rect(card, new Color(0f, 0f, 0f, 0.6f * k));
+            var portrait = ArtLibrary.Character(r.def);
+            if (portrait != null)
+            {
+                // The character's master art slides in beside the name card.
+                var pr = new Rect(card.x - 330f - (1f - k) * 200f, H * 0.5f - 330f, 320f, 660f);
+                ArtLibrary.DrawFit(pr, portrait, k);
+            }
             UIStyles.Rect(new Rect(card.x, card.y, 12f, card.height), rc);
             UIStyles.Outlined(new Rect(card.x + 40f, card.y + 20f, 700f, 80f), RarityInfo.Name(r.rarity), UIStyles.Sized(UIStyles.Big, 64), rc, 3f);
             UIStyles.Colored(new Rect(card.x + 40f, card.y + 100f, 700f, 50f), Stars(r.rarity), UIStyles.Sized(UIStyles.H2, 40), UIStyles.Gold);
@@ -127,6 +134,13 @@ namespace HashiraChronicles
                 UIStyles.Rect(rect, new Color(0.05f, 0.04f, 0.08f, 0.9f * k));
                 UIStyles.Frame(rect, rc, r.rarity >= 6 ? 4f : 2f);
                 UIStyles.Colored(new Rect(rect.x, rect.y + 10f, cw, 30f), RarityInfo.Name(r.rarity), UIStyles.Sized(UIStyles.Center, 22), rc);
+                var thumb = ArtLibrary.Character(r.def);
+                if (thumb != null)
+                {
+                    GUI.DrawTextureWithTexCoords(new Rect(rect.x + 2f, rect.y + 2f, cw - 4f, ch - 4f), thumb, new Rect(0.15f, 0.5f, 0.7f, 0.45f));
+                    UIStyles.Rect(new Rect(rect.x + 2f, rect.y + 2f, cw - 4f, ch - 4f), new Color(0f, 0f, 0f, 0.45f));
+                    UIStyles.Colored(new Rect(rect.x, rect.y + 10f, cw, 30f), RarityInfo.Name(r.rarity), UIStyles.Sized(UIStyles.Center, 22), rc);
+                }
                 GUI.Label(new Rect(rect.x + 8f, rect.y + 44f, cw - 16f, 44f), r.def.displayName, UIStyles.Sized(UIStyles.Center, 30));
                 GUI.Label(new Rect(rect.x + 8f, rect.y + 88f, cw - 16f, 30f), "<color=#AAAAAA>" + r.def.versionTitle + "</color>", UIStyles.Sized(UIStyles.Center, 18));
                 GUI.Label(new Rect(rect.x, rect.y + 120f, cw, 40f), r.isNew ? "<color=#7CFF8A>NEW!</color>" : "<color=#FF9C7A>+Ore</color>", UIStyles.Sized(UIStyles.Center, 24));

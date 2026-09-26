@@ -32,11 +32,17 @@ namespace HashiraChronicles
         Material stoneOn, stoneOff;
 
         public bool Traveling { get { return travel != null; } }
+        /// <summary>Called once, halfway along a journey; return true to pause travel (an encounter is shown).</summary>
+        public System.Func<string, string, bool> OnMidway;
+        /// <summary>Travel waits while this returns true (encounter dialog open).</summary>
+        public System.Func<bool> Paused;
+        float arriveZoom;
         public string CurrentRegion { get; private set; }
         public Vector3 CameraFocus { get; private set; }
 
         public void Show(PlayerData data)
         {
+            arriveZoom = 0f;
             EnsureWorld();
             gameObject.SetActive(true);
             CurrentRegion = string.IsNullOrEmpty(data.currentRegion) || !nodes.ContainsKey(data.currentRegion) ? "village" : data.currentRegion;
@@ -110,6 +116,15 @@ namespace HashiraChronicles
                 }
             }
             points.Add(nodes[target].pos);
+            arriveZoom = 0f;
+            string fromRegion = CurrentRegion;
+            float total = 0f;
+            Vector3 prev = token.position;
+            foreach (var p in points) { total += Vector3.Distance(prev, p); prev = p; }
+            float walked = 0f;
+            bool midwayDone = total < 12f;
+            var destTheme = nodes[target].region.theme;
+            Color fog0 = RenderSettings.fogColor;
             if (tokenVisual != null) tokenVisual.SetMoving(1f, true);
             var audio = GameManager.Instance != null ? GameManager.Instance.Audio : null;
             float dustTimer = 0f;
@@ -121,8 +136,21 @@ namespace HashiraChronicles
                     Vector3 d = p - token.position;
                     d.y = 0f;
                     float stepLen = speed * Time.unscaledDeltaTime;
+                    walked += Mathf.Min(stepLen, d.magnitude);
                     if (d.magnitude <= stepLen) token.position = p;
                     else token.position += d.normalized * stepLen;
+                    // The land changes as he travels: the light shifts toward the destination's mood.
+                    RenderSettings.fogColor = Color.Lerp(fog0, Color.Lerp(fog0, destTheme.fog, 0.6f), Mathf.Clamp01(walked / Mathf.Max(1f, total)));
+                    if (!midwayDone && walked > total * 0.5f)
+                    {
+                        midwayDone = true;
+                        if (OnMidway != null && OnMidway(fromRegion, target))
+                        {
+                            if (tokenVisual != null) tokenVisual.SetMoving(0f);
+                            while (Paused != null && Paused()) yield return null;
+                            if (tokenVisual != null) tokenVisual.SetMoving(1f, true);
+                        }
+                    }
                     if (d.sqrMagnitude > 0.001f) token.rotation = Quaternion.Slerp(token.rotation, Quaternion.LookRotation(d), Time.unscaledDeltaTime * 10f);
                     dustTimer -= Time.unscaledDeltaTime;
                     if (dustTimer <= 0f)
@@ -138,6 +166,17 @@ namespace HashiraChronicles
             CurrentRegion = target;
             data.currentRegion = target;
             VFX.Shockwave(token.position, 3f, new Color(1f, 0.85f, 0.4f), 0.5f);
+            // The camera swoops down into the destination before the mission begins.
+            if (onArrive != null)
+            {
+                float z = 0f;
+                while (z < 1f)
+                {
+                    z += Time.unscaledDeltaTime / 1.1f;
+                    arriveZoom = Mathf.SmoothStep(0f, 1f, z);
+                    yield return null;
+                }
+            }
             travel = null;
             if (onArrive != null) onArrive();
         }
@@ -147,8 +186,9 @@ namespace HashiraChronicles
             if (token == null || CameraController.Instance == null) return;
             CameraFocus = token.position;
             float t = Time.unscaledTime;
-            Vector3 camPos = token.position + new Vector3(Mathf.Sin(t * 0.1f) * 1.5f, 26f, -21f);
-            CameraController.Instance.SetFixed(camPos, token.position + Vector3.up * 1f);
+            Vector3 far = new Vector3(Mathf.Sin(t * 0.1f) * 1.5f, 26f, -21f);
+            Vector3 camPos = token.position + Vector3.Lerp(far, new Vector3(0f, 5f, -8f), arriveZoom);
+            CameraController.Instance.SetFixed(camPos, token.position + Vector3.up * (1f + arriveZoom));
             // Idle hop so the leader never feels static on the map.
             if (travel == null && tokenVisual != null) tokenVisual.SetMoving(0f);
             foreach (var n in nodes.Values)

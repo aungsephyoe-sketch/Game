@@ -341,61 +341,65 @@ namespace HashiraChronicles
 
         static void BuildEnemies()
         {
-            Enemies.Add(new EnemyDefinition { id = "grunt", displayName = "Lesser Demon", archetype = EnemyArchetype.Normal, element = Element.Beast,
+            Enemies.Add(new EnemyDefinition { id = "grunt", form = "ghoul", weakness = "Weak to everything — clear them fast with sweeping combos.", displayName = "Lesser Demon", archetype = EnemyArchetype.Normal, element = Element.Beast,
                 baseHp = 2200, baseAtk = 160, baseDef = 100, moveSpeed = 3.2f, attackRange = 1.9f, attackCooldown = 2.2f, windup = 0.6f,
                 description = "The eclipse's foot soldiers. Weak alone, dangerous in packs." });
-            Enemies.Add(new EnemyDefinition { id = "runner", displayName = "Swift Demon", archetype = EnemyArchetype.Fast, element = Element.Thunder,
+            Enemies.Add(new EnemyDefinition { id = "runner", form = "stalker", weakness = "Lunges in straight lines: sidestep, then punish.", displayName = "Swift Stalker", archetype = EnemyArchetype.Fast, element = Element.Thunder,
                 baseHp = 1500, baseAtk = 135, baseDef = 80, moveSpeed = 5.8f, attackRange = 3.2f, attackCooldown = 1.8f, windup = 0.4f,
                 scale = 0.85f, bodyColor = new Color(0.3f, 0.25f, 0.08f), accentColor = new Color(1f, 0.85f, 0.2f), description = "Lunges fast and dodges your swings." });
-            Enemies.Add(new EnemyDefinition { id = "brute", displayName = "Armored Demon", archetype = EnemyArchetype.Tank, element = Element.Flame,
+            Enemies.Add(new EnemyDefinition { id = "brute", form = "beast", artKey = "blood_beast", weakness = "Charges in a straight line and stumbles after — dodge sideways, then strike its flank.", displayName = "Blood Beast", archetype = EnemyArchetype.Tank, element = Element.Flame,
                 baseHp = 6500, baseAtk = 250, baseDef = 400, moveSpeed = 2.1f, attackRange = 2.6f, attackCooldown = 3f, windup = 0.95f,
                 poise = 6f, scale = 1.5f, radius = 0.9f, bodyColor = new Color(0.35f, 0.15f, 0.05f), accentColor = new Color(1f, 0.45f, 0.1f), description = "Slow, armoured, hits like a landslide." });
-            Enemies.Add(new EnemyDefinition { id = "spitter", displayName = "Blood-Spitter", archetype = EnemyArchetype.Ranged, element = Element.Water,
+            Enemies.Add(new EnemyDefinition { id = "spitter", form = "void", artKey = "void_demon", weakness = "Floats out of reach and fires dark orbs — dash in; it is fragile up close.", displayName = "Void Demon", archetype = EnemyArchetype.Ranged, element = Element.Water,
                 baseHp = 1800, baseAtk = 170, baseDef = 90, moveSpeed = 2.8f, attackRange = 10f, attackCooldown = 2.8f, windup = 0.65f,
                 bodyColor = new Color(0.08f, 0.18f, 0.3f), accentColor = new Color(0.3f, 0.7f, 1f), description = "Keeps its distance and spits blood orbs." });
-            Enemies.Add(new EnemyDefinition { id = "elite", displayName = "Crescent Hunter", archetype = EnemyArchetype.Elite, element = Element.Dark,
+            Enemies.Add(new EnemyDefinition { id = "elite", form = "hunter", weakness = "Leaps before it strikes: move when it jumps.", displayName = "Crescent Hunter", archetype = EnemyArchetype.Elite, element = Element.Dark,
                 baseHp = 9000, baseAtk = 290, baseDef = 300, moveSpeed = 3.8f, attackRange = 2.6f, attackCooldown = 2.4f, windup = 0.7f,
                 poise = 10f, scale = 1.25f, radius = 0.75f, bodyColor = new Color(0.2f, 0.05f, 0.25f), accentColor = new Color(0.85f, 0.2f, 1f), description = "Elite hunter. Leaps across the field." });
-            Enemies.Add(new EnemyDefinition { id = "shadow_demon", displayName = "Shadow Demon", archetype = EnemyArchetype.Normal, element = Element.Dark,
+            Enemies.Add(new EnemyDefinition { id = "shadow_demon", form = "shadow", artKey = "shadow_demon", weakness = "Fast claws but thin body: parry its lunge and it staggers.", displayName = "Shadow Demon", archetype = EnemyArchetype.Normal, element = Element.Dark,
                 baseHp = 2600, baseAtk = 175, baseDef = 110, moveSpeed = 3.6f, attackRange = 2f, attackCooldown = 2f, windup = 0.55f,
                 bodyColor = new Color(0.08f, 0.06f, 0.12f), accentColor = new Color(0.5f, 0.3f, 0.9f), description = "Born from the forest's shadows." });
-            Enemies.Add(new EnemyDefinition { id = "forest_beast", displayName = "Forest Beast", archetype = EnemyArchetype.Tank, element = Element.Beast,
+            Enemies.Add(new EnemyDefinition { id = "forest_beast", form = "forest", artKey = "forest_demon", weakness = "Slow root slams. Flame breathing burns its bark.", displayName = "Forest Demon", archetype = EnemyArchetype.Tank, element = Element.Beast,
                 baseHp = 7000, baseAtk = 240, baseDef = 330, moveSpeed = 2.6f, attackRange = 2.6f, attackCooldown = 2.8f, windup = 0.85f,
                 poise = 6f, scale = 1.6f, radius = 0.95f, bodyColor = new Color(0.22f, 0.28f, 0.12f), accentColor = new Color(0.6f, 0.9f, 0.3f), description = "A corrupted guardian of the woods." });
-            Enemies.Add(new EnemyDefinition { id = "demon_warrior", displayName = "Demon Warrior", archetype = EnemyArchetype.Elite, element = Element.Flame,
+            Enemies.Add(new EnemyDefinition { id = "demon_warrior", form = "bone", artKey = "bone_warrior", weakness = "Huge overhead cleaver: guard is useless — dodge, then hit its back. Light damage cracks its bones.", displayName = "Bone Warrior", archetype = EnemyArchetype.Elite, element = Element.Flame,
                 baseHp = 8000, baseAtk = 280, baseDef = 280, moveSpeed = 3.6f, attackRange = 2.6f, attackCooldown = 2.3f, windup = 0.65f,
                 poise = 8f, scale = 1.2f, radius = 0.7f, bodyColor = new Color(0.35f, 0.08f, 0.06f), accentColor = new Color(1f, 0.3f, 0.15f), description = "A demon trained in human swordplay." });
-            Enemies.Add(new EnemyDefinition { id = "frost_oni", displayName = "Frost Oni", archetype = EnemyArchetype.Tank, element = Element.Water,
+            Enemies.Add(new EnemyDefinition { id = "frost_oni", form = "oni", weakness = "Ice armour shatters under Flame.", displayName = "Frost Oni", archetype = EnemyArchetype.Tank, element = Element.Water,
                 baseHp = 7500, baseAtk = 260, baseDef = 380, moveSpeed = 2.3f, attackRange = 2.7f, attackCooldown = 2.8f, windup = 0.9f,
                 poise = 7f, scale = 1.55f, radius = 0.9f, bodyColor = new Color(0.55f, 0.7f, 0.85f), accentColor = new Color(0.8f, 0.95f, 1f), description = "Its breath freezes blood." });
-            Enemies.Add(new EnemyDefinition { id = "ice_wraith", displayName = "Ice Wraith", archetype = EnemyArchetype.Ranged, element = Element.Water,
+            Enemies.Add(new EnemyDefinition { id = "ice_wraith", form = "wraith", weakness = "Keeps its distance: close the gap with a dash attack.", displayName = "Ice Wraith", archetype = EnemyArchetype.Ranged, element = Element.Water,
                 baseHp = 2000, baseAtk = 190, baseDef = 90, moveSpeed = 3f, attackRange = 10f, attackCooldown = 2.5f, windup = 0.6f,
                 bodyColor = new Color(0.6f, 0.75f, 0.9f), accentColor = new Color(0.7f, 0.9f, 1f), description = "Hurls shards of ice from afar." });
-            Enemies.Add(new EnemyDefinition { id = "lava_imp", displayName = "Lava Imp", archetype = EnemyArchetype.Fast, element = Element.Flame,
+            Enemies.Add(new EnemyDefinition { id = "lava_imp", form = "imp", weakness = "Comes in packs — spin skills clear them.", displayName = "Lava Imp", archetype = EnemyArchetype.Fast, element = Element.Flame,
                 baseHp = 1900, baseAtk = 170, baseDef = 90, moveSpeed = 6f, attackRange = 3.2f, attackCooldown = 1.7f, windup = 0.38f,
                 scale = 0.8f, bodyColor = new Color(0.3f, 0.08f, 0.02f), accentColor = new Color(1f, 0.5f, 0.1f), description = "Fast, burning, and always in groups." });
-            Enemies.Add(new EnemyDefinition { id = "corrupted_knight", displayName = "Corrupted Knight", archetype = EnemyArchetype.Elite, element = Element.Dark,
+            Enemies.Add(new EnemyDefinition { id = "corrupted_knight", form = "knight", artKey = "demon_knight", weakness = "Shield blocks frontal hits: circle around or use a heavy attack to break its guard.", displayName = "Demon Knight", archetype = EnemyArchetype.Elite, element = Element.Dark,
                 baseHp = 11000, baseAtk = 320, baseDef = 380, moveSpeed = 3.4f, attackRange = 2.8f, attackCooldown = 2.4f, windup = 0.7f,
                 poise = 12f, scale = 1.35f, radius = 0.8f, bodyColor = new Color(0.12f, 0.12f, 0.16f), accentColor = new Color(0.7f, 0.2f, 0.9f), description = "A royal knight swallowed by the eclipse." });
-            Enemies.Add(new EnemyDefinition { id = "castle_sentinel", displayName = "Eclipse Sentinel", archetype = EnemyArchetype.Tank, element = Element.Dark,
+            Enemies.Add(new EnemyDefinition { id = "castle_sentinel", form = "sentinel", weakness = "Enormous reach, slow recovery. Light breathing cuts through its armour.", displayName = "Eclipse Sentinel", archetype = EnemyArchetype.Tank, element = Element.Dark,
                 baseHp = 12000, baseAtk = 300, baseDef = 480, moveSpeed = 2.2f, attackRange = 3f, attackCooldown = 3f, windup = 0.9f,
                 poise = 12f, scale = 1.8f, radius = 1f, bodyColor = new Color(0.1f, 0.08f, 0.12f), accentColor = new Color(0.9f, 0.1f, 0.3f), description = "Guards the Demon Lord's halls." });
-            Enemies.Add(new EnemyDefinition { id = "dummy", displayName = "Training Dummy", archetype = EnemyArchetype.Normal, element = Element.Beast,
+            Enemies.Add(new EnemyDefinition { id = "flame_beast", form = "lion", artKey = "flame_beast", weakness = "Its mane flares before a fire breath — Water breathing douses it.",
+                displayName = "Flame Beast", archetype = EnemyArchetype.Tank, element = Element.Flame,
+                baseHp = 8500, baseAtk = 280, baseDef = 320, moveSpeed = 3.4f, attackRange = 2.8f, attackCooldown = 2.5f, windup = 0.75f,
+                poise = 8f, scale = 1.45f, radius = 0.95f, bodyColor = new Color(0.12f, 0.08f, 0.07f), accentColor = new Color(1f, 0.45f, 0.08f), description = "A lion of cooled lava with a burning mane." });
+            Enemies.Add(new EnemyDefinition { id = "dummy", form = "dummy", weakness = "It doesn't mind.", displayName = "Training Dummy", archetype = EnemyArchetype.Normal, element = Element.Beast,
                 baseHp = 30000, baseAtk = 1, baseDef = 50, moveSpeed = 0.8f, attackRange = 1.5f, attackCooldown = 99f, windup = 1f,
                 bodyColor = new Color(0.6f, 0.5f, 0.35f), accentColor = new Color(0.8f, 0.7f, 0.5f), description = "Hit it. It doesn't mind." });
 
             // ---- Bosses ----
             Boss("boss_gorvath", "Gorvath", "The Horned Butcher of Kiriha", "thousandarm", Element.Beast, 22000, 230, 240, 2.4f, 2f,
                 new Color(0.35f, 0.18f, 0.12f), new Color(1f, 0.5f, 0.2f), new[] { 0.5f }, "The first of the Demon Lord's servants to reach Kiriha.");
-            Boss("boss_thousandarm", "The Ancient Guardian", "Warden of the Shadow Forest", "thousandarm", Element.Beast, 34000, 260, 280, 2.1f, 2.2f,
-                new Color(0.25f, 0.35f, 0.18f), new Color(0.8f, 1f, 0.4f), new[] { 0.5f }, "Roots and arms without number. Once it protected the forest.");
+            Boss("boss_thousandarm", "The Forest Demon", "Heart of the Shadow Forest", "thousandarm", Element.Beast, 34000, 260, 280, 2.1f, 2.2f,
+                new Color(0.25f, 0.35f, 0.18f), new Color(0.8f, 1f, 0.4f), new[] { 0.5f }, "Roots and arms without number. Once it protected the forest; now the eclipse rots it from within.");
             Boss("boss_hyoga", "Hyoga", "The Frost Oni", "goken", Element.Water, 36000, 300, 330, 1.35f, 1.3f,
                 new Color(0.6f, 0.75f, 0.9f), new Color(0.8f, 0.95f, 1f), new[] { 0.5f }, "It has guarded the mountain pass for a century.");
             Boss("boss_chancellor", "Chancellor Mikado", "The Masked Servant of the Eclipse", "thousandarm", Element.Dark, 45000, 300, 320, 1.6f, 1.6f,
                 new Color(0.2f, 0.08f, 0.28f), new Color(0.85f, 0.3f, 1f), new[] { 0.5f }, "Advisor to the King for twenty years. Demon for much longer.");
             Boss("boss_goken", "Goken", "The Crimson Fist", "goken", Element.Flame, 60000, 360, 360, 1.45f, 1.2f,
                 new Color(0.85f, 0.55f, 0.5f), new Color(0.35f, 0.6f, 1f), new[] { 0.7f, 0.3f }, "An Upper Crescent. He fights for the joy of it — and knows Ren's name.");
-            Boss("boss_seal_guardian", "The Seal Guardian", "Keeper of the Forgotten Temple", "goken", Element.Light, 62000, 350, 400, 1.7f, 1.3f,
+            Boss("boss_seal_guardian", "The Ancient Guardian", "Keeper of the Forgotten Temple", "goken", Element.Light, 62000, 350, 400, 1.7f, 1.3f,
                 new Color(0.8f, 0.75f, 0.55f), new Color(0.4f, 0.9f, 1f), new[] { 0.7f, 0.3f }, "A construct left by the hero Akatsuki to guard the truth.");
             Boss("boss_morgrath", "General Morgrath", "Blade of the Eclipse", "goken", Element.Dark, 80000, 400, 420, 1.6f, 1.2f,
                 new Color(0.15f, 0.1f, 0.14f), new Color(1f, 0.15f, 0.3f), new[] { 0.7f, 0.3f }, "Led the fall of Solmere. Has never been wounded.");
@@ -412,11 +416,53 @@ namespace HashiraChronicles
         {
             Enemies.Add(new EnemyDefinition
             {
-                id = id, displayName = name, bossTitle = title, archetype = EnemyArchetype.Boss, element = el, baseHp = hp, baseAtk = atk, baseDef = def,
+                id = id, displayName = name, form = BossForm(id), artKey = BossArt(id), weakness = BossWeakness(id), bossTitle = title, archetype = EnemyArchetype.Boss, element = el, baseHp = hp, baseAtk = atk, baseDef = def,
                 moveSpeed = style == "goken" ? 4.2f : 2.8f, attackRange = style == "goken" ? 2.8f : 4f, attackCooldown = cooldown,
                 windup = style == "goken" ? 0.6f : 0.8f, poise = 70f, scale = scale, radius = 0.6f * scale + 0.1f, bossStyle = style,
                 phaseThresholds = phases, bodyColor = body, accentColor = accent, description = desc
             });
+        }
+
+        static string BossForm(string id)
+        {
+            switch (id)
+            {
+                case "boss_gorvath": return "brute";
+                case "boss_thousandarm": return "forest";
+                case "boss_hyoga": return "oni";
+                case "boss_chancellor": return "void";
+                case "boss_goken": return "general";
+                case "boss_seal_guardian": return "guardian";
+                case "boss_veyrath": return "lord";
+                default: return "general";
+            }
+        }
+
+        static string BossArt(string id)
+        {
+            switch (id)
+            {
+                case "boss_thousandarm": return "forest_demon";
+                case "boss_seal_guardian": return "ancient_guardian";
+                case "boss_morgrath": case "boss_vex": case "boss_nyx": return "demon_general";
+                case "boss_veyrath": return "veyrath_true";
+                default: return null;
+            }
+        }
+
+        static string BossWeakness(string id)
+        {
+            switch (id)
+            {
+                case "boss_gorvath": return "Big wind-ups: dodge through the swing and punish.";
+                case "boss_thousandarm": return "Flame burns its bark. Watch for hands bursting from the ground.";
+                case "boss_hyoga": return "Flame melts its armour. Stay close to avoid the ice volleys.";
+                case "boss_chancellor": return "Fragile when casting — close the distance.";
+                case "boss_goken": return "After Annihilation he is exhausted: BREAK deals +50% damage.";
+                case "boss_seal_guardian": return "Dark breathing cracks the runes. Step inside its ring-blade.";
+                case "boss_veyrath": return "Light breathing wounds the eclipse. Survive the transformation — your Awakening follows.";
+                default: return "Learn the telegraphs; parry the fast strikes.";
+            }
         }
 
         // ------------------------------------------------------------------ Equipment
@@ -533,7 +579,7 @@ namespace HashiraChronicles
             {
                 id = id, chapter = ch != null ? ch.number : 0, type = type, regionId = region, name = name, enemyLevel = level,
                 recommendedLevel = level + 2, recommendedPower = 2000 + level * 700, storyText = story, description = story,
-                theme = r != null ? r.theme : new ArenaTheme(), killObjective = 0, parTime = 150f + level * 2f, timeLimit = 360f
+                theme = r != null ? r.theme : new ArenaTheme(), killObjective = 0, parTime = 220f + level * 2f, timeLimit = 600f
             };
             m.waves.AddRange(waves);
             int total = 0;
@@ -571,9 +617,10 @@ namespace HashiraChronicles
                 synopsis = "The night the sky turned red, Kiriha burned. Ren's training was over. His war had begun." };
             var m = M(ch1, "1-1", MissionType.Story, "village", "Night of the Red Sky", 1, "Demons pour out of the forest. Protect the village gate.",
                 Wave("grunt", 3), Wave("grunt", 4));
-            m.parTime = 120f;
-            M(ch1, "1-2", MissionType.Story, "village", "Burning Streets", 2, "The market square is on fire. Find Master Tessai.",
+            m.parTime = 200f;
+            m = M(ch1, "1-2", MissionType.Story, "village", "Burning Streets", 2, "The market square is on fire. Find Master Tessai.",
                 Wave("grunt", 4, "runner", 2), Wave("grunt", 3, "runner", 3));
+            m.investigate = "the ruined dojo"; m.investigateLine = "Master Tessai's practice sword... snapped in two. These claw marks lead toward the shrine.";
             m = M(ch1, "1-S", MissionType.Side, "village", "Rescue the Villagers", 3, "Families are trapped near the shrine. Clear a path out.",
                 Wave("runner", 4), Wave("runner", 3, "grunt", 3));
             m.questGiver = "Old Farmer Joji";
@@ -592,14 +639,15 @@ namespace HashiraChronicles
             m.cutsceneBefore = "c2_forest";
             m = M(ch2, "2-2", MissionType.Story, "forest", "The Frightened Swordsman", 7, "Someone is screaming deeper in the woods.",
                 Wave("shadow_demon", 4, "runner", 2), Wave("forest_beast", 1, "shadow_demon", 3));
+            m.investigate = "the abandoned village"; m.investigateLine = "Doors torn open, rice still warm in the pots... and someone is screaming in the trees.";
             m.cutsceneAfter = "c2_sora"; m.firstClearRewards.characterId = "sora_initiate";
-            m = M(ch2, "2-S", MissionType.Side, "forest", "Hunt: The Great Forest Beast", 8, "A hunter's guild bounty on a beast the size of a house.",
+            m = M(ch2, "2-S", MissionType.Side, "forest", "Hunt: The Forest Demons", 8, "A hunter's guild bounty on walking trees the size of houses.",
                 Wave("forest_beast", 2), Wave("forest_beast", 2, "shadow_demon", 3));
             m.questGiver = "Hunter Rokuro";
             m = M(ch2, "2-T", MissionType.Treasure, "forest", "The Lost Blade", 8, "Legends say a slayer's blade lies in the hollow tree.",
                 Wave("shadow_demon", 5), Wave("spitter", 3, "runner", 3));
             m.firstClearRewards.equipmentIds.Add("sword_crimson"); m.firstClearRewards.crystals += 30;
-            m = M(ch2, "2-3", MissionType.Boss, "forest", "The Ancient Guardian", 10, "Something ancient has awakened beneath the forest.",
+            m = M(ch2, "2-3", MissionType.Boss, "forest", "The Forest Demon", 10, "The forest itself has turned. Its rotten heart waits at the Demon Shrine.",
                 Wave("shadow_demon", 4, "forest_beast", 1)); m.bossId = "boss_thousandarm"; m.cutsceneAfter = "c2_end";
             Chain(ch2);
 
@@ -619,6 +667,7 @@ namespace HashiraChronicles
             m.firstClearRewards.equipmentIds.Add("haori_wisteria");
             m = M(ch3, "3-4", MissionType.Story, "kingdom", "Shadows in the Capital", 15, "Demons are appearing inside the walls. Someone is letting them in.",
                 Wave("shadow_demon", 5, "spitter", 2), Wave("demon_warrior", 2, "shadow_demon", 3));
+            m.investigate = "the sealed warehouse"; m.investigateLine = "Demon sigils painted inside the city walls. Someone in the palace let them in.";
             m.cutsceneAfter = "c3_hana"; m.firstClearRewards.characterId = "hana_healer";
             m = M(ch3, "3-5", MissionType.Boss, "kingdom", "The Masked Chancellor", 16, "The King's own advisor. The mask comes off.",
                 Wave("demon_warrior", 2, "shadow_demon", 3)); m.bossId = "boss_chancellor"; m.cutsceneBefore = "c3_betrayal"; m.cutsceneAfter = "c3_end";
@@ -629,10 +678,10 @@ namespace HashiraChronicles
             var ch4 = new ChapterDefinition { number = 4, title = "The Demon Territory", regionId = "demonland", available = true,
                 synopsis = "To find the Demon Lord's weakness, Ren must walk where no human has returned from." };
             m = M(ch4, "4-1", MissionType.Story, "demonland", "The Ashen Wastes", 19, "The land burns. A Pillar waits at the border.",
-                Wave("lava_imp", 5), Wave("lava_imp", 3, "demon_warrior", 2));
+                Wave("lava_imp", 5), Wave("flame_beast", 1, "lava_imp", 3), Wave("lava_imp", 2, "demon_warrior", 2));
             m.cutsceneBefore = "c4_wastes"; m.firstClearRewards.characterId = "homura_pillar";
             M(ch4, "4-2", MissionType.Story, "demonland", "Elite Hunters", 21, "The Demon Lord's hunters have your scent.",
-                Wave("corrupted_knight", 1, "lava_imp", 4), Wave("elite", 2, "demon_warrior", 1));
+                Wave("corrupted_knight", 1, "lava_imp", 4), Wave("flame_beast", 2), Wave("elite", 2, "demon_warrior", 1));
             m = M(ch4, "4-S", MissionType.Side, "demonland", "Hunt: The Crescent Pack", 22, "Three Crescent Hunters. A hunter's guild bounty that no one has survived.",
                 Wave("elite", 3)); m.questGiver = "Hunter Rokuro"; m.firstClearRewards.equipmentIds.Add("acc_earrings");
             m = M(ch4, "4-3", MissionType.Boss, "demonland", "Goken, the Crimson Fist", 24, "An Upper Crescent blocks the road. He's been waiting for you specifically.",
@@ -645,11 +694,12 @@ namespace HashiraChronicles
             m = M(ch5, "5-1", MissionType.Story, "temple", "Echoes of the Past", 26, "Ancient seals guard the temple doors. Strike them in the right order.",
                 Wave("shadow_demon", 4, "spitter", 3));
             m.sealPuzzle = true; m.cutsceneBefore = "c5_temple";
-            M(ch5, "5-2", MissionType.Story, "temple", "The Guardian's Trial", 27, "The temple tests everyone who seeks the truth.",
+            m = M(ch5, "5-2", MissionType.Story, "temple", "The Guardian's Trial", 27, "The temple tests everyone who seeks the truth.",
                 Wave("corrupted_knight", 1, "shadow_demon", 4), Wave("castle_sentinel", 1, "spitter", 3));
+            m.investigate = "the hero's mural"; m.investigateLine = "Akatsuki's mural... an eclipse splitting a heart in two. Why does that sword look like mine?";
             m = M(ch5, "5-T", MissionType.Treasure, "temple", "The Hero's Reliquary", 27, "Akatsuki's personal vault lies somewhere below.",
                 Wave("shadow_demon", 6), Wave("corrupted_knight", 2)); m.sealPuzzle = true; m.firstClearRewards.equipmentIds.Add("sword_dawn");
-            m = M(ch5, "5-3", MissionType.Boss, "temple", "The Seal Guardian", 28, "The last guardian of the truth.",
+            m = M(ch5, "5-3", MissionType.Boss, "temple", "The Ancient Guardian", 28, "The colossus that guards the truth has woken.",
                 Wave("corrupted_knight", 1, "shadow_demon", 3)); m.bossId = "boss_seal_guardian"; m.cutsceneAfter = "c5_truth";
             m.firstClearRewards.characterId = "ren_sundance";
             Chain(ch5);
@@ -659,6 +709,7 @@ namespace HashiraChronicles
                 synopsis = "While Ren sought the truth, the Demon Lord's army marched on Solmere." };
             m = M(ch6, "6-1", MissionType.Story, "fallen", "The Siege of Solmere", 31, "The outer walls have fallen. Hold the main street with the royal guard.",
                 Wave("lava_imp", 6, "grunt", 4), Wave("demon_warrior", 3, "spitter", 3), Wave("corrupted_knight", 2, "lava_imp", 4));
+            m.investigate = "the fallen watchtower"; m.investigateLine = "The signal fire never got lit. They didn't even see the army coming.";
             m.allies = 6; m.cutsceneBefore = "c6_siege";
             m = M(ch6, "6-2", MissionType.Story, "fallen", "Hold the Gate", 32, "The civilians need time to escape. Someone has to hold the gate.",
                 Wave("castle_sentinel", 1, "demon_warrior", 3), Wave("elite", 2, "lava_imp", 5));
@@ -676,13 +727,14 @@ namespace HashiraChronicles
             m = M(ch7, "7-1", MissionType.Story, "castle", "Gates of the Eclipse", 36, "The castle gates open for you. That's not a good sign.",
                 Wave("castle_sentinel", 1, "shadow_demon", 5), Wave("corrupted_knight", 2, "lava_imp", 4));
             m.cutsceneBefore = "c7_castle";
-            M(ch7, "7-2", MissionType.Story, "castle", "Hall of Elites", 37, "The Demon Lord's finest wait in the great hall.",
+            m = M(ch7, "7-2", MissionType.Story, "castle", "Hall of Elites", 37, "The Demon Lord's finest wait in the great hall.",
                 Wave("elite", 2, "corrupted_knight", 1), Wave("castle_sentinel", 2, "elite", 1), Wave("demon_warrior", 4, "corrupted_knight", 2));
+            m.investigate = "the hall of statues"; m.investigateLine = "Every statue is a slayer who came here before us. Every one of them is kneeling.";
             m = M(ch7, "7-3", MissionType.Boss, "castle", "The Twin Generals", 38, "General Vex and General Nyx guard the final stair.",
                 Wave("corrupted_knight", 2)); m.preBosses.Add("boss_vex"); m.bossId = "boss_nyx"; m.cutsceneAfter = "c7_truth";
             m = M(ch7, "7-4", MissionType.Boss, "castle", "Veyrath, the Demon Lord", 40, "The Demon Lord of the Eclipse. The other half of your heart.",
                 Wave("castle_sentinel", 1, "elite", 1)); m.bossId = "boss_veyrath"; m.cutsceneBefore = "c7_final"; m.cutsceneAfter = "ending";
-            m.timeLimit = 480f; m.parTime = 300f; m.firstClearRewards.characterId = "homura_lastflame"; m.firstClearRewards.equipmentIds.Add("sword_akatsuki");
+            m.timeLimit = 780f; m.parTime = 380f; m.firstClearRewards.characterId = "homura_lastflame"; m.firstClearRewards.equipmentIds.Add("sword_akatsuki");
             m.firstClearRewards.crystals = 500;
             Chain(ch7);
 
@@ -698,7 +750,7 @@ namespace HashiraChronicles
             // ---------------- Event & training
             m = M(null, "EV-1", MissionType.Event, "kingdom", "Crimson Moon Boss Rush", 30, "EVENT: Face the Demon Lord's servants back to back.",
                 Wave("elite", 2));
-            m.preBosses.Add("boss_gorvath"); m.preBosses.Add("boss_chancellor"); m.bossId = "boss_goken"; m.timeLimit = 600f;
+            m.preBosses.Add("boss_gorvath"); m.preBosses.Add("boss_chancellor"); m.bossId = "boss_goken"; m.timeLimit = 900f;
             m.firstClearRewards.crystals = 300; m.rewards.crystals = 20; m.requiresMissionId = "3-5";
             ExtraMissions.Add(m);
             m = M(null, "TR", MissionType.Training, "kingdom", "Training Grounds", 1, "Test every skill on training dummies. No rewards, no pressure.",

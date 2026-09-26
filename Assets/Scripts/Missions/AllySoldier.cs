@@ -41,9 +41,13 @@ namespace HashiraChronicles
             retarget -= dt;
             if (target == null || !target.IsAlive || retarget <= 0f)
             {
-                target = Nearest(CombatTeam.Enemy, Position, 30f);
+                target = Nearest(CombatTeam.Enemy, Position, 16f);
                 retarget = 1.5f;
             }
+            // With nothing to fight, the guard marches alongside the team.
+            var lead = BattleController.Current != null && BattleController.Current.Team != null ? BattleController.Current.Team.Active : null;
+            if (target == null && lead != null) home = lead.Position + (Position - lead.Position).normalized * 2.5f;
+            if (target != null && lead != null && Vector3.Distance(target.Position, lead.Position) > 18f) target = null;
             Vector3 goal = target != null ? target.Position : home;
             Vector3 to = goal - Position;
             to.y = 0f;

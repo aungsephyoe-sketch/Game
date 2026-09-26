@@ -37,6 +37,7 @@ namespace HashiraChronicles
             GameEvents.Impact += OnImpact;
             GameEvents.BossIntro += OnBossIntro;
             GameEvents.Subtitle += OnSubtitle;
+            GameEvents.AreaEntered += OnAreaEntered;
         }
 
         void OnDisable()
@@ -48,7 +49,12 @@ namespace HashiraChronicles
             GameEvents.Impact -= OnImpact;
             GameEvents.BossIntro -= OnBossIntro;
             GameEvents.Subtitle -= OnSubtitle;
+            GameEvents.AreaEntered -= OnAreaEntered;
         }
+
+        string areaName = "", areaSub = "";
+        float areaTime = -10f;
+        void OnAreaEntered(string name, string sub) { areaName = name; areaSub = sub; areaTime = Time.unscaledTime; }
 
         EnemyDefinition bossIntro;
         float bossIntroTime = -10f;

@@ -221,9 +221,11 @@ namespace HashiraChronicles
         /// <summary>Every enrage shakes the arena apart: falling debris, dust and a line of dialogue.</summary>
         void ArenaCollapse(Color c)
         {
+            // The arena itself turns hostile from here on.
+            if (ArenaHazard.Current != null) ArenaHazard.Current.Activate(this);
             for (int i = 0; i < 7; i++)
             {
-                Vector3 p = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * Random.Range(9f, BattleController.ArenaRadius);
+                Vector3 p = BattleController.ArenaCenter + Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * Random.Range(9f, BattleController.CurrentArenaRadius);
                 VFX.Pillar(p, new Color(0.4f, 0.35f, 0.3f), 9f, 0.4f);
                 VFX.Dust(p, 12);
                 VFX.Smoke(p, new Color(0.2f, 0.18f, 0.16f, 0.7f), 10);
@@ -262,6 +264,7 @@ namespace HashiraChronicles
             }
             VFX.Shockwave(Position, 12f, new Color(0.9f, 0.1f, 0.3f), 0.8f);
             VFX.Pillar(Position, new Color(0.9f, 0.1f, 0.3f), 16f, 1f);
+            visual.UnfoldEclipseForm(new Color(0.9f, 0.1f, 0.3f));
             ArenaCollapse(new Color(0.9f, 0.1f, 0.3f));
             SetAuraColor(new Color(0.9f, 0.05f, 0.25f));
             speedMultiplier = 1.3f;
@@ -441,7 +444,7 @@ namespace HashiraChronicles
             GameEvents.RaiseBanner("ANNIHILATION", "Reach the edge — or dodge at the last moment!");
             // Leap to the centre of the arena.
             Vector3 start = Position;
-            Vector3 center = Vector3.zero;
+            Vector3 center = BattleController.ArenaCenter;
             float t = 0f;
             while (t < 0.6f)
             {

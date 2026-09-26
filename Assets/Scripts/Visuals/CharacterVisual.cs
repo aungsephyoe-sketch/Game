@@ -11,7 +11,7 @@ namespace HashiraChronicles
     ///  • Placeholder: a cel-shaded figure built from primitives with procedural animation.
     /// Gameplay code only calls the methods below, so art can be swapped without touching combat.
     /// </summary>
-    public class CharacterVisual : MonoBehaviour
+    public partial class CharacterVisual : MonoBehaviour
     {
         public Transform Model;
         public Transform SwordPivot;
@@ -35,6 +35,13 @@ namespace HashiraChronicles
         AnimatorDriver driver;
 
         public bool HasRig { get { return driver != null; } }
+        // Read by ProceduralRig to animate imported skeletons.
+        public float MoveAmount { get { return moving; } }
+        public bool IsSprinting { get { return sprinting; } }
+        public bool IsGuarding { get { return guarding; } }
+        public bool IsDead { get { return dead; } }
+        /// <summary>0 at rest → 1 when the blade is swung far from its resting angle.</summary>
+        public float SwingWeight { get { return SwordPivot == null ? 0f : Mathf.Clamp01(Quaternion.Angle(SwordPivot.localRotation, swordRest) / 50f); } }
         public AnimatorDriver Driver { get { return driver; } }
 
         static readonly Color Skin = new Color(1f, 0.86f, 0.74f);
@@ -49,7 +56,9 @@ namespace HashiraChronicles
             var model = new GameObject("Model").transform;
             model.SetParent(root.transform, false);
             v.Model = model;
-            if (v.TryLoadModel("Characters/" + def.id, def.bladeColor, 1f)) return v;
+            if (v.TryLoadModel("Characters/" + def.id, def.bladeColor, 1f, 1.75f * def.scale)) return v;
+            // Every version of a character shares one model (e.g. "Characters/ren").
+            if (!string.IsNullOrEmpty(def.baseId) && v.TryLoadModel("Characters/" + def.baseId, def.bladeColor, 1f, 1.75f * def.scale)) return v;
 
             var hakama = MaterialFactory.Toon(def.bodyColor * 0.8f);
             var uniform = MaterialFactory.Toon(def.bodyColor);
@@ -82,7 +91,9 @@ namespace HashiraChronicles
             model.SetParent(root.transform, false);
             model.localScale = Vector3.one * def.scale;
             v.Model = model;
-            if (v.TryLoadModel("Enemies/" + def.id, def.accentColor, 0.6f)) return v;
+            if (v.TryLoadModel("Enemies/" + def.id, def.accentColor, 0.6f, 2.1f)) return v;
+
+            if (v.BuildMonster(def, model)) return v;
 
             var body = MaterialFactory.Toon(def.bodyColor);
             var accent = MaterialFactory.Toon(def.accentColor, 0.02f, def.accentColor * 0.8f);
@@ -146,7 +157,7 @@ namespace HashiraChronicles
         // ------------------------------------------------------------------ Rigged models
 
         /// <summary>Spawns a rigged prefab from Resources if one exists for this character.</summary>
-        bool TryLoadModel(string resourcePath, Color trailColor, float trailWidth)
+        bool TryLoadModel(string resourcePath, Color trailColor, float trailWidth, float targetHeight)
         {
             var prefab = Resources.Load<GameObject>(resourcePath);
             if (prefab == null) return false;
@@ -162,10 +173,24 @@ namespace HashiraChronicles
 
             var animator = inst.GetComponentInChildren<Animator>();
             if (animator != null && animator.runtimeAnimatorController != null) driver = new AnimatorDriver(animator);
+            else
+            {
+                // Raw AI-generated models (e.g. a Higgsfield/Meshy GLB): normalise size and pivot, and if the mesh
+                // is rigged, bring the skeleton to life procedurally.
+                NormalizeModel(inst.transform, targetHeight);
+                var rig = inst.AddComponent<ProceduralRig>();
+                if (!rig.Bind(this)) Destroy(rig);
+            }
 
-            // Weapon trail: a child named "WeaponTip" wins, else the right hand bone, else the model root.
+            // Weapon trail: a child named "WeaponTip" wins, else the right hand bone, else a drawn blade.
             Transform tip = FindDeep(inst.transform, "WeaponTip");
             if (tip == null && driver != null) tip = driver.Bone(HumanBodyBones.RightHand);
+            if (tip == null && driver == null)
+            {
+                // No animator: give the model a drawn blade in the right hand so swings read clearly.
+                BuildSword(trailColor, 1.1f * targetHeight / 1.75f, new Vector3(0.38f, 1.05f, 0.15f) * (targetHeight / 1.75f));
+                return true;
+            }
             if (tip == null) tip = inst.transform;
             SwordPivot = tip;
             var trailGo = new GameObject("Trail");
@@ -173,6 +198,27 @@ namespace HashiraChronicles
             Trail = trailGo.AddComponent<TrailRenderer>();
             SetupTrail(Trail, trailColor, trailWidth);
             return true;
+        }
+
+        /// <summary>Scales an imported model to a target height, puts its feet on the ground and centres it.</summary>
+        static void NormalizeModel(Transform inst, float targetHeight)
+        {
+            var rs = inst.GetComponentsInChildren<Renderer>();
+            if (rs.Length == 0) return;
+            Bounds b = rs[0].bounds;
+            for (int i = 1; i < rs.Length; i++) b.Encapsulate(rs[i].bounds);
+            var parent = inst.parent;
+            float parentScale = parent != null ? parent.lossyScale.y : 1f;
+            float h = b.size.y / Mathf.Max(0.0001f, parentScale);
+            if (h < 0.001f) return;
+            float k = targetHeight / h;
+            inst.localScale *= k;
+            // Recompute after scaling, then shift so the feet sit at y = 0 and the body is centred.
+            b = rs[0].bounds;
+            for (int i = 1; i < rs.Length; i++) b.Encapsulate(rs[i].bounds);
+            Vector3 localMin = parent != null ? parent.InverseTransformPoint(new Vector3(b.center.x, b.min.y, b.center.z)) : new Vector3(b.center.x, b.min.y, b.center.z);
+            inst.localPosition -= localMin;
+            foreach (var smr in inst.GetComponentsInChildren<SkinnedMeshRenderer>()) smr.updateWhenOffscreen = true;
         }
 
         static Transform FindDeep(Transform t, string name)
@@ -664,6 +710,7 @@ namespace HashiraChronicles
             }
             bob += Time.deltaTime * (moving > 0.1f ? (sprinting ? 16f : 12f) : 3f);
             float y = moving > 0.1f ? Mathf.Abs(Mathf.Sin(bob)) * 0.1f : Mathf.Sin(bob) * 0.025f;
+            if (Hover > 0f) y = Hover + Mathf.Sin(Time.time * 2.2f) * 0.18f;
             Model.localPosition = new Vector3(0f, y, 0f);
             float lean = moving * (sprinting ? 22f : 12f) - (guarding ? 8f : 0f);
             var e = Model.localEulerAngles;

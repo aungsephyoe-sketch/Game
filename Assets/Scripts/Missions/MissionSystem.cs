@@ -98,26 +98,249 @@ namespace HashiraChronicles
             started = true;
 
             if (Def.allies > 0) SpawnAllies(Def.allies);
-            if (Def.sealPuzzle) yield return SealPuzzle();
+            var j = battle.Journey;
+            GameEvents.RaiseAreaEntered(j.places[0].name, RegionName());
+            if (Def.id == "1-1" && gm != null && !gm.Data.IsMissionCleared("1-1"))
+                GameEvents.RaiseBanner("FOLLOW THE ROAD", "The objective marker always shows where to go next");
 
-            for (WaveIndex = 0; WaveIndex < Def.waves.Count; WaveIndex++)
+            for (StageIndex = 0; StageIndex < j.stages.Count && !Finished; StageIndex++)
             {
-                if (Finished) yield break;
-                GameEvents.RaiseBanner("WAVE " + (WaveIndex + 1) + " / " + Def.waves.Count, "");
-                if (GameManager.Instance != null) GameManager.Instance.Audio.SetMusicState(MusicState.Combat);
-                yield return SpawnWave(Def.waves[WaveIndex]);
-                while (alive.Count > 0 && !Finished) yield return null;
-                if (GameManager.Instance != null && WaveIndex < Def.waves.Count - 1) GameManager.Instance.Audio.SetMusicState(MusicState.Explore);
-                yield return new WaitForSeconds(0.8f);
+                var st = j.stages[StageIndex];
+                var pl = j.places[st.place];
+                ObjectiveTitle = st.objective;
+                switch (st.kind)
+                {
+                    case StageKind.Travel: yield return Travel(pl, false); break;
+                    case StageKind.BossApproach: yield return Travel(pl, true); break;
+                    case StageKind.Fight: yield return FightAt(pl, st.wave); break;
+                    case StageKind.Investigate: yield return Investigate(pl); break;
+                    case StageKind.Seal:
+                        battle.Lock(pl.pos, pl.radius, new Color(0.4f, 0.9f, 1f));
+                        yield return SealPuzzle(pl.pos);
+                        battle.Unlock();
+                        break;
+                    case StageKind.Boss: yield return BossStage(pl); break;
+                }
             }
 
+            if (!Finished) End(true, "");
+        }
+
+        // ------------------------------------------------------------------ Journey stages (UI-facing state)
+
+        public int StageIndex { get; private set; }
+        public string ObjectiveTitle { get; private set; }
+        /// <summary>Where the objective marker points (travel stages), else null.</summary>
+        public Vector3? ObjectiveTarget { get; private set; }
+        public int StageTotal { get; private set; }
+        int stageKillBase;
+        public int StageKills { get { return Mathf.Clamp(Kills - stageKillBase, 0, StageTotal); } }
+        public bool InAmbush { get; private set; }
+
+        string RegionName()
+        {
+            var r = GameDatabase.GetRegion(Def.regionId);
+            return r != null ? r.name : "";
+        }
+
+        /// <summary>Walk the road to the next place. Ambushes wait along longer stretches; the boss road grows darker.</summary>
+        IEnumerator Travel(JourneyPlace pl, bool bossApproach)
+        {
+            var j = battle.Journey;
+            var gm = GameManager.Instance;
+            if (gm != null) gm.Audio.SetMusicState(bossApproach ? MusicState.None : MusicState.Explore);
+            ObjectiveTarget = pl.pos;
+            StageTotal = 0;
+            float startProg = battle.Team.Active != null ? j.Progress(battle.Team.Active.Position) : 0f;
+            float endProg = j.Progress(pl.pos) - pl.radius;
+            float segment = endProg - startProg;
+            bool ambushDone = segment < 24f || !(bossApproach || StageIndex % 2 == 1 || Def.waves.Count == 1);
+            if (bossApproach)
+            {
+                StartCoroutine(BossApproachAtmosphere(startProg, endProg));
+                GameEvents.RaiseSubtitle("Ren", BossApproachLine());
+            }
+            float arrive = pl.radius * 0.75f;
+            while (!Finished)
+            {
+                var a = battle.Team.Active;
+                if (a != null)
+                {
+                    float prog = j.Progress(a.Position);
+                    if (!ambushDone && prog > startProg + segment * 0.45f)
+                    {
+                        ambushDone = true;
+                        yield return Ambush(bossApproach);
+                        ObjectiveTitle = Journey.ReachText(pl.name);
+                        ObjectiveTarget = pl.pos;
+                    }
+                    if ((Journey.Flat(a.Position) - Journey.Flat(pl.pos)).magnitude < arrive) break;
+                }
+                yield return null;
+            }
+            ObjectiveTarget = null;
+            GameEvents.RaiseAreaEntered(pl.name, bossApproach ? "Something is waiting here." : RegionName());
+        }
+
+        string BossApproachLine()
+        {
+            switch (Def.theme.kind)
+            {
+                case EnvironmentKind.Forest: return "The birds stopped singing. Whatever rules this forest is close.";
+                case EnvironmentKind.Mountain: return "The wind's getting worse... and that's not thunder.";
+                case EnvironmentKind.Temple: return "The runes are waking up. It knows we're here.";
+                case EnvironmentKind.Castle: return "I can feel him. The other half of this heart.";
+                case EnvironmentKind.DemonLand: return "The air itself is burning. Stay sharp.";
+                default: return "It's too quiet. Something big is ahead.";
+            }
+        }
+
+        /// <summary>Ambush on the road: a few demons (elites on the boss road) burst out of cover. No barrier — keep moving.</summary>
+        IEnumerator Ambush(bool bossApproach)
+        {
+            InAmbush = true;
+            ObjectiveTitle = "Survive the ambush";
+            ObjectiveTarget = null;
+            GameEvents.RaiseBanner("AMBUSH!", bossApproach ? "The boss's guards block the road" : "Demons leap from cover");
+            if (GameManager.Instance != null) { GameManager.Instance.Audio.SetMusicState(MusicState.Combat); GameManager.Instance.Audio.Play("roar", 0.6f); }
+            string id = AmbushEnemy(bossApproach);
+            int count = bossApproach ? 2 : 3;
+            StageTotal = count;
+            stageKillBase = Kills;
+            var a = battle.Team.Active;
+            var j = battle.Journey;
+            float prog = a != null ? j.Progress(a.Position) : 0f;
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 p = j.PointAt(prog + (i % 2 == 0 ? 9f : -6f) + Random.Range(-2f, 2f));
+                Vector3 dir = j.PointAt(prog + 1f) - j.PointAt(prog);
+                p += Vector3.Cross(Vector3.up, dir.normalized) * Random.Range(-j.halfWidth + 1f, j.halfWidth - 1f);
+                SpawnEnemy(id, p, true);
+                yield return new WaitForSeconds(0.25f);
+            }
+            while (alive.Count > 0 && !Finished) yield return null;
+            InAmbush = false;
+            StageTotal = 0;
+            if (GameManager.Instance != null) GameManager.Instance.Audio.SetMusicState(bossApproach ? MusicState.None : MusicState.Explore);
+        }
+
+        string AmbushEnemy(bool strong)
+        {
+            if (strong)
+            {
+                foreach (var w in Def.waves)
+                    foreach (var sp in w.spawns)
+                    {
+                        var e = GameDatabase.GetEnemy(sp.enemyId);
+                        if (e != null && (e.archetype == EnemyArchetype.Elite || e.archetype == EnemyArchetype.Tank)) return sp.enemyId;
+                    }
+            }
+            int wi = Mathf.Clamp(StageIndex / 2, 0, Mathf.Max(0, Def.waves.Count - 1));
+            return Def.waves.Count > 0 && Def.waves[wi].spawns.Count > 0 ? Def.waves[wi].spawns[0].enemyId : "grunt";
+        }
+
+        /// <summary>The last stretch before a boss: light fails, fog closes in, the weather thickens, the music stops.</summary>
+        IEnumerator BossApproachAtmosphere(float from, float to)
+        {
+            var j = battle.Journey;
+            Color fog0 = RenderSettings.fogColor, amb0 = RenderSettings.ambientLight;
+            float start0 = RenderSettings.fogStartDistance, end0 = RenderSettings.fogEndDistance;
+            float sun0 = RenderSettings.sun != null ? RenderSettings.sun.intensity : 1f;
+            Color sky0 = Camera.main != null ? Camera.main.backgroundColor : Def.theme.sky;
+            Color darkFog = Color.Lerp(fog0, new Color(0.08f, 0.02f, 0.06f), 0.55f);
+            var weather = battle.World != null ? battle.World.weather : null;
+            float rate0 = weather != null ? weather.emission.rateOverTimeMultiplier : 0f;
+            while (!Finished && !InBossStage)
+            {
+                var a = battle.Team.Active;
+                if (a != null)
+                {
+                    float k = Mathf.Clamp01((j.Progress(a.Position) - from) / Mathf.Max(1f, to - from));
+                    RenderSettings.fogColor = Color.Lerp(fog0, darkFog, k);
+                    RenderSettings.ambientLight = Color.Lerp(amb0, amb0 * 0.55f, k);
+                    RenderSettings.fogStartDistance = Mathf.Lerp(start0, start0 * 0.55f, k);
+                    RenderSettings.fogEndDistance = Mathf.Lerp(end0, end0 * 0.7f, k);
+                    if (RenderSettings.sun != null) RenderSettings.sun.intensity = Mathf.Lerp(sun0, sun0 * 0.6f, k);
+                    if (Camera.main != null) Camera.main.backgroundColor = Color.Lerp(sky0, darkFog, k);
+                    if (weather != null) { var em = weather.emission; em.rateOverTimeMultiplier = rate0 * (1f + k * 2.5f); }
+                }
+                yield return null;
+            }
+        }
+
+        IEnumerator FightAt(JourneyPlace pl, int wave)
+        {
+            WaveIndex = wave;
+            ObjectiveTarget = null;
+            battle.Lock(pl.pos, pl.radius, new Color(1f, 0.3f, 0.3f));
+            var w = Def.waves[wave];
+            StageTotal = w.TotalCount;
+            stageKillBase = Kills;
+            ObjectiveTitle = "Defeat the demons";
+            GameEvents.RaiseBanner("DEMONS APPEAR", pl.name);
+            if (GameManager.Instance != null) GameManager.Instance.Audio.SetMusicState(MusicState.Combat);
+            yield return SpawnWave(w);
+            while (alive.Count > 0 && !Finished) yield return null;
+            StageTotal = 0;
+            yield return new WaitForSeconds(0.5f);
+            battle.Unlock();
+            if (GameManager.Instance != null) GameManager.Instance.Audio.SetMusicState(MusicState.Explore);
+        }
+
+        /// <summary>Walk up to the clue, hear what Ren makes of it — then the trap springs.</summary>
+        IEnumerator Investigate(JourneyPlace pl)
+        {
+            var markerRoot = new GameObject("Clue").transform;
+            markerRoot.SetParent(battle.transform, false);
+            Vector3 spot = pl.pos + Vector3.forward * 2f;
+            markerRoot.position = spot;
+            var glow = new Color(1f, 0.85f, 0.4f);
+            var ring = MeshFactory.MeshObject(MeshFactory.Ring(0.8f), markerRoot, Vector3.up * 0.05f, Vector3.one * 1.4f, MaterialFactory.Additive(new Color(glow.r, glow.g, glow.b, 0.7f)), false);
+            ring.AddComponent<Spinner>().DegreesPerSecond = new Vector3(0f, 90f, 0f);
+            var beam = MeshFactory.Primitive(PrimitiveType.Cylinder, markerRoot, Vector3.up * 2f, new Vector3(0.25f, 2f, 0.25f), MaterialFactory.Additive(new Color(glow.r, glow.g, glow.b, 0.35f)));
+            beam.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            ObjectiveTarget = spot;
+            while (!Finished)
+            {
+                var a = battle.Team.Active;
+                if (a != null && (Journey.Flat(a.Position) - Journey.Flat(spot)).magnitude < 2.2f) break;
+                yield return null;
+            }
+            ObjectiveTarget = null;
+            Destroy(markerRoot.gameObject);
+            if (Finished) yield break;
+            battle.CinematicLock = true;
+            GameEvents.RaiseSubtitle("Ren", string.IsNullOrEmpty(Def.investigateLine) ? "These tracks are fresh... and they lead straight into a trap." : Def.investigateLine);
+            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("perfect", 0.5f);
+            yield return new WaitForSeconds(2.6f);
+            battle.CinematicLock = false;
+            battle.Lock(pl.pos, pl.radius, new Color(1f, 0.3f, 0.3f));
+            ObjectiveTitle = "It's a trap — fight your way out";
+            GameEvents.RaiseBanner("AMBUSH!", "It was waiting for you");
+            if (GameManager.Instance != null) GameManager.Instance.Audio.SetMusicState(MusicState.Combat);
+            string id = AmbushEnemy(false);
+            StageTotal = 3;
+            stageKillBase = Kills;
+            for (int i = 0; i < 3; i++) { SpawnEnemy(id, RandomSpawnPoint(), true); yield return new WaitForSeconds(0.25f); }
+            while (alive.Count > 0 && !Finished) yield return null;
+            StageTotal = 0;
+            battle.Unlock();
+            if (GameManager.Instance != null) GameManager.Instance.Audio.SetMusicState(MusicState.Explore);
+        }
+
+        IEnumerator BossStage(JourneyPlace pl)
+        {
+            InBossStage = true;
+            ObjectiveTarget = null;
+            battle.Lock(pl.pos, pl.radius, new Color(0.9f, 0.1f, 0.3f));
             // Generals first, then the boss.
             var bossIds = new List<string>(Def.preBosses);
             if (!string.IsNullOrEmpty(Def.bossId)) bossIds.Add(Def.bossId);
             for (int i = 0; i < bossIds.Count && !Finished; i++)
             {
-                InBossStage = true;
-                yield return BossEntrance(bossIds[i], i, bossIds.Count);
+                var bd = GameDatabase.GetEnemy(bossIds[i]);
+                ObjectiveTitle = "Defeat " + (bd != null ? bd.displayName : "the boss");
+                yield return BossEntrance(bossIds[i], i, pl);
                 while (Boss != null && Boss.IsAlive && !Finished) yield return null;
                 // Clear leftover summons once a boss falls.
                 foreach (var e in new List<EnemyController>(alive))
@@ -128,31 +351,76 @@ namespace HashiraChronicles
                     yield return new WaitForSeconds(2f);
                 }
             }
-
-            if (!Finished) End(true, "");
+            battle.Unlock();
         }
 
-        /// <summary>The boss arrives: warning, roar, a cinematic sweep onto the boss with its name card and a line of dialogue.</summary>
-        IEnumerator BossEntrance(string bossId, int index, int count)
+        /// <summary>
+        /// Boss reveal: the camera pushes slowly across the quiet arena, the ground shakes, the boss rises in the
+        /// distance, the camera closes on its face, the title card lands, it roars — and the fight begins.
+        /// </summary>
+        IEnumerator BossEntrance(string bossId, int index, JourneyPlace pl)
         {
             var bossDef = GameDatabase.GetEnemy(bossId);
             var gm = GameManager.Instance;
-            GameEvents.RaiseBanner(count > 1 && index < count - 1 ? "GENERAL APPROACHES" : "WARNING", bossDef.displayName + " approaches");
-            if (gm != null) { gm.Audio.SetMusicState(MusicState.Boss); gm.Audio.Play("roar", 1f); }
-            if (CameraController.Instance != null) CameraController.Instance.Shake(0.4f);
-            yield return new WaitForSeconds(1.4f);
-            Boss = SpawnEnemy(bossId, new Vector3(0f, 0f, 7f), true) as BossController;
-            if (Boss == null) yield break;
-            Boss.HoldForIntro(2.6f);
-            VFX.Shockwave(Boss.Position, 6f, bossDef.accentColor, 0.6f);
-            VFX.Pillar(Boss.Position, bossDef.accentColor, 10f, 0.8f);
-            VFX.Smoke(Boss.Position, new Color(0.1f, 0.05f, 0.1f, 0.8f), 30);
-            if (CameraController.Instance != null) CameraController.Instance.PlayUltimateCinematic(Boss.transform, 2.4f);
+            var cam = CameraController.Instance;
+            var player = battle.Team.Active;
+            Vector3 c = pl.pos;
+            Vector3 from = player != null ? player.Position : c - Vector3.forward * 10f;
+            Vector3 dirIn = Journey.Flat(c - from);
+            if (dirIn.sqrMagnitude < 0.01f) dirIn = Vector3.forward;
+            dirIn.Normalize();
+            Vector3 side = Vector3.Cross(Vector3.up, dirIn);
+            Vector3 bossPos = c + dirIn * (pl.radius * 0.45f);
+            battle.CinematicLock = true;
+            if (gm != null) gm.Audio.SetMusicState(MusicState.None);
+
+            if (index == 0 && cam != null)
+            {
+                // 1. Wide establishing shot, a slow push across the silent arena.
+                cam.Cut(from - dirIn * 7f + side * 5f + Vector3.up * 9f, c + Vector3.up * 2f);
+                cam.Dolly(from + dirIn * 3f + side * 3f + Vector3.up * 6f, bossPos + Vector3.up * 2f, 2.4f);
+                yield return new WaitForSeconds(1.6f);
+            }
+            // 2. The ground shakes.
+            for (int k = 0; k < 3; k++)
+            {
+                if (cam != null) cam.Shake(0.18f + k * 0.08f);
+                VFX.Dust(bossPos + new Vector3(Random.Range(-3f, 3f), 0f, Random.Range(-3f, 3f)), 14);
+                if (gm != null) gm.Audio.Play("thud", 0.7f);
+                yield return new WaitForSeconds(0.4f);
+            }
+            // 3. The boss appears in the distance and turns to face the team.
+            Boss = SpawnEnemy(bossId, bossPos, true) as BossController;
+            if (Boss == null) { battle.CinematicLock = false; yield break; }
+            Boss.HoldForIntro(4.5f);
+            if (player != null)
+            {
+                Vector3 look = Journey.Flat(player.Position - bossPos);
+                if (look.sqrMagnitude > 0.01f) Boss.transform.rotation = Quaternion.LookRotation(look.normalized);
+            }
+            VFX.Pillar(bossPos, bossDef.accentColor, 12f, 0.9f);
+            VFX.Smoke(bossPos, new Color(0.1f, 0.05f, 0.1f, 0.8f), 40);
+            VFX.Shockwave(bossPos, 7f, bossDef.accentColor, 0.6f);
+            float h = 2f * Mathf.Max(1f, bossDef.scale);
+            if (cam != null)
+            {
+                // 4. Push in toward its face.
+                cam.Cut(bossPos - dirIn * (9f + h * 2f) + side * 2f + Vector3.up * (h * 0.6f), bossPos + Vector3.up * h * 0.7f);
+                cam.Dolly(bossPos - dirIn * (2.5f + h * 0.9f) + side * 0.8f + Vector3.up * (h * 0.85f), bossPos + Vector3.up * h * 0.9f, 1.6f);
+            }
+            yield return new WaitForSeconds(1.5f);
+            // 5. Title card, the roar, a surge of power.
             GameEvents.RaiseBossIntro(bossDef);
             string line = BossLine(bossId, true);
             if (line != null) GameEvents.RaiseSubtitle(bossDef.displayName, line);
-            yield return new WaitForSeconds(2.6f);
-            if (CameraController.Instance != null) CameraController.Instance.EndCinematic();
+            if (gm != null) { gm.Audio.Play("roar", 1f); gm.Audio.SetMusicState(MusicState.Boss); }
+            if (cam != null) cam.Shake(0.55f);
+            VFX.Breath(bossPos, bossDef.accentColor, 80);
+            VFX.ImpactLight(bossPos + Vector3.up * h, bossDef.accentColor, 14f, 0.6f);
+            GameEvents.RaiseImpact(0.9f);
+            yield return new WaitForSeconds(2.2f);
+            if (cam != null && battle.Team.Active != null) cam.Follow(battle.Team.Active.transform, false);
+            battle.CinematicLock = false;
         }
 
         /// <summary>What each boss says as it enters (and, for some, when it enrages).</summary>
@@ -179,7 +447,8 @@ namespace HashiraChronicles
             for (int i = 0; i < count; i++)
             {
                 float a = Mathf.Lerp(200f, 340f, count > 1 ? (float)i / (count - 1) : 0.5f) * Mathf.Deg2Rad;
-                AllySoldier.Spawn(battle.transform, new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * 7f, Def.enemyLevel);
+                Vector3 origin = battle.Team.Active != null ? battle.Team.Active.Position : Vector3.zero;
+                AllySoldier.Spawn(battle.transform, origin + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * 3f, Def.enemyLevel);
             }
             GameEvents.RaiseBanner("THE ROYAL GUARD FIGHTS WITH YOU", count + " soldiers join the battle");
         }
@@ -189,7 +458,7 @@ namespace HashiraChronicles
         int sealNext;
         bool sealWrong;
 
-        IEnumerator SealPuzzle()
+        IEnumerator SealPuzzle(Vector3 center)
         {
             var root = new GameObject("Seals").transform;
             root.SetParent(battle.transform, false);
@@ -200,10 +469,11 @@ namespace HashiraChronicles
             for (int i = 0; i < 4; i++)
             {
                 float a = (45f + i * 90f) * Mathf.Deg2Rad;
-                stones.Add(SealStone.Create(root, new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * 7.5f, order[i]));
+                stones.Add(SealStone.Create(root, center + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * 7.5f, order[i]));
             }
             var glow = new Color(0.4f, 0.9f, 1f);
             GameEvents.RaiseBanner("THE ANCIENT SEALS", "Strike the stones in order: I → II → III → IIII");
+            ObjectiveTitle = "Strike the seals in order (I → IIII)";
             GameEvents.RaiseSubtitle("Akatsuki's Echo", "Count the marks, seeker. One, then two, then three, then four.");
             sealNext = 1;
             SealStone.Struck += OnSealStruck;
@@ -283,13 +553,16 @@ namespace HashiraChronicles
         Vector3 RandomSpawnPoint()
         {
             Vector3 player = battle.Team.Active != null ? battle.Team.Active.Position : Vector3.zero;
-            for (int attempt = 0; attempt < 10; attempt++)
+            Vector3 c = battle.Locked ? battle.LockCenter : (battle.Journey != null ? player : Vector3.zero);
+            float r = battle.Locked ? battle.LockRadius : BattleController.ArenaRadius;
+            for (int attempt = 0; attempt < 12; attempt++)
             {
                 float a = Random.Range(0f, Mathf.PI * 2f);
-                var p = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * Random.Range(8f, 13f);
+                var p = c + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * Random.Range(r * 0.45f, r * 0.85f);
+                p = BattleController.ClampToArena(p);
                 if (Vector3.Distance(p, player) > 6f) return p;
             }
-            return -player.normalized * 10f;
+            return BattleController.ClampToArena(c + (c - player).normalized * r * 0.7f);
         }
 
         public EnemyController SpawnEnemy(string enemyId, Vector3 pos, bool tracked)

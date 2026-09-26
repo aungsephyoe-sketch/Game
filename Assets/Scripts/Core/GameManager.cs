@@ -223,9 +223,56 @@ namespace HashiraChronicles
         /// The full road into a mission: walk the leader across the world map if the mission is somewhere else,
         /// play its story scene the first time, then fight.
         /// </summary>
-        public void BeginMission(MissionDefinition m)
+        /// <summary>An encounter on the road waiting for the player's choice (shown over the world map).</summary>
+        [System.NonSerialized] public Encounter CurrentEncounter;
+        /// <summary>The mission the team was travelling to when an encounter battle interrupted the journey.</summary>
+        [System.NonSerialized] public MissionDefinition PendingMission;
+        bool encounterRolled;
+
+        bool OnTravelMidway(string from, string to)
+        {
+            if (encounterRolled) return false;
+            encounterRolled = true;
+            CurrentEncounter = EncounterSystem.Roll(Data, from, to);
+            if (CurrentEncounter != null) Audio.Play(CurrentEncounter.battle ? "roar" : "perfect", 0.5f);
+            return CurrentEncounter != null;
+        }
+
+        /// <summary>The player's answer to a road encounter.</summary>
+        public string ResolveEncounter(bool accept)
+        {
+            var e = CurrentEncounter;
+            if (e == null) return null;
+            if (e.battle && accept)
+            {
+                CurrentEncounter = null;
+                PendingMission = SelectedMission;
+                StartMission(EncounterSystem.BuildBattle(e));
+                return null;
+            }
+            string msg = e.battle ? "You slip past unseen." : EncounterSystem.Resolve(Data, e, accept);
+            Save();
+            CurrentEncounter = null;
+            return msg;
+        }
+
+        /// <summary>After an encounter battle: pick the road back up toward the original destination.</summary>
+        public void ContinueJourney()
+        {
+            var m = PendingMission;
+            PendingMission = null;
+            if (m != null) BeginMission(m, true);
+            else GoTo(GameScreen.WorldMap);
+        }
+
+        public void BeginMission(MissionDefinition m) { BeginMission(m, false); }
+
+        public void BeginMission(MissionDefinition m, bool resuming)
         {
             if (m == null) return;
+            if (!resuming) encounterRolled = false;
+            Map.OnMidway = OnTravelMidway;
+            Map.Paused = () => CurrentEncounter != null;
             SelectedMission = m;
             if (!string.IsNullOrEmpty(m.regionId) && m.regionId != Data.currentRegion && System.Array.IndexOf(MapStage.RouteOrder, m.regionId) >= 0
                 && m.type != MissionType.Training && m.type != MissionType.Event)
@@ -247,6 +294,10 @@ namespace HashiraChronicles
         public void TravelTo(string regionId)
         {
             if (Map.Traveling || regionId == Data.currentRegion) return;
+            encounterRolled = false;
+            SelectedMission = null;
+            Map.OnMidway = OnTravelMidway;
+            Map.Paused = () => CurrentEncounter != null;
             TravelDestination = regionId;
             Map.TravelTo(regionId, Data, () => { TravelDestination = null; Save(); });
         }
@@ -338,7 +389,7 @@ namespace HashiraChronicles
                     QuestSystem.Report("boss", 1 + m.preBosses.Count);
                     Data.bossesDefeated += 1 + m.preBosses.Count;
                 }
-                if (!string.IsNullOrEmpty(m.regionId) && System.Array.IndexOf(MapStage.RouteOrder, m.regionId) >= 0) Data.currentRegion = m.regionId;
+                if (m.type != MissionType.Encounter && !string.IsNullOrEmpty(m.regionId) && System.Array.IndexOf(MapStage.RouteOrder, m.regionId) >= 0) Data.currentRegion = m.regionId;
             }
             Save();
             LastResult = result;

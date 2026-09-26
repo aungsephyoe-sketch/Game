@@ -15,6 +15,24 @@ gathers allies (Sora, Kiba, Hana, Captain Tetsu, the Flame Pillar Homura), uncov
 royal court, learns in the temple that his power is the dawn half of the Demon Lord's own heart, loses
 people he loves, and finally faces Veyrath in two forms.
 
+### Every mission is a journey
+Missions are no longer a single arena. Each one is a road through its region — e.g. *Village Entrance →
+Forest Path → Broken Bridge → Demon Camp → Demon Shrine* — that you physically walk: roadside lanterns, torches,
+prayer flags and signposts show the way; ambushes wait on longer stretches; fights happen in clearings sealed by a
+spirit barrier; some missions have a clue to investigate (and a trap); the temple has a seal puzzle. The last
+stretch before a boss goes quiet and dark, then the boss gets a camera reveal (wide shot → the ground shakes →
+it rises → close-up → title card → roar) in its own arena (burning shrine, rotten forest heart, storm summit,
+temple court, throne of the eclipse…), and the arena turns hostile when it enrages (lightning, falling rocks, fire).
+The HUD shows the current objective with live distance/kill counts, a route strip and a waypoint arrow, and the
+next region's landmark stands on the horizon. On the world map, travel can trigger random encounters (ambushes,
+rare monsters, wandering bosses, merchants, travellers, treasure, caves, a mysterious stranger), and the camera
+swoops down into the destination before the mission begins.
+
+### Higgsfield art
+Character masters, a bestiary, region key art, cinematic keyframes and two rigged 3D models (Ren and Veyrath)
+were generated with Higgsfield — see [docs/ART_BIBLE.md](docs/ART_BIBLE.md). `run.sh` downloads them
+(`tools/fetch_art.sh`); the game works without them (procedural fallbacks) and picks them up automatically.
+
 ### The game loop
 - **Opening cinematic** on first launch (peaceful village → the sky changes → the attack → the power
   awakens → *THE JOURNEY BEGINS*) flows straight into the first battle.

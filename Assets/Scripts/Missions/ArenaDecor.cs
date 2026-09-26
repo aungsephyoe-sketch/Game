@@ -17,10 +17,23 @@ namespace HashiraChronicles
         static bool Chance(double p) { return rng.NextDouble() < p; }
         static Vector3 Ring(float angleDeg, float radius) { return Quaternion.Euler(0f, angleDeg, 0f) * Vector3.forward * radius; }
 
-        public static void Build(ArenaTheme theme, Transform root, Transform dynamicRoot, int seed, bool combatArena = true)
+        /// <summary>When false, region weather and bird flocks are skipped (journeys add their own, following the player).</summary>
+        public static bool Ambient = true;
+
+        static void Weather(Transform parent, Vector3 center, string kind, float area = 40f)
+        {
+            if (Ambient) EnvFx.Weather(parent, center, kind, area);
+        }
+
+        static void Birds(Transform parent, Vector3 center, int count, Color color)
+        {
+            if (Ambient) BirdFlock.Create(parent, center, count, color);
+        }
+
+        public static void Build(ArenaTheme theme, Transform root, Transform dynamicRoot, int seed, bool combatArena = true, float densityScale = 1f)
         {
             rng = new System.Random(seed);
-            density = GameSettings.SceneryDensity;
+            density = GameSettings.SceneryDensity * densityScale;
             switch (theme.kind)
             {
                 case EnvironmentKind.Village: Village(theme, root, dynamicRoot); break;
@@ -176,13 +189,13 @@ namespace HashiraChronicles
                 MeshFactory.MeshObject(MeshFactory.Cone(), root, Ring(i * 52f + 10f, Rand(55f, 70f)), new Vector3(Rand(30f, 45f), Rand(18f, 30f), Rand(30f, 45f)), mountain, false);
             if (t.burning)
             {
-                EnvFx.Weather(dyn, Vector3.zero, "embers");
-                EnvFx.Weather(dyn, Vector3.zero, "ash");
+                Weather(dyn, Vector3.zero, "embers");
+                Weather(dyn, Vector3.zero, "ash");
             }
             else
             {
-                EnvFx.Weather(dyn, Vector3.zero, "leaves");
-                BirdFlock.Create(dyn, Vector3.zero, 5, new Color(0.15f, 0.12f, 0.12f));
+                Weather(dyn, Vector3.zero, "leaves");
+                Birds(dyn, Vector3.zero, 5, new Color(0.15f, 0.12f, 0.12f));
             }
         }
 
@@ -227,8 +240,8 @@ namespace HashiraChronicles
                     MeshFactory.Primitive(PrimitiveType.Sphere, root, p + Vector3.up * 0.55f * s, new Vector3(0.7f, 0.35f, 0.7f) * s, shroom);
                 }
             }
-            EnvFx.Weather(dyn, Vector3.zero, "motes");
-            EnvFx.Weather(dyn, Vector3.zero, "leaves");
+            Weather(dyn, Vector3.zero, "motes");
+            Weather(dyn, Vector3.zero, "leaves");
             // Ground fog cards.
             var fogMat = MaterialFactory.Transparent(new Color(t.fog.r * 1.4f, t.fog.g * 1.4f, t.fog.b * 1.4f, 0.25f), true);
             for (int i = 0; i < 8; i++)
@@ -265,7 +278,7 @@ namespace HashiraChronicles
                 var c = MeshFactory.MeshObject(MeshFactory.Cone(), root, Ring(Rand(0f, 360f), Rand(R + 0.5f, R + 3f)), new Vector3(0.8f, Rand(1.5f, 3f), 0.8f), ice);
                 c.transform.localRotation = Quaternion.Euler(Rand(-15f, 15f), 0f, Rand(-15f, 15f));
             }
-            EnvFx.Weather(dyn, Vector3.zero, "snow", 50f);
+            Weather(dyn, Vector3.zero, "snow", 50f);
         }
 
         static void Kingdom(ArenaTheme t, Transform root, Transform dyn, bool fallen)
@@ -335,8 +348,8 @@ namespace HashiraChronicles
                 int npcs = Mathf.RoundToInt(8 * density);
                 for (int i = 0; i < npcs; i++)
                     NpcWalker.Spawn(dyn, i % 3 == 0 ? "npc_soldier" : (i % 2 == 0 ? "npc_villager" : "npc_villager2"), Vector3.zero, R + 1.5f, R + 4f, chatter);
-                BirdFlock.Create(dyn, Vector3.zero, 6, new Color(0.95f, 0.95f, 0.95f));
-                EnvFx.Weather(dyn, Vector3.zero, "leaves");
+                Birds(dyn, Vector3.zero, 6, new Color(0.95f, 0.95f, 0.95f));
+                Weather(dyn, Vector3.zero, "leaves");
             }
             else
             {
@@ -349,8 +362,8 @@ namespace HashiraChronicles
                     r.transform.localRotation = Quaternion.Euler(Rand(-20f, 20f), Rand(0f, 360f), Rand(-20f, 20f));
                 }
                 for (int i = 0; i < 6; i++) EnvFx.Fire(dyn, Ring(i * 60f + 15f, R + 2f), 1.3f, i % 2 == 0);
-                EnvFx.Weather(dyn, Vector3.zero, "embers");
-                EnvFx.Weather(dyn, Vector3.zero, "ash");
+                Weather(dyn, Vector3.zero, "embers");
+                Weather(dyn, Vector3.zero, "ash");
             }
         }
 
@@ -402,7 +415,7 @@ namespace HashiraChronicles
                 sp.BobHeight = 0.4f;
             }
             Lanterns(root, t, 8);
-            EnvFx.Weather(dyn, Vector3.zero, "motes");
+            Weather(dyn, Vector3.zero, "motes");
         }
 
         static void DemonLand(ArenaTheme t, Transform root, Transform dyn)
@@ -434,8 +447,8 @@ namespace HashiraChronicles
                 var rib = MeshFactory.Primitive(PrimitiveType.Capsule, root, Ring(200f + i * 6f, 30f) + Vector3.up * 5f, new Vector3(1f, 7f, 1f), bone);
                 rib.transform.localRotation = Quaternion.Euler(0f, 200f + i * 6f, 35f);
             }
-            EnvFx.Weather(dyn, Vector3.zero, "embers");
-            EnvFx.Weather(dyn, Vector3.zero, "ash");
+            Weather(dyn, Vector3.zero, "embers");
+            Weather(dyn, Vector3.zero, "ash");
         }
 
         static void Castle(ArenaTheme t, Transform root, Transform dyn)
@@ -479,7 +492,7 @@ namespace HashiraChronicles
                 sp.BobHeight = 0.8f;
                 sp.BobSpeed = 0.8f;
             }
-            EnvFx.Weather(dyn, Vector3.zero, "embers");
+            Weather(dyn, Vector3.zero, "embers");
         }
     }
 }

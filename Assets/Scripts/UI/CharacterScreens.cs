@@ -26,7 +26,15 @@ namespace HashiraChronicles
                 var def = GameDatabase.GetCharacter(c.id);
                 var r = new Rect(safe.x + 30f + (i % cols) * (cardW + gap), top + (i / cols) * (cardH + gap), cardW, cardH);
                 UIStyles.PanelBox(r, ElementChart.ColorOf(def.element));
-                UIStyles.Rect(new Rect(r.x, r.y + 4f, 10f, r.height - 4f), def.haoriColor);
+                var portrait = ArtLibrary.Character(def);
+                if (portrait != null)
+                {
+                    // Master art (Higgsfield), cropped to the upper body, fading into the card.
+                    var pr = new Rect(r.xMax - 170f, r.y + 6f, 164f, r.height - 12f);
+                    GUI.DrawTextureWithTexCoords(pr, portrait, new Rect(0.2f, 0.45f, 0.6f, 0.52f));
+                    UIStyles.Rect(new Rect(pr.x, pr.y, 30f, pr.height), new Color(0.06f, 0.05f, 0.1f, 0.6f));
+                }
+                UIStyles.Rect(new Rect(r.x, r.y + 4f, 10f, r.height - 4f), RarityInfo.Color(c.stars));
                 GUI.Label(new Rect(r.x + 30f, r.y + 18f, r.width - 40f, 44f), def.displayName, UIStyles.H2);
                 GUI.Label(new Rect(r.x + 30f, r.y + 62f, r.width - 40f, 36f), def.versionTitle, UIStyles.Small);
                 UIStyles.Colored(new Rect(r.x + 30f, r.y + 100f, r.width - 40f, 44f), Stars(c.stars), UIStyles.Sized(UIStyles.H2, 34), UIStyles.Gold);

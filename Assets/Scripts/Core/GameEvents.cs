@@ -18,6 +18,8 @@ namespace HashiraChronicles
         public static event System.Action<EnemyDefinition> BossIntro;
         /// <summary>In-battle dialogue line (speaker, text).</summary>
         public static event System.Action<string, string> Subtitle;
+        /// <summary>The team reached a named place along the mission road (name, region).</summary>
+        public static event System.Action<string, string> AreaEntered;
 
         public static void RaiseDamageDealt(DamageInfo info, Combatant target) { var h = DamageDealt; if (h != null) h(info, target); }
         public static void RaiseEnemyKilled(EnemyController e) { var h = EnemyKilled; if (h != null) h(e); }
@@ -29,6 +31,7 @@ namespace HashiraChronicles
         public static void RaisePerfectDodge() { var h = PerfectDodge; if (h != null) h(); }
         public static void RaiseImpact(float strength) { var h = Impact; if (h != null) h(strength); }
         public static void RaiseBossIntro(EnemyDefinition d) { var h = BossIntro; if (h != null) h(d); }
+        public static void RaiseAreaEntered(string name, string sub) { var h = AreaEntered; if (h != null) h(name, sub); }
         public static void RaiseSubtitle(string speaker, string text) { var h = Subtitle; if (h != null) h(speaker, text); }
         public static void RaiseCharacterUpgraded(OwnedCharacter c) { var h = CharacterUpgraded; if (h != null) h(c); }
     }

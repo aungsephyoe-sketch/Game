@@ -108,6 +108,13 @@ namespace HashiraChronicles
         public Color accentColor = new Color(0.9f, 0.2f, 0.25f);
         /// <summary>Selects the pattern set used by BossAI.</summary>
         public string bossStyle;
+        /// <summary>Body plan used by the procedural model (see MonsterBuilder): shadow, beast, bone, forest, lion,
+        /// void, knight, guardian, general, lord, ghoul, stalker, hunter, imp, oni, wraith, sentinel, dummy.</summary>
+        public string form = "ghoul";
+        /// <summary>Bestiary art in Resources/Art/Monsters (Higgsfield concept), shown in mission previews.</summary>
+        public string artKey;
+        /// <summary>What to exploit (shown in the bestiary on mission pages).</summary>
+        public string weakness = "";
         /// <summary>Boss epithet for the intro card.</summary>
         public string bossTitle = "";
         public string description = "";
@@ -245,6 +252,12 @@ namespace HashiraChronicles
         public bool training;
         /// <summary>Extra bosses fought before the final one (generals).</summary>
         public List<string> preBosses = new List<string>();
+        /// <summary>Optional names for the places along the mission's route (otherwise chosen from the region).</summary>
+        public List<string> route = new List<string>();
+        /// <summary>A place along the route to investigate (story beat + ambush), e.g. "the abandoned village".</summary>
+        public string investigate;
+        /// <summary>What Ren says when investigating.</summary>
+        public string investigateLine;
         public string MissionLabel { get { return id.ToUpper(); } }
     }
 

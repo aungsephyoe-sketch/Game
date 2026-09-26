@@ -19,12 +19,98 @@ namespace HashiraChronicles
         public float TotalDamage { get; private set; }
         public bool Finished { get { return Mission != null && Mission.Finished; } }
 
+        /// <summary>The mission's route (null in the training ground, which is a single arena).</summary>
+        public Journey Journey { get; private set; }
+        public JourneyBuilder.Result World { get; private set; }
+        /// <summary>True while a fight holds the team inside a clearing (barrier up).</summary>
+        public bool Locked { get; private set; }
+        public Vector3 LockCenter { get; private set; }
+        public float LockRadius { get; private set; }
+        /// <summary>Player input is ignored while a cinematic plays.</summary>
+        public bool CinematicLock;
+        GameObject barrier;
+
+        /// <summary>Keeps a position inside the playable space: the locked clearing, else the road and its clearings.</summary>
         public static Vector3 ClampToArena(Vector3 p)
         {
             p.y = 0f;
+            var b = Current;
+            if (b != null && b.Journey != null)
+            {
+                if (b.Locked)
+                {
+                    Vector3 o = p - b.LockCenter;
+                    o.y = 0f;
+                    if (o.magnitude > b.LockRadius) p = b.LockCenter + o.normalized * b.LockRadius;
+                    p.y = 0f;
+                    return p;
+                }
+                p = b.Journey.Clamp(p);
+                p.y = 0f;
+                return p;
+            }
             float m = new Vector2(p.x, p.z).magnitude;
             if (m > ArenaRadius) p *= ArenaRadius / m;
             return p;
+        }
+
+        /// <summary>Centre of the current fighting area (the locked clearing, else the origin arena).</summary>
+        public static Vector3 ArenaCenter
+        {
+            get
+            {
+                var b = Current;
+                if (b == null || b.Journey == null) return Vector3.zero;
+                if (b.Locked) return b.LockCenter;
+                return b.Team != null && b.Team.Active != null ? b.Team.Active.Position : Vector3.zero;
+            }
+        }
+
+        public static float CurrentArenaRadius
+        {
+            get
+            {
+                var b = Current;
+                return b != null && b.Journey != null && b.Locked ? b.LockRadius : ArenaRadius;
+            }
+        }
+
+        /// <summary>Raises a spirit barrier around a clearing: nobody leaves until the fight is over.</summary>
+        public void Lock(Vector3 center, float radius, Color color)
+        {
+            Unlock();
+            Locked = true;
+            LockCenter = new Vector3(center.x, 0f, center.z);
+            LockRadius = radius;
+            barrier = new GameObject("Barrier");
+            barrier.transform.SetParent(transform, false);
+            barrier.transform.position = LockCenter;
+            var mat = MaterialFactory.Additive(new Color(color.r, color.g, color.b, 0.55f));
+            var ring = MeshFactory.MeshObject(MeshFactory.Ring(0.97f), barrier.transform, Vector3.up * 0.05f, new Vector3(radius + 0.5f, 1f, radius + 0.5f), mat, false);
+            ring.AddComponent<Spinner>().DegreesPerSecond = new Vector3(0f, 12f, 0f);
+            int n = 28;
+            var wall = MaterialFactory.Additive(new Color(color.r, color.g, color.b, 0.22f));
+            for (int i = 0; i < n; i++)
+            {
+                float a = i * Mathf.PI * 2f / n;
+                var post = MeshFactory.Primitive(PrimitiveType.Cube, barrier.transform, new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * (radius + 0.5f) + Vector3.up * 1.2f,
+                    new Vector3(0.08f, 2.4f, radius * 2f * Mathf.PI / n), wall);
+                post.transform.localRotation = Quaternion.Euler(0f, -a * Mathf.Rad2Deg, 0f);
+                post.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+            VFX.Shockwave(LockCenter, radius, color, 0.6f);
+            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("charge", 0.4f);
+        }
+
+        public void Unlock()
+        {
+            if (barrier != null)
+            {
+                VFX.Shockwave(LockCenter, LockRadius, Color.white, 0.4f);
+                Destroy(barrier);
+            }
+            barrier = null;
+            Locked = false;
         }
 
         public void Setup(MissionDefinition def, PlayerData data)
@@ -36,12 +122,26 @@ namespace HashiraChronicles
             DamageNumbers.Clear();
             PlayerCharacter.LockTarget = null;
 
-            ArenaBuilder.Build(def.theme, transform);
+            Vector3 spawn = new Vector3(0f, 0f, -6f);
+            if (def.training) ArenaBuilder.Build(def.theme, transform);
+            else
+            {
+                // Every mission is a journey through the region toward its destination.
+                Journey = Journey.Build(def);
+                World = JourneyBuilder.Build(Journey, def, transform);
+                spawn = Journey.Start;
+            }
 
             var teamGo = new GameObject("Team");
             teamGo.transform.SetParent(transform, false);
             Team = teamGo.AddComponent<TeamSystem>();
-            Team.Setup(data, new Vector3(0f, 0f, -6f));
+            Team.Setup(data, spawn);
+            if (Journey != null && Team.Active != null && Journey.path.Count > 1)
+            {
+                Vector3 dir = Journey.path[1] - Journey.path[0];
+                dir.y = 0f;
+                if (dir.sqrMagnitude > 0.001f) foreach (var mbr in Team.Members) mbr.transform.rotation = Quaternion.LookRotation(dir);
+            }
             Team.ActiveChanged += OnActiveChanged;
 
             Controller = gameObject.AddComponent<PlayerController>();
@@ -69,6 +169,7 @@ namespace HashiraChronicles
 
         void Update()
         {
+            if (World != null && World.follow != null && Team != null && Team.Active != null) World.follow.position = Team.Active.Position + Vector3.up * 6f;
             if (ComboTimer > 0f)
             {
                 ComboTimer -= Time.deltaTime;

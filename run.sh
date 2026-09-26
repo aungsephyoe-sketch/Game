@@ -11,6 +11,9 @@ echo "== 1/4 Getting the latest code"
 git pull --ff-only || { echo "!! git pull failed (see above)."; exit 1; }
 git log --oneline -1
 
+echo "   Downloading Higgsfield art (first run only)..."
+bash tools/fetch_art.sh
+
 echo "== 2/4 Checking Unity"
 if [ -z "$UNITY" ] || [ ! -x "$UNITY" ]; then echo "!! Unity editor not found in /Applications/Unity/Hub/Editor"; exit 1; fi
 if pgrep -f "Unity.app/Contents/MacOS/Unity" | grep -v $$ >/dev/null && pgrep -fl "Unity.app/Contents/MacOS/Unity" | grep -q -- "-projectpath\|-projectPath"; then

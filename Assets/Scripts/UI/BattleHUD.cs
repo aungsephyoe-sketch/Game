@@ -15,7 +15,13 @@ namespace HashiraChronicles
             DrawEnemyBars(cam);
             DrawDamageNumbers(cam);
             DrawImpactFrame();
-            DrawObjectives(b);
+            if (!b.CinematicLock)
+            {
+                DrawObjectives(b);
+                DrawRouteStrip(b);
+            }
+            DrawWaypoint(b, cam);
+            DrawAreaTitle();
             DrawPortraits(b);
             DrawBossBar(b);
             DrawCombo(b);
@@ -87,19 +93,116 @@ namespace HashiraChronicles
         void DrawObjectives(BattleController b)
         {
             var m = b.Mission;
-            var r = new Rect(safe.x + 24f, safe.y + 20f, 520f, 214f);
-            UIStyles.Rect(r, new Color(0f, 0f, 0f, 0.45f));
+            var r = new Rect(safe.x + 24f, safe.y + 20f, 540f, 214f);
+            UIStyles.Rect(r, new Color(0f, 0f, 0f, 0.42f));
+            UIStyles.Rect(new Rect(r.x, r.y, 4f, r.height), UIStyles.Gold);
             int secs = Mathf.FloorToInt(m.Elapsed);
-            string stage = m.InBossStage ? "<color=#FF6060>BOSS</color>" : "WAVE " + Mathf.Min(m.WaveIndex + 1, m.WaveCount) + "/" + m.WaveCount;
-            GUI.Label(new Rect(r.x + 18f, r.y + 10f, r.width - 36f, 40f), m.Def.id + "  " + stage + "   <color=#FFD36B>" + secs / 60 + ":" + (secs % 60).ToString("00") + "</color>",
-                UIStyles.Sized(UIStyles.H2, 30));
+            GUI.Label(new Rect(r.x + 18f, r.y + 8f, r.width - 36f, 30f), "<color=#FFD36B>CURRENT OBJECTIVE</color>   <color=#999999>" + m.Def.id + "  " + secs / 60 + ":" + (secs % 60).ToString("00") + "</color>",
+                UIStyles.Sized(UIStyles.Small, 20));
+            if (m.Def.training)
+            {
+                GUI.Label(new Rect(r.x + 18f, r.y + 42f, r.width - 36f, 44f), "⚔ Practise freely", UIStyles.Sized(UIStyles.H2, 30));
+                GUI.Label(new Rect(r.x + 18f, r.y + 88f, r.width - 36f, 36f), "<color=#AAAAAA>Pause → Retreat to leave</color>", UIStyles.Sized(UIStyles.Body, 22));
+                return;
+            }
+            string title = string.IsNullOrEmpty(m.ObjectiveTitle) ? m.Def.name : m.ObjectiveTitle;
+            GUI.Label(new Rect(r.x + 18f, r.y + 38f, r.width - 36f, 44f), "⚔ " + title, UIStyles.Sized(UIStyles.H2, 30));
+            string detail = "";
+            var a = b.Team.Active;
+            if (m.ObjectiveTarget.HasValue && a != null)
+                detail = "Distance: " + Mathf.Max(0, Mathf.RoundToInt((Journey.Flat(m.ObjectiveTarget.Value) - Journey.Flat(a.Position)).magnitude)) + " m";
+            else if (m.StageTotal > 0)
+                detail = m.StageKills + " / " + m.StageTotal + " defeated";
+            else if (m.Boss != null && m.Boss.IsAlive)
+                detail = "Phase " + (m.Boss.Phase + 1) + " / " + m.Boss.PhaseCount;
+            GUI.Label(new Rect(r.x + 18f, r.y + 84f, r.width - 36f, 36f), "<color=#DDDDDD>" + detail + "</color>", UIStyles.Sized(UIStyles.Body, 25));
+            // The three star objectives, compact.
             for (int i = 0; i < 3; i++)
             {
                 bool met = m.ObjectiveMet(i);
-                string mark = met ? "<color=#7CFF8A>☑</color>" : "☐";
-                GUI.Label(new Rect(r.x + 18f, r.y + 58f + i * 50f, r.width - 36f, 44f), mark + " " + m.ObjectiveLabel(i) + "  <color=#AAAAAA>" + m.ObjectiveProgress(i) + "</color>",
-                    UIStyles.Sized(UIStyles.Body, 25));
+                GUI.Label(new Rect(r.x + 18f, r.y + 124f + i * 28f, r.width - 36f, 28f), (met ? "<color=#FFD36B>★</color> " : "<color=#777777>☆</color> ") +
+                    "<color=#BBBBBB>" + m.ObjectiveLabel(i) + "  " + m.ObjectiveProgress(i) + "</color>", UIStyles.Sized(UIStyles.Small, 19));
             }
+        }
+
+        /// <summary>The journey at a glance: every place on the road, where the team is, and what waits at the end.</summary>
+        void DrawRouteStrip(BattleController b)
+        {
+            var j = b.Journey;
+            var m = b.Mission;
+            if (j == null || m.InBossStage) return;
+            int n = j.places.Count;
+            float w = Mathf.Min(760f, W - 1300f);
+            if (w < 360f) w = 360f;
+            float x0 = W * 0.5f - w * 0.5f, y = safe.y + 40f;
+            int current = m.StageIndex < j.stages.Count ? j.stages[Mathf.Min(m.StageIndex, j.stages.Count - 1)].place : n - 1;
+            bool travelling = m.ObjectiveTarget.HasValue;
+            UIStyles.Rect(new Rect(x0 - 20f, y - 26f, w + 40f, 84f), new Color(0f, 0f, 0f, 0.3f));
+            for (int i = 0; i < n; i++)
+            {
+                float x = x0 + (n > 1 ? w * i / (n - 1) : w * 0.5f);
+                if (i < n - 1)
+                {
+                    float x2 = x0 + w * (i + 1) / (n - 1);
+                    UIStyles.Rect(new Rect(x, y - 2f, x2 - x, 4f), i < current ? UIStyles.Gold : new Color(1f, 1f, 1f, 0.25f));
+                }
+                bool done = i < current || (i == current && !travelling);
+                bool here = i == current;
+                bool boss = j.places[i].isBossArena;
+                float rad = here ? 13f + Mathf.Sin(Time.unscaledTime * 5f) * 2f : 9f;
+                Color c = boss ? UIStyles.Crimson : done ? UIStyles.Gold : new Color(0.6f, 0.6f, 0.65f);
+                UIStyles.CircleTex(new Vector2(x, y), rad, c);
+                if (boss) GUI.Label(new Rect(x - 20f, y - 20f, 40f, 40f), "☠", UIStyles.Sized(UIStyles.Center, 22));
+                if (here || i == n - 1)
+                    GUI.Label(new Rect(x - 150f, y + 14f, 300f, 30f), (here ? "<color=#FFD36B>" : "<color=#FF8080>") + j.places[i].name + "</color>", UIStyles.Sized(UIStyles.Center, 18));
+            }
+        }
+
+        /// <summary>A diamond over the objective when it's on screen, an edge arrow when it isn't.</summary>
+        void DrawWaypoint(BattleController b, Camera cam)
+        {
+            var m = b.Mission;
+            var a = b.Team.Active;
+            if (cam == null || a == null || !m.ObjectiveTarget.HasValue || b.CinematicLock) return;
+            Vector3 target = m.ObjectiveTarget.Value + Vector3.up * 3f;
+            float s = HudLayout.Scale;
+            Vector3 sp = cam.WorldToScreenPoint(target);
+            var p = new Vector2(sp.x / s, (Screen.height - sp.y) / s);
+            int dist = Mathf.RoundToInt((Journey.Flat(target) - Journey.Flat(a.Position)).magnitude);
+            bool onScreen = sp.z > 0f && p.x > 60f && p.x < W - 60f && p.y > 60f && p.y < H - 60f;
+            float bob = Mathf.Sin(Time.unscaledTime * 4f) * 6f;
+            if (onScreen)
+            {
+                UIStyles.Outlined(new Rect(p.x - 40f, p.y - 40f + bob, 80f, 60f), "◆", UIStyles.Sized(UIStyles.Center, 40), UIStyles.Gold, 2f);
+                GUI.Label(new Rect(p.x - 80f, p.y + 14f + bob, 160f, 30f), dist + " m", UIStyles.Sized(UIStyles.Center, 22));
+                return;
+            }
+            // Edge arrow pointing toward the objective (from the player's screen position).
+            Vector3 ps = cam.WorldToScreenPoint(a.Position);
+            Vector2 from = new Vector2(ps.x / s, (Screen.height - ps.y) / s);
+            Vector2 dir = p - from;
+            if (sp.z < 0f) dir = -dir;
+            if (dir.sqrMagnitude < 1f) return;
+            dir.Normalize();
+            Vector2 at = from + dir * 190f;
+            float ang = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + 90f;
+            var old = GUI.matrix;
+            GUIUtility.RotateAroundPivot(ang, at * HudLayout.Scale);
+            UIStyles.Outlined(new Rect(at.x - 30f, at.y - 34f, 60f, 60f), "▲", UIStyles.Sized(UIStyles.Center, 40), UIStyles.Gold, 2f);
+            GUI.matrix = old;
+            GUI.Label(new Rect(at.x - 80f, at.y + 22f, 160f, 30f), dist + " m", UIStyles.Sized(UIStyles.Center, 20));
+        }
+
+        void DrawAreaTitle()
+        {
+            float age = Time.unscaledTime - areaTime;
+            if (string.IsNullOrEmpty(areaName) || age > 3.6f) return;
+            float a = Mathf.Clamp01(age / 0.5f) * Mathf.Clamp01((3.6f - age) / 0.8f);
+            float spread = Mathf.Lerp(0.6f, 1f, Mathf.Clamp01(age / 0.8f));
+            float y = H * 0.24f;
+            UIStyles.Rect(new Rect(W * 0.5f - 420f * spread, y + 78f, 840f * spread, 2f), new Color(1f, 0.85f, 0.5f, a));
+            UIStyles.Outlined(new Rect(0f, y, W, 80f), areaName.ToUpper(), UIStyles.Sized(UIStyles.Title, 64), new Color(1f, 0.95f, 0.85f, a), 3f);
+            UIStyles.Colored(new Rect(0f, y + 84f, W, 40f), areaSub, UIStyles.Sized(UIStyles.Center, 26), new Color(0.85f, 0.85f, 0.9f, a));
         }
 
         void DrawPortraits(BattleController b)

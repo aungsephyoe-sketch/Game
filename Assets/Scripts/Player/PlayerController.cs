@@ -15,6 +15,11 @@ namespace HashiraChronicles
 
             if (input.pauseDown) gm.TogglePause();
             if (TimeController.Paused || BattleController.Current == null || BattleController.Current.Finished) return;
+            if (BattleController.Current.CinematicLock)
+            {
+                if (Team.Active != null) Team.Active.HandleInput(InputState.Empty, Time.deltaTime);
+                return;
+            }
 
             if (input.switchTo >= 0) Team.TrySwitch(input.switchTo);
             var active = Team.Active;
