@@ -18,14 +18,18 @@ namespace HashiraChronicles
             var ground = new GameObject("Ground");
             ground.transform.SetParent(root.transform, false);
             ground.transform.localScale = new Vector3(90f, 1f, 90f);
-            ground.AddComponent<MeshFilter>().sharedMesh = MeshFactory.Disc();
+            ground.AddComponent<MeshFilter>().sharedMesh = MeshFactory.PlanarDisc();
             var gmr = ground.AddComponent<MeshRenderer>();
-            gmr.sharedMaterial = MaterialFactory.Toon(theme.ground, 0f);
+            gmr.sharedMaterial = MaterialFactory.Painted(ArtLibrary.GroundKey(theme), MaterialFactory.TextureTint(theme.ground), 90f / 5f);
             gmr.receiveShadows = true;
 
             if (combatArena)
             {
                 // Subtle rings mark the playable area.
+                // The fighting ground: a worn clearing of the region's road surface.
+                var clearing = MeshFactory.MeshObject(MeshFactory.PlanarDisc(), root.transform, Vector3.up * 0.008f, new Vector3(BattleController.ArenaRadius + 0.6f, 1f, BattleController.ArenaRadius + 0.6f),
+                    MaterialFactory.Painted(ArtLibrary.RoadKey(theme), MaterialFactory.TextureTint(JourneyBuilder.RoadColor(theme), 0.35f), (BattleController.ArenaRadius + 0.6f) / 3f), false);
+                clearing.GetComponent<Renderer>().receiveShadows = true;
                 AddFlat(root.transform, MeshFactory.Ring(0.96f), BattleController.ArenaRadius + 0.6f, 0.01f, MaterialFactory.Toon(theme.groundAccent, 0f));
                 AddFlat(root.transform, MeshFactory.Ring(0.97f), 11f, 0.012f, MaterialFactory.Toon(Color.Lerp(theme.ground, theme.groundAccent, 0.5f), 0f));
             }

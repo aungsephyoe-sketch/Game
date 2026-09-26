@@ -50,7 +50,7 @@ namespace HashiraChronicles
             p.FadeAlpha = 1f;
             p.Letterbox = true;
             Current = p;
-            p.StartCoroutine(p.Run());
+            p.StartCoroutine(SafeCoroutine.Run(p.Run(), "Cutscene " + id));
             return p;
         }
 
@@ -67,8 +67,20 @@ namespace HashiraChronicles
             Finish();
         }
 
+        float blackSince = -1f;
+        float startedAt;
+
         void Update()
         {
+            // Watchdog: never leave the player staring at a black screen.
+            if (startedAt <= 0f) startedAt = Time.unscaledTime;
+            if (FadeAlpha > 0.98f && string.IsNullOrEmpty(TitleText) && string.IsNullOrEmpty(FullText))
+            {
+                if (blackSince < 0f) blackSince = Time.unscaledTime;
+                else if (Time.unscaledTime - blackSince > 8f) { Debug.LogWarning("[Cutscene] stuck on black — ending scene"); Finish(); return; }
+            }
+            else blackSince = -1f;
+            if (Time.unscaledTime - startedAt > 300f) { Finish(); return; }
             if (FullText != null && VisibleChars < FullText.Length)
                 VisibleChars = Mathf.Min(FullText.Length, Mathf.FloorToInt((Time.unscaledTime - typeStart) * 55f));
             if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.J)) Advance();
@@ -82,7 +94,22 @@ namespace HashiraChronicles
             foreach (var step in scene.steps)
             {
                 if (finished) yield break;
-                yield return Execute(step);
+                // Run each step defensively: a broken step is logged and skipped, never freezes the scene.
+                var e = Execute(step);
+                float started = Time.unscaledTime;
+                while (true)
+                {
+                    bool more;
+                    try { more = e.MoveNext(); }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogError("[Cutscene " + scene.id + "] step " + step.kind + " failed: " + ex);
+                        more = false;
+                    }
+                    if (!more) break;
+                    yield return e.Current;
+                    if (Time.unscaledTime - started > 30f) { Debug.LogWarning("[Cutscene] step " + step.kind + " timed out"); break; }
+                }
             }
             Speaker = null;
             FullText = null;
@@ -103,6 +130,7 @@ namespace HashiraChronicles
                     set = new GameObject("Set");
                     set.transform.SetParent(transform, false);
                     ArenaBuilder.Build(s.theme, set.transform, false, s.theme.GetHashCode());
+                    PaintedBackdrop.Create(set.transform, ArtLibrary.Region(ArtLibrary.RegionFor(s.theme.kind)), Vector3.zero, 115f, PaintedBackdrop.TintFor(s.theme));
                     break;
 
                 case StepKind.Actor:

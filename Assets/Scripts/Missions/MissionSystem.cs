@@ -29,7 +29,7 @@ namespace HashiraChronicles
             Def = def;
             battle = owner;
             GameEvents.EnemyKilled += OnEnemyKilled;
-            StartCoroutine(Run());
+            StartCoroutine(SafeCoroutine.Run(Run(), "Mission " + def.id));
         }
 
         void OnDestroy()
@@ -99,6 +99,7 @@ namespace HashiraChronicles
 
             if (Def.allies > 0) SpawnAllies(Def.allies);
             var j = battle.Journey;
+            if (j == null) { yield return ClassicRun(); yield break; }
             GameEvents.RaiseAreaEntered(j.places[0].name, RegionName());
             if (Def.id == "1-1" && gm != null && !gm.Data.IsMissionCleared("1-1"))
                 GameEvents.RaiseBanner("FOLLOW THE ROAD", "The objective marker always shows where to go next");
@@ -123,6 +124,26 @@ namespace HashiraChronicles
                 }
             }
 
+            if (!Finished) End(true, "");
+        }
+
+        /// <summary>Fallback when the journey could not be built: waves then bosses in one arena.</summary>
+        IEnumerator ClassicRun()
+        {
+            if (Def.sealPuzzle) yield return SealPuzzle(Vector3.zero);
+            for (int w = 0; w < Def.waves.Count && !Finished; w++)
+            {
+                WaveIndex = w;
+                StageTotal = Def.waves[w].TotalCount;
+                stageKillBase = Kills;
+                ObjectiveTitle = "Defeat the demons (" + (w + 1) + "/" + Def.waves.Count + ")";
+                if (GameManager.Instance != null) GameManager.Instance.Audio.SetMusicState(MusicState.Combat);
+                yield return SpawnWave(Def.waves[w]);
+                while (alive.Count > 0 && !Finished) yield return null;
+                yield return new WaitForSeconds(0.6f);
+            }
+            if (!string.IsNullOrEmpty(Def.bossId) && !Finished)
+                yield return BossStage(new JourneyPlace { name = "Arena", pos = Vector3.zero, radius = BattleController.ArenaRadius, isBossArena = true });
             if (!Finished) End(true, "");
         }
 
@@ -614,7 +635,7 @@ namespace HashiraChronicles
             if (Finished) return;
             Finished = true;
             Victory = victory;
-            StartCoroutine(EndRoutine(reason));
+            StartCoroutine(SafeCoroutine.Run(EndRoutine(reason), "Mission end"));
         }
 
         IEnumerator EndRoutine(string reason)

@@ -37,9 +37,10 @@ namespace HashiraChronicles
             CenterSmall = Label(24, FontStyle.Normal, TextAnchor.MiddleCenter, Color.white);
             Right = Label(30, FontStyle.Bold, TextAnchor.MiddleRight, Color.white);
 
-            Button = MakeButton(32, new Color(0.2f, 0.15f, 0.28f), new Color(0.32f, 0.22f, 0.42f));
-            ButtonBig = MakeButton(48, new Color(0.62f, 0.1f, 0.16f), new Color(0.8f, 0.18f, 0.22f));
-            ButtonSmall = MakeButton(24, new Color(0.2f, 0.15f, 0.28f), new Color(0.32f, 0.22f, 0.42f));
+            // Lacquer-and-gold buttons: the same palette as the painted UI frame and the characters' art.
+            Button = MakeButton(32, new Color(0.13f, 0.1f, 0.2f), new Color(0.24f, 0.17f, 0.32f));
+            ButtonBig = MakeButton(48, new Color(0.55f, 0.08f, 0.14f), new Color(0.75f, 0.15f, 0.2f));
+            ButtonSmall = MakeButton(24, new Color(0.13f, 0.1f, 0.2f), new Color(0.24f, 0.17f, 0.32f));
         }
 
         static GUIStyle Label(int size, FontStyle style, TextAnchor anchor, Color color)
@@ -67,12 +68,13 @@ namespace HashiraChronicles
                 wordWrap = true,
                 richText = true
             };
-            s.normal.background = Solid(normal);
-            s.hover.background = Solid(hover);
-            s.active.background = Solid(hover * 1.2f);
+            s.normal.background = Lacquer(normal, new Color(0.78f, 0.62f, 0.3f));
+            s.hover.background = Lacquer(hover, new Color(1f, 0.85f, 0.45f));
+            s.active.background = Lacquer(hover * 1.25f, new Color(1f, 0.9f, 0.6f));
             s.focused.background = s.normal.background;
-            s.normal.textColor = s.hover.textColor = s.active.textColor = s.focused.textColor = Color.white;
-            s.border = new RectOffset(0, 0, 0, 0);
+            s.normal.textColor = s.focused.textColor = new Color(1f, 0.96f, 0.88f);
+            s.hover.textColor = s.active.textColor = Color.white;
+            s.border = new RectOffset(8, 8, 8, 8);
             s.padding = new RectOffset(12, 12, 8, 8);
             return s;
         }
@@ -87,6 +89,31 @@ namespace HashiraChronicles
                 sized[key] = s;
             }
             return s;
+        }
+
+        /// <summary>Button face: vertical lacquer gradient, a thin gold border and small corner notches.</summary>
+        static Texture2D Lacquer(Color face, Color gold)
+        {
+            const int n = 32;
+            var t = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            var px = new Color[n * n];
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float k = (float)y / (n - 1);
+                    Color c = Color.Lerp(face * 0.7f, face * 1.25f, k);
+                    bool edge = x < 2 || y < 2 || x >= n - 2 || y >= n - 2;
+                    bool inner = x == 3 || y == 3 || x == n - 4 || y == n - 4;
+                    bool corner = (x < 6 && y < 6) || (x >= n - 6 && y < 6) || (x < 6 && y >= n - 6) || (x >= n - 6 && y >= n - 6);
+                    if (edge) c = gold;
+                    else if (inner) c = Color.Lerp(c, gold, 0.35f);
+                    else if (corner && (x + y) % 2 == 0) c = Color.Lerp(c, gold, 0.5f);
+                    c.a = 0.96f;
+                    px[y * n + x] = c;
+                }
+            t.SetPixels(px);
+            t.Apply();
+            return t;
         }
 
         static Texture2D Solid(Color c)
@@ -152,10 +179,33 @@ namespace HashiraChronicles
             Rect(new Rect(r.xMax - thickness, r.y, thickness, r.height), c);
         }
 
+        /// <summary>
+        /// Menu panel in the game's lacquer-and-gold style: dark lacquer, the painted Higgsfield panel texture
+        /// underneath (when downloaded), a double gold border with corner ornaments, and an accent line.
+        /// </summary>
         public static void PanelBox(Rect r, Color? accent = null)
         {
             Rect(r, Panel);
-            Rect(new Rect(r.x, r.y, r.width, 4f), accent ?? Gold * 0.8f);
+            var tex = ArtLibrary.Surface("ui_panel");
+            if (tex != null)
+            {
+                var old = GUI.color;
+                GUI.color = new Color(1f, 1f, 1f, 0.38f);
+                GUI.DrawTextureWithTexCoords(r, tex, new UnityEngine.Rect(0.18f, 0.18f, 0.64f, 0.64f));
+                GUI.color = old;
+            }
+            var gold = new Color(Gold.r, Gold.g, Gold.b, 0.75f);
+            Frame(r, gold, 2f);
+            Frame(new Rect(r.x + 5f, r.y + 5f, r.width - 10f, r.height - 10f), new Color(Gold.r, Gold.g, Gold.b, 0.25f), 1f);
+            float c = Mathf.Min(18f, Mathf.Min(r.width, r.height) * 0.2f);
+            foreach (var p in new[] { new Vector2(r.x, r.y), new Vector2(r.xMax - c, r.y), new Vector2(r.x, r.yMax - c), new Vector2(r.xMax - c, r.yMax - c) })
+            {
+                Rect(new Rect(p.x, p.y, c, 3f), Gold);
+                Rect(new Rect(p.x, p.y + c - 3f, c, 3f), Gold);
+                Rect(new Rect(p.x, p.y, 3f, c), Gold);
+                Rect(new Rect(p.x + c - 3f, p.y, 3f, c), Gold);
+            }
+            if (accent.HasValue) Rect(new Rect(r.x + c, r.y, r.width - c * 2f, 4f), accent.Value);
         }
 
         public static void Bar(Rect r, float fill, Color color, Color? back = null)

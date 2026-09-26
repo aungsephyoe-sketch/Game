@@ -41,6 +41,53 @@ namespace HashiraChronicles
             return Load("Art/Regions/" + (regionId == "fallen" ? "kingdom" : regionId));
         }
 
+        /// <summary>Hand-painted tileable surface textures (grass, dirt, stone, snow, demon, wall, roof, bark, ui_panel).</summary>
+        public static Texture2D Surface(string key)
+        {
+            var t = Load("Art/Textures/" + key);
+            if (t != null && t.wrapMode != TextureWrapMode.Repeat && key != "ui_panel") t.wrapMode = TextureWrapMode.Repeat;
+            return t;
+        }
+
+        /// <summary>Ground texture for a region.</summary>
+        public static string GroundKey(ArenaTheme t)
+        {
+            switch (t.kind)
+            {
+                case EnvironmentKind.Mountain: return "snow";
+                case EnvironmentKind.DemonLand: case EnvironmentKind.FallenCity: return "demon";
+                case EnvironmentKind.Castle: return "stone";
+                default: return "grass";
+            }
+        }
+
+        /// <summary>Road / clearing texture for a region.</summary>
+        public static string RoadKey(ArenaTheme t)
+        {
+            switch (t.kind)
+            {
+                case EnvironmentKind.Kingdom: case EnvironmentKind.FallenCity: case EnvironmentKind.Temple: case EnvironmentKind.Castle: return "stone";
+                case EnvironmentKind.DemonLand: return "demon";
+                case EnvironmentKind.Mountain: return "snow";
+                default: return "dirt";
+            }
+        }
+
+        /// <summary>Region id whose painted art matches an environment kind (for backdrops).</summary>
+        public static string RegionFor(EnvironmentKind k)
+        {
+            switch (k)
+            {
+                case EnvironmentKind.Forest: return "forest";
+                case EnvironmentKind.Mountain: return "mountain";
+                case EnvironmentKind.Kingdom: case EnvironmentKind.FallenCity: return "kingdom";
+                case EnvironmentKind.Temple: return "temple";
+                case EnvironmentKind.DemonLand: return "demonland";
+                case EnvironmentKind.Castle: return "castle";
+                default: return "village";
+            }
+        }
+
         public static Texture2D WorldMap() { return Load("Art/Regions/worldmap"); }
 
         /// <summary>Chapter key art: a cinematic keyframe for the big story moments, else the chapter's region.</summary>

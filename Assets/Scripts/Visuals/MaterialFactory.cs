@@ -81,6 +81,33 @@ namespace HashiraChronicles
             return m;
         }
 
+        /// <summary>Toon material with a tiling hand-painted texture (falls back to flat colour if the art isn't downloaded).</summary>
+        static readonly System.Collections.Generic.Dictionary<string, Material> painted = new System.Collections.Generic.Dictionary<string, Material>();
+
+        public static Material Painted(string textureKey, Color tint, float tiling, float outline = 0f)
+        {
+            // Shared per (texture, tint, tiling) so static batching can merge the set pieces.
+            string key = textureKey + ColorUtility.ToHtmlStringRGB(tint) + tiling.ToString("F2") + outline.ToString("F3");
+            Material cached;
+            if (painted.TryGetValue(key, out cached) && cached != null) return cached;
+            var tex = ArtLibrary.Surface(textureKey);
+            var m = Toon(tint, outline);
+            if (tex != null)
+            {
+                m.mainTexture = tex;
+                m.mainTextureScale = new Vector2(tiling, tiling);
+            }
+            painted[key] = m;
+            return m;
+        }
+
+        /// <summary>Tint that keeps a region's mood while letting the painted texture show its own colours.</summary>
+        public static Color TextureTint(Color regionColor, float strength = 0.45f)
+        {
+            Color bright = regionColor * (1f / Mathf.Max(0.05f, Mathf.Max(regionColor.r, Mathf.Max(regionColor.g, regionColor.b))));
+            return Color.Lerp(Color.white, bright, strength) * Mathf.Lerp(1f, Mathf.Clamp(regionColor.maxColorComponent * 1.6f, 0.45f, 1f), 0.6f);
+        }
+
         public static Material Additive(Color color, bool textured = false)
         {
             var m = new Material(AdditiveShader);

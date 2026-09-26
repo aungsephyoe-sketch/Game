@@ -65,3 +65,17 @@ final-quality motion, add real clips (Mixamo or Higgsfield rig animations) as de
 1. Rigged models for Sora, Kiba, Hana, Tetsu, Homura (use each master job as the image source).
 2. Shadow Demon and Blood Beast models (most frequent enemies), then the Ancient Guardian.
 3. Animated clips (idle, run, attack) via `enable_animation` + `animation_action_id`, or Mixamo.
+
+## Surfaces, backdrops and UI (visual consistency pass)
+- **Hand-painted tileable textures** (Higgsfield): grass, dirt road, stone paving, snow, demon ground, plaster-and-timber
+  walls, roof tiles, tree bark. `MaterialFactory.Painted` applies them through the toon shader with a region tint
+  (`MaterialFactory.TextureTint`), so every surface shares the characters' painterly anime look. Ground and clearings
+  use planar UVs (`MeshFactory.PlanarDisc`); roads use square tiles along their length.
+- **Painted horizons**: the region's key art wraps around the home screen and every cutscene set
+  (`PaintedBackdrop`), tinted for night scenes, so the far background matches the concept art.
+- **UI**: lacquer-and-gold panels (the painted `ui_panel` texture + double gold frame and corner ornaments) and
+  matching lacquer buttons with gold borders (`UIStyles`).
+- **Character palettes** in `GameDatabase` now follow each master image (e.g. Ren: black / deep teal / ember red;
+  Sora: storm grey / indigo / gold), so the placeholder bodies read as the same people as their portraits.
+
+If a texture hasn't been downloaded, the game falls back to flat colours — nothing breaks.

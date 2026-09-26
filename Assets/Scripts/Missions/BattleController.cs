@@ -127,9 +127,22 @@ namespace HashiraChronicles
             else
             {
                 // Every mission is a journey through the region toward its destination.
-                Journey = Journey.Build(def);
-                World = JourneyBuilder.Build(Journey, def, transform);
-                spawn = Journey.Start;
+                try
+                {
+                    Journey = Journey.Build(def);
+                    World = JourneyBuilder.Build(Journey, def, transform);
+                    spawn = Journey.Start;
+                }
+                catch (System.Exception ex)
+                {
+                    // Never block a mission: fall back to the single-arena layout.
+                    Debug.LogError("[Battle] journey build failed, using a single arena: " + ex);
+                    ArenaDecor.Ambient = true;
+                    foreach (Transform c in transform) Destroy(c.gameObject);
+                    Journey = null;
+                    World = null;
+                    ArenaBuilder.Build(def.theme, transform);
+                }
             }
 
             var teamGo = new GameObject("Team");

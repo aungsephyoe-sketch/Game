@@ -33,6 +33,9 @@ echo "== 4/4 Result"
 if [ -d Builds/Desktop/HashiraChronicles.app ]; then
   echo "   Build OK - launching."
   open Builds/Desktop/HashiraChronicles.app
+  echo "   Checking the game log in 25 seconds (keep playing)..."
+  sleep 25
+  bash tools/show_errors.sh
 else
   echo "!! BUILD FAILED. Screenshot everything below and send it to Claude:"
   echo "------------------------------------------------------------------"

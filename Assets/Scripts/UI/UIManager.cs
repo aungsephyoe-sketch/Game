@@ -128,6 +128,20 @@ namespace HashiraChronicles
             H = HudLayout.Height;
             safe = HudLayout.Safe;
 
+            try { DrawScreen(); }
+            catch (System.Exception ex)
+            {
+                if (Time.unscaledTime - lastUiError > 5f) Debug.LogError("[UI] " + gm.CurrentScreen + " failed: " + ex);
+                lastUiError = Time.unscaledTime;
+                if (ex is ExitGUIException) throw;
+            }
+            DrawOverlays();
+        }
+
+        float lastUiError = -10f;
+
+        void DrawScreen()
+        {
             switch (gm.CurrentScreen)
             {
                 case GameScreen.MainMenu: DrawMainMenu(); break;
@@ -149,6 +163,21 @@ namespace HashiraChronicles
                 case GameScreen.Settings: DrawSettings(); break;
             }
 
+        }
+
+        void DrawOverlays()
+        {
+            // If a screen keeps failing, always offer a way out instead of a frozen page.
+            if (Time.unscaledTime - lastUiError < 1f && gm.CurrentScreen != GameScreen.Battle)
+            {
+                var er = new Rect(W * 0.5f - 400f, H - 140f, 800f, 100f);
+                UIStyles.PanelBox(er, UIStyles.Crimson);
+                if (GUI.Button(new Rect(er.x + 20f, er.y + 15f, er.width - 40f, 70f), "Something went wrong on this screen — RETURN HOME", UIStyles.Button))
+                {
+                    lastUiError = -10f;
+                    gm.GoTo(GameScreen.MainMenu);
+                }
+            }
             if (Time.unscaledTime < toastUntil)
             {
                 var r = new Rect(W * 0.5f - 450f, H - 170f, 900f, 80f);

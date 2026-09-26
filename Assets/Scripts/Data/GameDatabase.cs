@@ -130,7 +130,7 @@ namespace HashiraChronicles
             var ren = Hero("ren_initiate", "ren", "Ren Kagami", "Kiriha Swordsman", "Tide Breathing", 4, Element.Water, Role.DPS,
                 "The last swordsman of Kiriha. Kind, stubborn, and carrying a light he doesn't understand.",
                 "Raised by Master Tessai after his parents vanished on the night of a crimson moon. Ren trained every day for a battle he hoped would never come. It came.",
-                new Color(0.12f, 0.12f, 0.14f), new Color(0.12f, 0.5f, 0.38f), new Color(0.4f, 0.1f, 0.08f), new Color(0.15f, 0.35f, 0.95f));
+                new Color(0.1f, 0.1f, 0.12f), new Color(0.08f, 0.36f, 0.4f), new Color(0.07f, 0.05f, 0.06f), new Color(0.2f, 0.4f, 0.95f));
             ren.storyOnly = true;
             ren.skills = new[]
             {
@@ -144,7 +144,7 @@ namespace HashiraChronicles
             var sora = Hero("sora_initiate", "sora", "Sora Ikazuchi", "Frightened Blade", "Storm Breathing", 4, Element.Thunder, Role.Burst,
                 "Terrified of everything — until the first strike, which lands faster than sight.",
                 "Found hiding in the Forest of Shadows after his squad was wiped out. He follows Ren because Ren is the first person who didn't call him a coward.",
-                new Color(0.1f, 0.1f, 0.12f), new Color(0.95f, 0.72f, 0.1f), new Color(1f, 0.85f, 0.25f), new Color(1f, 0.9f, 0.3f));
+                new Color(0.1f, 0.1f, 0.13f), new Color(0.45f, 0.47f, 0.52f), new Color(0.58f, 0.6f, 0.64f), new Color(1f, 0.85f, 0.3f));
             sora.storyOnly = true;
             sora.attackSpeed = 1.1f;
             sora.skills = new[]
@@ -159,7 +159,7 @@ namespace HashiraChronicles
             var kiba = Hero("kiba_initiate", "kiba", "Kiba Arashi", "Arena Rival", "Fang Breathing", 4, Element.Beast, Role.DPS,
                 "Raised in the mountains. Fights with two jagged blades and zero restraint.",
                 "Champion of the Solmere arena. He thinks Ren is soft. He also can't stop following him.",
-                new Color(0.55f, 0.42f, 0.32f), new Color(0.3f, 0.32f, 0.42f), new Color(0.12f, 0.15f, 0.3f), new Color(0.55f, 0.55f, 0.6f));
+                new Color(0.32f, 0.22f, 0.14f), new Color(0.55f, 0.55f, 0.55f), new Color(0.1f, 0.12f, 0.3f), new Color(0.78f, 0.56f, 0.3f));
             kiba.storyOnly = true;
             kiba.attackSpeed = 1.15f;
             kiba.comboMultipliers = new[] { 0.55f, 0.55f, 0.7f, 0.7f, 1.6f };
@@ -175,7 +175,7 @@ namespace HashiraChronicles
             var hana = Hero("hana_healer", "hana", "Hana Shiraume", "Wisteria Healer", "Blossom Breathing", 5, Element.Water, Role.Support,
                 "A royal healer who treats demons' victims — and quietly studies the demons themselves.",
                 "Hana lost her village to the eclipse too. She believes the demons were human once. She is right.",
-                new Color(0.95f, 0.92f, 0.95f), new Color(0.75f, 0.55f, 0.9f), new Color(0.2f, 0.12f, 0.25f), new Color(0.9f, 0.7f, 1f));
+                new Color(0.96f, 0.94f, 0.98f), new Color(0.76f, 0.66f, 0.9f), new Color(0.82f, 0.78f, 0.92f), new Color(0.9f, 0.72f, 1f));
             hana.storyOnly = true;
             hana.skills = new[]
             {
@@ -189,7 +189,7 @@ namespace HashiraChronicles
             var tetsu = Hero("tetsu_guard", "tetsu", "Tetsu Ganryu", "Iron Captain", "Stone Breathing", 5, Element.Beast, Role.Tank,
                 "Captain of the Solmere guard. Wields a greatsword like a wall.",
                 "Tetsu served the Chancellor for twenty years. Learning what the Chancellor really was broke something in him — and hardened the rest.",
-                new Color(0.3f, 0.3f, 0.35f), new Color(0.25f, 0.35f, 0.6f), new Color(0.15f, 0.12f, 0.1f), new Color(0.7f, 0.65f, 0.55f));
+                new Color(0.35f, 0.42f, 0.55f), new Color(0.12f, 0.16f, 0.36f), new Color(0.26f, 0.17f, 0.1f), new Color(0.78f, 0.78f, 0.82f));
             tetsu.storyOnly = true;
             tetsu.attackSpeed = 0.85f;
             tetsu.comboMultipliers = new[] { 0.8f, 0.85f, 0.95f, 1.0f, 1.9f };
@@ -205,7 +205,7 @@ namespace HashiraChronicles
             var homura = Hero("homura_pillar", "homura", "Homura Enjoji", "Flame Pillar", "Blaze Breathing", 6, Element.Flame, Role.DPS,
                 "One of the nine Pillars. His blade burns as brightly as his heart.",
                 "The strongest swordsman alive, and the first to believe in Ren. He stays behind so the others can live.",
-                new Color(0.12f, 0.1f, 0.1f), new Color(0.95f, 0.95f, 0.9f), new Color(1f, 0.55f, 0.1f), new Color(1f, 0.35f, 0.05f));
+                new Color(0.08f, 0.07f, 0.07f), new Color(0.55f, 0.07f, 0.1f), new Color(0.78f, 0.12f, 0.1f), new Color(1f, 0.45f, 0.1f));
             homura.storyOnly = true;
             homura.skills = new[]
             {
@@ -219,7 +219,7 @@ namespace HashiraChronicles
             var homura2 = Hero("homura_lastflame", "homura", "Homura Enjoji", "Last Flame", "Blaze Breathing: Final", 7, Element.Flame, Role.Burst,
                 "He came back from the gate. Scarred, one-eyed, and burning hotter than ever.",
                 "No one saw how he survived the fall of Solmere. He only says: 'A flame this stubborn doesn't go out.'",
-                new Color(0.1f, 0.08f, 0.08f), new Color(0.85f, 0.2f, 0.1f), new Color(1f, 0.45f, 0.05f), new Color(1f, 0.6f, 0.1f));
+                new Color(0.08f, 0.06f, 0.06f), new Color(0.7f, 0.12f, 0.08f), new Color(0.85f, 0.2f, 0.08f), new Color(1f, 0.6f, 0.1f));
             homura2.storyOnly = true;
             homura2.skills = new[]
             {
@@ -233,7 +233,7 @@ namespace HashiraChronicles
             var dawn = Hero("ren_sundance", "ren", "Ren Kagami", "Dawn Mark", "Dawn Kagura", 6, Element.Light, Role.Burst,
                 "The Dawn half of the Demon Lord's heart, awakened and finally under Ren's control.",
                 "In the Forgotten Temple, Ren learned the truth: the light inside him was never his. He chose to make it his anyway.",
-                new Color(0.12f, 0.12f, 0.14f), new Color(0.95f, 0.5f, 0.15f), new Color(0.4f, 0.1f, 0.08f), new Color(1f, 0.75f, 0.3f));
+                new Color(0.1f, 0.1f, 0.12f), new Color(0.95f, 0.55f, 0.18f), new Color(0.07f, 0.05f, 0.06f), new Color(1f, 0.78f, 0.3f));
             dawn.storyOnly = true;
             dawn.skills = new[]
             {

@@ -39,19 +39,24 @@ namespace HashiraChronicles
             foreach (var p in j.path) { min = Vector3.Min(min, p); max = Vector3.Max(max, p); }
             Vector3 center = (min + max) * 0.5f;
             float extent = Mathf.Max(max.x - min.x, max.z - min.z) * 0.5f + 90f;
-            var ground = MeshFactory.MeshObject(MeshFactory.Disc(), stat, new Vector3(center.x, 0f, center.z), new Vector3(extent, 1f, extent), MaterialFactory.Toon(theme.ground, 0f), false);
+            var ground = MeshFactory.MeshObject(MeshFactory.PlanarDisc(), stat, new Vector3(center.x, 0f, center.z), new Vector3(extent, 1f, extent),
+                MaterialFactory.Painted(ArtLibrary.GroundKey(theme), MaterialFactory.TextureTint(theme.ground), extent / 5f), false);
             ground.GetComponent<Renderer>().receiveShadows = true;
 
             // The road itself: a darker border, then the surface; clearings at every place.
             Color roadC = RoadColor(theme);
-            var roadMat = MaterialFactory.Toon(roadC, 0f);
-            var edgeMat = MaterialFactory.Toon(Color.Lerp(roadC, theme.ground, 0.5f) * 0.85f, 0f);
+            string roadKey = ArtLibrary.RoadKey(theme);
+            var roadMat = MaterialFactory.Painted(roadKey, MaterialFactory.TextureTint(roadC, 0.35f), 1f);
+            var edgeMat = MaterialFactory.Painted(roadKey, MaterialFactory.TextureTint(Color.Lerp(roadC, theme.ground, 0.5f), 0.5f) * 0.8f, 1f);
             Ribbon(stat, j.path, j.halfWidth + 0.9f, 0.012f, edgeMat);
             Ribbon(stat, j.path, j.halfWidth - 0.4f, 0.02f, roadMat);
             foreach (var pl in j.places)
             {
-                MeshFactory.MeshObject(MeshFactory.Disc(), stat, pl.pos + Vector3.up * 0.011f, new Vector3(pl.radius + 1f, 1f, pl.radius + 1f), edgeMat, false);
-                MeshFactory.MeshObject(MeshFactory.Disc(), stat, pl.pos + Vector3.up * 0.018f, new Vector3(pl.radius, 1f, pl.radius), roadMat, false);
+                // Clearings use planar UVs: one texture tile per ~3 m, like the road.
+                var em = new Material(edgeMat); em.mainTextureScale = Vector2.one * ((pl.radius + 1f) / 3f);
+                var rm = new Material(roadMat); rm.mainTextureScale = Vector2.one * (pl.radius / 3f);
+                MeshFactory.MeshObject(MeshFactory.PlanarDisc(), stat, pl.pos + Vector3.up * 0.011f, new Vector3(pl.radius + 1f, 1f, pl.radius + 1f), em, false);
+                MeshFactory.MeshObject(MeshFactory.PlanarDisc(), stat, pl.pos + Vector3.up * 0.018f, new Vector3(pl.radius, 1f, pl.radius), rm, false);
             }
 
             // Scenery: the region's set dressing around every place and along every stretch between them.
@@ -178,8 +183,8 @@ namespace HashiraChronicles
                 if (i > 0) along += Vector3.Distance(pts[i], pts[i - 1]);
                 verts.Add(pts[i] - side + Vector3.up * y);
                 verts.Add(pts[i] + side + Vector3.up * y);
-                uvs.Add(new Vector2(0f, along * 0.2f));
-                uvs.Add(new Vector2(1f, along * 0.2f));
+                uvs.Add(new Vector2(0f, along / (half * 2f)));
+                uvs.Add(new Vector2(1f, along / (half * 2f)));
                 if (i > 0)
                 {
                     int b = verts.Count - 4;

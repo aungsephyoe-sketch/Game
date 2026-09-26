@@ -327,6 +327,8 @@ namespace HashiraChronicles
             }
 
             if (cp.FadeAlpha > 0.001f) UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(0f, 0f, 0f, cp.FadeAlpha));
+            // SKIP stays usable even through fades to black.
+            if (cp.FadeAlpha > 0.5f && Btn(new Rect(safe.xMax - 210f, 18f, 190f, 64f), "SKIP ▶▶", UIStyles.ButtonSmall)) cp.Skip();
         }
 
         // ------------------------------------------------------------------ Credits

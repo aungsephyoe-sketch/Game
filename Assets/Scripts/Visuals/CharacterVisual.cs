@@ -159,8 +159,26 @@ namespace HashiraChronicles
         /// <summary>Spawns a rigged prefab from Resources if one exists for this character.</summary>
         bool TryLoadModel(string resourcePath, Color trailColor, float trailWidth, float targetHeight)
         {
-            var prefab = Resources.Load<GameObject>(resourcePath);
+            GameObject prefab = null;
+            try { prefab = Resources.Load<GameObject>(resourcePath); }
+            catch (System.Exception ex) { Debug.LogWarning("[CharacterVisual] could not load " + resourcePath + ": " + ex.Message); }
             if (prefab == null) return false;
+            try { return LoadModel(prefab, trailColor, trailWidth, targetHeight); }
+            catch (System.Exception ex)
+            {
+                // Fall back to the procedural body rather than breaking the scene.
+                Debug.LogError("[CharacterVisual] model " + resourcePath + " failed, using the built-in body instead: " + ex);
+                for (int i = Model.childCount - 1; i >= 0; i--) Destroy(Model.GetChild(i).gameObject);
+                renderers.Clear();
+                driver = null;
+                SwordPivot = null;
+                Trail = null;
+                return false;
+            }
+        }
+
+        bool LoadModel(GameObject prefab, Color trailColor, float trailWidth, float targetHeight)
+        {
             var inst = Instantiate(prefab, Model, false);
             inst.name = prefab.name;
             foreach (var c in inst.GetComponentsInChildren<Collider>()) Destroy(c);
@@ -178,6 +196,14 @@ namespace HashiraChronicles
                 // Raw AI-generated models (e.g. a Higgsfield/Meshy GLB): normalise size and pivot, and if the mesh
                 // is rigged, bring the skeleton to life procedurally.
                 NormalizeModel(inst.transform, targetHeight);
+                // Sanity check: a model that imported at a wildly wrong size would swallow the camera.
+                var rs = inst.GetComponentsInChildren<Renderer>();
+                if (rs.Length == 0) throw new System.Exception("model has no renderers");
+                Bounds nb = rs[0].bounds;
+                for (int i = 1; i < rs.Length; i++) nb.Encapsulate(rs[i].bounds);
+                float worldH = nb.size.y / Mathf.Max(0.0001f, Model.lossyScale.y);
+                if (float.IsNaN(worldH) || worldH < targetHeight * 0.3f || worldH > targetHeight * 3f)
+                    throw new System.Exception("model size out of range after normalising (" + worldH + " m)");
                 var rig = inst.AddComponent<ProceduralRig>();
                 if (!rig.Bind(this)) Destroy(rig);
             }

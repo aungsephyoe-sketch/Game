@@ -49,6 +49,33 @@ namespace HashiraChronicles
             return m;
         }
 
+        static Mesh planarDisc;
+
+        /// <summary>Unit disc (radius 1) with planar UVs (-1..1), so tiling textures lie flat across the ground.</summary>
+        public static Mesh PlanarDisc()
+        {
+            if (planarDisc != null) return planarDisc;
+            const int seg = 64;
+            var verts = new List<Vector3> { Vector3.zero };
+            var uvs = new List<Vector2> { Vector2.zero };
+            var tris = new List<int>();
+            for (int i = 0; i <= seg; i++)
+            {
+                float a = i * Mathf.PI * 2f / seg;
+                var p = new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a));
+                verts.Add(p);
+                uvs.Add(new Vector2(p.x, p.z));
+                if (i > 0) { tris.Add(0); tris.Add(i); tris.Add(i + 1); }
+            }
+            planarDisc = new Mesh { name = "PlanarDisc" };
+            planarDisc.SetVertices(verts);
+            planarDisc.SetUVs(0, uvs);
+            planarDisc.SetTriangles(tris, 0);
+            planarDisc.RecalculateNormals();
+            planarDisc.RecalculateBounds();
+            return planarDisc;
+        }
+
         static Mesh cone;
 
         /// <summary>Cone with base radius 0.5 at y=0 and apex at y=1 (pines, spikes, roofs).</summary>

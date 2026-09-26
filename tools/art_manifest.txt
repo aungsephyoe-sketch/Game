@@ -40,3 +40,13 @@ Resources/Art/Keyframes/final_confrontation.png https://d8j0ntlcm91z4.cloudfront
 # --- 3D models (Higgsfield image-to-3D: textured, PBR, auto-rigged). Imported by glTFast; animated by ProceduralRig.
 Resources/Characters/ren.glb https://d8j0ntlcm91z4.cloudfront.net/user_3Js2wnbBvDKsZ3eBunL8OB3conI/hf_20260926_174142_e6121895-5231-4c53-9b75-ed67ec6ef542.glb
 Resources/Enemies/boss_veyrath.glb https://d8j0ntlcm91z4.cloudfront.net/user_3Js2wnbBvDKsZ3eBunL8OB3conI/hf_20260926_174352_1833531a-664e-45b7-9023-bf2815ade20f.glb
+# --- Hand-painted tileable surfaces (ground, roads, buildings, trees) and the UI panel
+Resources/Art/Textures/grass.png https://d8j0ntlcm91z4.cloudfront.net/user_3Js2wnbBvDKsZ3eBunL8OB3conI/hf_20260926_202458_699e99f3-6b6b-4dc2-88f6-19b9271f22be.png
+Resources/Art/Textures/dirt.png https://d8j0ntlcm91z4.cloudfront.net/user_3Js2wnbBvDKsZ3eBunL8OB3conI/hf_20260926_202457_d887fb12-c0bf-43c6-aaae-41b38498fada.png
+Resources/Art/Textures/stone.png https://d8j0ntlcm91z4.cloudfront.net/user_3Js2wnbBvDKsZ3eBunL8OB3conI/hf_20260926_202457_9393da2c-1220-4a69-8587-b9816e0221bb.png
+Resources/Art/Textures/snow.png https://d8j0ntlcm91z4.cloudfront.net/user_3Js2wnbBvDKsZ3eBunL8OB3conI/hf_20260926_202458_12bbe58c-1140-468b-8b82-956ac4748f23.png
+Resources/Art/Textures/demon.png https://d8j0ntlcm91z4.cloudfront.net/user_3Js2wnbBvDKsZ3eBunL8OB3conI/hf_20260926_202458_04a97061-15d9-4d0f-abbc-1131798fc9cb.png
+Resources/Art/Textures/wall.png https://d8j0ntlcm91z4.cloudfront.net/user_3Js2wnbBvDKsZ3eBunL8OB3conI/hf_20260926_202640_48830989-0fca-404c-8bba-4d064b1522bd.png
+Resources/Art/Textures/roof.png https://d8j0ntlcm91z4.cloudfront.net/user_3Js2wnbBvDKsZ3eBunL8OB3conI/hf_20260926_202458_f0655878-975b-47be-91c5-7d71df19b239.png
+Resources/Art/Textures/bark.png https://d8j0ntlcm91z4.cloudfront.net/user_3Js2wnbBvDKsZ3eBunL8OB3conI/hf_20260926_202458_a9607073-dbbd-4012-b6f9-5040c5d136e9.png
+Resources/Art/Textures/ui_panel.png https://d8j0ntlcm91z4.cloudfront.net/user_3Js2wnbBvDKsZ3eBunL8OB3conI/hf_20260926_202458_b26a328b-ac3e-4f2f-8399-c44cf8dfa816.png

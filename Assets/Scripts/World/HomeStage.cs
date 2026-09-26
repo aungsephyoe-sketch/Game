@@ -85,6 +85,7 @@ namespace HashiraChronicles
             world = new GameObject("HomeWorld");
             world.transform.SetParent(transform, false);
             ArenaBuilder.Build(theme, world.transform, false, 3);
+            PaintedBackdrop.Create(world.transform, ArtLibrary.Region("village"), Vector3.zero, 115f, PaintedBackdrop.TintFor(theme));
             // Campfire, training posts and villagers.
             EnvFx.Fire(world.transform, new Vector3(-2.5f, 0f, 3.5f), 1f);
             var wood = MaterialFactory.Toon(new Color(0.35f, 0.24f, 0.15f));

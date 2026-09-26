@@ -53,7 +53,7 @@ namespace HashiraChronicles
 
         static void Tree(Transform root, Vector3 pos, float h, Color leaf, Transform dynamicRoot)
         {
-            var trunk = MaterialFactory.Toon(new Color(0.22f, 0.14f, 0.1f));
+            var trunk = MaterialFactory.Painted("bark", MaterialFactory.TextureTint(new Color(0.55f, 0.4f, 0.3f), 0.3f), 1f, 0.02f);
             var leaves = MaterialFactory.Toon(leaf, 0.02f);
             var t = new GameObject("Tree").transform;
             t.SetParent(dynamicRoot, false);
@@ -68,7 +68,7 @@ namespace HashiraChronicles
 
         static void Pine(Transform root, Vector3 pos, float h, Color leaf)
         {
-            var trunk = MaterialFactory.Toon(new Color(0.2f, 0.13f, 0.1f));
+            var trunk = MaterialFactory.Painted("bark", MaterialFactory.TextureTint(new Color(0.5f, 0.38f, 0.3f), 0.3f), 1f, 0.02f);
             var needles = MaterialFactory.Toon(leaf, 0.02f);
             MeshFactory.Primitive(PrimitiveType.Cylinder, root, pos + Vector3.up * 0.6f, new Vector3(0.35f, 0.6f, 0.35f), trunk);
             for (int k = 0; k < 3; k++)
@@ -77,9 +77,9 @@ namespace HashiraChronicles
 
         static void House(Transform root, Vector3 pos, Color wallC, Color roofC, Color windowC, bool burning, float scale = 1f)
         {
-            var wall = MaterialFactory.Toon(wallC);
+            var wall = MaterialFactory.Painted("wall", MaterialFactory.TextureTint(wallC, 0.3f), 1.5f, 0.02f);
             var timber = MaterialFactory.Toon(new Color(0.25f, 0.15f, 0.1f));
-            var roof = MaterialFactory.Toon(roofC);
+            var roof = MaterialFactory.Painted("roof", MaterialFactory.TextureTint(roofC, 0.75f), 2f, 0.02f);
             var window = MaterialFactory.Toon(windowC, 0f, windowC * 0.9f);
             var house = new GameObject("House").transform;
             house.SetParent(root, false);

@@ -67,17 +67,26 @@ namespace HashiraChronicles
             Map = MakeStage<MapStage>("[MapStage]");
             SummonHall = MakeStage<SummonStage>("[SummonStage]");
 
-            if (!Data.introSeen)
+            try
             {
-                // First launch: the opening cinematic flows straight into the first battle.
-                PlayCutscene("opening", () =>
+                if (!Data.introSeen)
                 {
-                    Data.introSeen = true;
-                    Save();
-                    StartMission(GameDatabase.GetMission("1-1"));
-                });
+                    // First launch: the opening cinematic flows straight into the first battle.
+                    PlayCutscene("opening", () =>
+                    {
+                        Data.introSeen = true;
+                        Save();
+                        StartMission(GameDatabase.GetMission("1-1"));
+                    });
+                }
+                else GoTo(GameScreen.MainMenu);
             }
-            else GoTo(GameScreen.MainMenu);
+            catch (System.Exception ex)
+            {
+                Debug.LogError("[GameManager] startup scene failed, opening the home screen instead: " + ex);
+                Data.introSeen = true;
+                GoTo(GameScreen.MainMenu);
+            }
         }
 
         T MakeStage<T>(string name) where T : MonoBehaviour
