@@ -56,7 +56,39 @@ namespace HashiraChronicles
                 case AbilityShape.Wave: yield return Wave(pc, ab, tag, tally, scale); break;
                 case AbilityShape.Burst: yield return Burst(pc, ab, tag, tally, scale); break;
                 case AbilityShape.MultiSlash: yield return MultiSlash(pc, ab, tag, tally, scale); break;
+                case AbilityShape.Heal: yield return Heal(pc, ab, tag, tally); break;
             }
+        }
+
+        /// <summary>Support form: restores a share of every slayer's max HP (benched members too); ultimates also blast nearby demons.</summary>
+        static IEnumerator Heal(PlayerCharacter pc, AbilityDefinition ab, AttackTag tag, DamageTally tally)
+        {
+            var green = new Color(0.5f, 1f, 0.65f);
+            pc.Visual.Victory();
+            VFX.BurstDisc(pc.Position, ab.radius, green, 0.7f);
+            VFX.Pillar(pc.Position, green, 6f, 0.7f);
+            VFX.Breath(pc.Position, green, 60);
+            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("skill", 0.6f);
+            var battle = BattleController.Current;
+            if (battle != null && battle.Team != null)
+            {
+                foreach (var m in battle.Team.Members)
+                {
+                    if (m == null || !m.IsAlive) continue;
+                    m.Health.Heal(m.Health.Max * ab.damageMultiplier);
+                    if (m.gameObject.activeInHierarchy) VFX.Breath(m.Position, green, 20);
+                }
+            }
+            if (tag.isUltimate)
+            {
+                yield return new WaitForSeconds(0.25f);
+                var blast = tag;
+                blast.multiplier = 3f;
+                VFX.Shockwave(pc.Position, ab.radius, green, 0.5f);
+                tally.Add(CombatSystem.HitRadius(pc, pc.Position, ab.radius, blast));
+            }
+            yield return new WaitForSeconds(0.35f);
+            pc.Visual.ResetPose();
         }
 
         /// <summary>Each breathing style gets its own signature flourish on top of the shape's effects.</summary>

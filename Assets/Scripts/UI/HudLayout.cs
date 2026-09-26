@@ -50,6 +50,8 @@ namespace HashiraChronicles
         public static Circle Attack { get { var s = Safe; return new Circle(s.xMax - 215f, s.yMax - 215f, 112f); } }
         public static Circle Dodge { get { var s = Safe; return new Circle(s.xMax - 480f, s.yMax - 110f, 68f); } }
         public static Circle Guard { get { var s = Safe; return new Circle(s.xMax - 640f, s.yMax - 120f, 62f); } }
+        public static Circle Jump { get { var s = Safe; return new Circle(s.xMax - 625f, s.yMax - 290f, 56f); } }
+        public static Circle Lock { get { var s = Safe; return new Circle(s.xMax - 200f, s.y + 67f, 46f); } }
         public static Circle Ultimate { get { var s = Safe; return new Circle(s.xMax - 150f, s.yMax - 690f, 88f); } }
 
         public static Circle Skill(int i)
@@ -68,7 +70,7 @@ namespace HashiraChronicles
         public static Rect Portrait(int i)
         {
             var s = Safe;
-            return new Rect(s.x + 24f, s.y + 250f + i * 126f, 300f, 112f);
+            return new Rect(s.x + 24f, s.y + 250f + i * 118f, 300f, 106f);
         }
 
         public static Vector2 JoystickHome { get { var s = Safe; return new Vector2(s.x + 270f, s.yMax - 250f); } }

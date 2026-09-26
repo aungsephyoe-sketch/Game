@@ -49,6 +49,48 @@ namespace HashiraChronicles
             return m;
         }
 
+        static Mesh cone;
+
+        /// <summary>Cone with base radius 0.5 at y=0 and apex at y=1 (pines, spikes, roofs).</summary>
+        public static Mesh Cone()
+        {
+            if (cone != null) return cone;
+            const int n = 16;
+            var v = new List<Vector3>();
+            var t = new List<int>();
+            v.Add(new Vector3(0f, 1f, 0f));
+            for (int i = 0; i < n; i++)
+            {
+                float a = i * Mathf.PI * 2f / n;
+                v.Add(new Vector3(Mathf.Cos(a) * 0.5f, 0f, Mathf.Sin(a) * 0.5f));
+            }
+            for (int i = 0; i < n; i++)
+            {
+                int a = 1 + i, b = 1 + (i + 1) % n;
+                t.Add(0); t.Add(b); t.Add(a);
+            }
+            cone = new Mesh { name = "Cone" };
+            cone.SetVertices(v);
+            cone.SetTriangles(t, 0);
+            cone.RecalculateNormals();
+            cone.RecalculateBounds();
+            return cone;
+        }
+
+        /// <summary>Game object rendering a given mesh with a material (no collider).</summary>
+        public static GameObject MeshObject(Mesh mesh, Transform parent, Vector3 localPos, Vector3 localScale, Material mat, bool shadows = true)
+        {
+            var go = new GameObject(mesh.name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            go.transform.localScale = localScale;
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var r = go.AddComponent<MeshRenderer>();
+            r.sharedMaterial = mat;
+            r.shadowCastingMode = shadows ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
+            return go;
+        }
+
         /// <summary>Unit quad from z=0 to z=1, x in [-0.5, 0.5]. Scale z for length.</summary>
         public static Mesh Line()
         {

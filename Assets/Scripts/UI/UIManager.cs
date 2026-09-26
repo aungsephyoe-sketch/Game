@@ -35,6 +35,8 @@ namespace HashiraChronicles
             GameEvents.UltimateStarted += OnUltimateStarted;
             GameEvents.UltimateFinished += OnUltimateFinished;
             GameEvents.Impact += OnImpact;
+            GameEvents.BossIntro += OnBossIntro;
+            GameEvents.Subtitle += OnSubtitle;
         }
 
         void OnDisable()
@@ -44,7 +46,17 @@ namespace HashiraChronicles
             GameEvents.UltimateStarted -= OnUltimateStarted;
             GameEvents.UltimateFinished -= OnUltimateFinished;
             GameEvents.Impact -= OnImpact;
+            GameEvents.BossIntro -= OnBossIntro;
+            GameEvents.Subtitle -= OnSubtitle;
         }
+
+        EnemyDefinition bossIntro;
+        float bossIntroTime = -10f;
+        string subSpeaker = "", subText = "";
+        float subTime = -10f;
+
+        void OnBossIntro(EnemyDefinition d) { bossIntro = d; bossIntroTime = Time.unscaledTime; }
+        void OnSubtitle(string speaker, string text) { subSpeaker = speaker; subText = text; subTime = Time.unscaledTime; }
 
         float impactTime = -10f;
         float impactStrength;
@@ -113,6 +125,12 @@ namespace HashiraChronicles
             switch (gm.CurrentScreen)
             {
                 case GameScreen.MainMenu: DrawMainMenu(); break;
+                case GameScreen.WorldMap: DrawWorldMap(); break;
+                case GameScreen.Summon: DrawSummon(); break;
+                case GameScreen.MissionsBoard: DrawMissionsBoard(); break;
+                case GameScreen.Shop: DrawShop(); break;
+                case GameScreen.Cutscene: DrawCutscene(); break;
+                case GameScreen.Credits: DrawCredits(); break;
                 case GameScreen.Story: DrawStory(); break;
                 case GameScreen.MissionDetail: DrawMissionDetail(); break;
                 case GameScreen.Team: DrawTeam(); break;
@@ -131,6 +149,46 @@ namespace HashiraChronicles
                 UIStyles.PanelBox(r);
                 GUI.Label(r, toast, UIStyles.Center);
             }
+
+            // Screen transitions: a quick fade through black whenever the 3D stage changes.
+            if (gm.TransitionAlpha > 0.001f) UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(0f, 0f, 0f, gm.TransitionAlpha));
+        }
+
+        // ------------------------------------------------------------------ Animation helpers
+
+        /// <summary>0→1 eased progress of an entrance animation that starts <paramref name="delay"/> seconds after the screen opened.</summary>
+        float Enter(float delay, float duration = 0.35f)
+        {
+            float t = Mathf.Clamp01((Time.unscaledTime - gm.ScreenEnteredAt - delay) / duration);
+            return 1f - Mathf.Pow(1f - t, 3f);
+        }
+
+        static Rect Offset(Rect r, float dx, float dy) { return new Rect(r.x + dx, r.y + dy, r.width, r.height); }
+
+        static Rect Grow(Rect r, float amount) { return new Rect(r.x - amount, r.y - amount, r.width + amount * 2f, r.height + amount * 2f); }
+
+        /// <summary>A button that slides/pops in, swells on hover and pulses when highlighted.</summary>
+        bool AnimBtn(Rect r, string label, GUIStyle style, float delay, bool enabled = true, bool pulse = false, float slideX = -60f)
+        {
+            float k = Enter(delay);
+            if (k <= 0f) return false;
+            var rr = Offset(r, (1f - k) * slideX, 0f);
+            bool hover = rr.Contains(Event.current.mousePosition);
+            float grow = (hover && enabled ? 6f : 0f) + (pulse ? (Mathf.Sin(Time.unscaledTime * 4f) * 0.5f + 0.5f) * 5f : 0f);
+            rr = Grow(rr, grow);
+            if (pulse) UIStyles.Frame(Grow(rr, 4f), new Color(1f, 0.8f, 0.35f, 0.4f + 0.4f * Mathf.Sin(Time.unscaledTime * 4f)), 3f);
+            var old = GUI.color;
+            GUI.color = new Color(old.r, old.g, old.b, old.a * k);
+            bool clicked = Btn(rr, label, style, enabled);
+            GUI.color = old;
+            return clicked && k > 0.6f;
+        }
+
+        void Badge(Vector2 at, string text, Color c)
+        {
+            var r = new Rect(at.x - 22f, at.y - 22f, 44f, 44f);
+            UIStyles.CircleTex(r.center, 22f, c);
+            GUI.Label(r, text, UIStyles.Sized(UIStyles.Center, 24));
         }
 
         // ------------------------------------------------------------------ Shared chrome
@@ -139,7 +197,11 @@ namespace HashiraChronicles
         {
             UIStyles.Rect(new Rect(0f, 0f, W, 110f + safe.y), UIStyles.Panel);
             UIStyles.Rect(new Rect(0f, 108f + safe.y, W, 3f), UIStyles.Gold * 0.7f);
-            if (Btn(new Rect(safe.x + 20f, safe.y + 18f, 150f, 74f), "◀ BACK")) gm.GoTo(back);
+            if (Btn(new Rect(safe.x + 20f, safe.y + 18f, 150f, 74f), "◀ BACK") || (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape))
+            {
+                gm.GoTo(back);
+                if (Event.current.type == EventType.KeyDown) Event.current.Use();
+            }
             GUI.Label(new Rect(safe.x + 200f, safe.y + 22f, 700f, 70f), title, UIStyles.H1);
             Currencies(new Rect(safe.xMax - 980f, safe.y + 28f, 960f, 60f));
         }
@@ -158,177 +220,6 @@ namespace HashiraChronicles
         static string ElementTag(Element e)
         {
             return "<color=#" + UIStyles.Hex(ElementChart.ColorOf(e)) + ">" + ElementChart.Icon(e) + "</color>";
-        }
-
-        // ------------------------------------------------------------------ Main menu
-
-        void DrawMainMenu()
-        {
-            var d = gm.Data;
-            UIStyles.Rect(new Rect(0f, 0f, 820f + safe.x, H), new Color(0.03f, 0.02f, 0.06f, 0.55f));
-            float x = safe.x + 70f;
-            UIStyles.Outlined(new Rect(x, 80f, 900f, 90f), GameConfig.TitleLine1, UIStyles.Sized(UIStyles.Title, 60), UIStyles.Crimson, 3f);
-            UIStyles.Outlined(new Rect(x, 150f, 1000f, 130f), GameConfig.TitleLine2, UIStyles.Sized(UIStyles.Title, 104), Color.white, 4f);
-            GUI.Label(new Rect(x + 6f, 280f, 700f, 40f), GameConfig.Subtitle, UIStyles.Small);
-
-            GUI.Label(new Rect(x, 350f, 700f, 50f), "TEAM POWER  <color=#FFD36B>" + CharacterSystem.TeamPower(d).ToString("N0") + "</color>", UIStyles.H2);
-            float y = 410f;
-            foreach (var id in d.team)
-            {
-                var c = d.GetCharacter(id);
-                var def = GameDatabase.GetCharacter(id);
-                if (c == null || def == null) continue;
-                GUI.Label(new Rect(x, y, 760f, 40f), ElementTag(def.element) + "  " + def.displayName + "  <color=#AAAAAA>Lv." + c.level + "  " + Stars(c.stars) + "</color>", UIStyles.Body);
-                y += 44f;
-            }
-
-            if (Btn(new Rect(x, 580f, 520f, 130f), "PLAY", UIStyles.ButtonBig)) OpenStoryAtNext();
-
-            float bx = x, by = 740f, bw = 250f, bh = 84f, gap = 16f;
-            if (Btn(new Rect(bx, by, bw, bh), "Story")) gm.GoTo(GameScreen.Story);
-            if (Btn(new Rect(bx + bw + gap, by, bw, bh), "Events")) gm.ShowComingSoon("Events (Mugen-style limited missions & event shop) — Phase 3");
-            by += bh + gap;
-            if (Btn(new Rect(bx, by, bw, bh), "Characters")) gm.GoTo(GameScreen.Characters);
-            if (Btn(new Rect(bx + bw + gap, by, bw, bh), "Summon")) gm.ShowComingSoon("Summoning banners with pity — Phase 3");
-            by += bh + gap;
-            if (Btn(new Rect(bx, by, bw, bh), "Equipment")) gm.GoTo(GameScreen.Equipment);
-            if (Btn(new Rect(bx + bw + gap, by, bw, bh), "Team")) { teamReturn = GameScreen.MainMenu; gm.GoTo(GameScreen.Team); }
-
-            Currencies(new Rect(safe.xMax - 980f, safe.y + 28f, 960f, 60f));
-            if (Btn(new Rect(safe.xMax - 300f, H - 110f, 280f, 70f), "Daily Missions", UIStyles.ButtonSmall))
-                gm.ShowComingSoon("Daily missions — Phase 3");
-            if (Btn(new Rect(safe.xMax - 300f, H - 270f, 280f, 70f), "Settings", UIStyles.ButtonSmall)) gm.OpenSettings();
-            if (Btn(new Rect(safe.xMax - 300f, H - 190f, 280f, 70f), "Reset Save", UIStyles.ButtonSmall))
-            {
-                if (Time.unscaledTime - resetArmed < 3f) { gm.ResetSave(); Toast("Progress reset."); }
-                else { resetArmed = Time.unscaledTime; Toast("Tap Reset Save again to confirm."); }
-            }
-        }
-
-        float resetArmed = -10f;
-
-        void OpenStoryAtNext()
-        {
-            foreach (var ch in GameDatabase.Chapters)
-                foreach (var m in ch.missions)
-                    if (!gm.Data.IsMissionCleared(m.id) && gm.Data.IsMissionUnlocked(m))
-                    {
-                        selectedChapter = ch.number;
-                        gm.SelectedMission = m;
-                        gm.GoTo(GameScreen.MissionDetail);
-                        return;
-                    }
-            gm.GoTo(GameScreen.Story);
-        }
-
-        // ------------------------------------------------------------------ Story
-
-        int selectedChapter = 1;
-
-        void DrawStory()
-        {
-            TopBar("STORY", GameScreen.MainMenu);
-            float top = safe.y + 140f;
-            float x = safe.x + 30f;
-            foreach (var ch in GameDatabase.Chapters)
-            {
-                var r = new Rect(x, top, 440f, 100f);
-                bool sel = ch.number == selectedChapter;
-                string label = "Chapter " + ch.number + "\n<size=22>" + ch.title + (ch.available ? "" : "  (coming soon)") + "</size>";
-                if (Btn(r, label, sel ? UIStyles.ButtonBig : UIStyles.Button, ch.available)) selectedChapter = ch.number;
-                top += 112f;
-            }
-
-            var chapter = GameDatabase.Chapters.Find(c => c.number == selectedChapter);
-            if (chapter == null) return;
-            float mx = x + 480f, mw = safe.xMax - mx - 30f;
-            float my = safe.y + 140f;
-            foreach (var m in chapter.missions)
-            {
-                var r = new Rect(mx, my, mw, 150f);
-                bool unlocked = gm.Data.IsMissionUnlocked(m);
-                var prog = gm.Data.GetMission(m.id);
-                UIStyles.PanelBox(r, unlocked ? UIStyles.Gold : Color.gray);
-                GUI.Label(new Rect(r.x + 24f, r.y + 16f, mw - 400f, 50f), "Mission " + m.id + "  —  " + m.name + (string.IsNullOrEmpty(m.bossId) ? "" : "  <color=#FF6060>BOSS</color>"), UIStyles.H2);
-                GUI.Label(new Rect(r.x + 24f, r.y + 66f, mw - 420f, 70f), m.description + "\n<size=22>Enemy Lv." + m.enemyLevel + "   Recommended power " + m.recommendedPower.ToString("N0") + "</size>", UIStyles.Small);
-                string stars = "";
-                for (int i = 0; i < 3; i++) stars += prog != null && (prog.objectivesMask & (1 << i)) != 0 ? "★" : "☆";
-                UIStyles.Colored(new Rect(r.xMax - 390f, r.y + 20f, 160f, 60f), stars, UIStyles.Sized(UIStyles.Center, 44), UIStyles.Gold);
-                if (unlocked)
-                {
-                    if (Btn(new Rect(r.xMax - 210f, r.y + 35f, 180f, 80f), prog != null && prog.cleared ? "REPLAY" : "GO"))
-                    {
-                        gm.SelectedMission = m;
-                        gm.GoTo(GameScreen.MissionDetail);
-                    }
-                }
-                else GUI.Label(new Rect(r.xMax - 230f, r.y + 45f, 200f, 60f), "LOCKED", UIStyles.Center);
-                my += 166f;
-            }
-        }
-
-        // ------------------------------------------------------------------ Mission detail
-
-        void DrawMissionDetail()
-        {
-            var m = gm.SelectedMission;
-            if (m == null) { gm.GoTo(GameScreen.Story); return; }
-            TopBar("MISSION " + m.id, GameScreen.Story);
-            var d = gm.Data;
-            var prog = d.GetMission(m.id);
-
-            var left = new Rect(safe.x + 30f, safe.y + 140f, W * 0.5f - safe.x - 45f, H - safe.y - 170f);
-            UIStyles.PanelBox(left);
-            float y = left.y + 24f;
-            GUI.Label(new Rect(left.x + 30f, y, left.width - 60f, 60f), m.name, UIStyles.H1);
-            y += 70f;
-            GUI.Label(new Rect(left.x + 30f, y, left.width - 60f, 80f), m.description, UIStyles.Body);
-            y += 90f;
-            int power = CharacterSystem.TeamPower(d);
-            string pc = power >= m.recommendedPower ? "#7CFF8A" : "#FF7070";
-            GUI.Label(new Rect(left.x + 30f, y, left.width - 60f, 40f), "Enemy Lv." + m.enemyLevel + "     Recommended " + m.recommendedPower.ToString("N0") +
-                "     Your team <color=" + pc + ">" + power.ToString("N0") + "</color>", UIStyles.Small);
-            y += 60f;
-            GUI.Label(new Rect(left.x + 30f, y, 400f, 40f), "OBJECTIVES", UIStyles.H2);
-            y += 50f;
-            string[] labels = { "Defeat " + m.killObjective + " demons", "No slayer falls", "Clear within " + Mathf.RoundToInt(m.parTime) + " seconds" };
-            for (int i = 0; i < 3; i++)
-            {
-                bool done = prog != null && (prog.objectivesMask & (1 << i)) != 0;
-                GUI.Label(new Rect(left.x + 40f, y, left.width - 80f, 40f), (done ? "<color=#7CFF8A>☑</color> " : "☐ ") + labels[i] +
-                    (done ? "" : "  <color=#7FD8FF>+" + RewardSystem.CrystalsPerNewObjective + " ✦</color>"), UIStyles.Body);
-                y += 44f;
-            }
-            y += 20f;
-            GUI.Label(new Rect(left.x + 30f, y, 400f, 40f), "REWARDS", UIStyles.H2);
-            y += 50f;
-            GUI.Label(new Rect(left.x + 40f, y, left.width - 80f, 120f), RewardText(m.rewards), UIStyles.Body);
-            y += 90f;
-            if (prog == null || !prog.cleared)
-            {
-                GUI.Label(new Rect(left.x + 30f, y, left.width - 60f, 40f), "FIRST CLEAR", UIStyles.Sized(UIStyles.H2, 30));
-                y += 42f;
-                GUI.Label(new Rect(left.x + 40f, y, left.width - 80f, 120f), RewardText(m.firstClearRewards), UIStyles.Body);
-            }
-
-            var right = new Rect(W * 0.5f + 15f, safe.y + 140f, safe.xMax - W * 0.5f - 45f, H - safe.y - 170f);
-            UIStyles.PanelBox(right, UIStyles.Crimson);
-            float ry = right.y + 24f;
-            GUI.Label(new Rect(right.x + 30f, ry, right.width - 60f, 50f), "YOUR TEAM", UIStyles.H2);
-            ry += 60f;
-            for (int i = 0; i < d.team.Count; i++)
-            {
-                var c = d.GetCharacter(d.team[i]);
-                var def = GameDatabase.GetCharacter(d.team[i]);
-                if (c == null || def == null) continue;
-                GUI.Label(new Rect(right.x + 30f, ry, right.width - 60f, 44f), (i == 0 ? "LEAD  " : "          ") + ElementTag(def.element) + "  " + def.FullName, UIStyles.Body);
-                GUI.Label(new Rect(right.x + 30f, ry + 38f, right.width - 60f, 36f), "          Lv." + c.level + "  " + Stars(c.stars) + "   Power " + CharacterSystem.Power(d, c).ToString("N0"), UIStyles.Small);
-                ry += 90f;
-            }
-            GUI.Label(new Rect(right.x + 30f, ry + 10f, right.width - 60f, 100f),
-                "Tip: element advantage deals ×1.5 damage.\nWater ▶ Flame ▶ Beast ▶ Thunder ▶ Water.  Light ◀▶ Dark.", UIStyles.Small);
-            if (Btn(new Rect(right.x + 30f, right.yMax - 250f, right.width - 60f, 90f), "CHANGE TEAM")) { teamReturn = GameScreen.MissionDetail; gm.GoTo(GameScreen.Team); }
-            if (Btn(new Rect(right.x + 30f, right.yMax - 140f, right.width - 60f, 110f), "START", UIStyles.ButtonBig)) gm.StartMission(m);
         }
 
         static string RewardText(RewardBundle r)
@@ -363,13 +254,14 @@ namespace HashiraChronicles
             TopBar("TEAM", teamReturn);
             var d = gm.Data;
             float top = safe.y + 140f;
-            GUI.Label(new Rect(safe.x + 30f, top, 1400f, 40f), "Tap a slot, then a slayer to place them. The first slot leads the battle.", UIStyles.Small);
+            GUI.Label(new Rect(safe.x + 30f, top, 1600f, 40f), "Tap a slot, then a slayer. The LEADER starts the battle; swap to the others at any time. Tap a slotted slayer again to remove them.", UIStyles.Small);
             top += 50f;
-            float sw = (safe.width - 60f - 40f) / 3f;
-            for (int i = 0; i < 3; i++)
+            float sw = (safe.width - 60f - 60f) / 4f;
+            for (int i = 0; i < TeamSize; i++)
             {
                 var r = new Rect(safe.x + 30f + i * (sw + 20f), top, sw, 140f);
-                string label = "SLOT " + (i + 1) + (i == 0 ? " (LEAD)" : "");
+                bool roleMatch = i < d.team.Count && i > 0 && GameDatabase.GetCharacter(d.team[i]).role == SlotRoles[i];
+                string label = SlotNames[i] + (roleMatch ? "  <color=#7CFF8A>✔</color>" : "");
                 if (i < d.team.Count)
                 {
                     var def = GameDatabase.GetCharacter(d.team[i]);
@@ -395,15 +287,27 @@ namespace HashiraChronicles
                 int inTeam = d.team.IndexOf(c.id);
                 string label = ElementTag(def.element) + "   " + def.FullName + "   <size=24>" + Stars(c.stars) + "  Lv." + c.level + "   Power " +
                                CharacterSystem.Power(d, c).ToString("N0") + (inTeam >= 0 ? "   <color=#FFD36B>[SLOT " + (inTeam + 1) + "]</color>" : "") + "</size>";
-                if (Btn(r, label)) AssignToSlot(c.id);
+                if (Btn(r, label)) AssignToSlot(c.id, inTeam);
             }
             GUI.EndScrollView();
         }
 
-        void AssignToSlot(string id)
+        const int TeamSize = 4;
+        static readonly string[] SlotNames = { "LEADER", "VANGUARD <size=20>(Tank)</size>", "STRIKER <size=20>(DPS)</size>", "SUPPORT" };
+        static readonly Role[] SlotRoles = { Role.DPS, Role.Tank, Role.DPS, Role.Support };
+
+        void AssignToSlot(string id, int inTeam)
         {
             var team = gm.Data.team;
             int existing = team.IndexOf(id);
+            if (inTeam >= 0 && inTeam == teamSlot && team.Count > 1)
+            {
+                // Tapping the slotted slayer again removes them (the team always keeps one member).
+                team.RemoveAt(inTeam);
+                gm.Save();
+                gm.RefreshStage();
+                return;
+            }
             if (teamSlot >= team.Count)
             {
                 if (existing < 0) team.Add(id);
@@ -417,76 +321,8 @@ namespace HashiraChronicles
             }
             else team[teamSlot] = id;
             gm.Save();
-            gm.Stage.Show(gm.Data);
-            teamSlot = (teamSlot + 1) % 3;
-        }
-
-        // ------------------------------------------------------------------ Results
-
-        void DrawResults()
-        {
-            var r = gm.LastResult;
-            if (r == null) { gm.GoTo(GameScreen.MainMenu); return; }
-            UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(0f, 0f, 0f, 0.55f));
-            var panel = new Rect(W * 0.5f - 820f, 60f, 1640f, H - 120f);
-            UIStyles.PanelBox(panel, r.victory ? UIStyles.Gold : UIStyles.Crimson);
-            UIStyles.Outlined(new Rect(panel.x, panel.y + 20f, panel.width, 110f), r.victory ? "MISSION CLEAR" : "MISSION FAILED",
-                UIStyles.Sized(UIStyles.Big, 86), r.victory ? UIStyles.Gold : UIStyles.Bad, 4f);
-            GUI.Label(new Rect(panel.x, panel.y + 125f, panel.width, 44f), "Mission " + r.mission.id + " — " + r.mission.name +
-                (r.victory ? "" : "   (" + r.failReason + ")"), UIStyles.Center);
-
-            float x = panel.x + 60f, y = panel.y + 200f;
-            int mins = Mathf.FloorToInt(r.time / 60f), secs = Mathf.FloorToInt(r.time % 60f);
-            GUI.Label(new Rect(x, y, 700f, 44f), "Time  " + mins + ":" + secs.ToString("00"), UIStyles.H2); y += 52f;
-            GUI.Label(new Rect(x, y, 700f, 44f), "Demons slain  " + r.kills, UIStyles.H2); y += 52f;
-            GUI.Label(new Rect(x, y, 700f, 44f), "Max combo  " + r.maxCombo, UIStyles.H2); y += 52f;
-            GUI.Label(new Rect(x, y, 700f, 44f), "Total damage  " + Mathf.RoundToInt(r.totalDamage).ToString("N0"), UIStyles.H2); y += 70f;
-            for (int i = 0; i < 3; i++)
-            {
-                GUI.Label(new Rect(x, y, 760f, 44f), (r.objectives[i] ? "<color=#7CFF8A>☑</color> " : "<color=#888888>☐</color> ") + r.objectiveLabels[i], UIStyles.Body);
-                y += 46f;
-            }
-
-            float rx = panel.x + 860f, ry = panel.y + 200f;
-            GUI.Label(new Rect(rx, ry, 700f, 50f), "REWARDS" + (r.firstClear ? "  <color=#FF9C7A>(FIRST CLEAR)</color>" : ""), UIStyles.H2);
-            ry += 56f;
-            GUI.Label(new Rect(rx, ry, 720f, 200f), RewardText(r.granted), UIStyles.Body);
-            ry += 150f;
-            foreach (var lu in r.levelUps)
-            {
-                GUI.Label(new Rect(rx, ry, 720f, 40f), "<color=#7CFF8A>LEVEL UP</color>  " + lu.name + "  Lv." + lu.from + " → Lv." + lu.to, UIStyles.Body);
-                ry += 42f;
-            }
-            if (!string.IsNullOrEmpty(r.unlockedCharacterName))
-            {
-                ry += 10f;
-                UIStyles.Outlined(new Rect(rx, ry, 720f, 50f), "NEW SLAYER JOINED: " + r.unlockedCharacterName, UIStyles.Sized(UIStyles.H2, 34), UIStyles.Gold);
-                ry += 56f;
-            }
-
-            float by = panel.yMax - 130f;
-            if (Btn(new Rect(panel.x + 60f, by, 420f, 100f), "MENU")) gm.GoTo(GameScreen.MainMenu);
-            if (Btn(new Rect(panel.x + 610f, by, 420f, 100f), "RETRY")) gm.StartMission(r.mission);
-            var next = NextMission(r.mission);
-            if (r.victory && next != null && Btn(new Rect(panel.xMax - 480f, by, 420f, 100f), "NEXT: " + next.id, UIStyles.ButtonBig))
-            {
-                gm.SelectedMission = next;
-                gm.GoTo(GameScreen.MissionDetail);
-            }
-            else if (!r.victory && Btn(new Rect(panel.xMax - 480f, by, 420f, 100f), "UPGRADE SLAYERS", UIStyles.ButtonBig))
-                gm.GoTo(GameScreen.Characters);
-        }
-
-        static MissionDefinition NextMission(MissionDefinition m)
-        {
-            bool found = false;
-            foreach (var ch in GameDatabase.Chapters)
-                foreach (var x in ch.missions)
-                {
-                    if (found) return x;
-                    if (x == m) found = true;
-                }
-            return null;
+            gm.RefreshStage();
+            teamSlot = Mathf.Min((teamSlot + 1) % TeamSize, team.Count);
         }
 
         // ------------------------------------------------------------------ Coming soon

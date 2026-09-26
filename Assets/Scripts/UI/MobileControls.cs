@@ -26,7 +26,7 @@ namespace HashiraChronicles
         public Vector2 JoystickCenter { get; private set; }
         public Vector2 JoystickKnob { get; private set; }
         /// <summary>Visual press feedback per control: 0 attack, 1 dodge, 2-4 skills, 5 ultimate, 6 guard.</summary>
-        public readonly float[] Pressed = new float[7];
+        public readonly float[] Pressed = new float[9];
 
         int joyFinger = None;
         int attackFinger = None;
@@ -112,12 +112,14 @@ namespace HashiraChronicles
             if (HudLayout.Pause.Contains(p.pos)) { s.pauseDown = true; return; }
             if (TimeController.Paused) return;
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 4; i++)
                 if (HudLayout.Portrait(i).Contains(p.pos)) { s.switchTo = i; return; }
 
             if (HudLayout.Attack.Contains(p.pos)) { attackFinger = p.id; s.attackDown = true; Pressed[0] = 1f; return; }
             if (HudLayout.Dodge.Contains(p.pos)) { s.dodgeDown = true; Pressed[1] = 1f; return; }
             if (HudLayout.Guard.Contains(p.pos)) { guardFinger = p.id; s.guardDown = true; Pressed[6] = 1f; return; }
+            if (HudLayout.Jump.Contains(p.pos)) { s.jumpDown = true; Pressed[7] = 1f; return; }
+            if (HudLayout.Lock.Contains(p.pos)) { s.lockDown = true; Pressed[8] = 1f; return; }
             for (int i = 0; i < 3; i++)
             {
                 if (!HudLayout.Skill(i).Contains(p.pos)) continue;
@@ -170,6 +172,8 @@ namespace HashiraChronicles
             if (Input.GetKeyDown(KeyCode.L) || Input.GetKeyDown(KeyCode.R)) { s.ultimateDown = true; Pressed[5] = 1f; }
             if (Input.GetKeyDown(KeyCode.F) || Input.GetKeyDown(KeyCode.LeftShift)) { s.guardDown = true; Pressed[6] = 1f; }
             if (Input.GetKey(KeyCode.F) || Input.GetKey(KeyCode.LeftShift)) s.guardHeld = true;
+            if (Input.GetKeyDown(KeyCode.C)) { s.jumpDown = true; Pressed[7] = 1f; }
+            if (Input.GetKeyDown(KeyCode.T) || Input.GetKeyDown(KeyCode.Mouse2)) { s.lockDown = true; Pressed[8] = 1f; }
 
             var b = BattleController.Current;
             if (b != null && b.Team != null && b.Team.Members.Count > 0)

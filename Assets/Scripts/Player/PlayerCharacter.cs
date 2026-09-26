@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace HashiraChronicles
@@ -13,7 +14,7 @@ namespace HashiraChronicles
     /// </summary>
     public class PlayerCharacter : Combatant
     {
-        public enum ActionKind { None, Attack, Charged, DashAttack, Skill, Dodge, Ultimate, SwitchIn, HitStun, Knockdown }
+        public enum ActionKind { None, Attack, Charged, DashAttack, Skill, Dodge, Ultimate, SwitchIn, HitStun, Knockdown, Jump }
 
         enum Buffered { None, Attack, Dodge, Skill0, Skill1, Skill2, Ultimate }
 
@@ -58,6 +59,12 @@ namespace HashiraChronicles
         Buffered buffered;
         float bufferedAt;
         bool ultimateActive;
+
+        Vector3 velocity;
+        bool wasSprinting;
+
+        /// <summary>The demon the camera and attacks are locked onto (shared by the whole team).</summary>
+        public static Combatant LockTarget;
 
         Color ElementColor { get { return ElementChart.ColorOf(Def.element); } }
         AudioManager Audio { get { return GameManager.Instance != null ? GameManager.Instance.Audio : null; } }
@@ -106,6 +113,11 @@ namespace HashiraChronicles
                 if (comboResetTimer <= 0f) comboIndex = 0;
             }
 
+            if (input.lockDown) CycleLock();
+            if (LockTarget != null && !LockTarget.IsAlive) LockTarget = null;
+            if (input.jumpDown && (Action == ActionKind.None || ((Action == ActionKind.Attack || Action == ActionKind.DashAttack) && canMoveCancel)))
+                StartAction(JumpRoutine(), ActionKind.Jump);
+
             // Record the newest press; priority order resolves same-frame presses.
             if (input.dodgeDown) Buffer(Buffered.Dodge);
             else if (input.ultimateDown) Buffer(Buffered.Ultimate);
@@ -150,11 +162,89 @@ namespace HashiraChronicles
                 StopAction();
 
             if (Action == ActionKind.None) Move(dt);
-            else
+            else if (Action != ActionKind.Jump)
             {
                 moveTime = 0f;
                 Sprinting = false;
+                velocity = Vector3.zero;
                 Visual.SetMoving(0f);
+            }
+        }
+
+        // ------------------------------------------------------------------ Lock-on
+
+        void CycleLock()
+        {
+            // Lock the boss first, then the nearest demon; pressing again moves to the next one, then releases.
+            var candidates = new List<Combatant>();
+            foreach (var c in All)
+                if (c.Team != Team && c.IsAlive && Vector3.Distance(c.Position, Position) < 18f) candidates.Add(c);
+            if (candidates.Count == 0) { LockTarget = null; return; }
+            candidates.Sort((a, b) =>
+            {
+                bool ab = a is BossController, bb = b is BossController;
+                if (ab != bb) return ab ? -1 : 1;
+                return Vector3.Distance(a.Position, Position).CompareTo(Vector3.Distance(b.Position, Position));
+            });
+            int idx = LockTarget != null ? candidates.IndexOf(LockTarget) : -1;
+            LockTarget = idx + 1 < candidates.Count ? candidates[idx + 1] : null;
+            if (LockTarget == null && idx < 0) LockTarget = candidates[0];
+            Play("click", 0.4f);
+        }
+
+        // ------------------------------------------------------------------ Jump / plunge
+
+        IEnumerator JumpRoutine()
+        {
+            const float up = 0.42f, height = 2.3f;
+            Play("dodge", 0.5f);
+            VFX.Dust(Position, 6);
+            Health.GrantInvulnerability(0.35f);
+            var model = Visual.transform;
+            float t = 0f;
+            bool plunge = false;
+            while (t < up * 2f)
+            {
+                t += Time.deltaTime;
+                float k = t / (up * 2f);
+                model.localPosition = new Vector3(0f, Mathf.Sin(Mathf.Clamp01(k) * Mathf.PI) * height, 0f);
+                // Air control.
+                transform.position = BattleController.ClampToArena(transform.position + moveInput * Stats.speed * 0.8f * Time.deltaTime);
+                if (moveInput.sqrMagnitude > 0.01f) Face(moveInput, 12f * Time.deltaTime);
+                if (buffered == Buffered.Attack && t > 0.12f) { buffered = Buffered.None; plunge = true; break; }
+                yield return null;
+            }
+            if (plunge)
+            {
+                // Plunging strike: hang for a beat, then slam down.
+                AutoAim(6f);
+                Visual.HeavyAttack(0.12f);
+                float y0 = model.localPosition.y;
+                yield return new WaitForSeconds(0.06f);
+                float e = 0f;
+                while (e < 0.1f)
+                {
+                    e += Time.deltaTime;
+                    model.localPosition = new Vector3(0f, Mathf.Lerp(y0, 0f, e / 0.1f), 0f);
+                    yield return null;
+                }
+                model.localPosition = Vector3.zero;
+                var tag = AttackTag.Basic(Def.chargedMultiplier * 0.9f, ElementColor);
+                tag.knockback = 6f; tag.stagger = 6f; tag.hitStop = 0.09f; tag.shake = 0.4f; tag.heavy = true;
+                CombatSystem.HitRadius(this, Position, 3.2f, tag);
+                VFX.Shockwave(Position, 3.4f, ElementColor, 0.4f);
+                VFX.BurstDisc(Position, 2.5f, ElementColor, 0.3f);
+                VFX.Dust(Position, 14);
+                Play("heavy", 0.9f);
+                UltGauge = Mathf.Min(UltMax, UltGauge + 3f);
+                yield return new WaitForSeconds(0.25f);
+            }
+            else
+            {
+                model.localPosition = Vector3.zero;
+                VFX.Dust(Position, 5);
+                Play("step", 0.4f);
+                yield return new WaitForSeconds(0.06f);
             }
         }
 
@@ -169,10 +259,21 @@ namespace HashiraChronicles
             else if (ChargeAmount > 0f) speed *= 0.4f;
             else if (Sprinting) speed *= 1.35f;
 
+            // Accelerate into motion and slide to a stop instead of snapping.
+            Vector3 targetVel = moveInput * speed;
+            float accel = moving ? (Vector3.Dot(velocity, targetVel) < 0f ? 70f : 45f) : 32f;
+            velocity = Vector3.MoveTowards(velocity, targetVel, accel * dt);
+            if (!moving && wasSprinting && velocity.sqrMagnitude > 4f)
+            {
+                VFX.Dust(Position, 5);
+                Play("step", 0.3f);
+            }
+            wasSprinting = Sprinting || (wasSprinting && moving);
+            if (velocity.sqrMagnitude > 0.0004f)
+                transform.position = BattleController.ClampToArena(transform.position + velocity * dt);
             if (moving)
             {
-                transform.position = BattleController.ClampToArena(transform.position + moveInput * speed * dt);
-                if (!Guarding) Face(moveInput, 20f * dt);
+                if (!Guarding) Face(LockTarget != null && !Sprinting ? Vector3.Lerp(moveInput, LockTarget.Position - Position, 0.35f) : moveInput, 16f * dt);
                 stepTimer -= dt;
                 if (stepTimer <= 0f)
                 {
@@ -183,10 +284,10 @@ namespace HashiraChronicles
             }
             if (Guarding)
             {
-                var near = Nearest(CombatTeam.Enemy, Position, 8f);
+                var near = LockTarget != null ? LockTarget : Nearest(CombatTeam.Enemy, Position, 8f);
                 if (near != null) Face(near.Position - Position, 14f * dt);
             }
-            Visual.SetMoving(moveInput.magnitude, Sprinting);
+            Visual.SetMoving(Mathf.Clamp01(velocity.magnitude / Mathf.Max(0.1f, Stats.speed)), Sprinting);
         }
 
         void Buffer(Buffered b)
@@ -284,6 +385,11 @@ namespace HashiraChronicles
         /// <summary>Soft aim assist: faces the best demon, preferring the stick direction.</summary>
         Combatant AutoAim(float range)
         {
+            if (LockTarget != null && LockTarget.IsAlive && Vector3.Distance(LockTarget.Position, Position) <= range + 3f)
+            {
+                Face(LockTarget.Position - Position, 1f);
+                return LockTarget;
+            }
             Combatant best = null;
             float bestScore = float.MaxValue;
             Vector3 stick = moveInput.sqrMagnitude > 0.05f ? moveInput.normalized : Vector3.zero;
@@ -329,6 +435,7 @@ namespace HashiraChronicles
             actionRoutine = null;
             if (Action == ActionKind.Ultimate) FinishUltimateEffects();
             if (Action == ActionKind.Knockdown) Visual.GetUp(0.15f);
+            if (Action == ActionKind.Jump) Visual.transform.localPosition = Vector3.zero;
             Action = ActionKind.None;
             attackQueued = false;
             canMoveCancel = false;

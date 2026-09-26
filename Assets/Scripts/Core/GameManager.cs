@@ -17,7 +17,15 @@ namespace HashiraChronicles
         public MobileControls Controls { get; private set; }
         public CameraController Cam { get; private set; }
         public BattleController Battle { get; private set; }
-        public MenuStage Stage { get; private set; }
+        public HomeStage Home { get; private set; }
+        public MapStage Map { get; private set; }
+        public SummonStage SummonHall { get; private set; }
+        /// <summary>Region the leader is walking to (shown on the map while travelling).</summary>
+        public string TravelDestination { get; private set; }
+        /// <summary>Screen fade used for transitions (0 = clear, 1 = black). Drawn by the UI.</summary>
+        public float TransitionAlpha { get; private set; }
+        /// <summary>Time the current screen was entered (drives UI entrance animations).</summary>
+        public float ScreenEnteredAt { get; private set; }
 
         [System.NonSerialized] public MissionDefinition SelectedMission;
         public string SelectedCharacterId;
@@ -54,11 +62,31 @@ namespace HashiraChronicles
             Controls = gameObject.AddComponent<MobileControls>();
             UI = gameObject.AddComponent<UIManager>();
 
-            var stageGo = new GameObject("[MenuStage]");
-            DontDestroyOnLoad(stageGo);
-            Stage = stageGo.AddComponent<MenuStage>();
+            QuestSystem.EnsureReset(Data);
+            Home = MakeStage<HomeStage>("[HomeStage]");
+            Map = MakeStage<MapStage>("[MapStage]");
+            SummonHall = MakeStage<SummonStage>("[SummonStage]");
 
-            GoTo(GameScreen.MainMenu);
+            if (!Data.introSeen)
+            {
+                // First launch: the opening cinematic flows straight into the first battle.
+                PlayCutscene("opening", () =>
+                {
+                    Data.introSeen = true;
+                    Save();
+                    StartMission(GameDatabase.GetMission("1-1"));
+                });
+            }
+            else GoTo(GameScreen.MainMenu);
+        }
+
+        T MakeStage<T>(string name) where T : MonoBehaviour
+        {
+            var go = new GameObject(name);
+            DontDestroyOnLoad(go);
+            var st = go.AddComponent<T>();
+            go.SetActive(false);
+            return st;
         }
 
         void SetupCamera()
@@ -107,13 +135,138 @@ namespace HashiraChronicles
         void Update()
         {
             TimeController.Tick();
+            TransitionAlpha = Mathf.MoveTowards(TransitionAlpha, 0f, Time.unscaledDeltaTime * 2.2f);
         }
 
+        /// <summary>Switches screens and makes sure the matching 3D stage (home, map, summon hall) is the one on show.</summary>
         public void GoTo(GameScreen screen)
         {
-            if (screen != GameScreen.Battle && CurrentScreen == GameScreen.Results) Audio.SetMusicState(MusicState.Menu);
+            var prev = CurrentScreen;
             CurrentScreen = screen;
-            if (screen != GameScreen.Battle && Stage != null) Stage.Show(Data);
+            ScreenEnteredAt = Time.unscaledTime;
+            if (StageFor(prev) != StageFor(screen)) TransitionAlpha = Mathf.Max(TransitionAlpha, 0.85f);
+            ShowStageFor(screen);
+            var music = MusicFor(screen);
+            if (music.HasValue) Audio.SetMusicState(music.Value);
+        }
+
+        /// <summary>0 none, 1 home, 2 viewer, 3 map, 4 summon.</summary>
+        static int StageFor(GameScreen s)
+        {
+            switch (s)
+            {
+                case GameScreen.Battle:
+                case GameScreen.Cutscene:
+                case GameScreen.Results:
+                case GameScreen.Credits: return 0;
+                case GameScreen.CharacterDetail: return 2;
+                case GameScreen.WorldMap:
+                case GameScreen.Story:
+                case GameScreen.MissionDetail: return 3;
+                case GameScreen.Summon: return 4;
+                default: return 1;
+            }
+        }
+
+        static MusicState? MusicFor(GameScreen s)
+        {
+            switch (StageFor(s))
+            {
+                case 1:
+                case 2: return MusicState.Menu;
+                case 3: return MusicState.Map;
+                case 4: return MusicState.Summon;
+            }
+            if (s == GameScreen.Credits) return MusicState.Story;
+            return null;
+        }
+
+        void ShowStageFor(GameScreen screen)
+        {
+            int st = StageFor(screen);
+            // Results keep the battle arena behind them; everything else hides what it doesn't use.
+            if (st != 1 && st != 2) Home.Hide();
+            if (st != 3) { Map.Hide(); TravelDestination = null; }
+            if (st != 4) SummonHall.Hide();
+            if (st == 1) Home.ShowHome(Data);
+            else if (st == 2) Home.ShowViewer(string.IsNullOrEmpty(SelectedCharacterId) ? Data.team[0] : SelectedCharacterId);
+            else if (st == 3) Map.Show(Data);
+            else if (st == 4) SummonHall.Show();
+            else if (screen == GameScreen.Results && Battle == null) Map.Show(Data); // after a story scene, results sit over the world map
+            if (st != 0 && Battle != null) { Destroy(Battle.gameObject); Battle = null; }
+        }
+
+        /// <summary>Refreshes the visible stage after team or roster changes.</summary>
+        public void RefreshStage() { ShowStageFor(CurrentScreen); }
+
+        // ------------------------------------------------------------------ Story flow
+
+        /// <summary>Plays an in-engine cutscene over everything else, marks it seen, then continues.</summary>
+        public void PlayCutscene(string id, System.Action onDone)
+        {
+            if (CutsceneDatabase.Get(id) == null) { if (onDone != null) onDone(); return; }
+            TimeController.ResetAll();
+            if (Battle != null) { Destroy(Battle.gameObject); Battle = null; }
+            CurrentScreen = GameScreen.Cutscene;
+            ScreenEnteredAt = Time.unscaledTime;
+            ShowStageFor(GameScreen.Cutscene);
+            Audio.SetMusicState(MusicState.Story);
+            CutscenePlayer.Play(id, () =>
+            {
+                Data.MarkSeen(id);
+                Save();
+                if (onDone != null) onDone();
+            });
+        }
+
+        /// <summary>
+        /// The full road into a mission: walk the leader across the world map if the mission is somewhere else,
+        /// play its story scene the first time, then fight.
+        /// </summary>
+        public void BeginMission(MissionDefinition m)
+        {
+            if (m == null) return;
+            SelectedMission = m;
+            if (!string.IsNullOrEmpty(m.regionId) && m.regionId != Data.currentRegion && System.Array.IndexOf(MapStage.RouteOrder, m.regionId) >= 0
+                && m.type != MissionType.Training && m.type != MissionType.Event)
+            {
+                if (CurrentScreen != GameScreen.WorldMap) GoTo(GameScreen.WorldMap);
+                TravelDestination = m.regionId;
+                Map.TravelTo(m.regionId, Data, () =>
+                {
+                    TravelDestination = null;
+                    Save();
+                    EnterMission(m);
+                });
+                return;
+            }
+            EnterMission(m);
+        }
+
+        /// <summary>Walks the leader to a region without starting anything (map exploration).</summary>
+        public void TravelTo(string regionId)
+        {
+            if (Map.Traveling || regionId == Data.currentRegion) return;
+            TravelDestination = regionId;
+            Map.TravelTo(regionId, Data, () => { TravelDestination = null; Save(); });
+        }
+
+        void EnterMission(MissionDefinition m)
+        {
+            TransitionAlpha = 1f;
+            if (!string.IsNullOrEmpty(m.cutsceneBefore) && !Data.HasSeen(m.cutsceneBefore))
+                PlayCutscene(m.cutsceneBefore, () => StartMission(m));
+            else StartMission(m);
+        }
+
+        /// <summary>The next story mission the player hasn't cleared (null when the story is finished).</summary>
+        public MissionDefinition NextStoryMission()
+        {
+            foreach (var ch in GameDatabase.Chapters)
+                foreach (var m in ch.missions)
+                    if ((m.type == MissionType.Story || m.type == MissionType.Boss) && !Data.IsMissionCleared(m.id) && Data.IsMissionUnlocked(m))
+                        return m;
+            return null;
         }
 
         GameScreen settingsReturn = GameScreen.MainMenu;
@@ -139,7 +292,13 @@ namespace HashiraChronicles
         public void ResetSave()
         {
             Data = SaveSystem.ResetProgress();
-            GoTo(GameScreen.MainMenu);
+            QuestSystem.EnsureReset(Data);
+            PlayCutscene("opening", () =>
+            {
+                Data.introSeen = true;
+                Save();
+                StartMission(GameDatabase.GetMission("1-1"));
+            });
         }
 
         // ------------------------------------------------------------------ Battle flow
@@ -148,22 +307,54 @@ namespace HashiraChronicles
         {
             if (Battle != null) Destroy(Battle.gameObject);
             SelectedMission = mission;
-            if (Stage != null) Stage.Hide();
+            TimeController.ResetAll();
+            CurrentScreen = GameScreen.Battle;
+            ScreenEnteredAt = Time.unscaledTime;
+            ShowStageFor(GameScreen.Battle);
+            TransitionAlpha = 1f;
             var go = new GameObject("[Battle " + mission.id + "]");
             Battle = go.AddComponent<BattleController>();
             Battle.Setup(mission, Data);
             Audio.PlayMusic(true);
-            CurrentScreen = GameScreen.Battle;
         }
 
         public void EndBattle(BattleResult result)
         {
+            var m = result.mission;
+            if (m.training)
+            {
+                LastResult = null;
+                TimeController.ResetAll();
+                GoTo(GameScreen.Characters);
+                return;
+            }
             RewardSystem.Grant(Data, result);
+            QuestSystem.Report("kill", result.kills);
+            if (result.victory)
+            {
+                QuestSystem.Report("clear", 1);
+                if (!string.IsNullOrEmpty(m.bossId))
+                {
+                    QuestSystem.Report("boss", 1 + m.preBosses.Count);
+                    Data.bossesDefeated += 1 + m.preBosses.Count;
+                }
+                if (!string.IsNullOrEmpty(m.regionId) && System.Array.IndexOf(MapStage.RouteOrder, m.regionId) >= 0) Data.currentRegion = m.regionId;
+            }
             Save();
             LastResult = result;
-            if (Battle != null) Destroy(Battle.gameObject);
-            Battle = null;
             TimeController.ResetAll();
+
+            // First clears continue the story before the results.
+            if (result.victory && result.firstClear && !string.IsNullOrEmpty(m.cutsceneAfter) && !Data.HasSeen(m.cutsceneAfter))
+            {
+                string after = m.cutsceneAfter;
+                PlayCutscene(after, () =>
+                {
+                    if (after == "ending") GoTo(GameScreen.Credits);
+                    else GoTo(GameScreen.Results);
+                });
+                return;
+            }
             GoTo(GameScreen.Results);
         }
 

@@ -48,7 +48,43 @@ namespace HashiraChronicles
         public Color hairColor = Color.black;
         public Color bladeColor = Color.cyan;
 
+        /// <summary>Lore shown on the collection screen.</summary>
+        public string story = "";
+        /// <summary>Only obtainable through the story (never from summons).</summary>
+        public bool storyOnly;
+        /// <summary>Not a playable character (villagers, mentors, soldiers in cutscenes).</summary>
+        public bool npc;
+        public float scale = 1f;
+
         public string FullName { get { return displayName + " — " + versionTitle; } }
+        public Rarity RarityTier { get { return (Rarity)Mathf.Clamp(rarity, 3, 7); } }
+    }
+
+    public static class RarityInfo
+    {
+        public static string Name(int rarity)
+        {
+            switch (Mathf.Clamp(rarity, 3, 7))
+            {
+                case 3: return "COMMON";
+                case 4: return "RARE";
+                case 5: return "EPIC";
+                case 6: return "LEGENDARY";
+                default: return "MYTHIC";
+            }
+        }
+
+        public static Color Color(int rarity)
+        {
+            switch (Mathf.Clamp(rarity, 3, 7))
+            {
+                case 3: return new Color(0.75f, 0.78f, 0.8f);
+                case 4: return new Color(0.35f, 0.65f, 1f);
+                case 5: return new Color(0.75f, 0.4f, 1f);
+                case 6: return new Color(1f, 0.78f, 0.25f);
+                default: return new Color(1f, 0.3f, 0.45f);
+            }
+        }
     }
 
     public class EnemyDefinition
@@ -72,6 +108,9 @@ namespace HashiraChronicles
         public Color accentColor = new Color(0.9f, 0.2f, 0.25f);
         /// <summary>Selects the pattern set used by BossAI.</summary>
         public string bossStyle;
+        /// <summary>Boss epithet for the intro card.</summary>
+        public string bossTitle = "";
+        public string description = "";
         /// <summary>HP fractions at which a boss enters its next phase (descending).</summary>
         public float[] phaseThresholds;
     }
@@ -145,6 +184,28 @@ namespace HashiraChronicles
         public Color lantern = new Color(1f, 0.6f, 0.3f);
         public Color foliage = new Color(0.55f, 0.35f, 0.75f);
         public bool petals = true;
+        public EnvironmentKind kind = EnvironmentKind.Village;
+        public bool night = true;
+        public Color sun = new Color(0.85f, 0.85f, 1f);
+        public float sunIntensity = 1.1f;
+        /// <summary>Linear fog start/end.</summary>
+        public float fogStart = 28f;
+        public float fogEnd = 75f;
+        /// <summary>Village under attack: burning roofs, smoke, embers.</summary>
+        public bool burning;
+    }
+
+    /// <summary>A location on the world map.</summary>
+    public class RegionDefinition
+    {
+        public string id;
+        public string name;
+        public string subtitle;
+        public Vector2 mapPosition;
+        public ArenaTheme theme = new ArenaTheme();
+        public Color mapColor = Color.gray;
+        /// <summary>Mission whose clear unlocks travel here (null = always open).</summary>
+        public string unlockAfterMission;
     }
 
     public class MissionDefinition
@@ -166,12 +227,33 @@ namespace HashiraChronicles
         public List<string> dropTable = new List<string>();
         public string requiresMissionId;
         public ArenaTheme theme = new ArenaTheme();
+
+        public MissionType type = MissionType.Story;
+        public string regionId;
+        public int recommendedLevel = 1;
+        /// <summary>Short story hook shown on the mission page.</summary>
+        public string storyText = "";
+        public string cutsceneBefore;
+        public string cutsceneAfter;
+        /// <summary>Who asked for this side mission (shown on the page).</summary>
+        public string questGiver;
+        /// <summary>Allied soldiers fighting alongside the team (large battles).</summary>
+        public int allies;
+        /// <summary>Temple seal puzzle before the waves.</summary>
+        public bool sealPuzzle;
+        /// <summary>Training: endless weak dummies, no rewards.</summary>
+        public bool training;
+        /// <summary>Extra bosses fought before the final one (generals).</summary>
+        public List<string> preBosses = new List<string>();
+        public string MissionLabel { get { return id.ToUpper(); } }
     }
 
     public class ChapterDefinition
     {
         public int number;
         public string title;
+        public string regionId;
+        public string synopsis = "";
         public bool available;
         public List<MissionDefinition> missions = new List<MissionDefinition>();
     }

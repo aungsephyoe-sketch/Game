@@ -22,6 +22,9 @@ namespace HashiraChronicles
             DrawPlayerBars(b);
             DrawControls(b);
             DrawCallouts();
+            DrawLockMarker(cam);
+            DrawSubtitle();
+            DrawBossIntro();
 
             // Pause button.
             var pr = HudLayout.Pause;
@@ -29,6 +32,56 @@ namespace HashiraChronicles
             GUI.Label(pr, "II", UIStyles.Sized(UIStyles.Center, 40));
 
             if (TimeController.Paused) DrawPauseMenu();
+        }
+
+        void DrawLockMarker(Camera cam)
+        {
+            var t = PlayerCharacter.LockTarget;
+            if (t == null || !t.IsAlive || cam == null) return;
+            float s = HudLayout.Scale;
+            var e = t as EnemyController;
+            float h = e != null ? 1.3f * e.Def.scale : 1.3f;
+            Vector3 sp = cam.WorldToScreenPoint(t.Position + Vector3.up * h);
+            if (sp.z < 0f) return;
+            var p = new Vector2(sp.x / s, (Screen.height - sp.y) / s);
+            float r = 46f + Mathf.Sin(Time.unscaledTime * 6f) * 5f;
+            var old = GUI.color;
+            GUI.color = new Color(1f, 0.25f, 0.3f, 0.9f);
+            GUI.DrawTexture(new Rect(p.x - r, p.y - r, r * 2f, r * 2f), UIStyles.Ring);
+            GUI.color = old;
+            UIStyles.Rect(new Rect(p.x - 3f, p.y - r - 14f, 6f, 16f), UIStyles.Crimson);
+            UIStyles.Rect(new Rect(p.x - 3f, p.y + r - 2f, 6f, 16f), UIStyles.Crimson);
+        }
+
+        void DrawSubtitle()
+        {
+            float age = Time.unscaledTime - subTime;
+            if (age > 4.2f || string.IsNullOrEmpty(subText)) return;
+            float a = Mathf.Clamp01(age / 0.2f) * Mathf.Clamp01((4.2f - age) / 0.4f);
+            var r = new Rect(W * 0.5f - 700f, H - 400f, 1400f, 110f);
+            UIStyles.Rect(r, new Color(0f, 0f, 0f, 0.6f * a));
+            Color c = SpeakerColor(subSpeaker);
+            UIStyles.Colored(new Rect(r.x, r.y + 6f, r.width, 40f), subSpeaker, UIStyles.Sized(UIStyles.Center, 28), new Color(c.r, c.g, c.b, a));
+            UIStyles.Colored(new Rect(r.x + 20f, r.y + 46f, r.width - 40f, 60f), subText, UIStyles.Sized(UIStyles.Center, 32), new Color(1f, 1f, 1f, a));
+        }
+
+        void DrawBossIntro()
+        {
+            float age = Time.unscaledTime - bossIntroTime;
+            if (bossIntro == null || age > 3.2f) return;
+            float a = Mathf.Clamp01(age / 0.25f) * Mathf.Clamp01((3.2f - age) / 0.5f);
+            float slide = 1f - Mathf.Pow(1f - Mathf.Clamp01(age / 0.4f), 3f);
+            // Letterbox + diagonal name card.
+            UIStyles.Rect(new Rect(0f, 0f, W, 110f * a), Color.black);
+            UIStyles.Rect(new Rect(0f, H - 110f * a, W, 110f * a), Color.black);
+            Color acc = bossIntro.accentColor;
+            var band = new Rect(-200f + (1f - slide) * -W, H * 0.62f, W + 400f, 170f);
+            UIStyles.Rect(band, new Color(0f, 0f, 0f, 0.7f * a));
+            UIStyles.Rect(new Rect(band.x, band.y, band.width, 4f), new Color(acc.r, acc.g, acc.b, a));
+            UIStyles.Rect(new Rect(band.x, band.yMax - 4f, band.width, 4f), new Color(acc.r, acc.g, acc.b, a));
+            float x = safe.x + 120f + (1f - slide) * -600f;
+            UIStyles.Colored(new Rect(x, band.y + 14f, 1400f, 44f), bossIntro.bossTitle, UIStyles.Sized(UIStyles.H2, 32), new Color(acc.r, acc.g, acc.b, a));
+            UIStyles.Outlined(new Rect(x, band.y + 52f, 1600f, 110f), bossIntro.displayName.ToUpper(), UIStyles.Sized(UIStyles.Title, 90), new Color(1f, 1f, 1f, a), 4f);
         }
 
         void DrawObjectives(BattleController b)
@@ -52,7 +105,7 @@ namespace HashiraChronicles
         void DrawPortraits(BattleController b)
         {
             var team = b.Team;
-            for (int i = 0; i < team.Members.Count && i < 3; i++)
+            for (int i = 0; i < team.Members.Count && i < 4; i++)
             {
                 var m = team.Members[i];
                 var r = HudLayout.Portrait(i);
@@ -125,6 +178,8 @@ namespace HashiraChronicles
             if (pc.ChargeAmount > 0f) UIStyles.CircleFill(atk.center, atk.radius, pc.ChargeAmount, new Color(el.r, el.g, el.b, 0.45f));
 
             DrawButton(HudLayout.Dodge, "DODGE", "", 0f, controls.Pressed[1], new Color(0.7f, 0.8f, 1f));
+            DrawButton(HudLayout.Jump, "JUMP", "then ATK", 0f, controls.Pressed[7], new Color(0.8f, 1f, 0.8f));
+            DrawButton(HudLayout.Lock, PlayerCharacter.LockTarget != null ? "◎" : "LOCK", "", 0f, controls.Pressed[8], PlayerCharacter.LockTarget != null ? UIStyles.Crimson : Color.white);
             DrawButton(HudLayout.Guard, "GUARD", pc.Guarding ? "PARRY: TAP" : "", 0f, Mathf.Max(controls.Pressed[6], pc.Guarding ? 0.6f : 0f), new Color(0.9f, 0.9f, 0.6f));
 
             for (int i = 0; i < 3; i++)

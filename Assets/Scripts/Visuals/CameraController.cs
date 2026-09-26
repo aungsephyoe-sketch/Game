@@ -33,7 +33,45 @@ namespace HashiraChronicles
         float cineBlend; // 0 = gameplay, 1 = cinematic
         float cineYaw;
 
+        // Scripted (cutscene) shots.
+        bool scripted;
+        Vector3 shotFromPos, shotFromLook, shotToPos, shotToLook, currentLook;
+        float shotStart, shotDuration;
+
         public Camera Cam { get; private set; }
+
+        /// <summary>Instant camera cut (cutscenes).</summary>
+        public void Cut(Vector3 pos, Vector3 look)
+        {
+            scripted = true;
+            fixedMode = false;
+            cineTarget = null;
+            shotFromPos = shotToPos = pos;
+            shotFromLook = shotToLook = look;
+            shotDuration = 0.001f;
+            shotStart = Time.unscaledTime;
+            transform.position = pos;
+            transform.rotation = Quaternion.LookRotation(look - pos);
+            currentLook = look;
+        }
+
+        /// <summary>Smooth eased camera move from the current shot to a new one (cutscenes).</summary>
+        public void Dolly(Vector3 pos, Vector3 look, float duration)
+        {
+            if (!scripted) { currentLook = transform.position + transform.forward * 10f; }
+            scripted = true;
+            fixedMode = false;
+            cineTarget = null;
+            shotFromPos = transform.position;
+            shotFromLook = currentLook;
+            shotToPos = pos;
+            shotToLook = look;
+            shotDuration = Mathf.Max(0.01f, duration);
+            shotStart = Time.unscaledTime;
+        }
+
+        public void EndScripted() { scripted = false; }
+
 
         void Awake()
         {
@@ -78,6 +116,7 @@ namespace HashiraChronicles
         public void Follow(Transform target, bool snap)
         {
             fixedMode = false;
+            scripted = false;
             Target = target;
             if (snap && target != null)
             {
@@ -92,6 +131,7 @@ namespace HashiraChronicles
 
         public void SetFixed(Vector3 position, Vector3 lookAt)
         {
+            scripted = false;
             fixedMode = true;
             fixedPosition = position;
             fixedLookAt = lookAt;
@@ -103,6 +143,22 @@ namespace HashiraChronicles
         void LateUpdate()
         {
             float dt = Time.unscaledDeltaTime;
+            if (scripted)
+            {
+                float k = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((Time.unscaledTime - shotStart) / shotDuration));
+                Vector3 p = Vector3.Lerp(shotFromPos, shotToPos, k);
+                currentLook = Vector3.Lerp(shotFromLook, shotToLook, k);
+                trauma = Mathf.Max(0f, trauma - dt * 1.8f);
+                float sh = trauma * trauma;
+                if (sh > 0f)
+                {
+                    float tt = Time.unscaledTime * 30f;
+                    p += new Vector3(Mathf.PerlinNoise(tt, 0f) - 0.5f, Mathf.PerlinNoise(0f, tt) - 0.5f, 0f) * sh * 1.2f;
+                }
+                transform.position = p;
+                transform.rotation = Quaternion.LookRotation(currentLook - p);
+                return;
+            }
             if (fixedMode)
             {
                 transform.position = Vector3.Lerp(transform.position, fixedPosition, 1f - Mathf.Exp(-dt * 5f));

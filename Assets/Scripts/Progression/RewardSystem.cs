@@ -86,7 +86,14 @@ namespace HashiraChronicles
             {
                 var def = GameDatabase.GetCharacter(total.characterId);
                 if (InventorySystem.AddCharacter(data, total.characterId) && def != null)
+                {
                     result.unlockedCharacterName = def.FullName;
+                    // Story allies join the party straight away while there's room.
+                    // A new version of someone already in the team (e.g. an awakened form) takes their place.
+                    int same = data.team.FindIndex(t => { var o = GameDatabase.GetCharacter(t); return o != null && o.baseId == def.baseId; });
+                    if (same >= 0) data.team[same] = def.id;
+                    else if (data.team.Count < 4) data.team.Add(def.id);
+                }
             }
 
             foreach (var id in data.team)

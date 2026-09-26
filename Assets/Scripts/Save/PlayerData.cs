@@ -57,11 +57,20 @@ namespace HashiraChronicles
         public int clears;
     }
 
+    [System.Serializable]
+    public class QuestState
+    {
+        public string id;
+        public int progress;
+        public bool claimed;
+    }
+
     /// <summary>Everything persisted between sessions. Serialized with JsonUtility.</summary>
     [System.Serializable]
     public class PlayerData
     {
-        public int saveVersion = 1;
+        public const int CurrentVersion = 2;
+        public int saveVersion = CurrentVersion;
         public int coins = 5000;
         public int crystals = 100;
         public int expScrolls = 5;
@@ -75,6 +84,29 @@ namespace HashiraChronicles
         public List<string> team = new List<string>();
         public List<EquipmentItem> equipment = new List<EquipmentItem>();
         public List<MissionProgress> missions = new List<MissionProgress>();
+
+        // ---- Story & world
+        public bool introSeen;
+        public string currentRegion = "village";
+        public List<string> seenCutscenes = new List<string>();
+
+        // ---- Summons
+        public int summonPity;
+        public int totalSummons;
+
+        // ---- Missions board (daily / weekly quests)
+        public string dailyKey = "";
+        public string weeklyKey = "";
+        public List<QuestState> quests = new List<QuestState>();
+        public int bossesDefeated;
+
+        public bool HasSeen(string cutsceneId) { return seenCutscenes.Contains(cutsceneId); }
+        public void MarkSeen(string cutsceneId) { if (!seenCutscenes.Contains(cutsceneId)) seenCutscenes.Add(cutsceneId); }
+
+        public bool IsRegionUnlocked(RegionDefinition r)
+        {
+            return r != null && (string.IsNullOrEmpty(r.unlockAfterMission) || IsMissionCleared(r.unlockAfterMission));
+        }
 
         public OwnedCharacter GetCharacter(string id)
         {

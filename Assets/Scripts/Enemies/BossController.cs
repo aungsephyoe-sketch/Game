@@ -24,6 +24,19 @@ namespace HashiraChronicles
 
         int pendingPhase;
         bool superArmor;
+        float introUntil;
+        bool finalPrompted;
+
+        bool IsDemonLord { get { return Def.bossStyle == "demonlord"; } }
+        bool UsesGokenSet { get { return Def.bossStyle == "goken" || IsDemonLord; } }
+
+        /// <summary>Stand still (and untouchable) while the entrance cinematic plays.</summary>
+        public void HoldForIntro(float seconds)
+        {
+            introUntil = Time.time + seconds;
+            attackTimer = Mathf.Max(attackTimer, seconds + 0.5f);
+            Health.GrantInvulnerability(seconds);
+        }
         float summonTimer = 8f;
         int lastPattern = -1;
         ParticleSystem aura;
@@ -92,6 +105,24 @@ namespace HashiraChronicles
 
         protected override void Think(float dt)
         {
+            if (Time.time < introUntil)
+            {
+                visual.SetMoving(0f);
+                var pl = Player;
+                if (pl != null) FaceTowards(pl.Position - Position, dt * 4f);
+                return;
+            }
+            if (IsDemonLord && Phase >= 1 && !finalPrompted && Health.Normalized <= 0.12f)
+            {
+                finalPrompted = true;
+                GameEvents.RaiseBanner("FINAL STRIKE", "Everything you have — NOW!");
+                GameEvents.RaiseSubtitle("Ren", "For Master Tessai. For everyone. This ends now!");
+                var b = BattleController.Current;
+                if (b != null && b.Team.Active != null) b.Team.Active.UltGauge = PlayerCharacter.UltMax;
+                TimeController.SlowMotion(0.35f, 1.6f);
+                BeginAttack(ExhaustedWindow(4f));
+                return;
+            }
             int target = ComputePhase();
             if (target > Phase)
             {
@@ -127,7 +158,22 @@ namespace HashiraChronicles
         IEnumerator ChoosePattern(PlayerCharacter player, float dist)
         {
             var options = new List<int>();
-            if (Def.bossStyle == "goken")
+            if (IsDemonLord)
+            {
+                // Form 1: sword and shadow. Form 2: everything, faster, plus the eclipse itself.
+                if (dist < 4f) options.Add(0);
+                options.Add(1);
+                options.Add(2);
+                options.Add(11);
+                if (Phase >= 1)
+                {
+                    options.Add(3);
+                    options.Add(4);
+                    if (summonTimer <= 0f) { options.Clear(); options.Add(12); }
+                    else if (Health.Normalized < 0.35f && lastPattern != 5 && Random.value < 0.3f) { options.Clear(); options.Add(5); }
+                }
+            }
+            else if (Def.bossStyle == "goken")
             {
                 // 0 Flurry, 1 Shockwave, 2 Needle Rush, 3 Double Shockwave, 4 Scatter Blossoms, 5 Annihilation
                 if (dist < 4f) options.Add(0);
@@ -168,6 +214,91 @@ namespace HashiraChronicles
 
         IEnumerator PhaseTransition()
         {
+            if (IsDemonLord && pendingPhase == 1) { Phase = pendingPhase; return Transformation(); }
+            return StandardPhaseTransition();
+        }
+
+        /// <summary>Every enrage shakes the arena apart: falling debris, dust and a line of dialogue.</summary>
+        void ArenaCollapse(Color c)
+        {
+            for (int i = 0; i < 7; i++)
+            {
+                Vector3 p = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * Random.Range(9f, BattleController.ArenaRadius);
+                VFX.Pillar(p, new Color(0.4f, 0.35f, 0.3f), 9f, 0.4f);
+                VFX.Dust(p, 12);
+                VFX.Smoke(p, new Color(0.2f, 0.18f, 0.16f, 0.7f), 10);
+            }
+            VFX.ImpactLight(Position + Vector3.up * 2f, c, 14f, 0.5f);
+            GameEvents.RaiseImpact(0.8f);
+            string line = MissionSystem.BossLine(Def.id, false);
+            if (line != null) GameEvents.RaiseSubtitle(Def.displayName, line);
+        }
+
+        /// <summary>The Demon Lord's second form, then Ren's awakening answers it.</summary>
+        IEnumerator Transformation()
+        {
+            superArmor = true;
+            Health.GrantInvulnerability(6f);
+            ClearTelegraphs();
+            var cam = CameraController.Instance;
+            var audio = GameManager.Instance != null ? GameManager.Instance.Audio : null;
+            GameEvents.RaiseBanner("THE ECLIPSE DEEPENS", Def.displayName + " casts off his human shape");
+            GameEvents.RaiseSubtitle(Def.displayName, "You carry the dawn half of my heart, Ren. Let me show you what the other half became.");
+            if (cam != null) cam.PlayUltimateCinematic(transform, 3.2f);
+            if (audio != null) audio.Play("roar", 1f);
+            // Push everyone back.
+            var p = Player;
+            if (p != null && Vector3.Distance(p.Position, Position) < 7f)
+                p.OnHitReceived(new DamageInfo { knockback = (p.Position - Position).normalized * 9f, staggerPower = 3f });
+            float e = 0f;
+            Vector3 s0 = transform.localScale;
+            while (e < 2.2f)
+            {
+                e += Time.deltaTime;
+                transform.localScale = Vector3.Lerp(s0, s0 * 1.3f, e / 2.2f);
+                if (Random.value < 0.25f) VFX.Breath(Position, new Color(0.6f, 0.05f, 0.2f), 8);
+                if (cam != null && Random.value < 0.1f) cam.Shake(0.2f);
+                yield return null;
+            }
+            VFX.Shockwave(Position, 12f, new Color(0.9f, 0.1f, 0.3f), 0.8f);
+            VFX.Pillar(Position, new Color(0.9f, 0.1f, 0.3f), 16f, 1f);
+            ArenaCollapse(new Color(0.9f, 0.1f, 0.3f));
+            SetAuraColor(new Color(0.9f, 0.05f, 0.25f));
+            speedMultiplier = 1.3f;
+            windupMultiplier = 0.8f;
+            DestructiveMode = true;
+            if (audio != null) audio.Play("ultimate", 1f);
+            yield return new WaitForSeconds(1.2f);
+
+            // Awakening: the Dawn Mark answers.
+            var battle = BattleController.Current;
+            if (battle != null)
+            {
+                foreach (var m in battle.Team.Members)
+                {
+                    if (m == null || !m.IsAlive) continue;
+                    m.Health.Heal(m.Health.Max * 0.5f);
+                    m.UltGauge = PlayerCharacter.UltMax;
+                }
+                var a = battle.Team.Active;
+                if (a != null)
+                {
+                    VFX.Pillar(a.Position, new Color(1f, 0.8f, 0.35f), 12f, 1.2f);
+                    VFX.Breath(a.Position, new Color(1f, 0.8f, 0.35f), 90);
+                    VFX.Shockwave(a.Position, 6f, new Color(1f, 0.85f, 0.4f), 0.7f);
+                }
+            }
+            GameEvents.RaiseBanner("AWAKENING", "The Dawn Mark burns — team healed, ultimates ready");
+            GameEvents.RaiseSubtitle("Ren", "Half a heart is enough. It's the half that remembers them.");
+            if (audio != null) audio.Play("perfect", 1f);
+            TimeController.SlowMotion(0.4f, 1f);
+            yield return new WaitForSeconds(1.2f);
+            if (cam != null) cam.EndCinematic();
+            superArmor = false;
+        }
+
+        IEnumerator StandardPhaseTransition()
+        {
             Phase = pendingPhase;
             superArmor = true;
             Health.GrantInvulnerability(1.4f);
@@ -176,6 +307,7 @@ namespace HashiraChronicles
             if (GameManager.Instance != null) GameManager.Instance.Audio.Play("roar", 1f);
             if (CameraController.Instance != null) CameraController.Instance.Shake(0.5f);
             VFX.Shockwave(Position, 7f, Def.accentColor, 0.6f);
+            ArenaCollapse(Def.accentColor);
             // Roar shockwave pushes the player away without damage.
             var p = Player;
             if (p != null && Vector3.Distance(p.Position, Position) < 5f)

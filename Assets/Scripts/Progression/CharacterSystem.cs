@@ -9,7 +9,7 @@ namespace HashiraChronicles
     public static class CharacterSystem
     {
         public const int MaxSkillLevel = 10;
-        public const int MaxStars = 6;
+        public const int MaxStars = 7;
 
         public static float LevelMultiplier(int level) { return 1f + 0.045f * (level - 1); }
 
@@ -123,7 +123,7 @@ namespace HashiraChronicles
 
         public static string Stars(int n)
         {
-            return new string('★', Mathf.Clamp(n, 0, 6));
+            return new string('★', Mathf.Clamp(n, 0, 7));
         }
     }
 }

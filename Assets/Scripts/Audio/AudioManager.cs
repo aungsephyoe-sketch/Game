@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace HashiraChronicles
 {
-    public enum MusicState { None, Menu, Explore, Combat, Boss, Victory, Defeat }
+    public enum MusicState { None, Menu, Explore, Combat, Boss, Victory, Defeat, Story, Map, Summon }
 
     /// <summary>
     /// Sound effects and adaptive music, all synthesised at startup (noise bursts, sweeps, Karplus-Strong
@@ -90,7 +90,12 @@ namespace HashiraChronicles
             if (next == state) return;
             state = next;
             AudioClip clip;
-            if (!tracks.TryGetValue(next, out clip)) return;
+            if (!tracks.TryGetValue(next, out clip))
+            {
+                // Silence (emotional beats): let everything fade out.
+                currentMusic = null;
+                return;
+            }
             var target = currentMusic == musicA ? musicB : musicA;
             target.clip = clip;
             target.loop = next != MusicState.Victory && next != MusicState.Defeat;
@@ -106,10 +111,13 @@ namespace HashiraChronicles
             fade = Mathf.MoveTowards(fade, 1f, dt / CrossfadeSeconds);
             float duck = Time.unscaledTime < duckUntil ? 0.35f : 1f;
             float vol = MusicVolume * duck;
-            var other = currentMusic == musicA ? musicB : musicA;
             if (currentMusic != null) currentMusic.volume = Mathf.Lerp(currentMusic.volume, vol * fade, 1f - Mathf.Exp(-dt * 8f));
-            other.volume = Mathf.MoveTowards(other.volume, 0f, dt * Mathf.Max(0.05f, MusicVolume) / CrossfadeSeconds * 1.5f);
-            if (other.volume <= 0f && other.isPlaying) other.Stop();
+            foreach (var other in new[] { musicA, musicB })
+            {
+                if (other == currentMusic) continue;
+                other.volume = Mathf.MoveTowards(other.volume, 0f, dt * Mathf.Max(0.05f, MusicVolume) / CrossfadeSeconds * 1.5f);
+                if (other.volume <= 0f && other.isPlaying) other.Stop();
+            }
 
             // Low-health layer: heartbeat fades in under 30% HP of the active slayer.
             float danger = 0f;
@@ -250,6 +258,9 @@ namespace HashiraChronicles
             tracks[MusicState.Explore] = BuildExploreMusic(scale);
             tracks[MusicState.Combat] = BuildBattleMusic(scale);
             tracks[MusicState.Boss] = BuildBossMusic(scale);
+            tracks[MusicState.Story] = BuildStoryMusic(scale);
+            tracks[MusicState.Map] = BuildMapMusic(scale);
+            tracks[MusicState.Summon] = BuildSummonMusic();
             tracks[MusicState.Victory] = clips["victory"];
             tracks[MusicState.Defeat] = clips["defeat"];
         }
@@ -358,6 +369,72 @@ namespace HashiraChronicles
             MakeLoopable(b);
             Normalize(b, 0.6f);
             var clip = AudioClip.Create("boss_music", b.Length, 1, Rate, false);
+            clip.SetData(b, 0);
+            return clip;
+        }
+
+        /// <summary>Slow, sparse and sad – emotional story beats.</summary>
+        AudioClip BuildStoryMusic(float[] scale)
+        {
+            const float bpm = 56f;
+            float beat = 60f / bpm;
+            int bars = 4;
+            var b = Buffer(bars * 4 * beat);
+            int[] melody = { 4, 3, 1, 0, 1, 3, 2, 1, 0, 1, 0, 0, 4, 3, 5, 4 };
+            for (int i = 0; i < bars * 4; i++)
+            {
+                AddPluck(b, i * beat, scale[melody[i % melody.Length]] * 0.5f, 0.45f, beat * 3f, 0.998f);
+                if (i % 4 == 0) AddTone(b, i * beat, beat * 4f, scale[0] * 0.25f, scale[0] * 0.25f, 0.18f, 0.4f, 0.8f);
+            }
+            MakeLoopable(b);
+            Normalize(b, 0.4f);
+            var clip = AudioClip.Create("story_music", b.Length, 1, Rate, false);
+            clip.SetData(b, 0);
+            return clip;
+        }
+
+        /// <summary>Hopeful travelling theme for the world map.</summary>
+        AudioClip BuildMapMusic(float[] scale)
+        {
+            const float bpm = 100f;
+            float beat = 60f / bpm;
+            int bars = 8;
+            var b = Buffer(bars * 4 * beat);
+            int[] melody = { 0, 2, 3, 5, 4, 3, 2, 3, 5, 7, 5, 4, 3, 2, 0, 2 };
+            for (int bar = 0; bar < bars; bar++)
+            {
+                float t0 = bar * 4 * beat;
+                AddTaiko(b, t0, 0.5f);
+                AddTaiko(b, t0 + beat * 2f, 0.35f);
+                for (int n = 0; n < 4; n++)
+                {
+                    AddPluck(b, t0 + n * beat, scale[melody[(bar * 4 + n) % melody.Length]], 0.35f, beat * 1.4f, 0.995f);
+                    AddNoise(b, t0 + n * beat + beat * 0.5f, 0.03f, 0.06f, 70f, 1f);
+                }
+                AddPluck(b, t0, scale[0] * 0.5f, 0.3f, beat * 3.5f, 0.998f);
+            }
+            MakeLoopable(b);
+            Normalize(b, 0.5f);
+            var clip = AudioClip.Create("map_music", b.Length, 1, Rate, false);
+            clip.SetData(b, 0);
+            return clip;
+        }
+
+        /// <summary>Mystic rising drone with chimes for the summon altar.</summary>
+        AudioClip BuildSummonMusic()
+        {
+            var b = Buffer(8f);
+            for (int i = 0; i < b.Length; i++)
+            {
+                float t = (float)i / Rate;
+                b[i] = Mathf.Sin(2f * Mathf.PI * 110f * t) * 0.2f + Mathf.Sin(2f * Mathf.PI * 164.8f * t) * 0.12f
+                       + Mathf.Sin(2f * Mathf.PI * 220.5f * t) * 0.08f * (0.5f + 0.5f * Mathf.Sin(t * 1.3f));
+            }
+            float[] chimes = { 880f, 1174.7f, 1318.5f, 1760f };
+            for (int k = 0; k < 8; k++) AddTone(b, k * 1f, 1.2f, chimes[k % 4], chimes[k % 4], 0.25f, 3f);
+            MakeLoopable(b);
+            Normalize(b, 0.45f);
+            var clip = AudioClip.Create("summon_music", b.Length, 1, Rate, false);
             clip.SetData(b, 0);
             return clip;
         }

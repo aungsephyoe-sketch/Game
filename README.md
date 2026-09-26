@@ -1,10 +1,43 @@
-# Hashira Chronicles — vertical slice
+# Hashira Chronicles — Blades of Dawn
 
-A mobile 2.5D anime action RPG prototype in **Unity (C#)**, inspired by the structure of
-collectible action RPGs: real-time hack-and-slash with a three-slayer team, breathing-style skills,
-cinematic ultimates, multi-phase bosses, and a progression loop:
+A mobile 2.5D **story-driven** anime action RPG in **Unity (C#)**: real-time hack-and-slash with a
+four-slayer team, breathing-style skills, cinematic ultimates, boss events, an in-engine story told
+through cutscenes, a walkable world map, summoning, and a connected progression loop:
 
-**Collect → Upgrade → Build Team → Fight → Earn Rewards → Upgrade → Repeat**
+**Story → Travel → Cutscene → Fight → Rewards → Upgrade / Summon / Build Team → Next Mission**
+
+### The story
+Ren Kagami trains under Master Tessai in the mountain village of Kiriha. One evening the sky turns
+red, the Demon Lord Veyrath's army burns the village, and a mysterious power wakes in Ren's blade.
+Across seven chapters — *The Fallen Village, The Forest of Shadows, The Kingdom, The Demon Territory,
+The Forgotten Temple, The Fallen Kingdom* and the final chapter at the *Castle of the Eclipse* — Ren
+gathers allies (Sora, Kiba, Hana, Captain Tetsu, the Flame Pillar Homura), uncovers a betrayal in the
+royal court, learns in the temple that his power is the dawn half of the Demon Lord's own heart, loses
+people he loves, and finally faces Veyrath in two forms.
+
+### The game loop
+- **Opening cinematic** on first launch (peaceful village → the sky changes → the attack → the power
+  awakens → *THE JOURNEY BEGINS*) flows straight into the first battle.
+- **Animated home screen**: the team leader breathes, looks around and practises forms in a living
+  village (villagers who walk and chat in speech bubbles, birds, clouds, a campfire, falling leaves).
+  PLAY · STORY · SUMMON · CHARACTERS · TEAM · EQUIPMENT · MISSIONS · SHOP · JOURNAL · SETTINGS.
+- **World map**: eight connected locations with paths, landmarks and markers (locked / you are here /
+  boss / side / treasure / complete). Picking a mission elsewhere makes the leader **walk the road**
+  there, camera following, before the mission starts.
+- **Mission pages**: number, title, story hook, quest giver, recommended level vs your team, enemy
+  types, boss info, objectives, rewards and first-clear rewards, and a big animated PLAY.
+- **Story cutscenes** in-engine: camera cuts/dollies/orbits, dialogue with typewriter text and
+  speaker name plates, title cards, fades, sky changes and music — skippable and replayable from the Journal.
+- **End-of-mission screen**: MISSION COMPLETE, S/A/B/C rating, counted-up EXP and gold, items,
+  equipment, level-ups and new allies; NEXT MISSION / REPLAY / RETURN TO MAP / CHARACTERS.
+- **Summoning as an event**: the shrine goes dark, energy gathers, the circle "upgrades" colour through
+  the rarities, lightning for Legendary+, a portal opens, a silhouette steps out, then the reveal.
+  Common · Rare · Epic · Legendary · Mythic, published rates, ×10 Epic guarantee and pity.
+- **Collection viewer**: rotate the 3D model, test each skill, jump into the Training Grounds.
+- **Missions board** (daily/weekly with rewards, side stories, events, training) and a **shop**.
+- **Boss events**: cinematic entrance with a name card and a line of dialogue, enrage with the arena
+  crumbling, twin generals fought back to back, allied soldiers in sieges, a temple seal puzzle, and
+  the Demon Lord's transformation at 50% that triggers the team's **Awakening** and a final strike.
 
 > All characters, names, story and assets here are **original placeholders**. The data layer keeps
 > content separate from gameplay code so licensed characters and art can be swapped in later.
@@ -32,10 +65,12 @@ To test on a phone, switch the platform to Android/iOS in **File → Build Setti
 | Dodge (i-frames, **perfect dodge** slows time) | DODGE | Space / K |
 | Dash attack | ATTACK right after a dodge | J after Space |
 | Guard (hold) / **Parry** (tap just before a hit) | GUARD | F / Left Shift |
+| Jump / **plunging strike** (attack in the air) | JUMP, then ATTACK | C, then J |
+| Lock-on (tap again for the next target) | LOCK | T / middle mouse |
 | Sprint | Keep moving ~0.5 s | Keep moving |
 | Breathing forms 1–3 | 1 / 2 / 3 | 1 2 3 or U I O |
 | Ultimate | ULT (when gauge is full) | R / L |
-| Switch slayer | Tap a portrait | Q / E / Tab |
+| Switch slayer (team of up to 4) | Tap a portrait | Q / E / Tab |
 | Pause | II | Esc / P |
 
 ## What's in the slice
@@ -69,8 +104,8 @@ To test on a phone, switch the platform to Android/iOS in **File → Build Setti
   - *Goken, the Crimson Fist* — 3 phases: Flurry, Shockwave, Needle Rush → Double Shockwave →
     **Destructive Mode** at 50% (Scatter Blossoms) → **Annihilation** arena blast followed by a
     **BREAK** window (+50% damage taken).
-- **Story**: Chapter 1 *Trial of Wisteria Hill* and Chapter 2 *The Lantern Quarter* (6 missions,
-  2–4 min each) with waves, bosses and three objectives each (defeat N demons / nobody falls / par time).
+- **Story**: 7 chapters, ~30 story, boss, side and treasure missions plus an event boss rush and a
+  training ground, each with three objectives (defeat N demons / nobody falls / par time).
 - **Progression**: EXP & levels (cap by stars), EXP scrolls, ascension ★→★★★★★★, skill levels 1–10,
   an ability tree, equipment (Sword / Haori / Accessory) with upgrades, power rating.
 - **Rewards**: EXP, coins, crystals, scrolls, ascension ore, equipment drops, first-clear rewards,
@@ -97,9 +132,14 @@ Assets/
     Enemies/     EnemyController (EnemyAI archetypes), BossController (BossAI), EnemyProjectile
     Missions/    BattleController, MissionSystem, ArenaBuilder
     Visuals/     CharacterVisual, CameraController, VFX, FlashFx, Telegraph, DamageNumbers,
-                 MaterialFactory, MeshFactory, MenuStage
+                 MaterialFactory, MeshFactory
+    World/       HomeStage (animated home + 3D viewer), MapStage (world map + travel), SummonStage,
+                 NpcWalker, BirdFlock, CloudDrift, EnvFx, Sway, Spinner
+    Story/       Cutscene (script builder), CutsceneDatabase (the story), CutscenePlayer
+    Meta/        SummonSystem, QuestSystem (daily/weekly), ShopSystem
     Audio/       AudioManager
-    UI/          UIManager (+ CharacterScreens, BattleHUD), MobileControls, HudLayout, UIStyles
+    UI/          UIManager (+ MenuScreens, MetaScreens, CharacterScreens, BattleHUD, SettingsScreen),
+                 MobileControls, HudLayout, UIStyles
     Editor/      ProjectSetup
 ```
 
@@ -120,8 +160,8 @@ Key design choices:
   completion, rewards, XP, mobile controls.
 - **Phase 2 – Core RPG** ✅ 3-slayer teams & switching, stats, equipment, skill upgrades, multiple
   missions & bosses, save system. *Next:* link-slot passive bonuses, more versions per character.
-- **Phase 3 – Live systems**: summoning with pity, events & event currency, daily missions, shop,
-  larger collection.
+- **Phase 3 – Story & live systems** ✅ 7-chapter story with cutscenes, world map, summoning with pity,
+  daily/weekly missions, shop, events. *Next:* voiced lines, event currency, link-slot passives.
 - **Phase 4 – Online**: accounts, cloud save (Firebase/PlayFab), 4-player co-op raids, 3v3 PvP by
   power rating, analytics, purchases.
 - **Phase 5 – Ship**: store builds for iOS (App Store) and Android (Google Play).

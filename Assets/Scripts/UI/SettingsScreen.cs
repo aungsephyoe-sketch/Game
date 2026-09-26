@@ -18,6 +18,12 @@ namespace HashiraChronicles
         {
             TopBar("SETTINGS", gm.SettingsReturn);
             DrawSettingsPanel(new Rect(W * 0.5f - 800f, safe.y + 150f, 1600f, H - safe.y - 190f), false);
+            if (gm.SettingsReturn == GameScreen.MainMenu &&
+                Btn(new Rect(safe.x + 560f, safe.y + 22f, 280f, 66f), Time.unscaledTime - resetArmed < 3f ? "CONFIRM RESET" : "Reset Save", UIStyles.ButtonSmall))
+            {
+                if (Time.unscaledTime - resetArmed < 3f) { resetArmed = -10f; gm.ResetSave(); }
+                else { resetArmed = Time.unscaledTime; Toast("Tap again to erase all progress and restart the story."); }
+            }
         }
 
         /// <summary>Shared by the settings screen and the pause menu.</summary>

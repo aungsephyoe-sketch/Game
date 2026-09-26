@@ -34,6 +34,7 @@ namespace HashiraChronicles
             TimeController.ResetAll();
             EnemyController.ResetTokens();
             DamageNumbers.Clear();
+            PlayerCharacter.LockTarget = null;
 
             ArenaBuilder.Build(def.theme, transform);
 

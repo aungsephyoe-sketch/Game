@@ -8,7 +8,7 @@ namespace HashiraChronicles
     {
         public const string TitleLine1 = "BLADES OF DAWN";
         public const string TitleLine2 = "HASHIRA CHRONICLES";
-        public const string Subtitle = "Vertical slice · original placeholder characters & assets";
-        public const string Version = "0.1.0";
+        public const string Subtitle = "A story of dawn and eclipse · original characters";
+        public const string Version = "0.3.0";
     }
 }

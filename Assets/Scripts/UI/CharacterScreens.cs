@@ -43,7 +43,7 @@ namespace HashiraChronicles
                 i++;
             }
             GUI.Label(new Rect(safe.x + 30f, H - 70f, 1600f, 40f),
-                "More slayers join by clearing boss missions. Summoning banners arrive in Phase 3.", UIStyles.Small);
+                "Allies join as the story unfolds. Summon at the shrine for more slayers.", UIStyles.Small);
         }
 
         // ------------------------------------------------------------------ Detail
@@ -55,27 +55,55 @@ namespace HashiraChronicles
             if (c == null) { gm.GoTo(GameScreen.Characters); return; }
             var def = GameDatabase.GetCharacter(c.id);
             TopBar(def.displayName.ToUpper(), GameScreen.Characters);
+            Color rc = RarityInfo.Color(c.stars);
 
-            var header = new Rect(safe.x + 30f, safe.y + 135f, safe.width - 60f, 130f);
+            // Left: the live 3D model (drag to rotate), rarity, lore and skill previews.
+            var viewArea = new Rect(0f, safe.y + 120f, W * 0.44f, H - safe.y - 120f);
+            var ev = Event.current;
+            if (ev.type == EventType.MouseDrag && viewArea.Contains(ev.mousePosition)) { gm.Home.RotateViewer(-ev.delta.x * 0.6f); ev.Use(); }
+            float lx = safe.x + 30f;
+            UIStyles.Outlined(new Rect(lx, safe.y + 130f, 700f, 60f), RarityInfo.Name(c.stars), UIStyles.Sized(UIStyles.H1, 44), rc, 2f);
+            UIStyles.Colored(new Rect(lx, safe.y + 186f, 700f, 44f), Stars(c.stars), UIStyles.Sized(UIStyles.H2, 34), UIStyles.Gold);
+            GUI.Label(new Rect(lx, safe.y + 232f, 700f, 40f), def.versionTitle + "   " + ElementTag(def.element) + "  " + def.role, UIStyles.Small);
+            GUI.Label(new Rect(lx, H - 330f, W * 0.4f, 44f), "<color=#AAAAAA>◀ drag to rotate ▶</color>", UIStyles.Sized(UIStyles.Small, 20));
+            string lore = string.IsNullOrEmpty(def.story) ? def.description : def.story;
+            GUI.Label(new Rect(lx, H - 290f, W * 0.4f, 90f), "<i>" + lore + "</i>", UIStyles.Sized(UIStyles.Small, 20));
+            GUI.Label(new Rect(lx, H - 196f, 400f, 36f), "TEST SKILLS", UIStyles.Sized(UIStyles.H2, 26));
+            string[] tests = { "1", "2", "3", "ULT" };
+            for (int i = 0; i < 4; i++)
+                if (Btn(new Rect(lx + i * 118f, H - 156f, 108f, 76f), tests[i], i == 3 ? UIStyles.ButtonBig : UIStyles.ButtonSmall)) gm.Home.PreviewSkill(i);
+            if (Btn(new Rect(lx + 490f, H - 156f, 300f, 76f), "TRAINING ▶", UIStyles.ButtonSmall))
+            {
+                // Practise with this slayer in the lead.
+                d.team.Remove(c.id);
+                d.team.Insert(0, c.id);
+                if (d.team.Count > TeamSize) d.team.RemoveAt(d.team.Count - 1);
+                gm.Save();
+                gm.BeginMission(GameDatabase.GetMission("TR"));
+                return;
+            }
+
+            // Right: power, tabs and the upgrade panels.
+            float rx = W * 0.45f, rw = safe.xMax - rx - 30f;
+            var header = new Rect(rx, safe.y + 130f, rw, 110f);
             UIStyles.PanelBox(header, ElementChart.ColorOf(def.element));
-            GUI.Label(new Rect(header.x + 30f, header.y + 16f, 1100f, 50f), def.FullName + "   <color=#FFD36B>" + Stars(c.stars) + "</color>", UIStyles.H2);
-            GUI.Label(new Rect(header.x + 30f, header.y + 66f, 1300f, 50f), ElementTag(def.element) + "   " + def.role + "   " + def.breathingStyle +
-                "   <color=#AAAAAA>" + def.description + "</color>", UIStyles.Small);
-            GUI.Label(new Rect(header.xMax - 420f, header.y + 20f, 390f, 90f), "POWER\n<size=44>" + CharacterSystem.Power(d, c).ToString("N0") + "</size>",
-                UIStyles.Sized(UIStyles.Right, 26));
+            GUI.Label(new Rect(header.x + 24f, header.y + 12f, rw - 380f, 50f), def.FullName, UIStyles.H2);
+            GUI.Label(new Rect(header.x + 24f, header.y + 60f, rw - 380f, 44f), def.breathingStyle + "   <color=#AAAAAA>Lv." + c.level + "</color>", UIStyles.Small);
+            GUI.Label(new Rect(header.xMax - 360f, header.y + 12f, 340f, 90f), "POWER\n<size=44>" + CharacterSystem.Power(d, c).ToString("N0") + "</size>", UIStyles.Sized(UIStyles.Right, 26));
 
-            float tabY = header.yMax + 16f;
-            string[] tabs = { "STATS", "SKILLS", "ABILITY TREE", "EQUIPMENT" };
+            float tabY = header.yMax + 12f;
+            string[] tabs = { "STATS", "SKILLS", "TREE", "GEAR" };
+            float tw = (rw - 36f) / 4f;
             for (int t = 0; t < tabs.Length; t++)
             {
-                if (Btn(new Rect(safe.x + 30f + t * 300f, tabY, 285f, 76f), tabs[t], (int)detailTab == t ? UIStyles.ButtonBig : UIStyles.Button))
+                if (Btn(new Rect(rx + t * (tw + 12f), tabY, tw, 70f), tabs[t], (int)detailTab == t ? UIStyles.ButtonBig : UIStyles.Button))
                 {
                     detailTab = (DetailTab)t;
                     pickingSlot = null;
                 }
             }
 
-            var body = new Rect(safe.x + 30f, tabY + 96f, safe.width - 60f, H - tabY - 126f);
+            var body = new Rect(rx, tabY + 84f, rw, H - tabY - 104f);
             UIStyles.PanelBox(body);
             switch (detailTab)
             {
@@ -92,11 +120,11 @@ namespace HashiraChronicles
             var s = CharacterSystem.ComputeStats(d, c);
             float x = body.x + 40f, y = body.y + 30f;
             int cap = ExperienceSystem.LevelCap(c.stars);
-            GUI.Label(new Rect(x, y, 700f, 50f), "Level " + c.level + " / " + cap, UIStyles.H2);
+            GUI.Label(new Rect(x, y, 440f, 50f), "Level " + c.level + " / " + cap, UIStyles.H2);
             y += 56f;
             float need = ExperienceSystem.ExpToNext(c.level);
-            UIStyles.Bar(new Rect(x, y, 640f, 26f), c.level >= cap ? 1f : c.exp / need, new Color(0.5f, 0.8f, 1f));
-            GUI.Label(new Rect(x + 660f, y - 6f, 300f, 40f), c.level >= cap ? "MAX" : c.exp + " / " + need, UIStyles.Small);
+            UIStyles.Bar(new Rect(x, y, 300f, 26f), c.level >= cap ? 1f : c.exp / need, new Color(0.5f, 0.8f, 1f));
+            GUI.Label(new Rect(x + 315f, y - 6f, 200f, 40f), c.level >= cap ? "MAX" : c.exp + " / " + need, UIStyles.Small);
             y += 60f;
 
             string[] names = { "HP", "ATK", "DEF", "CRIT", "CRIT DMG", "SPEED", "SPECIAL DMG", "ELEMENT" };
@@ -108,34 +136,36 @@ namespace HashiraChronicles
             };
             for (int i = 0; i < names.Length; i++)
             {
-                GUI.Label(new Rect(x, y, 300f, 44f), names[i], UIStyles.Small);
-                GUI.Label(new Rect(x + 300f, y - 4f, 340f, 44f), values[i], UIStyles.H2);
+                GUI.Label(new Rect(x, y, 220f, 44f), names[i], UIStyles.Small);
+                GUI.Label(new Rect(x + 220f, y - 4f, 240f, 44f), values[i], UIStyles.H2);
                 y += 50f;
             }
 
-            float rx = body.x + body.width * 0.55f, ry = body.y + 30f;
-            GUI.Label(new Rect(rx, ry, 700f, 50f), "LEVEL UP", UIStyles.H2);
+            float rx = body.x + body.width * 0.5f, ry = body.y + 30f, rw = body.width * 0.47f;
+            GUI.Label(new Rect(rx, ry, rw, 50f), "LEVEL UP", UIStyles.H2);
             ry += 56f;
-            GUI.Label(new Rect(rx, ry, 760f, 80f), "EXP Scroll = " + ExperienceSystem.ExpPerScroll + " EXP (200 coins each).  You have ×" + d.expScrolls, UIStyles.Small);
+            GUI.Label(new Rect(rx, ry, rw, 80f), "EXP Scroll = " + ExperienceSystem.ExpPerScroll + " EXP (200 coins each).  You have ×" + d.expScrolls, UIStyles.Small);
             ry += 60f;
             bool canLevel = c.level < cap && d.expScrolls > 0;
-            if (Btn(new Rect(rx, ry, 260f, 90f), "Use ×1", UIStyles.Button, canLevel)) UseScrolls(c, 1);
-            if (Btn(new Rect(rx + 280f, ry, 260f, 90f), "Use ×10", UIStyles.Button, canLevel)) UseScrolls(c, 10);
+            if (Btn(new Rect(rx, ry, rw * 0.48f, 90f), "Use ×1", UIStyles.Button, canLevel)) UseScrolls(c, 1);
+            if (Btn(new Rect(rx + rw * 0.52f, ry, rw * 0.48f, 90f), "Use ×10", UIStyles.Button, canLevel)) UseScrolls(c, 10);
             ry += 140f;
 
-            GUI.Label(new Rect(rx, ry, 700f, 50f), "ASCENSION  " + Stars(c.stars) + (c.stars < CharacterSystem.MaxStars ? " → " + Stars(c.stars + 1) : ""), UIStyles.H2);
+            GUI.Label(new Rect(rx, ry, rw, 50f), "ASCENSION  " + Stars(c.stars) + (c.stars < CharacterSystem.MaxStars ? " → " + Stars(c.stars + 1) : ""), UIStyles.H2);
             ry += 56f;
             string reason;
             bool canAscend = CharacterSystem.CanAscend(d, c, out reason);
             if (c.stars < CharacterSystem.MaxStars)
             {
-                GUI.Label(new Rect(rx, ry, 760f, 80f), "+12% HP/ATK/DEF and +20 level cap.  Cost: " + CharacterSystem.AscendOreCost(c.stars) + " ore, " +
+                GUI.Label(new Rect(rx, ry, rw, 100f), "+12% HP/ATK/DEF and +20 level cap.  Cost: " + CharacterSystem.AscendOreCost(c.stars) + " ore, " +
                     CharacterSystem.AscendCoinCost(c.stars).ToString("N0") + " coins." + (canAscend ? "" : "  <color=#FF7070>" + reason + "</color>"), UIStyles.Small);
-                ry += 70f;
-                if (Btn(new Rect(rx, ry, 540f, 90f), "ASCEND", UIStyles.ButtonBig, canAscend))
+                ry += 100f;
+                if (Btn(new Rect(rx, ry, rw, 90f), "ASCEND", UIStyles.ButtonBig, canAscend))
                 {
                     CharacterSystem.TryAscend(d, c);
                     gm.Save();
+                    gm.Home.Celebrate(UIStyles.Gold);
+                    QuestSystem.Report("upgrade", 1);
                     Toast(def.displayName + " ascended to " + Stars(c.stars) + "!");
                 }
             }
@@ -148,6 +178,7 @@ namespace HashiraChronicles
             int gained = CharacterSystem.UseExpScrolls(gm.Data, c, count);
             if (gained < 0) { Toast("Not enough coins or scrolls."); return; }
             gm.Save();
+            if (c.level > before) { gm.Home.Celebrate(new Color(0.5f, 0.85f, 1f)); QuestSystem.Report("upgrade", 1); }
             gm.Audio.Play("perfect", 0.5f);
             Toast(gained > 0 ? "Level up! Lv." + before + " → Lv." + c.level : "EXP gained.");
         }
@@ -164,24 +195,27 @@ namespace HashiraChronicles
                 var row = new Rect(body.x + 30f, y, body.width - 60f, rowH - 12f);
                 UIStyles.Rect(row, UIStyles.PanelLight);
                 string kind = i < 3 ? "SKILL " + (i + 1) : "<color=#FFD36B>ULTIMATE</color>";
-                GUI.Label(new Rect(row.x + 24f, row.y + 10f, row.width - 520f, 44f), kind + "   " + ab.name + "   <color=#AAAAAA>Lv." + lvl + "/" + CharacterSystem.MaxSkillLevel + "</color>", UIStyles.Sized(UIStyles.H2, 32));
+                GUI.Label(new Rect(row.x + 20f, row.y + 8f, row.width - 330f, 44f), kind + "   " + ab.name + "   <color=#AAAAAA>Lv." + lvl + "/" + CharacterSystem.MaxSkillLevel + "</color>", UIStyles.Sized(UIStyles.H2, 26));
                 string detail = ab.description + "   <color=#AAAAAA>" + ab.hits + " hit" + (ab.hits > 1 ? "s" : "") + " × " +
                                 Mathf.RoundToInt(ab.damageMultiplier * CharacterSystem.SkillLevelMultiplier(lvl) * 100f) + "% ATK" +
                                 (i < 3 ? "   CD " + ab.cooldown + "s" : "") + "</color>";
-                GUI.Label(new Rect(row.x + 24f, row.y + 56f, row.width - 520f, row.height - 60f), detail, UIStyles.Small);
+                GUI.Label(new Rect(row.x + 20f, row.y + 50f, row.width - 330f, row.height - 54f), detail, UIStyles.Sized(UIStyles.Small, 19));
                 if (lvl < CharacterSystem.MaxSkillLevel)
                 {
                     int coins = CharacterSystem.SkillUpgradeCoinCost(lvl), scrolls = CharacterSystem.SkillUpgradeScrollCost(lvl);
                     bool can = d.coins >= coins && d.skillScrolls >= scrolls;
-                    if (Btn(new Rect(row.xMax - 470f, row.y + (row.height - 90f) * 0.5f, 450f, 90f),
-                        "UPGRADE  <size=22>(" + coins.ToString("N0") + " coins, " + scrolls + " scroll" + (scrolls > 1 ? "s" : "") + ")</size>", UIStyles.Button, can))
+                    if (Btn(new Rect(row.xMax - 300f, row.y + (row.height - 100f) * 0.5f, 285f, 100f),
+                        "UPGRADE\n<size=20>" + coins.ToString("N0") + " coins · " + scrolls + " scroll" + (scrolls > 1 ? "s" : "") + "</size>", UIStyles.Button, can))
                     {
                         CharacterSystem.TryUpgradeSkill(d, c, i);
                         gm.Save();
+                        gm.Home.PreviewSkill(i);
+                        QuestSystem.Report("upgrade", 1);
                         Toast(ab.name + " → Lv." + c.skillLevels[i]);
                     }
                 }
                 else GUI.Label(new Rect(row.xMax - 300f, row.y + 20f, 280f, 60f), "MAX", UIStyles.Center);
+                if (Btn(new Rect(row.xMax - 410f, row.y + (row.height - 70f) * 0.5f, 96f, 70f), "▶", UIStyles.ButtonSmall)) gm.Home.PreviewSkill(i);
                 y += rowH;
             }
         }
@@ -189,13 +223,13 @@ namespace HashiraChronicles
         void DrawTreeTab(Rect body, OwnedCharacter c)
         {
             var d = gm.Data;
-            float cx = body.x + body.width * 0.4f;
-            float nodeW = 340f, nodeH = 100f;
+            float cx = body.x + body.width * 0.36f;
+            float nodeW = 300f, nodeH = 100f;
             // Layout mirrors the design doc: a spine that branches and rejoins.
             Vector2[] pos =
             {
                 new Vector2(cx, body.y + 40f), new Vector2(cx, body.y + 170f), new Vector2(cx, body.y + 300f),
-                new Vector2(cx - 230f, body.y + 430f), new Vector2(cx + 230f, body.y + 430f), new Vector2(cx, body.y + 560f)
+                new Vector2(cx - 165f, body.y + 430f), new Vector2(cx + 165f, body.y + 430f), new Vector2(cx, body.y + 560f)
             };
             DrawLink(pos[0], pos[1], nodeW, nodeH); DrawLink(pos[1], pos[2], nodeW, nodeH);
             DrawLink(pos[2], pos[3], nodeW, nodeH); DrawLink(pos[2], pos[4], nodeW, nodeH);
@@ -210,11 +244,11 @@ namespace HashiraChronicles
                 var style = unlocked ? UIStyles.ButtonBig : UIStyles.Button;
                 if (Btn(r, label, style, available || unlocked) && available)
                 {
-                    if (SkillTree.TryUnlock(d, c, i)) { gm.Save(); Toast("Unlocked " + n.label); }
+                    if (SkillTree.TryUnlock(d, c, i)) { gm.Save(); QuestSystem.Report("upgrade", 1); gm.Home.Celebrate(new Color(0.6f, 1f, 0.7f)); Toast("Unlocked " + n.label); }
                     else Toast("Not enough skill scrolls or coins.");
                 }
             }
-            GUI.Label(new Rect(body.x + body.width * 0.68f, body.y + 40f, body.width * 0.3f, 400f),
+            GUI.Label(new Rect(body.x + body.width * 0.7f, body.y + 40f, body.width * 0.28f, 400f),
                 "Ability tree nodes are permanent bonuses for this slayer.\n\nSkill scrolls: ×" + d.skillScrolls + "\nCoins: " + d.coins.ToString("N0"), UIStyles.Body);
         }
 

@@ -88,7 +88,11 @@ namespace HashiraChronicles
         public static float HitArc(Combatant attacker, Vector3 origin, Vector3 forward, float range, float arcDegrees, AttackTag tag,
             HashSet<Combatant> exclude = null)
         {
-            if (attacker.Team == CombatTeam.Player) Breakable.HitInArc(origin, forward, range, arcDegrees);
+            if (attacker is PlayerCharacter)
+            {
+                Breakable.HitInArc(origin, forward, range, arcDegrees);
+                SealStone.HitInArc(origin, forward, range, arcDegrees);
+            }
             var targets = Query(attacker, origin, forward, range, arcDegrees);
             float total = 0f;
             // Copy because applying damage can kill/disable targets and mutate the registry.
@@ -127,7 +131,7 @@ namespace HashiraChronicles
             attacker.OnDealtDamage(info, target);
 
             Vector3 hitPos = target.Position + Vector3.up * (1f * target.transform.localScale.y);
-            bool playerHit = target.Team == CombatTeam.Player;
+            bool playerHit = target is PlayerCharacter;
             VFX.HitSpark(hitPos, playerHit ? new Color(1f, 0.25f, 0.2f) : tag.color, info.crit ? 22 : 12);
             DamageNumbers.Spawn(hitPos, info.amount, info.crit, info.elementMultiplier, playerHit);
             if (GameManager.Instance != null && GameManager.Instance.Audio != null)

@@ -14,6 +14,11 @@ Unity (C#) mobile 2.5D action RPG prototype. See README.md for features, control
   movement is clamped with `BattleController.ClampToArena`.
 - `Time.timeScale` is owned by `TimeController` (pause, slow motion, hit-stop) — don't set it elsewhere.
 - UI is IMGUI in a 1080-tall virtual space (`HudLayout`); battle touch hit-areas and visuals share `HudLayout`.
+- Screen flow lives in `GameManager.GoTo`: each screen maps to one 3D stage (HomeStage, MapStage, SummonStage,
+  or none for battle/cutscene). Stages share the world origin and only one is active at a time.
+  Missions start through `GameManager.BeginMission` (travel → first-time cutscene → battle); story scenes are
+  scripts in `Story/CutsceneDatabase.cs`.
+- Saves carry `PlayerData.saveVersion`; bump `PlayerData.CurrentVersion` only when old saves can't be migrated.
 
 ## Verifying changes without the Unity editor
 Compile the runtime scripts against Unity's reference assemblies (NuGet `UnityEngine.Modules`) with Mono:

@@ -12,10 +12,10 @@ namespace HashiraChronicles
             return 80 + 40 * level + 6 * level * level;
         }
 
-        /// <summary>Level cap grows with stars: ★3 40, ★4 60, ★5 80, ★6 100.</summary>
+        /// <summary>Level cap grows with stars: ★3 40, ★4 55, ★5 70, ★6 85, ★7 100.</summary>
         public static int LevelCap(int stars)
         {
-            return Mathf.Clamp(40 + (stars - 3) * 20, 40, MaxLevel);
+            return Mathf.Clamp(40 + (stars - 3) * 15, 40, MaxLevel);
         }
 
         /// <summary>Adds EXP, returns levels gained. EXP stops accumulating at the level cap.</summary>

@@ -17,6 +17,8 @@ namespace HashiraChronicles
         public static PlayerData Load()
         {
             var data = TryRead(PathMain) ?? TryRead(PathBackup);
+            // Saves from before the story overhaul don't match the new world; start the new story fresh.
+            if (data != null && data.saveVersion < PlayerData.CurrentVersion) data = null;
             if (data == null)
             {
                 data = CreateNew();
@@ -111,10 +113,15 @@ namespace HashiraChronicles
                 if (data.GetItem(c.accessoryUid) == null) c.accessoryUid = "";
             }
             data.team.RemoveAll(id => data.GetCharacter(id) == null);
-            foreach (var c in data.characters)
+            while (data.team.Count > 4) data.team.RemoveAt(data.team.Count - 1);
+            if (data.team.Count == 0 && data.characters.Count > 0) data.team.Add(data.characters[0].id);
+            if (data.characters.Count == 0)
             {
-                if (data.team.Count >= 3) break;
-                if (!data.team.Contains(c.id)) data.team.Add(c.id);
+                var fresh = CreateNew();
+                data.characters = fresh.characters;
+                data.team = fresh.team;
+                data.equipment = fresh.equipment;
+                data.nextEquipmentUid = fresh.nextEquipmentUid;
             }
         }
     }
