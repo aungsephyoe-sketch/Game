@@ -1,0 +1,325 @@
+using UnityEngine;
+
+namespace HashiraChronicles
+{
+    /// <summary>Character collection, character detail (stats / skills / tree / gear) and equipment screens.</summary>
+    public partial class UIManager
+    {
+        enum DetailTab { Stats, Skills, Tree, Gear }
+
+        DetailTab detailTab = DetailTab.Stats;
+        EquipSlot? pickingSlot;
+        Vector2 pickerScroll, equipScroll;
+
+        // ------------------------------------------------------------------ Collection
+
+        void DrawCharacters()
+        {
+            TopBar("SLAYERS", GameScreen.MainMenu);
+            var d = gm.Data;
+            float top = safe.y + 140f;
+            float cardW = 400f, cardH = 250f, gap = 24f;
+            int cols = Mathf.Max(1, Mathf.FloorToInt((safe.width - 60f + gap) / (cardW + gap)));
+            int i = 0;
+            foreach (var c in d.characters)
+            {
+                var def = GameDatabase.GetCharacter(c.id);
+                var r = new Rect(safe.x + 30f + (i % cols) * (cardW + gap), top + (i / cols) * (cardH + gap), cardW, cardH);
+                UIStyles.PanelBox(r, ElementChart.ColorOf(def.element));
+                UIStyles.Rect(new Rect(r.x, r.y + 4f, 10f, r.height - 4f), def.haoriColor);
+                GUI.Label(new Rect(r.x + 30f, r.y + 18f, r.width - 40f, 44f), def.displayName, UIStyles.H2);
+                GUI.Label(new Rect(r.x + 30f, r.y + 62f, r.width - 40f, 36f), def.versionTitle, UIStyles.Small);
+                UIStyles.Colored(new Rect(r.x + 30f, r.y + 100f, r.width - 40f, 44f), Stars(c.stars), UIStyles.Sized(UIStyles.H2, 34), UIStyles.Gold);
+                GUI.Label(new Rect(r.x + 30f, r.y + 146f, r.width - 40f, 40f), ElementTag(def.element) + "  " + def.role + "   Lv." + c.level, UIStyles.Body);
+                GUI.Label(new Rect(r.x + 30f, r.y + 190f, r.width - 40f, 40f), "Power " + CharacterSystem.Power(d, c).ToString("N0"), UIStyles.Small);
+                if (GUI.Button(r, GUIContent.none, GUIStyle.none))
+                {
+                    gm.Audio.Play("click", 0.6f);
+                    gm.SelectedCharacterId = c.id;
+                    detailTab = DetailTab.Stats;
+                    pickingSlot = null;
+                    gm.GoTo(GameScreen.CharacterDetail);
+                }
+                i++;
+            }
+            GUI.Label(new Rect(safe.x + 30f, H - 70f, 1600f, 40f),
+                "More slayers join by clearing boss missions. Summoning banners arrive in Phase 3.", UIStyles.Small);
+        }
+
+        // ------------------------------------------------------------------ Detail
+
+        void DrawCharacterDetail()
+        {
+            var d = gm.Data;
+            var c = d.GetCharacter(gm.SelectedCharacterId);
+            if (c == null) { gm.GoTo(GameScreen.Characters); return; }
+            var def = GameDatabase.GetCharacter(c.id);
+            TopBar(def.displayName.ToUpper(), GameScreen.Characters);
+
+            var header = new Rect(safe.x + 30f, safe.y + 135f, safe.width - 60f, 130f);
+            UIStyles.PanelBox(header, ElementChart.ColorOf(def.element));
+            GUI.Label(new Rect(header.x + 30f, header.y + 16f, 1100f, 50f), def.FullName + "   <color=#FFD36B>" + Stars(c.stars) + "</color>", UIStyles.H2);
+            GUI.Label(new Rect(header.x + 30f, header.y + 66f, 1300f, 50f), ElementTag(def.element) + "   " + def.role + "   " + def.breathingStyle +
+                "   <color=#AAAAAA>" + def.description + "</color>", UIStyles.Small);
+            GUI.Label(new Rect(header.xMax - 420f, header.y + 20f, 390f, 90f), "POWER\n<size=44>" + CharacterSystem.Power(d, c).ToString("N0") + "</size>",
+                UIStyles.Sized(UIStyles.Right, 26));
+
+            float tabY = header.yMax + 16f;
+            string[] tabs = { "STATS", "SKILLS", "ABILITY TREE", "EQUIPMENT" };
+            for (int t = 0; t < tabs.Length; t++)
+            {
+                if (Btn(new Rect(safe.x + 30f + t * 300f, tabY, 285f, 76f), tabs[t], (int)detailTab == t ? UIStyles.ButtonBig : UIStyles.Button))
+                {
+                    detailTab = (DetailTab)t;
+                    pickingSlot = null;
+                }
+            }
+
+            var body = new Rect(safe.x + 30f, tabY + 96f, safe.width - 60f, H - tabY - 126f);
+            UIStyles.PanelBox(body);
+            switch (detailTab)
+            {
+                case DetailTab.Stats: DrawStatsTab(body, c, def); break;
+                case DetailTab.Skills: DrawSkillsTab(body, c, def); break;
+                case DetailTab.Tree: DrawTreeTab(body, c); break;
+                case DetailTab.Gear: DrawGearTab(body, c); break;
+            }
+        }
+
+        void DrawStatsTab(Rect body, OwnedCharacter c, CharacterDefinition def)
+        {
+            var d = gm.Data;
+            var s = CharacterSystem.ComputeStats(d, c);
+            float x = body.x + 40f, y = body.y + 30f;
+            int cap = ExperienceSystem.LevelCap(c.stars);
+            GUI.Label(new Rect(x, y, 700f, 50f), "Level " + c.level + " / " + cap, UIStyles.H2);
+            y += 56f;
+            float need = ExperienceSystem.ExpToNext(c.level);
+            UIStyles.Bar(new Rect(x, y, 640f, 26f), c.level >= cap ? 1f : c.exp / need, new Color(0.5f, 0.8f, 1f));
+            GUI.Label(new Rect(x + 660f, y - 6f, 300f, 40f), c.level >= cap ? "MAX" : c.exp + " / " + need, UIStyles.Small);
+            y += 60f;
+
+            string[] names = { "HP", "ATK", "DEF", "CRIT", "CRIT DMG", "SPEED", "SPECIAL DMG", "ELEMENT" };
+            string[] values =
+            {
+                Mathf.RoundToInt(s.hp).ToString("N0"), Mathf.RoundToInt(s.atk).ToString("N0"), Mathf.RoundToInt(s.def).ToString("N0"),
+                Mathf.RoundToInt(s.crit * 100f) + "%", Mathf.RoundToInt(s.critDmg * 100f) + "%", s.speed.ToString("0.0"),
+                Mathf.RoundToInt(s.specialDmg * 100f) + "%", ElementTag(def.element)
+            };
+            for (int i = 0; i < names.Length; i++)
+            {
+                GUI.Label(new Rect(x, y, 300f, 44f), names[i], UIStyles.Small);
+                GUI.Label(new Rect(x + 300f, y - 4f, 340f, 44f), values[i], UIStyles.H2);
+                y += 50f;
+            }
+
+            float rx = body.x + body.width * 0.55f, ry = body.y + 30f;
+            GUI.Label(new Rect(rx, ry, 700f, 50f), "LEVEL UP", UIStyles.H2);
+            ry += 56f;
+            GUI.Label(new Rect(rx, ry, 760f, 80f), "EXP Scroll = " + ExperienceSystem.ExpPerScroll + " EXP (200 coins each).  You have ×" + d.expScrolls, UIStyles.Small);
+            ry += 60f;
+            bool canLevel = c.level < cap && d.expScrolls > 0;
+            if (Btn(new Rect(rx, ry, 260f, 90f), "Use ×1", UIStyles.Button, canLevel)) UseScrolls(c, 1);
+            if (Btn(new Rect(rx + 280f, ry, 260f, 90f), "Use ×10", UIStyles.Button, canLevel)) UseScrolls(c, 10);
+            ry += 140f;
+
+            GUI.Label(new Rect(rx, ry, 700f, 50f), "ASCENSION  " + Stars(c.stars) + (c.stars < CharacterSystem.MaxStars ? " → " + Stars(c.stars + 1) : ""), UIStyles.H2);
+            ry += 56f;
+            string reason;
+            bool canAscend = CharacterSystem.CanAscend(d, c, out reason);
+            if (c.stars < CharacterSystem.MaxStars)
+            {
+                GUI.Label(new Rect(rx, ry, 760f, 80f), "+12% HP/ATK/DEF and +20 level cap.  Cost: " + CharacterSystem.AscendOreCost(c.stars) + " ore, " +
+                    CharacterSystem.AscendCoinCost(c.stars).ToString("N0") + " coins." + (canAscend ? "" : "  <color=#FF7070>" + reason + "</color>"), UIStyles.Small);
+                ry += 70f;
+                if (Btn(new Rect(rx, ry, 540f, 90f), "ASCEND", UIStyles.ButtonBig, canAscend))
+                {
+                    CharacterSystem.TryAscend(d, c);
+                    gm.Save();
+                    Toast(def.displayName + " ascended to " + Stars(c.stars) + "!");
+                }
+            }
+            else GUI.Label(new Rect(rx, ry, 700f, 40f), "Fully ascended.", UIStyles.Small);
+        }
+
+        void UseScrolls(OwnedCharacter c, int count)
+        {
+            int before = c.level;
+            int gained = CharacterSystem.UseExpScrolls(gm.Data, c, count);
+            if (gained < 0) { Toast("Not enough coins or scrolls."); return; }
+            gm.Save();
+            gm.Audio.Play("perfect", 0.5f);
+            Toast(gained > 0 ? "Level up! Lv." + before + " → Lv." + c.level : "EXP gained.");
+        }
+
+        void DrawSkillsTab(Rect body, OwnedCharacter c, CharacterDefinition def)
+        {
+            var d = gm.Data;
+            float y = body.y + 24f;
+            float rowH = (body.height - 48f) / 4f;
+            for (int i = 0; i < 4; i++)
+            {
+                var ab = i < 3 ? def.skills[i] : def.ultimate;
+                int lvl = c.skillLevels[i];
+                var row = new Rect(body.x + 30f, y, body.width - 60f, rowH - 12f);
+                UIStyles.Rect(row, UIStyles.PanelLight);
+                string kind = i < 3 ? "SKILL " + (i + 1) : "<color=#FFD36B>ULTIMATE</color>";
+                GUI.Label(new Rect(row.x + 24f, row.y + 10f, row.width - 520f, 44f), kind + "   " + ab.name + "   <color=#AAAAAA>Lv." + lvl + "/" + CharacterSystem.MaxSkillLevel + "</color>", UIStyles.Sized(UIStyles.H2, 32));
+                string detail = ab.description + "   <color=#AAAAAA>" + ab.hits + " hit" + (ab.hits > 1 ? "s" : "") + " × " +
+                                Mathf.RoundToInt(ab.damageMultiplier * CharacterSystem.SkillLevelMultiplier(lvl) * 100f) + "% ATK" +
+                                (i < 3 ? "   CD " + ab.cooldown + "s" : "") + "</color>";
+                GUI.Label(new Rect(row.x + 24f, row.y + 56f, row.width - 520f, row.height - 60f), detail, UIStyles.Small);
+                if (lvl < CharacterSystem.MaxSkillLevel)
+                {
+                    int coins = CharacterSystem.SkillUpgradeCoinCost(lvl), scrolls = CharacterSystem.SkillUpgradeScrollCost(lvl);
+                    bool can = d.coins >= coins && d.skillScrolls >= scrolls;
+                    if (Btn(new Rect(row.xMax - 470f, row.y + (row.height - 90f) * 0.5f, 450f, 90f),
+                        "UPGRADE  <size=22>(" + coins.ToString("N0") + " coins, " + scrolls + " scroll" + (scrolls > 1 ? "s" : "") + ")</size>", UIStyles.Button, can))
+                    {
+                        CharacterSystem.TryUpgradeSkill(d, c, i);
+                        gm.Save();
+                        Toast(ab.name + " → Lv." + c.skillLevels[i]);
+                    }
+                }
+                else GUI.Label(new Rect(row.xMax - 300f, row.y + 20f, 280f, 60f), "MAX", UIStyles.Center);
+                y += rowH;
+            }
+        }
+
+        void DrawTreeTab(Rect body, OwnedCharacter c)
+        {
+            var d = gm.Data;
+            float cx = body.x + body.width * 0.4f;
+            float nodeW = 340f, nodeH = 100f;
+            // Layout mirrors the design doc: a spine that branches and rejoins.
+            Vector2[] pos =
+            {
+                new Vector2(cx, body.y + 40f), new Vector2(cx, body.y + 170f), new Vector2(cx, body.y + 300f),
+                new Vector2(cx - 230f, body.y + 430f), new Vector2(cx + 230f, body.y + 430f), new Vector2(cx, body.y + 560f)
+            };
+            DrawLink(pos[0], pos[1], nodeW, nodeH); DrawLink(pos[1], pos[2], nodeW, nodeH);
+            DrawLink(pos[2], pos[3], nodeW, nodeH); DrawLink(pos[2], pos[4], nodeW, nodeH);
+            DrawLink(pos[3], pos[5], nodeW, nodeH); DrawLink(pos[4], pos[5], nodeW, nodeH);
+            for (int i = 0; i < SkillTree.Nodes.Length; i++)
+            {
+                var n = SkillTree.Nodes[i];
+                var r = new Rect(pos[i].x - nodeW * 0.5f, pos[i].y, nodeW, nodeH);
+                bool unlocked = SkillTree.IsUnlocked(c, i);
+                bool available = SkillTree.CanUnlock(c, i);
+                string label = n.label + "\n<size=20>" + (unlocked ? "UNLOCKED" : n.scrollCost + " scrolls · " + n.coinCost.ToString("N0") + " coins") + "</size>";
+                var style = unlocked ? UIStyles.ButtonBig : UIStyles.Button;
+                if (Btn(r, label, style, available || unlocked) && available)
+                {
+                    if (SkillTree.TryUnlock(d, c, i)) { gm.Save(); Toast("Unlocked " + n.label); }
+                    else Toast("Not enough skill scrolls or coins.");
+                }
+            }
+            GUI.Label(new Rect(body.x + body.width * 0.68f, body.y + 40f, body.width * 0.3f, 400f),
+                "Ability tree nodes are permanent bonuses for this slayer.\n\nSkill scrolls: ×" + d.skillScrolls + "\nCoins: " + d.coins.ToString("N0"), UIStyles.Body);
+        }
+
+        void DrawLink(Vector2 a, Vector2 b, float w, float h)
+        {
+            Vector2 from = new Vector2(a.x, a.y + h), to = new Vector2(b.x, b.y);
+            float midY = (from.y + to.y) * 0.5f;
+            UIStyles.Rect(new Rect(from.x - 2f, from.y, 4f, midY - from.y), UIStyles.Gold * 0.6f);
+            UIStyles.Rect(new Rect(Mathf.Min(from.x, to.x) - 2f, midY - 2f, Mathf.Abs(to.x - from.x) + 4f, 4f), UIStyles.Gold * 0.6f);
+            UIStyles.Rect(new Rect(to.x - 2f, midY, 4f, to.y - midY), UIStyles.Gold * 0.6f);
+        }
+
+        void DrawGearTab(Rect body, OwnedCharacter c)
+        {
+            var d = gm.Data;
+            float x = body.x + 30f, y = body.y + 30f;
+            foreach (EquipSlot slot in System.Enum.GetValues(typeof(EquipSlot)))
+            {
+                var item = d.GetItem(c.GetEquipped(slot));
+                var eq = item != null ? GameDatabase.GetEquipment(item.defId) : null;
+                var r = new Rect(x, y, body.width * 0.45f, 130f);
+                string label = "<size=24>" + slot.ToString().ToUpper() + "</size>\n" + (eq != null ? eq.displayName + "  +" + item.level + "\n<size=22>" + BonusText(eq.BonusAt(item.level)) + "</size>" : "(empty — tap to equip)");
+                if (Btn(r, label, pickingSlot == slot ? UIStyles.ButtonBig : UIStyles.Button)) { pickingSlot = slot; pickerScroll = Vector2.zero; }
+                y += 146f;
+            }
+
+            if (pickingSlot == null)
+            {
+                GUI.Label(new Rect(body.x + body.width * 0.5f, body.y + 30f, body.width * 0.45f, 200f),
+                    "Tap a slot to choose equipment.\nSword → Attack · Haori → Defense · Accessory → special effects.", UIStyles.Body);
+                return;
+            }
+
+            var slotSel = pickingSlot.Value;
+            var list = d.equipment.FindAll(e => { var def = GameDatabase.GetEquipment(e.defId); return def != null && def.slot == slotSel; });
+            var view = new Rect(body.x + body.width * 0.5f, body.y + 30f, body.width * 0.48f, body.height - 60f);
+            var content = new Rect(0f, 0f, view.width - 30f, (list.Count + 1) * 116f);
+            pickerScroll = GUI.BeginScrollView(view, pickerScroll, content);
+            if (Btn(new Rect(0f, 0f, content.width, 100f), "Unequip"))
+            {
+                EquipmentSystem.Unequip(c, slotSel);
+                gm.Save();
+            }
+            for (int i = 0; i < list.Count; i++)
+            {
+                var item = list[i];
+                var def = GameDatabase.GetEquipment(item.defId);
+                var owner = d.WhoEquipped(item.uid);
+                string ownerText = owner == null ? "" : "  <color=#FFD36B>[" + GameDatabase.GetCharacter(owner.id).displayName + "]</color>";
+                string label = def.displayName + " +" + item.level + "  " + Stars(def.rarity) + ownerText + "\n<size=22>" + BonusText(def.BonusAt(item.level)) + "</size>";
+                if (Btn(new Rect(0f, (i + 1) * 116f, content.width, 100f), label))
+                {
+                    EquipmentSystem.Equip(d, c, item);
+                    gm.Save();
+                    Toast("Equipped " + def.displayName);
+                }
+            }
+            GUI.EndScrollView();
+        }
+
+        static string BonusText(StatBlock b)
+        {
+            var sb = new System.Text.StringBuilder();
+            if (b.hp > 0) sb.Append("HP +" + Mathf.RoundToInt(b.hp) + "  ");
+            if (b.atk > 0) sb.Append("ATK +" + Mathf.RoundToInt(b.atk) + "  ");
+            if (b.def > 0) sb.Append("DEF +" + Mathf.RoundToInt(b.def) + "  ");
+            if (b.crit > 0) sb.Append("CRIT +" + (b.crit * 100f).ToString("0.#") + "%  ");
+            if (b.critDmg > 0) sb.Append("CRIT DMG +" + Mathf.RoundToInt(b.critDmg * 100f) + "%  ");
+            if (b.speed > 0) sb.Append("SPD +" + b.speed.ToString("0.0") + "  ");
+            if (b.specialDmg > 0) sb.Append("SPECIAL +" + Mathf.RoundToInt(b.specialDmg * 100f) + "%");
+            return sb.ToString();
+        }
+
+        // ------------------------------------------------------------------ Equipment inventory
+
+        void DrawEquipment()
+        {
+            TopBar("EQUIPMENT", GameScreen.MainMenu);
+            var d = gm.Data;
+            var view = new Rect(safe.x + 30f, safe.y + 140f, safe.width - 60f, H - safe.y - 170f);
+            float rowH = 110f;
+            var content = new Rect(0f, 0f, view.width - 30f, d.equipment.Count * (rowH + 12f));
+            equipScroll = GUI.BeginScrollView(view, equipScroll, content);
+            for (int i = 0; i < d.equipment.Count; i++)
+            {
+                var item = d.equipment[i];
+                var def = GameDatabase.GetEquipment(item.defId);
+                var r = new Rect(0f, i * (rowH + 12f), content.width, rowH);
+                UIStyles.PanelBox(r);
+                var owner = d.WhoEquipped(item.uid);
+                GUI.Label(new Rect(r.x + 24f, r.y + 12f, r.width - 560f, 44f), def.displayName + "  +" + item.level + "/" + def.maxLevel +
+                    "   <color=#FFD36B>" + Stars(def.rarity) + "</color>   <size=24><color=#AAAAAA>" + def.slot + (owner != null ? " · worn by " + GameDatabase.GetCharacter(owner.id).displayName : "") + "</color></size>", UIStyles.Body);
+                GUI.Label(new Rect(r.x + 24f, r.y + 58f, r.width - 560f, 44f), BonusText(def.BonusAt(item.level)) + "   <color=#888888>" + def.description + "</color>", UIStyles.Small);
+                if (item.level < def.maxLevel)
+                {
+                    int cost = EquipmentSystem.UpgradeCost(item);
+                    if (Btn(new Rect(r.xMax - 500f, r.y + 15f, 480f, 80f), "UPGRADE  <size=22>(" + cost.ToString("N0") + " coins)</size>", UIStyles.Button, d.coins >= cost))
+                    {
+                        EquipmentSystem.TryUpgrade(d, item);
+                        gm.Save();
+                    }
+                }
+                else GUI.Label(new Rect(r.xMax - 300f, r.y + 25f, 280f, 60f), "MAX", UIStyles.Center);
+            }
+            GUI.EndScrollView();
+        }
+    }
+}
