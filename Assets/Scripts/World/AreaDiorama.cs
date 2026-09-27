@@ -147,6 +147,92 @@ namespace HashiraChronicles
             return res;
         }
 
+        /// <summary>
+        /// A small version of a region for the whole-world overview: a raised plateau in the region's colours
+        /// dressed with a handful of its props (trees, snowy peaks, houses, torii, lava, ruins...), with the
+        /// centre left clear for the region marker.
+        /// </summary>
+        public static GameObject BuildMini(string regionId, Transform parent, Vector3 at)
+        {
+            var look = LookFor(regionId);
+            rng = new System.Random(regionId.GetHashCode() & 0x7fffffff);
+            var go = new GameObject("Mini_" + regionId);
+            go.transform.SetParent(parent, false);
+            go.transform.position = at;
+            go.transform.localScale = Vector3.one * 0.72f;
+            root = go.transform;
+            Color ground, rim;
+            switch (look)
+            {
+                case Look.Snow: ground = new Color(0.88f, 0.92f, 0.98f); rim = new Color(0.6f, 0.7f, 0.85f); break;
+                case Look.Crimson: ground = new Color(0.32f, 0.09f, 0.08f); rim = new Color(0.18f, 0.06f, 0.06f); break;
+                case Look.Coast: ground = new Color(0.95f, 0.86f, 0.62f); rim = new Color(0.75f, 0.65f, 0.45f); break;
+                case Look.Ruins: ground = new Color(0.5f, 0.46f, 0.42f); rim = new Color(0.36f, 0.33f, 0.3f); break;
+                case Look.Shrine: ground = new Color(0.42f, 0.6f, 0.36f); rim = new Color(0.5f, 0.45f, 0.38f); break;
+                case Look.DarkForest: ground = new Color(0.2f, 0.2f, 0.28f); rim = new Color(0.12f, 0.1f, 0.16f); break;
+                case Look.Village: ground = new Color(0.5f, 0.68f, 0.3f); rim = new Color(0.45f, 0.35f, 0.24f); break;
+                default: ground = new Color(0.36f, 0.62f, 0.24f); rim = new Color(0.4f, 0.32f, 0.22f); break;
+            }
+            Put(MeshFactory.FacetCylinder(10), -Vector3.up * 0.5f, new Vector3(20f, 0.8f, 20f), M(rim), 9f);
+            Put(MeshFactory.FacetCylinder(10), Vector3.up * 0.3f, new Vector3(19f, 0.06f, 19f), M(ground), 9f, false);
+            var spots = new List<Vector3>();
+            int guard = 0;
+            while (spots.Count < 22 && guard++ < 400)
+            {
+                var p = V(R(-8.5f, 8.5f), R(-8.5f, 8.5f));
+                if (p.magnitude > 8.8f || p.magnitude < 3.4f) continue;
+                bool close = false;
+                foreach (var q in spots) if ((q - p).sqrMagnitude < 2.2f) close = true;
+                if (!close) spots.Add(p);
+            }
+            Vector3 up = Vector3.up * 0.36f;
+            for (int i = 0; i < spots.Count; i++)
+            {
+                Vector3 p = spots[i] + up;
+                double r = rng.NextDouble();
+                switch (look)
+                {
+                    case Look.Snow:
+                        if (r < 0.4) { float h = R(3f, 5.5f); Put(MeshFactory.FacetCone(5), p, new Vector3(3f, h, 3f), M(new Color(0.62f, 0.72f, 0.88f)), R(0f, 72f)); Put(MeshFactory.FacetCone(5), p + Vector3.up * h * 0.6f, new Vector3(1.3f, h * 0.4f, 1.3f), M(Color.white), R(0f, 72f), false); }
+                        else Pine(p, R(1f, 1.5f), new Color(0.2f, 0.36f, 0.42f), true);
+                        break;
+                    case Look.Crimson:
+                        if (r < 0.45) DeadTree(p, R(1f, 1.5f));
+                        else if (r < 0.75) Put(MeshFactory.FacetCone(5), p, new Vector3(1.4f, R(2f, 3.5f), 1.4f), M(new Color(0.15f, 0.06f, 0.06f)), R(0f, 72f));
+                        else Put(MeshFactory.Disc(), p + Vector3.up * 0.02f, new Vector3(1.2f, 1f, 1.2f), Glow(new Color(1f, 0.4f, 0.08f)), 0f, false);
+                        break;
+                    case Look.Coast:
+                        if (r < 0.35) House(p, 1.1f, R(0f, 360f), new Color(0.95f, 0.92f, 0.85f), new Color(0.75f, 0.3f, 0.2f));
+                        else if (r < 0.7) Bush(p, R(0.8f, 1.3f), new Color(0.3f, 0.6f, 0.22f));
+                        else Pine(p, R(0.9f, 1.2f), new Color(0.15f, 0.45f, 0.2f), false);
+                        break;
+                    case Look.Ruins:
+                        if (r < 0.5) Put(MeshFactory.FacetCylinder(8), p, new Vector3(1f, R(1.2f, 3f), 1f), M(new Color(0.62f, 0.6f, 0.56f)), R(0f, 45f));
+                        else Box(p + Vector3.up * 0.4f, new Vector3(R(1f, 2.4f), R(0.6f, 1.6f), 0.6f), M(new Color(0.55f, 0.52f, 0.48f)), R(0f, 180f));
+                        break;
+                    case Look.Shrine:
+                        if (i == 0) Torii(p, 1.2f, R(0f, 360f), new Color(0.88f, 0.2f, 0.15f));
+                        else if (r < 0.5) { Put(MeshFactory.FacetCylinder(5), p, new Vector3(0.3f, 1.3f, 0.3f), M(new Color(0.35f, 0.24f, 0.2f))); Bush(p + Vector3.up * 1.2f, R(1.4f, 2f), new Color(0.98f, 0.75f, 0.85f)); }
+                        else Pine(p, R(1f, 1.4f), new Color(0.16f, 0.42f, 0.24f), false);
+                        break;
+                    case Look.DarkForest:
+                        if (r < 0.7) Pine(p, R(1.2f, 1.9f), new Color(0.14f, 0.16f, 0.26f), false);
+                        else { Put(MeshFactory.FacetCylinder(6), p, new Vector3(0.15f, 0.4f, 0.15f), M(new Color(0.85f, 0.85f, 0.9f))); Put(MeshFactory.FacetCone(8), p + Vector3.up * 0.35f, new Vector3(0.7f, 0.3f, 0.7f), Glow(new Color(0.45f, 0.9f, 1f))); }
+                        break;
+                    case Look.Village:
+                        if (r < 0.4) House(p, 1.1f, R(0f, 360f), new Color(0.92f, 0.86f, 0.74f), new Color(0.45f, 0.3f, 0.2f));
+                        else if (r < 0.8) Bush(p, R(0.8f, 1.3f), new Color(0.32f, 0.6f, 0.22f));
+                        else Pine(p, R(1f, 1.3f), new Color(0.2f, 0.48f, 0.2f), false);
+                        break;
+                    default:
+                        if (r < 0.85) Pine(p, R(1.1f, 1.7f), new Color(0.13f, R(0.38f, 0.5f), 0.16f), false);
+                        else RockAt(p, R(0.8f, 1.4f), new Color(0.5f, 0.52f, 0.55f));
+                        break;
+                }
+            }
+            return go;
+        }
+
         static Vector3 CatmullRom(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
         {
             float t2 = t * t, t3 = t2 * t;

@@ -189,9 +189,9 @@ namespace HashiraChronicles
             if (AreaMode) { UpdateArea(); return; }
             CameraFocus = token.position;
             float t = Time.unscaledTime;
-            Vector3 far = new Vector3(Mathf.Sin(t * 0.1f) * 1.5f, 26f, -21f);
+            Vector3 far = new Vector3(Mathf.Sin(t * 0.1f) * 1.5f + 8f, 38f, -30f);
             Vector3 camPos = token.position + Vector3.Lerp(far, new Vector3(0f, 5f, -8f), arriveZoom);
-            CameraController.Instance.SetFixed(camPos, token.position + Vector3.up * (1f + arriveZoom));
+            CameraController.Instance.SetFixed(camPos, token.position + Vector3.Lerp(new Vector3(8f, 0f, 2f), Vector3.up, arriveZoom));
             // Idle hop so the leader never feels static on the map.
             if (travel == null && tokenVisual != null) tokenVisual.SetMoving(0f);
             foreach (var n in nodes.Values)
@@ -238,30 +238,20 @@ namespace HashiraChronicles
 
             stoneOn = MaterialFactory.Toon(new Color(0.95f, 0.85f, 0.55f), 0f);
             stoneOff = MaterialFactory.Toon(new Color(0.45f, 0.45f, 0.45f), 0f);
-            var rng = new System.Random(11);
-
             foreach (var id in RouteOrder)
             {
                 var r = GameDatabase.GetRegion(id);
-                var n = new Node { region = r, pos = new Vector3(r.mapPosition.x, 0f, r.mapPosition.y) };
-                MeshFactory.MeshObject(MeshFactory.Disc(), root, n.pos + Vector3.up * 0.03f, new Vector3(8f, 1f, 8f), MaterialFactory.Toon(r.mapColor, 0f), false);
-                Landmark(root, r, n.pos, rng);
+                var n = new Node { region = r, pos = new Vector3(r.mapPosition.x, 0.26f, r.mapPosition.y) };
+                // Each region is a small raised diorama of its own chapter map.
+                AreaDiorama.BuildMini(id, root, n.pos);
                 n.ringMat = MaterialFactory.Additive(Color.white);
-                var ring = MeshFactory.MeshObject(MeshFactory.Ring(0.82f), root, n.pos + Vector3.up * 0.08f, new Vector3(3.2f, 1f, 3.2f), n.ringMat, false);
+                var ring = MeshFactory.MeshObject(MeshFactory.Ring(0.86f), root, n.pos + Vector3.up * 0.4f, new Vector3(2f, 1f, 2f), n.ringMat, false);
+                ring.transform.position = n.pos + Vector3.up * 0.04f;
                 var sp = ring.AddComponent<Spinner>();
                 sp.DegreesPerSecond = new Vector3(0f, 30f, 0f);
                 sp.Unscaled = true;
                 n.beamMat = MaterialFactory.Additive(Color.white);
-                var beam = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                var col = beam.GetComponent<Collider>();
-                if (col != null) Destroy(col);
-                beam.transform.SetParent(root, false);
-                beam.transform.position = n.pos + Vector3.up * 6f;
-                beam.transform.localScale = new Vector3(0.6f, 6f, 0.6f);
-                var br = beam.GetComponent<Renderer>();
-                br.sharedMaterial = n.beamMat;
-                br.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                n.beam = beam.transform;
+                n.beam = null; // no light beams: the rings and labels mark the regions
                 nodes[id] = n;
             }
 

@@ -170,6 +170,12 @@ namespace HashiraChronicles
             if (gm.Map.Traveling) Currencies(new Rect(safe.xMax - 980f, safe.y + 28f, 960f, 60f));
             else TopBar("WORLD MAP", GameScreen.MainMenu);
             if (string.IsNullOrEmpty(mapSelected)) mapSelected = d.currentRegion;
+            // Every visit to the map opens on the detailed area map of where you are (or the chosen story stop).
+            if (Time.unscaledTime - gm.ScreenEnteredAt < 0.05f && !gm.Map.Traveling)
+            {
+                mapOverview = false;
+                if (mapSelected != d.currentRegion && areaRegion != mapSelected) mapSelected = d.currentRegion;
+            }
             var cam = Camera.main;
             float s = HudLayout.Scale;
 

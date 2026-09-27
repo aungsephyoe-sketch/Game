@@ -520,7 +520,7 @@ namespace HashiraChronicles
             Visual.SetCharge(0f, ElementColor);
             Visual.HeavyAttack(0.16f);
             yield return new WaitForSeconds(0.06f);
-            var tag = AttackTag.Basic(Def.chargedMultiplier, ElementColor);
+            var tag = AttackTag.Basic(StrongMultiplier, ElementColor);
             tag.knockback = 8f;
             tag.stagger = 7f;
             tag.hitStop = 0.1f;

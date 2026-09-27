@@ -110,7 +110,7 @@ namespace HashiraChronicles
                 yield return null;
             }
             transform.position = end;
-            var tag = AttackTag.Basic(Def.chargedMultiplier * 1.1f, ElementColor);
+            var tag = AttackTag.Basic(StrongMultiplier, ElementColor);
             tag.heavy = true;
             tag.launch = true;
             tag.knockback = 7f;
@@ -188,7 +188,7 @@ namespace HashiraChronicles
             VFX.BurstDisc(at, 4f, green, 0.8f);
             VFX.Pillar(at, green, 7f, 0.6f);
             if (Audio != null) Audio.Play("skill", 0.8f);
-            var tag = AttackTag.Basic(Def.chargedMultiplier * 0.35f, ElementColor);
+            var tag = AttackTag.Basic(StrongMultiplier * 0.25f, ElementColor); // four pulses = one full strong hit
             tag.stagger = 2f;
             for (int i = 0; i < 4; i++)
             {

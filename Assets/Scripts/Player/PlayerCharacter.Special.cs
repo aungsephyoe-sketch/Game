@@ -71,7 +71,7 @@ namespace HashiraChronicles
             if (audio != null) audio.Play("specialRelease", 1f);
             GameEvents.RaiseImpact(1f);
             var tally = new DamageTally();
-            yield return StyleRelease(ab, color, target, tally);
+            yield return SignatureRelease(ab, color, target, tally);
             yield return AbilitySystem.Execute(this, ab, SkillLevelMult(3), true, tally);
 
             // 6. The demons react: thrown back in slow motion.

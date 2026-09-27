@@ -176,6 +176,27 @@ namespace HashiraChronicles
             }
         }
 
+        /// <summary>A continuous stream of the element (a dragon's breath, a wave's spray): call every frame.</summary>
+        public static void Stream(Vector3 from, Vector3 dir, Element e, int count)
+        {
+            Ensure();
+            dir.Normalize();
+            for (int i = 0; i < Count(count); i++)
+            {
+                Vector3 v = (dir + Random.insideUnitSphere * 0.22f) * Random.Range(9f, 15f);
+                switch (e)
+                {
+                    case Element.Water: Emit(droplets, from, v, Random.value < 0.4f ? Color.white : new Color(0.35f, 0.7f, 1f)); break;
+                    case Element.Flame: Emit(flames, from, v, Random.value < 0.35f ? new Color(1f, 0.9f, 0.4f) : new Color(1f, 0.4f, 0.06f), Random.Range(0.4f, 0.9f)); break;
+                    case Element.Thunder: Emit(droplets, from, v * 1.3f, new Color(1f, 0.95f, 0.5f), 0.07f); break;
+                    case Element.Beast: Emit(leaves, from, v * 0.7f, new Color(0.45f, 0.85f, 0.35f)); break;
+                    case Element.Light: Emit(sparkles, from, v * 0.8f, Random.value < 0.5f ? Color.white : new Color(1f, 0.9f, 0.5f)); break;
+                    default: Emit(wisps, from, v * 0.5f, new Color(0.25f, 0.06f, 0.35f, 0.7f)); Emit(sparkles, from, v, new Color(0.75f, 0.35f, 1f)); break;
+                }
+            }
+            if (e == Element.Thunder && Random.value < 0.25f) BoltFx.Strike(from, from + dir * Random.Range(3f, 6f) + Random.insideUnitSphere, new Color(1f, 0.95f, 0.45f), 0.12f, 0.1f);
+        }
+
         // ------------------------------------------------------------------ Hits
 
         /// <summary>The element bursting on a target when a blow lands.</summary>

@@ -46,6 +46,20 @@ namespace HashiraChronicles
             }
         }
 
+        /// <summary>
+        /// Strong (charged) attacks hit at least three times as hard as an average regular hit, for every style.
+        /// </summary>
+        float StrongMultiplier
+        {
+            get
+            {
+                float sum = 0f;
+                foreach (var m in Def.comboMultipliers) sum += m;
+                float avg = Def.comboMultipliers.Length > 0 ? sum / Def.comboMultipliers.Length : 1f;
+                return Mathf.Max(Def.chargedMultiplier, 3f * avg) * StyleDamage;
+            }
+        }
+
         void PlayStyleSwing(bool finisher)
         {
             var a = Audio;
@@ -210,7 +224,7 @@ namespace HashiraChronicles
             var t = Telegraph.Circle(at, 3.4f, 0.25f);
             yield return new WaitForSeconds(0.25f);
             if (t != null) Destroy(t.gameObject);
-            var tag = AttackTag.Basic(Def.chargedMultiplier * 0.9f, ElementColor);
+            var tag = AttackTag.Basic(StrongMultiplier, ElementColor);
             tag.knockback = 6f;
             tag.stagger = 6f;
             tag.heavy = true;

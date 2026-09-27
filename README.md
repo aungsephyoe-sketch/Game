@@ -54,6 +54,13 @@ bleeds violet smoke; finishers erupt (water column, fire pillar, lightning from 
 The combat buttons carry icons: a sword (or fist, arrow, staff) for ATTACK, the skill shapes with element
 badges, a shield for GUARD and the element symbol on the SPECIAL.
 
+Every slayer has a signature special: Ren summons a water dragon that coils around him and breathes a torrent
+(a golden sun dragon in his Dawn form), Homura calls a flame dragon, Homura (Last Flame) drops a meteor storm,
+Sora zig-zags through every demon as lightning, Raiga leaps into the sky and falls as a thunder spear, Tetsu raises
+rings of stone spikes, Mina's four shadow clones strike from every side, Rokuro rains glowing arrows, Genji stops
+time and cuts every demon at once, Yui sends a tidal wave across the field, and Kuroe's crescents orbit before the
+moon itself falls. Strong (charged) attacks always hit at least three times as hard as a regular hit.
+
 Specials are long and cinematic: the fight freezes, the camera cuts to a character-specific angle, energy
 gathers in the slayer's element, then a release unique to their style (chain dashes, triple slams, a shot
 storm, a dragon spiral, orbiting crescents…) ends in a launching blow and a final shockwave.
