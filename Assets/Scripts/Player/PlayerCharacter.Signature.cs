@@ -19,7 +19,7 @@ namespace HashiraChronicles
         IEnumerator SignatureRelease(AbilityDefinition ab, Color color, Combatant target, DamageTally tally)
         {
             var tag = AbilitySystem.MakeTag(this, ab, SkillLevelMult(3), true);
-            tag.multiplier *= 0.4f;
+            tag.multiplier *= 0.9f; // specials hit much harder than regular skills
             Vector3 focus = target != null ? target.Position : Position + transform.forward * 5f;
             switch (Def.id)
             {

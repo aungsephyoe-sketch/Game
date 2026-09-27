@@ -97,6 +97,9 @@ namespace HashiraChronicles
             return gained;
         }
 
+        /// <summary>Level needed before the next star: 30, 45, 60, 75.</summary>
+        public static int AscendLevel(int stars) { return Mathf.Clamp(30 + (stars - 3) * 15, 30, ExperienceSystem.MaxLevel); }
+
         public static int AscendOreCost(int stars) { return 2 + (stars - 3) * 3; }
         public static int AscendCoinCost(int stars) { return 10000 * (stars - 2); }
 
@@ -104,7 +107,8 @@ namespace HashiraChronicles
         {
             reason = "";
             if (c.stars >= MaxStars) { reason = "Max stars"; return false; }
-            if (c.level < ExperienceSystem.LevelCap(c.stars)) { reason = "Reach Lv." + ExperienceSystem.LevelCap(c.stars); return false; }
+            int need = AscendLevel(c.stars);
+            if (c.level < need) { reason = "Reach Lv." + need; return false; }
             if (data.ascensionOre < AscendOreCost(c.stars)) { reason = "Need " + AscendOreCost(c.stars) + " ore"; return false; }
             if (data.coins < AscendCoinCost(c.stars)) { reason = "Need " + AscendCoinCost(c.stars) + " coins"; return false; }
             return true;

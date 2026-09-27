@@ -221,6 +221,9 @@ namespace HashiraChronicles
             }
         }
 
+        /// <summary>How far apart the regions sit on the world overview.</summary>
+        const float MapSpread = 1.7f;
+
         void EnsureWorld()
         {
             if (world != null) return;
@@ -229,19 +232,27 @@ namespace HashiraChronicles
             world.transform.SetParent(transform, false);
             var root = world.transform;
 
-            var sea = MeshFactory.MeshObject(MeshFactory.Disc(), root, new Vector3(0f, -0.3f, 0f), new Vector3(160f, 1f, 160f), MaterialFactory.Toon(new Color(0.18f, 0.38f, 0.6f), 0f), false);
+            // The regions are spread wide across one big continent, with beaches, sea and islands around it.
+            var sea = MeshFactory.MeshObject(MeshFactory.Disc(), root, new Vector3(0f, -0.3f, 0f), new Vector3(280f, 1f, 280f), MaterialFactory.Toon(new Color(0.18f, 0.42f, 0.66f), 0f), false);
             sea.GetComponent<Renderer>().receiveShadows = false;
-            var land = MaterialFactory.Toon(new Color(0.42f, 0.55f, 0.3f), 0f);
-            MeshFactory.MeshObject(MeshFactory.Disc(), root, Vector3.zero, new Vector3(62f, 1f, 42f), land, false);
-            MeshFactory.MeshObject(MeshFactory.Disc(), root, new Vector3(-30f, 0.01f, -5f), new Vector3(28f, 1f, 26f), land, false);
-            MeshFactory.MeshObject(MeshFactory.Disc(), root, new Vector3(32f, 0.01f, -8f), new Vector3(26f, 1f, 28f), land, false);
+            var shallows = MaterialFactory.Toon(new Color(0.3f, 0.66f, 0.8f), 0f);
+            var sand = MaterialFactory.Toon(new Color(0.9f, 0.82f, 0.6f), 0f);
+            var land = MaterialFactory.Toon(new Color(0.42f, 0.56f, 0.3f), 0f);
+            Vector3[] lands = { Vector3.zero, new Vector3(-55f, 0f, -10f), new Vector3(58f, 0f, -20f) };
+            Vector3[] sizes = { new Vector3(106f, 1f, 72f), new Vector3(50f, 1f, 46f), new Vector3(46f, 1f, 52f) };
+            for (int i = 0; i < lands.Length; i++)
+            {
+                MeshFactory.MeshObject(MeshFactory.Disc(), root, lands[i] + Vector3.up * -0.2f, sizes[i] + new Vector3(9f, 0f, 9f), shallows, false);
+                MeshFactory.MeshObject(MeshFactory.Disc(), root, lands[i] + Vector3.up * -0.08f, sizes[i] + new Vector3(3.5f, 0f, 3.5f), sand, false);
+                MeshFactory.MeshObject(MeshFactory.Disc(), root, lands[i] + Vector3.up * (0.01f * i), sizes[i], land, false);
+            }
 
             stoneOn = MaterialFactory.Toon(new Color(0.95f, 0.85f, 0.55f), 0f);
             stoneOff = MaterialFactory.Toon(new Color(0.45f, 0.45f, 0.45f), 0f);
             foreach (var id in RouteOrder)
             {
                 var r = GameDatabase.GetRegion(id);
-                var n = new Node { region = r, pos = new Vector3(r.mapPosition.x, 0.26f, r.mapPosition.y) };
+                var n = new Node { region = r, pos = new Vector3(r.mapPosition.x * MapSpread, 0.26f, r.mapPosition.y * MapSpread) };
                 // Each region is a small raised diorama of its own chapter map.
                 AreaDiorama.BuildMini(id, root, n.pos);
                 n.ringMat = MaterialFactory.Additive(Color.white);
@@ -276,7 +287,12 @@ namespace HashiraChronicles
                 segmentStones.Add(stones);
             }
 
-            CloudDrift.CreateLayer(root, Vector3.zero, 10, 16f, new Color(1f, 1f, 1f, 0.5f), 70f);
+            // Countryside between the regions: forests, hills, rocks, lakes and farms that match the nearest region.
+            var nodePositions = new List<Vector3>();
+            foreach (var id in RouteOrder) nodePositions.Add(nodes[id].pos);
+            var nodeIds = new List<string>(RouteOrder);
+            AreaDiorama.DecorateWorld(root, nodeIds, nodePositions, segments, lands, sizes);
+            CloudDrift.CreateLayer(root, Vector3.zero, 14, 16f, new Color(1f, 1f, 1f, 0.5f), 120f);
             BirdFlock.Create(root, new Vector3(-10f, 0f, 0f), 6, new Color(0.95f, 0.95f, 0.95f)).Radius = 30f;
             var sea2 = EnvFx.Weather(root, Vector3.zero, "leaves", 90f);
             sea2.transform.position = new Vector3(0f, 12f, 0f);

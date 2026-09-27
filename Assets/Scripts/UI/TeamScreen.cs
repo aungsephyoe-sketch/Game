@@ -118,6 +118,11 @@ namespace HashiraChronicles
             float bx = safe.xMax - 30f;
             if (FlatBtn(new Rect(bx - 380f, by, 380f, 96f), "EDIT TEAM", TileRed, true, 34)) { teamEditing = true; if (string.IsNullOrEmpty(rosterPick) && d.team.Count > 0) rosterPick = d.team[0]; }
             if (FlatBtn(new Rect(bx - 380f - 290f, by + 8f, 270f, 80f), "AUTO SET", new Color(0.12f, 0.16f, 0.28f), true, 28)) AutoSet(d);
+            // Choose who leads: pick a slayer, then SET LEADER.
+            bool canLead = teamSlot > 0 && teamSlot < d.team.Count;
+            string leadName = canLead ? GameDatabase.GetCharacter(d.team[teamSlot]).displayName.Split(' ')[0] : "";
+            if (FlatBtn(new Rect(bx - 380f - 290f - 310f, by + 8f, 290f, 80f), canLead ? "SET " + leadName.ToUpper() + " AS LEADER" : "TAP A SLAYER", new Color(0.12f, 0.3f, 0.62f), canLead, canLead ? 20 : 22))
+                SetLeader(d, teamSlot);
         }
 
         void StarStrip(Vector2 at, int stars, float size)
@@ -273,6 +278,11 @@ namespace HashiraChronicles
             }
 
             int inTeam = d.team.IndexOf(c.id);
+            if (manage && upgradeMode)
+            {
+                DrawUpgradeButtons(card, x, d, c, def);
+                return;
+            }
             if (manage)
             {
                 // Characters screen: SELECT adds to the team; the other three open the right upgrade page.
@@ -283,19 +293,21 @@ namespace HashiraChronicles
                     else { teamSlot = 0; teamReturn = GameScreen.Characters; rosterPick = c.id; teamEditing = true; gm.GoTo(GameScreen.Team); }
                 }
                 float bw3 = (card.width - 48f - 20f) / 3f;
-                string[] labels = { "UPGRADE", "EQUIPMENT", "SKILLS" };
-                DetailTab[] tabsFor = { DetailTab.Stats, DetailTab.Gear, DetailTab.Skills };
+                string[] labels = { "UPGRADE", "DETAILS", "SKILLS" };
                 for (int i = 0; i < 3; i++)
                     if (FlatBtn(new Rect(x + i * (bw3 + 10f), card.yMax - 156f, bw3, 64f), labels[i], i == 0 ? TileGreen : i == 1 ? TileOrange : TileBlue, true, 20))
                     {
                         gm.SelectedCharacterId = c.id;
-                        detailTab = tabsFor[i];
+                        rosterPick = c.id;
                         pickingSlot = null;
+                        if (i == 0) { gm.GoTo(GameScreen.Equipment); continue; }
+                        detailTab = i == 1 ? DetailTab.Stats : DetailTab.Skills;
                         gm.GoTo(GameScreen.CharacterDetail);
                     }
                 GUI.Label(new Rect(x, card.yMax - 80f, card.width - 48f, 60f), "<color=#AAAAAA><size=18>Weapon: " + def.weapon + "\nSpecial: " + def.ultimate.name + "</size></color>", UIStyles.Small);
                 return;
             }
+            if (inTeam > 0 && FlatBtn(new Rect(x, card.yMax - 262f, card.width - 48f, 50f), "SET AS LEADER", new Color(0.12f, 0.3f, 0.62f), true, 20)) SetLeader(d, inTeam);
             bool same = inTeam >= 0 && inTeam == teamSlot;
             GUI.Label(new Rect(x, card.yMax - 210f, card.width - 48f, 36f), "<color=#AAAAAA>Slot " + (teamSlot + 1) + " · " + (teamSlot == 0 ? "Leader" : SlotRoles[teamSlot].ToString()) + "</color>", UIStyles.Sized(UIStyles.Small, 20));
             if (FlatBtn(new Rect(x, card.yMax - 170f, card.width - 48f, 84f), same ? "IN TEAM" : "SELECT", TileRed, !same, 34)) AssignToSlot(c.id, -1);
@@ -304,6 +316,81 @@ namespace HashiraChronicles
                 gm.SelectedCharacterId = c.id;
                 gm.GoTo(GameScreen.CharacterDetail);
             }
+        }
+
+        /// <summary>Moves the slayer in this slot to the front: the leader starts every battle.</summary>
+        void SetLeader(PlayerData d, int index)
+        {
+            if (index <= 0 || index >= d.team.Count) return;
+            string id = d.team[index];
+            d.team[index] = d.team[0];
+            d.team[0] = id;
+            teamSlot = 0;
+            rosterPick = id;
+            SaveTeam(d);
+            gm.Audio.Play("switch", 0.6f);
+            var def = GameDatabase.GetCharacter(id);
+            Toast((def != null ? def.displayName : "New leader") + " now leads the team");
+        }
+
+        bool upgradeMode;
+
+        /// <summary>UPGRADE screen: roster on the left, the chosen slayer's levels and training on the right.</summary>
+        void DrawUpgrade()
+        {
+            TopBar("UPGRADE", GameScreen.MainMenu);
+            var d = gm.Data;
+            if (string.IsNullOrEmpty(rosterPick) || d.GetCharacter(rosterPick) == null) rosterPick = d.team.Count > 0 ? d.team[0] : (d.characters.Count > 0 ? d.characters[0].id : null);
+            upgradeMode = true;
+            DrawTeamEdit(d, true);
+            upgradeMode = false;
+        }
+
+        /// <summary>Level up with coins (1 or 10 levels), feed an EXP scroll, or ascend for the next star.</summary>
+        void DrawUpgradeButtons(Rect card, float x, PlayerData d, OwnedCharacter c, CharacterDefinition def)
+        {
+            float w = card.width - 48f;
+            float y = card.yMax - 330f;
+            bool maxed = c.level >= ExperienceSystem.MaxLevel;
+            // Progress to 100.
+            GUI.Label(new Rect(x, y, w, 30f), "<color=#AAAAAA>Level</color>  <b>" + c.level + "</b> / " + ExperienceSystem.MaxLevel, UIStyles.Sized(UIStyles.Body, 22));
+            UIStyles.Bar(new Rect(x, y + 34f, w, 16f), c.level / (float)ExperienceSystem.MaxLevel, new Color(0.35f, 0.85f, 0.45f));
+            y += 62f;
+            int cost1 = ExperienceSystem.LevelUpCost(c.level);
+            int cost10 = 0;
+            for (int i = 0; i < 10 && c.level + i < ExperienceSystem.MaxLevel; i++) cost10 += ExperienceSystem.LevelUpCost(c.level + i);
+            float hw = (w - 10f) / 2f;
+            if (FlatBtn(new Rect(x, y, hw, 70f), maxed ? "MAX LEVEL" : "LEVEL UP\n<size=16>" + cost1.ToString("N0") + " coins</size>", TileGreen, !maxed && d.coins >= cost1, 22))
+                AfterLevel(c, ExperienceSystem.BuyLevels(d, c, 1));
+            if (FlatBtn(new Rect(x + hw + 10f, y, hw, 70f), maxed ? "MAX LEVEL" : "LEVEL UP ×10\n<size=16>" + cost10.ToString("N0") + " coins</size>", new Color(0.16f, 0.52f, 0.3f), !maxed && d.coins >= cost1, 22))
+                AfterLevel(c, ExperienceSystem.BuyLevels(d, c, 10));
+            y += 80f;
+            if (FlatBtn(new Rect(x, y, hw, 64f), "EXP SCROLL ×1\n<size=16>have " + d.expScrolls + "</size>", new Color(0.45f, 0.3f, 0.75f), !maxed && d.expScrolls > 0, 20))
+                AfterLevel(c, CharacterSystem.UseExpScrolls(d, c, 1));
+            string reason;
+            bool canAscend = CharacterSystem.CanAscend(d, c, out reason);
+            if (FlatBtn(new Rect(x + hw + 10f, y, hw, 64f), canAscend ? "ASCEND ★\n<size=16>" + CharacterSystem.AscendOreCost(c.stars) + " ore</size>" : "ASCEND\n<size=16>" + reason + "</size>", new Color(0.8f, 0.55f, 0.15f), canAscend, 20))
+            {
+                if (CharacterSystem.TryAscend(d, c))
+                {
+                    gm.Save();
+                    gm.Audio.Play("perfect", 0.8f);
+                    Toast(def.displayName + " ascended to " + c.stars + "★");
+                }
+            }
+            y += 74f;
+            GUI.Label(new Rect(x, y, w, 30f), "<color=#AAAAAA><size=18>Coins: " + d.coins.ToString("N0") + "   Ore: " + d.ascensionOre + "</size></color>", UIStyles.Small);
+        }
+
+        void AfterLevel(OwnedCharacter c, int gained)
+        {
+            if (gained <= 0) return;
+            GameEvents.RaiseCharacterUpgraded(c);
+            gm.Save();
+            gm.Audio.Play("perfect", 0.6f);
+            var def = GameDatabase.GetCharacter(c.id);
+            Toast((def != null ? def.displayName : "Slayer") + " reached Lv." + c.level);
+            if (gm.Home != null) gm.Home.Celebrate(def != null ? ElementChart.ColorOf(def.element) : Color.white);
         }
 
         void EnsurePresets(PlayerData d)

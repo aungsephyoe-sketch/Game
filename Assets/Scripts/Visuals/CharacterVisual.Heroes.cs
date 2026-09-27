@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace HashiraChronicles
@@ -30,6 +31,64 @@ namespace HashiraChronicles
             go.transform.localRotation = Quaternion.Euler(euler);
             Add(go);
             return go;
+        }
+
+        // ------------------------------------------------------------------ Signature poses
+
+        public bool Posing { get { return posing; } }
+
+        /// <summary>Body tilt, crouch, weapon angle and head tilt for each personality's showcase pose.</summary>
+        void PoseValues(out Vector3 body, out float drop, out Vector3 weapon, out Vector3 headE)
+        {
+            switch (Motion)
+            {
+                case MotionStyle.Confident: body = new Vector3(-4f, 0f, 0f); drop = 0f; weapon = new Vector3(-125f, 25f, 0f); headE = new Vector3(-8f, 0f, 0f); break;   // blade on the shoulder
+                case MotionStyle.Nervous: body = new Vector3(10f, 0f, -4f); drop = 0.04f; weapon = new Vector3(-8f, 12f, 0f); headE = new Vector3(0f, 10f, 5f); break;    // low guard
+                case MotionStyle.Aggressive: body = new Vector3(15f, 0f, 0f); drop = 0.1f; weapon = new Vector3(-65f, 20f, 0f); headE = new Vector3(8f, 0f, 0f); break;  // crouched, fist raised
+                case MotionStyle.Graceful: body = new Vector3(-3f, 0f, 6f); drop = 0f; weapon = new Vector3(-95f, 0f, 0f); headE = new Vector3(0f, 0f, -8f); break;      // staff / fan raised high
+                case MotionStyle.Stoic: body = Vector3.zero; drop = 0f; weapon = new Vector3(88f, 0f, 0f); headE = Vector3.zero; break;                                  // blade planted in front
+                case MotionStyle.Sly: body = new Vector3(-5f, 15f, 8f); drop = 0f; weapon = new Vector3(40f, 150f, 0f); headE = new Vector3(0f, -12f, 6f); break;       // blade hidden behind
+                case MotionStyle.Light: body = new Vector3(6f, -10f, 0f); drop = -0.05f; weapon = new Vector3(-35f, -40f, 0f); headE = new Vector3(0f, 8f, -6f); break;  // weapon across the body, on tiptoe
+                default: body = new Vector3(6f, 0f, 0f); drop = 0.03f; weapon = new Vector3(-22f, 32f, 0f); headE = Vector3.zero; break;                                 // ready stance
+            }
+        }
+
+        /// <summary>Snap straight into the showcase pose (portraits).</summary>
+        public void ApplySignaturePose()
+        {
+            Vector3 b, wpn, he; float drop;
+            PoseValues(out b, out drop, out wpn, out he);
+            Model.localRotation = Quaternion.Euler(b);
+            Model.localPosition = Vector3.down * drop;
+            if (SwordPivot != null) SwordPivot.localRotation = Quaternion.Euler(wpn);
+            if (head != null) head.localRotation = Quaternion.Euler(he);
+        }
+
+        /// <summary>Ease into the showcase pose and hold it, breathing (team line-up, character screen).</summary>
+        public void HoldSignaturePose()
+        {
+            if (driver != null || dead) return;
+            StartPose(SignaturePoseRoutine());
+        }
+
+        IEnumerator SignaturePoseRoutine()
+        {
+            Vector3 b, wpn, he; float drop;
+            PoseValues(out b, out drop, out wpn, out he);
+            float t = 0f;
+            while (true)
+            {
+                t += Time.deltaTime;
+                float k = 1f - Mathf.Exp(-Time.deltaTime * 6f);
+                float breathe = Mathf.Sin(t * 2f) * 0.015f;
+                Model.localRotation = Quaternion.Slerp(Model.localRotation, Quaternion.Euler(b + new Vector3(Mathf.Sin(t * 1.3f) * 1.5f, 0f, 0f)), k);
+                Model.localPosition = Vector3.Lerp(Model.localPosition, Vector3.down * drop + Vector3.up * breathe, k);
+                Model.localScale = Vector3.one * baseScale * (1f + breathe * 0.5f);
+                if (SwordPivot != null) SwordPivot.localRotation = Quaternion.Slerp(SwordPivot.localRotation, Quaternion.Euler(wpn + new Vector3(Mathf.Sin(t * 1.7f) * 3f, 0f, 0f)), k);
+                if (head != null) head.localRotation = Quaternion.Slerp(head.localRotation, Quaternion.Euler(he + new Vector3(0f, Mathf.Sin(t * 0.7f) * 6f, 0f)), k);
+                UpdateFlash();
+                yield return null;
+            }
         }
 
         /// <summary>Smooth, high-resolution sphere part (faces, hair, hands).</summary>
@@ -291,85 +350,166 @@ namespace HashiraChronicles
         void BuildWeapon(WeaponKind kind, Color blade, float h, float w)
         {
             Vector3 hand = new Vector3(0.42f * w, 0.52f * h, 0.14f);
-            var glow = MaterialFactory.Toon(blade, 0.01f, blade * 0.7f);
+            Vector3 leftHand = new Vector3(-0.42f * w, 0.52f * h, 0.14f);
+            var steel = MaterialFactory.Toon(new Color(0.74f, 0.76f, 0.8f), 0.012f, new Color(0.05f, 0.05f, 0.06f));
+            var wood = new Color(0.42f, 0.28f, 0.16f);
+            var tint = MaterialFactory.Toon(Color.Lerp(blade, new Color(0.6f, 0.6f, 0.62f), 0.35f), 0.01f, blade * 0.15f);
             switch (kind)
             {
                 case WeaponKind.Fists:
                 {
-                    // Glowing gauntlets on both fists; the "sword" pivot is the right fist.
+                    // Steel-plated gauntlets on both fists; the "sword" pivot is the right fist.
                     BuildSword(blade, 0.05f, hand);
-                    var gl = MaterialFactory.Toon(Color.Lerp(blade, Color.white, 0.2f), 0.02f, blade * 0.8f);
-                    Add(MeshFactory.Primitive(PrimitiveType.Sphere, SwordPivot, Vector3.zero, new Vector3(0.3f, 0.3f, 0.34f), gl));
-                    Part(PrimitiveType.Sphere, Model, new Vector3(-0.42f * w, 0.52f * h, 0.14f), new Vector3(0.3f, 0.3f, 0.34f), gl, Vector3.zero);
-                    // Wrist wraps.
-                    var wrap = MaterialFactory.Toon(new Color(0.9f, 0.88f, 0.8f), 0.02f);
-                    Add(MeshFactory.Primitive(PrimitiveType.Cylinder, SwordPivot, new Vector3(0f, 0f, -0.2f), new Vector3(0.22f, 0.08f, 0.22f), wrap));
+                    var leather = MaterialFactory.Toon(new Color(0.35f, 0.24f, 0.16f), 0.015f);
+                    Add(MeshFactory.Primitive(PrimitiveType.Sphere, SwordPivot, Vector3.zero, new Vector3(0.24f, 0.24f, 0.28f), leather));
+                    Add(MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0f, 0.02f, 0.1f), new Vector3(0.22f, 0.1f, 0.08f), steel));
+                    Add(MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0f, 0.06f, 0.14f), new Vector3(0.2f, 0.03f, 0.03f), tint));
+                    var l = new GameObject("LeftFist").transform;
+                    l.SetParent(Model, false);
+                    l.localPosition = leftHand;
+                    Add(MeshFactory.Primitive(PrimitiveType.Sphere, l, Vector3.zero, new Vector3(0.24f, 0.24f, 0.28f), leather));
+                    Add(MeshFactory.Primitive(PrimitiveType.Cube, l, new Vector3(0f, 0.02f, 0.1f), new Vector3(0.22f, 0.1f, 0.08f), steel));
+                    Add(MeshFactory.Primitive(PrimitiveType.Cube, l, new Vector3(0f, 0.06f, 0.14f), new Vector3(0.2f, 0.03f, 0.03f), tint));
                     break;
                 }
                 case WeaponKind.TwinBlades:
+                {
                     BuildSword(blade, 0.8f, hand);
-                    {
-                        // Second blade, held low in the left hand like the reference.
-                        var left = new GameObject("LeftBlade").transform;
-                        left.SetParent(Model, false);
-                        left.localPosition = new Vector3(-0.42f * w, 0.52f * h, 0.14f);
-                        left.localRotation = Quaternion.Euler(48f, -62f, 0f);
-                        Add(MeshFactory.Primitive(PrimitiveType.Cube, left, new Vector3(0f, 0f, 0.45f), new Vector3(0.05f, 0.08f, 0.8f), glow));
-                        var lh = MeshFactory.Primitive(PrimitiveType.Cube, left, new Vector3(0f, 0f, 0.46f), new Vector3(0.16f, 0.2f, 0.84f), MaterialFactory.Additive(new Color(blade.r, blade.g, blade.b, 0.3f)));
-                        lh.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                    }
+                    var left = new GameObject("LeftBlade").transform;
+                    left.SetParent(Model, false);
+                    left.localPosition = leftHand;
+                    left.localRotation = Quaternion.Euler(48f, -62f, 0f);
+                    SteelBlade(left, 0.8f, blade, 1f);
                     break;
+                }
                 case WeaponKind.Greatsword:
-                    BuildSword(blade, 1.5f, hand);
-                    Add(MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0f, 0f, 0.85f), new Vector3(0.09f, 0.26f, 1.3f), glow));
+                    BuildSword(blade, 1.45f, hand);
+                    // Broad blade.
+                    Add(MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0f, 0f, 0.8f), new Vector3(0.035f, 0.2f, 1.2f), steel));
                     break;
                 case WeaponKind.SwordShield:
+                {
                     BuildSword(blade, 1f, hand);
-                    var shield = Part(PrimitiveType.Cylinder, Model, new Vector3(-0.44f * w, 0.7f * h, 0.18f), new Vector3(0.62f, 0.05f, 0.62f), MaterialFactory.Toon(new Color(0.3f, 0.36f, 0.5f), 0.03f), new Vector3(0f, 0f, 90f));
-                    MeshFactory.Primitive(PrimitiveType.Sphere, shield.transform, new Vector3(0f, -1.1f, 0f), new Vector3(0.35f, 0.5f, 0.35f), MaterialFactory.Toon(new Color(0.95f, 0.8f, 0.3f), 0.02f));
+                    var sh = new GameObject("Shield").transform;
+                    sh.SetParent(Model, false);
+                    sh.localPosition = new Vector3(-0.46f * w, 0.62f * h, 0.2f);
+                    sh.localRotation = Quaternion.Euler(0f, -70f, 90f);
+                    var face = MaterialFactory.Toon(Color.Lerp(new Color(0.3f, 0.34f, 0.46f), blade, 0.15f), 0.015f);
+                    var rim = MaterialFactory.Toon(new Color(0.6f, 0.5f, 0.28f), 0.015f);
+                    Add(MeshFactory.MeshObject(MeshFactory.FacetCylinder(14), sh, Vector3.zero, new Vector3(0.68f, 0.05f, 0.68f), rim));
+                    Add(MeshFactory.MeshObject(MeshFactory.FacetCylinder(14), sh, new Vector3(0f, 0.02f, 0f), new Vector3(0.6f, 0.05f, 0.6f), face));
+                    Add(MeshFactory.Primitive(PrimitiveType.Sphere, sh, new Vector3(0f, 0.07f, 0f), new Vector3(0.16f, 0.08f, 0.16f), steel));
                     break;
+                }
                 case WeaponKind.Spear:
-                    BuildSword(new Color(0.35f, 0.28f, 0.2f), 2.1f, hand);
-                    var tip = MeshFactory.MeshObject(MeshFactory.Cone(), SwordPivot, new Vector3(0f, 0f, 2.1f), new Vector3(0.14f, 0.45f, 0.14f), glow);
-                    tip.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-                    Add(tip);
+                {
+                    BuildSword(blade, 0.05f, hand);
+                    Shaft(SwordPivot, 2.1f, wood);
+                    var head = MeshFactory.MeshObject(MeshFactory.FacetCone(4), SwordPivot, new Vector3(0f, 0f, 1.78f), new Vector3(0.05f, 0.34f, 0.13f), steel);
+                    head.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+                    Add(head);
+                    Add(MeshFactory.Primitive(PrimitiveType.Cylinder, SwordPivot, new Vector3(0f, 0f, 1.74f), new Vector3(0.08f, 0.02f, 0.08f), tint));
+                    var tassel = MeshFactory.MeshObject(MeshFactory.Cone(), SwordPivot, new Vector3(0f, -0.05f, 1.7f), new Vector3(0.08f, 0.18f, 0.08f), tint);
+                    tassel.transform.localRotation = Quaternion.Euler(180f, 0f, 0f);
+                    Add(tassel);
                     break;
+                }
                 case WeaponKind.Staff:
-                    BuildSword(new Color(0.55f, 0.45f, 0.6f), 1.4f, hand);
-                    Add(MeshFactory.Primitive(PrimitiveType.Sphere, SwordPivot, new Vector3(0f, 0f, 1.45f), Vector3.one * 0.26f, glow));
+                {
+                    BuildSword(blade, 0.05f, hand);
+                    Shaft(SwordPivot, 1.7f, new Color(0.5f, 0.36f, 0.22f));
+                    var ring = MeshFactory.MeshObject(MeshFactory.Ring(0.75f), SwordPivot, new Vector3(0f, 0f, 1.45f), Vector3.one * 0.16f, MaterialFactory.Toon(new Color(0.75f, 0.62f, 0.3f), 0.01f), false);
+                    ring.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                    Add(ring);
+                    // A softly lit gem, not a lamp.
+                    Add(MeshFactory.MeshObject(MeshFactory.SmoothSphere(), SwordPivot, new Vector3(0f, 0f, 1.45f), Vector3.one * 0.14f, MaterialFactory.Toon(Color.Lerp(blade, Color.white, 0.2f), 0.01f, blade * 0.3f)));
                     break;
+                }
                 case WeaponKind.Bow:
-                    BuildSword(blade, 0.3f, hand);
-                    var bow = MeshFactory.MeshObject(MeshFactory.Sector(150f, 0.9f), Model, new Vector3(-0.42f * w, 0.8f * h, 0.25f), new Vector3(0.9f, 1f, 0.9f), MaterialFactory.Toon(new Color(0.45f, 0.3f, 0.18f), 0.02f), false);
-                    bow.transform.localRotation = Quaternion.Euler(0f, 90f, 90f);
-                    Add(bow);
+                {
+                    BuildSword(blade, 0.05f, hand);
+                    var bowT = new GameObject("Bow").transform;
+                    bowT.SetParent(Model, false);
+                    bowT.localPosition = new Vector3(-0.44f * w, 0.62f * h, 0.24f);
+                    var limb = MaterialFactory.Toon(new Color(0.42f, 0.27f, 0.15f), 0.015f);
+                    for (int i = 0; i < 9; i++)
+                    {
+                        float a = Mathf.Lerp(-65f, 65f, i / 8f) * Mathf.Deg2Rad;
+                        Vector3 p = new Vector3(0f, Mathf.Sin(a) * 0.55f, Mathf.Cos(a) * 0.22f - 0.1f);
+                        Add(MeshFactory.Primitive(PrimitiveType.Sphere, bowT, p, new Vector3(0.05f, 0.1f, 0.05f), limb));
+                    }
+                    Add(MeshFactory.Primitive(PrimitiveType.Cube, bowT, new Vector3(0f, 0f, -0.1f), new Vector3(0.008f, 1.0f, 0.008f), MaterialFactory.Toon(new Color(0.9f, 0.88f, 0.8f), 0f)));
+                    // Quiver on the back.
+                    var quiver = Part(PrimitiveType.Cylinder, Model, new Vector3(0.15f, 0.8f * h, -0.34f * w), new Vector3(0.14f, 0.25f, 0.14f), limb, new Vector3(-15f, 0f, -20f));
+                    for (int i = 0; i < 3; i++)
+                        Add(MeshFactory.Primitive(PrimitiveType.Cube, quiver.transform, new Vector3((i - 1) * 0.2f, 1.2f, 0f), new Vector3(0.1f, 0.6f, 0.1f), tint));
                     break;
+                }
                 case WeaponKind.Fans:
-                    BuildSword(blade, 0.35f, hand);
-                    var fanMat = MaterialFactory.Toon(blade, 0.01f, blade * 0.35f);
-                    var fan = MeshFactory.MeshObject(MeshFactory.Sector(110f, 0.25f), SwordPivot, new Vector3(0f, 0f, 0.15f), Vector3.one * 0.55f, fanMat, false);
-                    fan.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
-                    Add(fan);
-                    var fan2 = MeshFactory.MeshObject(MeshFactory.Sector(110f, 0.25f), Model, new Vector3(-0.42f * w, 0.75f * h, 0.3f), Vector3.one * 0.55f, fanMat, false);
-                    fan2.transform.localRotation = Quaternion.Euler(-20f, 0f, 90f);
-                    Add(fan2);
+                {
+                    BuildSword(blade, 0.05f, hand);
+                    var paper = MaterialFactory.Toon(Color.Lerp(blade, new Color(0.95f, 0.93f, 0.88f), 0.55f), 0.01f);
+                    var rib = MaterialFactory.Toon(new Color(0.3f, 0.2f, 0.14f), 0.01f);
+                    for (int side = 0; side < 2; side++)
+                    {
+                        Transform parent = SwordPivot;
+                        if (side == 1)
+                        {
+                            parent = new GameObject("LeftFan").transform;
+                            parent.SetParent(Model, false);
+                            parent.localPosition = leftHand;
+                            parent.localRotation = Quaternion.Euler(20f, -40f, 0f);
+                        }
+                        var fan = MeshFactory.MeshObject(MeshFactory.Sector(120f, 0.2f), parent, new Vector3(0f, 0f, 0.05f), Vector3.one * 0.5f, paper, false);
+                        fan.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                        Add(fan);
+                        for (int i = 0; i < 5; i++)
+                        {
+                            var r = MeshFactory.Primitive(PrimitiveType.Cube, parent, Vector3.zero, new Vector3(0.012f, 0.012f, 0.5f), rib);
+                            r.transform.localRotation = Quaternion.Euler(Mathf.Lerp(-55f, 55f, i / 4f), 0f, 0f);
+                            r.transform.localPosition = r.transform.localRotation * new Vector3(0f, 0f, 0.25f);
+                            Add(r);
+                        }
+                    }
                     break;
+                }
                 case WeaponKind.Cleavers:
-                    BuildSword(blade, 0.75f, hand);
-                    Add(MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0.1f, 0f, 0.5f), new Vector3(0.07f, 0.3f, 0.65f), glow));
-                    Part(PrimitiveType.Cube, Model, new Vector3(-0.45f * w, 0.6f * h, 0.28f), new Vector3(0.07f, 0.3f, 0.65f), glow, new Vector3(30f, -10f, 0f));
+                {
+                    BuildSword(blade, 0.05f, hand);
+                    for (int side = 0; side < 2; side++)
+                    {
+                        Transform parent = SwordPivot;
+                        if (side == 1)
+                        {
+                            parent = new GameObject("LeftCleaver").transform;
+                            parent.SetParent(Model, false);
+                            parent.localPosition = leftHand;
+                            parent.localRotation = Quaternion.Euler(48f, -62f, 0f);
+                        }
+                        Add(MeshFactory.Primitive(PrimitiveType.Cube, parent, new Vector3(0f, 0f, 0.05f), new Vector3(0.05f, 0.05f, 0.25f), MaterialFactory.Toon(wood, 0.012f)));
+                        Add(MeshFactory.Primitive(PrimitiveType.Cube, parent, new Vector3(0f, -0.08f, 0.42f), new Vector3(0.03f, 0.24f, 0.5f), steel));
+                        Add(MeshFactory.Primitive(PrimitiveType.Cube, parent, new Vector3(0f, -0.2f, 0.42f), new Vector3(0.02f, 0.02f, 0.5f), tint));
+                    }
                     break;
+                }
                 case WeaponKind.Cane:
-                    BuildSword(new Color(0.45f, 0.32f, 0.2f), 0.95f, hand);
+                    BuildSword(blade, 0.05f, hand);
+                    Shaft(SwordPivot, 1.1f, wood);
                     break;
                 case WeaponKind.Moon:
-                    BuildSword(blade, 1.1f, hand);
-                    var moon = MeshFactory.MeshObject(MeshFactory.Sector(160f, 0.8f), SwordPivot, new Vector3(0f, 0f, 0.9f), Vector3.one * 0.6f, glow, false);
+                {
+                    BuildSword(blade, 0.05f, hand);
+                    Add(MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0f, 0f, 0.05f), new Vector3(0.05f, 0.05f, 0.35f), MaterialFactory.Toon(new Color(0.12f, 0.1f, 0.12f), 0.01f)));
+                    var moon = MeshFactory.MeshObject(MeshFactory.Sector(170f, 0.78f), SwordPivot, new Vector3(0f, 0f, 0.55f), Vector3.one * 0.55f, steel, false);
                     moon.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
                     Add(moon);
+                    var edgeM = MeshFactory.MeshObject(MeshFactory.Sector(170f, 0.94f), SwordPivot, new Vector3(0.005f, 0f, 0.55f), Vector3.one * 0.56f, tint, false);
+                    edgeM.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                    Add(edgeM);
                     break;
+                }
                 default:
-                    BuildSword(blade, 1.2f, hand);
+                    BuildSword(blade, 1.15f, hand);
                     break;
             }
         }

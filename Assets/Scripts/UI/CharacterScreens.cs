@@ -311,7 +311,10 @@ namespace HashiraChronicles
 
         // ------------------------------------------------------------------ Equipment inventory
 
-        void DrawEquipment()
+        // The home tile and Characters screen now lead to character upgrades instead of gear.
+        void DrawEquipment() { DrawUpgrade(); }
+
+        void DrawGearList()
         {
             TopBar("EQUIPMENT", GameScreen.MainMenu);
             var d = gm.Data;

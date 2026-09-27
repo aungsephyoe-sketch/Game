@@ -76,6 +76,20 @@ namespace HashiraChronicles
             float hpMul = 1f + 0.12f * (level - 1);
             float atkMul = 1f + 0.09f * (level - 1);
             float defMul = 1f + 0.06f * (level - 1);
+            if (def.archetype == EnemyArchetype.Boss)
+            {
+                // Bosses grow with the story: each chapter's boss is noticeably tougher than the last.
+                var battle = BattleController.Current;
+                int ch = battle != null && battle.Def != null ? Mathf.Max(1, battle.Def.chapter) : 1;
+                hpMul *= 1f + 0.35f * (ch - 1);
+                atkMul *= 1f + 0.15f * (ch - 1);
+                defMul *= 1f + 0.08f * (ch - 1);
+            }
+            else
+            {
+                // Regular demons go down faster.
+                hpMul *= 0.55f;
+            }
             Stats = new StatBlock(def.baseHp * hpMul, def.baseAtk * atkMul, def.baseDef * defMul, 0.05f, 1.5f, def.moveSpeed, 1f);
             Radius = def.radius;
             Health.Init(Stats.hp);

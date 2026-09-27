@@ -107,7 +107,7 @@ namespace HashiraChronicles
             {
                 var def = GameDatabase.GetCharacter(parts[1]);
                 if (def != null) v = CharacterVisual.BuildHero(def, holder);
-                if (v != null) { headY = v.HeadY; height = headY + 0.45f; v.FidgetsEnabled = false; }
+                if (v != null) { headY = v.HeadY; height = headY + 0.45f; v.FidgetsEnabled = false; v.ApplySignaturePose(); }
             }
             else
             {

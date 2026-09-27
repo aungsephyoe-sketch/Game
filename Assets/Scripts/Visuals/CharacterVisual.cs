@@ -284,26 +284,48 @@ namespace HashiraChronicles
             SwordPivot.localPosition = pivotPos;
             SwordPivot.localRotation = swordRest;
 
-            // A bright glowing blade with a soft halo around it.
-            var bladeMat = MaterialFactory.Toon(Color.Lerp(bladeColor, Color.white, 0.35f), 0.01f, bladeColor * 1.1f);
-            Add(MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0f, 0f, length * 0.55f), new Vector3(0.05f, 0.08f, length), bladeMat));
-            if (length > 0.2f)
-            {
-                var halo = MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0f, 0f, length * 0.56f), new Vector3(0.16f, 0.2f, length * 1.04f),
-                    MaterialFactory.Additive(new Color(bladeColor.r, bladeColor.g, bladeColor.b, 0.35f)));
-                halo.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                var halo2 = MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0f, 0f, length * 0.56f), new Vector3(0.3f, 0.34f, length * 1.1f),
-                    MaterialFactory.Additive(new Color(bladeColor.r, bladeColor.g, bladeColor.b, 0.12f)));
-                halo2.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            }
-            Add(MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0f, 0f, 0.05f), new Vector3(0.18f, 0.05f, 0.05f),
-                MaterialFactory.Toon(new Color(0.15f, 0.12f, 0.1f), 0f)));
+            if (length > 0.2f) SteelBlade(SwordPivot, length, bladeColor, 1f);
 
-            var tip = new GameObject("Trail");
-            tip.transform.SetParent(SwordPivot, false);
-            tip.transform.localPosition = new Vector3(0f, 0f, length * 0.9f);
-            Trail = tip.AddComponent<TrailRenderer>();
+            var tipT = new GameObject("Trail");
+            tipT.transform.SetParent(SwordPivot, false);
+            tipT.transform.localPosition = new Vector3(0f, 0f, Mathf.Max(0.3f, length * 0.9f));
+            Trail = tipT.AddComponent<TrailRenderer>();
             SetupTrail(Trail, bladeColor, 1f);
+        }
+
+        /// <summary>
+        /// A real blade: polished steel with only a faint tint of the wielder's element on the edge, a tapered tip,
+        /// a round guard, a wrapped grip and a pommel. Built along +Z from the parent's origin (the hand).
+        /// </summary>
+        void SteelBlade(Transform parent, float length, Color tint, float width)
+        {
+            var steel = MaterialFactory.Toon(new Color(0.76f, 0.78f, 0.82f), 0.012f, new Color(0.05f, 0.05f, 0.06f));
+            var edge = MaterialFactory.Toon(Color.Lerp(new Color(0.9f, 0.92f, 0.95f), tint, 0.35f), 0.008f, tint * 0.15f);
+            var guard = MaterialFactory.Toon(new Color(0.52f, 0.43f, 0.24f), 0.012f);
+            var wrap = MaterialFactory.Toon(new Color(0.12f, 0.1f, 0.12f), 0.012f);
+            var cord = MaterialFactory.Toon(Color.Lerp(tint, new Color(0.5f, 0.5f, 0.5f), 0.45f), 0.008f);
+            float bl = length * 0.9f;
+            Add(MeshFactory.Primitive(PrimitiveType.Cube, parent, new Vector3(0f, 0.004f, 0.12f + bl * 0.5f), new Vector3(0.028f, 0.075f * width, bl), steel));
+            Add(MeshFactory.Primitive(PrimitiveType.Cube, parent, new Vector3(0f, -0.038f * width, 0.12f + bl * 0.5f), new Vector3(0.018f, 0.02f, bl), edge));
+            var tip = MeshFactory.MeshObject(MeshFactory.FacetCone(4), parent, new Vector3(0f, -0.004f, 0.12f + bl), new Vector3(0.03f, 0.16f * width, 0.085f * width), steel);
+            tip.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            Add(tip);
+            var tsuba = MeshFactory.MeshObject(MeshFactory.FacetCylinder(10), parent, new Vector3(0f, 0f, 0.1f), new Vector3(0.17f, 0.025f, 0.17f) * Mathf.Max(1f, width * 0.8f), guard);
+            tsuba.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            Add(tsuba);
+            Add(MeshFactory.Primitive(PrimitiveType.Cube, parent, new Vector3(0f, 0f, -0.04f), new Vector3(0.045f, 0.055f, 0.26f), wrap));
+            for (int i = 0; i < 3; i++)
+                Add(MeshFactory.Primitive(PrimitiveType.Cube, parent, new Vector3(0f, 0f, 0.05f - i * 0.08f), new Vector3(0.05f, 0.06f, 0.015f), cord));
+            Add(MeshFactory.Primitive(PrimitiveType.Sphere, parent, new Vector3(0f, 0f, -0.18f), Vector3.one * 0.05f, guard));
+        }
+
+        /// <summary>A wooden pole along +Z (spears, staves, canes).</summary>
+        void Shaft(Transform parent, float length, Color wood)
+        {
+            var m = MaterialFactory.Toon(wood, 0.012f);
+            var go = MeshFactory.Primitive(PrimitiveType.Cylinder, parent, new Vector3(0f, 0f, length * 0.5f - 0.3f), new Vector3(0.05f, length * 0.5f, 0.05f), m);
+            go.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            Add(go);
         }
 
         void Add(GameObject go)

@@ -123,6 +123,8 @@ namespace HashiraChronicles
                 default: Coast(res, trail); break;
             }
 
+            DetailPass(res.look, trail);
+
             // Stepping stones.
             bool hot = res.look == Look.Crimson;
             var stone = hot ? Glow(new Color(1f, 0.35f, 0.2f)) : M(res.look == Look.Snow ? new Color(0.97f, 0.98f, 1f) : new Color(0.97f, 0.94f, 0.84f));
@@ -231,6 +233,161 @@ namespace HashiraChronicles
                 }
             }
             return go;
+        }
+
+        /// <summary>
+        /// Fills the world overview's land between the regions with props in the style of the nearest region,
+        /// keeping clear of region plateaus and the stone roads; adds hills, lakes and small sea islands.
+        /// </summary>
+        public static void DecorateWorld(Transform parent, List<string> ids, List<Vector3> nodes, List<List<Vector3>> roads, Vector3[] lands, Vector3[] sizes)
+        {
+            rng = new System.Random(4242);
+            var go = new GameObject("Countryside");
+            go.transform.SetParent(parent, false);
+            root = go.transform;
+            int placed = 0, guard = 0;
+            while (placed < 420 && guard++ < 6000)
+            {
+                int li = rng.Next(lands.Length);
+                Vector3 c = lands[li];
+                float ax = sizes[li].x * 0.92f, az = sizes[li].z * 0.92f;
+                var p = new Vector3(c.x + R(-ax, ax), 0f, c.z + R(-az, az));
+                if (((p.x - c.x) / ax) * ((p.x - c.x) / ax) + ((p.z - c.z) / az) * ((p.z - c.z) / az) > 1f) continue;
+                // Nearest region decides the style; keep clear of its plateau.
+                int near = 0; float best = float.MaxValue;
+                for (int i = 0; i < nodes.Count; i++) { float d = (Flat(nodes[i]) - p).sqrMagnitude; if (d < best) { best = d; near = i; } }
+                if (best < 9.5f * 9.5f) continue;
+                bool onRoad = false;
+                foreach (var road in roads) foreach (var q in road) if ((Flat(q) - p).sqrMagnitude < 2.2f * 2.2f) { onRoad = true; break; }
+                if (onRoad) continue;
+                placed++;
+                var look = LookFor(ids[near]);
+                double r = rng.NextDouble();
+                switch (look)
+                {
+                    case Look.Snow:
+                        if (r < 0.3) { float h = R(3f, 6f); Put(MeshFactory.FacetCone(5), p, new Vector3(3.5f, h, 3.5f), M(new Color(0.62f, 0.72f, 0.88f)), R(0f, 72f)); Put(MeshFactory.FacetCone(5), p + Vector3.up * h * 0.62f, new Vector3(1.4f, h * 0.38f, 1.4f), M(Color.white), R(0f, 72f), false); }
+                        else Pine(p, R(1f, 1.6f), new Color(0.2f, 0.36f, 0.42f), true);
+                        break;
+                    case Look.Crimson:
+                    case Look.DarkForest:
+                        if (r < 0.5) DeadTree(p, R(1f, 1.6f));
+                        else if (r < 0.8) RockAt(p, R(0.8f, 1.8f), new Color(0.22f, 0.12f, 0.14f));
+                        else Pine(p, R(1f, 1.5f), new Color(0.14f, 0.16f, 0.24f), false);
+                        break;
+                    case Look.Ruins:
+                        if (r < 0.4) Put(MeshFactory.FacetCylinder(8), p, new Vector3(1f, R(1f, 2.5f), 1f), M(new Color(0.6f, 0.58f, 0.54f)), R(0f, 45f));
+                        else if (r < 0.7) RockAt(p, R(0.8f, 1.5f), new Color(0.5f, 0.48f, 0.46f));
+                        else Bush(p, R(0.7f, 1.1f), new Color(0.4f, 0.5f, 0.3f));
+                        break;
+                    case Look.Shrine:
+                        if (r < 0.35) { Put(MeshFactory.FacetCylinder(5), p, new Vector3(0.3f, 1.3f, 0.3f), M(new Color(0.35f, 0.24f, 0.2f))); Bush(p + Vector3.up * 1.2f, R(1.4f, 2f), new Color(0.98f, 0.75f, 0.85f)); }
+                        else Pine(p, R(1f, 1.6f), new Color(0.16f, 0.42f, 0.24f), false);
+                        break;
+                    case Look.Village:
+                    case Look.Coast:
+                        if (r < 0.08) House(p, 1f, R(0f, 360f), new Color(0.92f, 0.86f, 0.74f), new Color(0.5f, 0.3f, 0.2f));
+                        else if (r < 0.2) Put(MeshFactory.FacetCylinder(4), p, new Vector3(3.2f, 0.05f, 2.4f), M(new Color(0.62f, 0.7f, 0.3f)), R(0f, 90f), false); // field
+                        else if (r < 0.6) Bush(p, R(0.8f, 1.4f), new Color(0.3f, R(0.55f, 0.66f), 0.22f));
+                        else Pine(p, R(1f, 1.5f), new Color(0.18f, 0.46f, 0.2f), false);
+                        break;
+                    default:
+                        if (r < 0.8) Pine(p, R(1.1f, 1.8f), new Color(0.13f, R(0.36f, 0.5f), 0.16f), false);
+                        else RockAt(p, R(0.8f, 1.5f), new Color(0.5f, 0.52f, 0.55f));
+                        break;
+                }
+            }
+            // Rolling hills and mountain ranges along the far edges of the land.
+            for (int i = 0; i < 26; i++)
+            {
+                int li = rng.Next(lands.Length);
+                float a = R(0f, Mathf.PI * 2f);
+                var p = lands[li] + new Vector3(Mathf.Cos(a) * sizes[li].x * 0.86f, 0f, Mathf.Sin(a) * sizes[li].z * 0.86f);
+                if (p.z < lands[li].z - sizes[li].z * 0.3f) continue; // keep the near shore open for the camera
+                float h = R(4f, 9f);
+                Put(MeshFactory.FacetCone(6), p, new Vector3(R(8f, 13f), h, R(8f, 13f)), M(new Color(0.46f, 0.52f, 0.42f)), R(0f, 60f));
+                if (h > 7f) Put(MeshFactory.FacetCone(6), p + Vector3.up * h * 0.66f, new Vector3(3.2f, h * 0.34f, 3.2f), M(new Color(0.95f, 0.96f, 1f)), R(0f, 60f), false);
+            }
+            // Lakes.
+            var water = M(new Color(0.25f, 0.55f, 0.82f));
+            for (int i = 0; i < 5; i++)
+            {
+                var p = new Vector3(R(-45f, 45f), 0.03f, R(-25f, 25f));
+                bool ok = true;
+                for (int k = 0; k < nodes.Count; k++) if ((Flat(nodes[k]) - Flat(p)).sqrMagnitude < 12f * 12f) ok = false;
+                if (!ok) continue;
+                float sz = R(3f, 6f);
+                Put(MeshFactory.Disc(), p, new Vector3(sz, 1f, sz * R(0.6f, 0.9f)), water, R(0f, 180f), false);
+            }
+            // Little islands out at sea.
+            for (int i = 0; i < 9; i++)
+            {
+                float a = R(0f, Mathf.PI * 2f);
+                var p = new Vector3(Mathf.Cos(a) * R(95f, 120f), 0f, Mathf.Sin(a) * R(70f, 95f));
+                float sz = R(3f, 7f);
+                Put(MeshFactory.Disc(), p + Vector3.up * -0.15f, new Vector3(sz + 1.5f, 1f, sz + 1.5f), M(new Color(0.9f, 0.82f, 0.6f)), 0f, false);
+                Put(MeshFactory.Rock(rng.Next(8)), p, new Vector3(sz, sz * 0.4f, sz), M(new Color(0.4f, 0.56f, 0.3f)), R(0f, 360f));
+                if (rng.NextDouble() < 0.6) Pine(p + Vector3.up * sz * 0.35f, R(1f, 1.4f), new Color(0.18f, 0.46f, 0.2f), false);
+            }
+            StaticBatchingUtility.Combine(go);
+        }
+
+        static Vector3 Flat(Vector3 v) { return new Vector3(v.x, 0f, v.z); }
+
+        /// <summary>
+        /// Ground-level detail for every region: a worn path under the stepping stones, and hundreds of small
+        /// touches — grass tufts, flowers, pebbles, snow drifts, glowing embers, mushrooms or rubble.
+        /// </summary>
+        static void DetailPass(Look look, List<Vector3> trail)
+        {
+            Color dirt;
+            switch (look)
+            {
+                case Look.Snow: dirt = new Color(0.74f, 0.8f, 0.9f); break;
+                case Look.Crimson: dirt = new Color(0.2f, 0.06f, 0.06f); break;
+                case Look.Coast: dirt = new Color(0.86f, 0.78f, 0.55f); break;
+                case Look.Ruins: dirt = new Color(0.38f, 0.35f, 0.32f); break;
+                case Look.DarkForest: dirt = new Color(0.16f, 0.15f, 0.2f); break;
+                default: dirt = new Color(0.52f, 0.42f, 0.28f); break;
+            }
+            var pts = new List<Vector3>();
+            for (int i = 0; i < trail.Count; i += 3) pts.Add(trail[i]);
+            pts.Add(trail[trail.Count - 1]);
+            Ribbon(pts.ToArray(), 0.95f, M(dirt), 0.012f);
+
+            var grassA = M(look == Look.Snow ? new Color(0.9f, 0.94f, 1f) : look == Look.Crimson ? new Color(0.35f, 0.12f, 0.1f) : look == Look.DarkForest ? new Color(0.22f, 0.26f, 0.32f) : new Color(0.3f, 0.58f, 0.2f));
+            var grassB = M(look == Look.Snow ? new Color(0.8f, 0.86f, 0.95f) : look == Look.Crimson ? new Color(0.28f, 0.08f, 0.08f) : look == Look.DarkForest ? new Color(0.18f, 0.2f, 0.28f) : new Color(0.4f, 0.68f, 0.26f));
+            Color[] flowerCols = { new Color(1f, 0.85f, 0.3f), new Color(1f, 0.55f, 0.7f), new Color(0.95f, 0.95f, 1f), new Color(0.6f, 0.55f, 1f) };
+            var pebble = M(new Color(0.6f, 0.6f, 0.62f));
+            for (int i = 0; i < 170; i++)
+            {
+                var p = V(R(-14f, 14f), R(-9.5f, 9.5f));
+                float dt = DistToTrail(trail, p);
+                if (dt < 0.9f) continue;
+                if (look == Look.Coast && ((p.x - 1f) / 11f) * ((p.x - 1f) / 11f) + ((p.z - 1f) / 7.5f) * ((p.z - 1f) / 7.5f) > 1f) continue; // not on the sea
+                double r = rng.NextDouble();
+                if (r < 0.5)
+                {
+                    // Grass tuft (or a small snow drift / dead grass).
+                    if (look == Look.Snow) Put(MeshFactory.SmoothSphere(), p, new Vector3(R(0.5f, 1f), 0.2f, R(0.4f, 0.8f)), grassA, R(0f, 180f), false);
+                    else for (int k = 0; k < 3; k++) Put(MeshFactory.FacetCone(3), p + new Vector3(R(-0.15f, 0.15f), 0f, R(-0.15f, 0.15f)), new Vector3(0.1f, R(0.25f, 0.45f), 0.1f), k % 2 == 0 ? grassA : grassB, R(0f, 120f), false);
+                }
+                else if (r < 0.72)
+                {
+                    switch (look)
+                    {
+                        case Look.Crimson: Put(MeshFactory.SmoothSphere(), p, Vector3.one * R(0.08f, 0.16f), Glow(new Color(1f, 0.45f, 0.1f)), 0f, false); break;
+                        case Look.DarkForest: Put(MeshFactory.FacetCone(6), p + Vector3.up * 0.1f, new Vector3(0.22f, 0.12f, 0.22f), Glow(new Color(0.45f, 0.9f, 1f)), 0f, false); break;
+                        case Look.Snow: case Look.Ruins: Put(MeshFactory.Rock(rng.Next(8)), p, Vector3.one * R(0.15f, 0.3f), pebble, R(0f, 360f), false); break;
+                        default:
+                            // A little flower: stem and a coloured head.
+                            Put(MeshFactory.FacetCylinder(4), p, new Vector3(0.02f, 0.2f, 0.02f), grassB, 0f, false);
+                            Put(MeshFactory.SmoothSphere(), p + Vector3.up * 0.22f, Vector3.one * 0.1f, M(flowerCols[rng.Next(flowerCols.Length)]), 0f, false);
+                            break;
+                    }
+                }
+                else if (dt < 2.4f) Put(MeshFactory.Rock(rng.Next(8)), p, Vector3.one * R(0.12f, 0.25f), pebble, R(0f, 360f), false);
+            }
         }
 
         static Vector3 CatmullRom(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)

@@ -397,6 +397,9 @@ namespace HashiraChronicles
                 case "all":
                     return p => Mathf.Min(Mathf.Min(Box(p, V(-0.4f, 0.4f), V(0.3f, 0.3f), 0.08f), Box(p, V(0.4f, 0.4f), V(0.3f, 0.3f), 0.08f)),
                         Mathf.Min(Box(p, V(-0.4f, -0.4f), V(0.3f, 0.3f), 0.08f), Box(p, V(0.4f, -0.4f), V(0.3f, 0.3f), 0.08f)));
+                case "up":
+                    return p => Mathf.Min(Mathf.Min(Seg(p, V(-0.6f, 0.05f), V(0f, 0.65f), 0.13f), Seg(p, V(0f, 0.65f), V(0.6f, 0.05f), 0.13f)),
+                        Mathf.Min(Seg(p, V(-0.6f, -0.55f), V(0f, 0.05f), 0.13f), Seg(p, V(0f, 0.05f), V(0.6f, -0.55f), 0.13f)));
                 case "plus":
                     return p => Mathf.Min(Box(p, Vector2.zero, V(0.14f, 0.62f), 0.06f), Box(p, Vector2.zero, V(0.62f, 0.14f), 0.06f));
                 default:

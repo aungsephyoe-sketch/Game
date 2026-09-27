@@ -153,7 +153,9 @@ namespace HashiraChronicles
         public bool LineupActive { get { return lineupRoot != null; } }
 
         /// <summary>Where slot i stands (feet), for the UI to place names and stats under each slayer.</summary>
-        public Vector3 LineupSlot(int i) { return new Vector3(-2.35f + i * 1.75f, 0f, 0.4f); }
+        public Vector3 LineupSlot(int i) { return new Vector3(-2.35f + i * 1.75f, PodiumHeight, 0.4f); }
+
+        const float PodiumHeight = 0.28f;
 
         /// <summary>The team stands side by side in the village, facing the camera (TEAM screen).</summary>
         public void ShowLineup(List<string> ids)
@@ -171,6 +173,26 @@ namespace HashiraChronicles
                 var slot = new GameObject("Slot" + i).transform;
                 slot.SetParent(lineupRoot.transform, false);
                 slot.position = LineupSlot(i);
+                // A stone podium with a ring in the slayer's element colour.
+                Color ec = new Color(0.7f, 0.7f, 0.75f);
+                if (i < ids.Count) { var dd = GameDatabase.GetCharacter(ids[i]); if (dd != null) ec = ElementChart.ColorOf(dd.element); }
+                var stone = MaterialFactory.Toon(new Color(0.42f, 0.4f, 0.42f), 0.02f);
+                var stoneTop = MaterialFactory.Toon(new Color(0.58f, 0.56f, 0.56f), 0.01f);
+                var pod = MeshFactory.MeshObject(MeshFactory.FacetCylinder(12), lineupRoot.transform, Vector3.zero, new Vector3(1.5f, PodiumHeight - 0.04f, 1.5f), stone);
+                pod.transform.position = new Vector3(slot.position.x, 0f, slot.position.z);
+                var top = MeshFactory.MeshObject(MeshFactory.FacetCylinder(12), lineupRoot.transform, Vector3.zero, new Vector3(1.38f, 0.04f, 1.38f), stoneTop);
+                top.transform.position = new Vector3(slot.position.x, PodiumHeight - 0.04f, slot.position.z);
+                var ringGo = MeshFactory.MeshObject(MeshFactory.Ring(0.86f), lineupRoot.transform, Vector3.zero, new Vector3(0.66f, 1f, 0.66f), MaterialFactory.Additive(new Color(ec.r, ec.g, ec.b, 0.8f)), false);
+                ringGo.transform.position = slot.position + Vector3.up * 0.01f;
+                ringGo.AddComponent<Pulse>().Speed = 2f + i * 0.3f;
+                var lg = new GameObject("PodiumLight");
+                lg.transform.SetParent(lineupRoot.transform, false);
+                lg.transform.position = slot.position + new Vector3(0f, 2.4f, -0.8f);
+                var l = lg.AddComponent<Light>();
+                l.type = LightType.Point;
+                l.color = Color.Lerp(ec, Color.white, 0.5f);
+                l.range = 3.2f;
+                l.intensity = 0.8f;
                 slot.rotation = Quaternion.Euler(0f, 180f + (i - 1.5f) * -6f, 0f);
                 lineupSlots.Add(slot);
                 CharacterVisual v = null;
@@ -180,6 +202,7 @@ namespace HashiraChronicles
                     if (def != null)
                     {
                         v = CharacterVisual.BuildHero(def, slot);
+                        v.HoldSignaturePose();
                         VFX.Breath(slot.position, ElementChart.ColorOf(def.element), 12);
                     }
                 }
@@ -211,6 +234,9 @@ namespace HashiraChronicles
             float t = Time.unscaledTime;
             if (lineupRoot != null)
             {
+                // After a cheer, each slayer settles back into their own pose.
+                for (int i = 0; i < lineupVisuals.Count; i++)
+                    if (lineupVisuals[i] != null && !lineupVisuals[i].Posing) lineupVisuals[i].HoldSignaturePose();
                 if (CameraController.Instance != null)
                     CameraController.Instance.SetFixed(new Vector3(0.3f + Mathf.Sin(t * 0.15f) * 0.15f, 2.2f, -6.6f), new Vector3(0.3f, 1.2f, 0.4f));
                 return;

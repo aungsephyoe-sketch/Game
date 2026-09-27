@@ -53,7 +53,7 @@ namespace HashiraChronicles
             if (HomeTile(new Rect(x + 566f, r2, 360f, h2), "TEAM", IconFactory.Get("group"), new Color(0.2f, 0.62f, 0.4f), 0.3f)) OpenMenu("TEAM");
             // Row 3: EQUIPMENT, MISSIONS, SHOP, SETTINGS.
             float r3 = r2 + h2 + 16f;
-            if (HomeTile(new Rect(x, r3, 262f, h2), "EQUIPMENT", IconFactory.Get("bag"), new Color(0.72f, 0.5f, 0.18f), 0.34f)) OpenMenu("EQUIPMENT");
+            if (HomeTile(new Rect(x, r3, 262f, h2), "UPGRADE", IconFactory.Get("up"), new Color(0.72f, 0.5f, 0.18f), 0.34f)) OpenMenu("EQUIPMENT");
             if (HomeTile(new Rect(x + 278f, r3, 212f, h2), "MISSIONS", IconFactory.Get("scroll"), new Color(0.62f, 0.14f, 0.18f), 0.38f, null, null, MenuBadge("MISSIONS"))) OpenMenu("MISSIONS");
             if (HomeTile(new Rect(x + 506f, r3, 196f, h2), "SHOP", IconFactory.Get("cart"), new Color(0.12f, 0.58f, 0.62f), 0.42f, null, null, MenuBadge("SHOP"))) OpenMenu("SHOP");
             if (HomeTile(new Rect(x + 718f, r3, 208f, h2), "SETTINGS", IconFactory.Get("gear"), new Color(0.42f, 0.44f, 0.5f), 0.46f)) OpenMenu("SETTINGS");
@@ -174,7 +174,7 @@ namespace HashiraChronicles
             if (Time.unscaledTime - gm.ScreenEnteredAt < 0.05f && !gm.Map.Traveling)
             {
                 mapOverview = false;
-                if (mapSelected != d.currentRegion && areaRegion != mapSelected) mapSelected = d.currentRegion;
+                if (!d.IsRegionUnlocked(GameDatabase.GetRegion(mapSelected))) mapSelected = d.currentRegion;
             }
             var cam = Camera.main;
             float s = HudLayout.Scale;
@@ -202,7 +202,7 @@ namespace HashiraChronicles
                     if (!gm.Map.Traveling && GUI.Button(r, GUIContent.none, GUIStyle.none))
                     {
                         gm.Audio.Play("click", 0.6f);
-                        if (unlocked) { mapSelected = id; if (id == d.currentRegion) mapOverview = false; }
+                        if (unlocked) { mapSelected = id; mapOverview = false; areaPick = -1; }
                         else Toast("Clear " + region.unlockAfterMission + " to open the road to this land.");
                     }
                 }
@@ -226,7 +226,8 @@ namespace HashiraChronicles
             var region2 = GameDatabase.GetRegion(mapSelected);
             if (region2 == null) return;
             var list = GameDatabase.MissionsInRegion(mapSelected);
-            bool inArea = mapSelected == d.currentRegion && !mapOverview && list.Count > 0;
+            // Any unlocked region can be browsed as its area map (go back to earlier chapters any time).
+            bool inArea = d.IsRegionUnlocked(region2) && !mapOverview && list.Count > 0;
             int current = list.Count - 1;
             for (int i = 0; i < list.Count; i++)
                 if (d.IsMissionUnlocked(list[i]) && !d.IsMissionCleared(list[i].id)) { current = i; break; }
@@ -242,7 +243,14 @@ namespace HashiraChronicles
             Round(panel, new Color(0.07f, 0.08f, 0.13f, 0.94f), 16f);
             float px = panel.x + 26f, pw = panel.width - 52f;
             float y = panel.y + 18f;
-            UIStyles.Outlined(new Rect(px, y, pw, 56f), region2.name, UIStyles.Sized(UIStyles.H1, 42), new Color(1f, 0.74f, 0.22f), 1.5f);
+            UIStyles.Outlined(new Rect(px, y, pw - 120f, 56f), region2.name, UIStyles.Sized(UIStyles.H1, region2.name.Length > 18 ? 34 : 42), new Color(1f, 0.74f, 0.22f), 1.5f);
+            // Previous / next region arrows.
+            int ri = System.Array.IndexOf(MapStage.RouteOrder, mapSelected);
+            string prevId = null, nextId = null;
+            for (int i = ri - 1; i >= 0; i--) if (d.IsRegionUnlocked(GameDatabase.GetRegion(MapStage.RouteOrder[i]))) { prevId = MapStage.RouteOrder[i]; break; }
+            for (int i = ri + 1; i < MapStage.RouteOrder.Length; i++) if (d.IsRegionUnlocked(GameDatabase.GetRegion(MapStage.RouteOrder[i]))) { nextId = MapStage.RouteOrder[i]; break; }
+            if (FlatBtn(new Rect(px + pw - 112f, y + 4f, 52f, 48f), "‹", new Color(0.15f, 0.17f, 0.28f), prevId != null, 34)) { mapSelected = prevId; mapOverview = false; areaPick = -1; mapScroll = Vector2.zero; }
+            if (FlatBtn(new Rect(px + pw - 54f, y + 4f, 52f, 48f), "›", new Color(0.15f, 0.17f, 0.28f), nextId != null, 34)) { mapSelected = nextId; mapOverview = false; areaPick = -1; mapScroll = Vector2.zero; }
             y += 56f;
             int chapterNo = 0;
             foreach (var m in list) if (m.chapter > 0) { chapterNo = m.chapter; break; }
@@ -251,7 +259,7 @@ namespace HashiraChronicles
             y += 66f;
             if (mapSelected != d.currentRegion && d.IsRegionUnlocked(region2))
             {
-                if (FlatBtn(new Rect(px, y, pw, 60f), "TRAVEL HERE", TileBlue, true, 26)) { mapOverview = false; gm.TravelTo(mapSelected); }
+                if (FlatBtn(new Rect(px, y, pw, 60f), "TRAVEL HERE  (you are in " + RegionName(d.currentRegion) + ")", TileBlue, true, 22)) { mapOverview = false; gm.TravelTo(mapSelected); }
                 y += 72f;
             }
 
@@ -316,7 +324,6 @@ namespace HashiraChronicles
             }
 
             // Small toggle between this area and the whole world, under the top bar.
-            if (mapSelected == d.currentRegion)
             {
                 var tr = new Rect(safe.x + 22f, safe.y + 124f, 230f, 50f);
                 if (FlatBtn(tr, mapOverview ? "‹ AREA MAP" : "ALL REGIONS", new Color(0.15f, 0.16f, 0.26f, 0.9f), true, 20)) mapOverview = !mapOverview;

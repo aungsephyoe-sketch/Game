@@ -71,11 +71,13 @@ namespace HashiraChronicles
             if (audio != null) audio.Play("specialRelease", 1f);
             GameEvents.RaiseImpact(1f);
             var tally = new DamageTally();
+            yield return SpecialFlourish(color);
             yield return SignatureRelease(ab, color, target, tally);
             yield return AbilitySystem.Execute(this, ab, SkillLevelMult(3), true, tally);
 
-            // 6. The demons react: thrown back in slow motion.
-            var blow = AttackTag.Basic(0.3f, color);
+            // 6. The finishing blow: a dash through the target in slow motion, then everything is thrown back.
+            yield return FinalStrike(color, target, tally);
+            var blow = AttackTag.Basic(1.2f, color);
             blow.isUltimate = true;
             blow.launch = true;
             blow.knockback = 12f;
@@ -93,6 +95,56 @@ namespace HashiraChronicles
             yield return new WaitForSeconds(0.35f);
             FinishUltimateEffects();
             GameEvents.RaiseUltimateFinished(this, tally.total);
+        }
+
+        /// <summary>The opening move: a leaping spin that ends in a shockwave, so every special starts with a bang.</summary>
+        IEnumerator SpecialFlourish(Color color)
+        {
+            Visual.Spin(0.35f, 2);
+            float t = 0f;
+            while (t < 0.35f)
+            {
+                t += Time.deltaTime;
+                Visual.transform.localPosition = Vector3.up * Mathf.Sin(t / 0.35f * Mathf.PI) * 1.4f;
+                if (Random.value < 0.5f) VFX.Breath(Position + Vector3.up, color, 3);
+                yield return null;
+            }
+            Visual.transform.localPosition = Vector3.zero;
+            ElementFx.Finisher(Position, transform.forward, Def.element, 3.5f);
+            VFX.Dust(Position, 14);
+            if (CameraController.Instance != null) CameraController.Instance.Shake(0.35f);
+            if (Audio != null) Audio.PlayPitched("slam", 0.8f, 1.2f);
+        }
+
+        /// <summary>The last hit of every special: a blink-dash through the target in slow motion, a white flash, a huge hit.</summary>
+        IEnumerator FinalStrike(Color color, Combatant target, DamageTally tally)
+        {
+            Vector3 to = target != null && target.IsAlive ? target.Position : Position + transform.forward * 4f;
+            Vector3 dir = to - Position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.01f) dir = transform.forward;
+            dir.Normalize();
+            Face(dir, 1f);
+            Vector3 end = BattleController.ClampToArena(to + dir * 2.2f);
+            TimeController.SlowMotion(0.25f, 0.7f);
+            Visual.DashAttack(0.1f);
+            VFX.Flash(MeshFactory.Line(), Position + Vector3.up, Quaternion.LookRotation(dir), new Vector3(2f, 1f, (end - Position).magnitude), new Vector3(0.05f, 1f, (end - Position).magnitude), color, 0.4f);
+            transform.position = end;
+            if (Audio != null) Audio.PlayPitched("whoosh", 1f, 0.8f);
+            yield return new WaitForSeconds(0.12f);
+            var hit = AbilitySystem.MakeTag(this, Def.ultimate, SkillLevelMult(3), true);
+            hit.multiplier *= 1.5f;
+            hit.heavy = true;
+            hit.launch = true;
+            hit.knockback = 10f;
+            tally.Add(CombatSystem.HitRadius(this, to, 3.2f, hit));
+            ElementFx.Slash(to, dir, 3f, 300f, 20f, Def.element, 2.5f);
+            ElementFx.Finisher(to, dir, Def.element, 5f);
+            VFX.BurstDisc(to, 4f, Color.white, 0.2f);
+            GameEvents.RaiseImpact(1f);
+            if (CameraController.Instance != null) { CameraController.Instance.Punch(0.8f, 0.25f); CameraController.Instance.Shake(0.7f); }
+            if (Audio != null) Audio.PlayPitched("impact", 1f, 0.7f);
+            yield return new WaitForSeconds(0.2f);
         }
 
         /// <summary>Element-flavoured detail while the energy gathers.</summary>
