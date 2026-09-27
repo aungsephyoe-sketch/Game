@@ -34,5 +34,6 @@ Editor scripts can be checked too, against the monolithic 2021.1 references in N
 (2021.2+) is the one expected error there. Unity 6.6 turns some obsolete APIs into errors (e.g.
 `Object.GetInstanceID`): avoid obsolete members even when these older references accept them.
 
-Art: rigged models load from `Resources/Characters/<id>` / `Resources/Enemies/<id>` via `CharacterVisual`;
-see docs/ART_PIPELINE.md.
+Art direction: simple chibi figures built in code (`CharacterVisual.Heroes.cs`, `CharacterVisual.Monsters.cs`),
+flat low-poly worlds, portraits rendered live by `PortraitStudio`. Follow docs/ART_BIBLE.md and keep that
+simplicity. Imported models are disabled (`GameConfig.UseImportedModels = false`).

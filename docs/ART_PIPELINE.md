@@ -1,3 +1,6 @@
+> **Currently disabled.** The game now uses the in-engine chibi style (see ART_BIBLE.md) and
+> `GameConfig.UseImportedModels` is `false`. This pipeline is kept for reference only.
+
 # Art pipeline: Higgsfield → rigged, animated characters in game
 
 The game already supports real rigged characters. Drop them in the right folder, run one menu

@@ -28,19 +28,45 @@ next region's landmark stands on the horizon. On the world map, travel can trigg
 rare monsters, wandering bosses, merchants, travellers, treasure, caves, a mysterious stranger), and the camera
 swoops down into the destination before the mission begins.
 
-### Higgsfield art
-Character masters, a bestiary, region key art, cinematic keyframes and two rigged 3D models (Ren and Veyrath)
-were generated with Higgsfield — see [docs/ART_BIBLE.md](docs/ART_BIBLE.md). `run.sh` downloads them
-(`tools/fetch_art.sh`); the game works without them (procedural fallbacks) and picks them up automatically.
+### Look & feel: simple chibi heroes, glowing blades
+Everything is built in-engine from code, in the style of the original reference sheets: white round
+heads with dot eyes, simple dark rounded bodies, glowing weapons and flat low-poly worlds. Each slayer
+still reads as their own person: hair style, outfit colours, weapon, body shape, accessories (scarf,
+cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, graceful, stoic, confident,
+sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
+(`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
+
+### Every slayer fights differently
+- **Swift** (Sora, Mina, Raiga): fast multi-hit strings, double cuts, a 5-cut flurry finisher, long dash strikes, short recovery.
+- **Heavy** (Kiba, Tetsu): slower swings, big knockback, a ground-slam finisher, super armour while attacking.
+- **Ranged** (Hana, Rokuro, Yui): bolts and a five-way spread, area blasts on the charged attack; supports heal on hits.
+- **Technical** (Ren, Genji, Kuroe): a wider parry window that triggers an instant **COUNTER**, and after a parry or
+  perfect dodge the next swings throw crescent waves.
+- **Balanced** (Homura): elemental bursts on every finisher.
+
+Specials are long and cinematic: the fight freezes, the camera cuts to a character-specific angle, energy
+gathers in the slayer's element, then a release unique to their style (chain dashes, triple slams, a shot
+storm, a dragon spiral, orbiting crescents…) ends in a launching blow and a final shockwave.
+
+### Monsters
+Demons have glowing slanted eyes, jagged grins and a creeping dark aura. Beyond rushing, flanking,
+dodging and shooting, some **hide as a shadow puddle and ambush** you, some **summon** smaller demons,
+some **charge** across the field (and stumble after), and every regular demon **enrages** when badly hurt.
+Bosses keep their camera reveal and phases and now fall in a slow-motion **defeat cinematic**.
 
 ### The game loop
 - **Opening cinematic** on first launch (peaceful village → the sky changes → the attack → the power
   awakens → *THE JOURNEY BEGINS*) flows straight into the first battle.
 - **Animated home screen**: the team leader breathes, looks around and practises forms in a living
   village (villagers who walk and chat in speech bubbles, birds, clouds, a campfire, falling leaves).
-  PLAY · STORY · SUMMON · CHARACTERS · TEAM · EQUIPMENT · MISSIONS · SHOP · JOURNAL · SETTINGS.
+  Big colour tiles: PLAY · STORY · JOURNAL · SUMMON · CHARACTERS · TEAM · EQUIPMENT · MISSIONS · SHOP · SETTINGS,
+  currency pills top-right and a team power panel with the four slayers' faces.
+- **Team screen**: TEAM 1-4 presets, a full-body line-up, AUTO SET, EDIT TEAM, a roster grid with element
+  filters and a detail card (HP / ATK / DEF) with SELECT.
 - **World map**: eight connected locations with paths, landmarks and markers (locked / you are here /
-  boss / side / treasure / complete). Picking a mission elsewhere makes the leader **walk the road**
+  boss / side / treasure / complete). Your current region opens as an **area map**: numbered mission stops on
+  a dotted trail with your leader standing on the next one, and a mission list with stars, locks, the BOSS
+  row and CONTINUE. Picking a mission elsewhere makes the leader **walk the road**
   there, camera following, before the mission starts.
 - **Mission pages**: number, title, story hook, quest giver, recommended level vs your team, enemy
   types, boss info, objectives, rewards and first-clear rewards, and a big animated PLAY.
@@ -83,7 +109,6 @@ To test on a phone, switch the platform to Android/iOS in **File → Build Setti
 | Dodge (i-frames, **perfect dodge** slows time) | DODGE | Space / K |
 | Dash attack | ATTACK right after a dodge | J after Space |
 | Guard (hold) / **Parry** (tap just before a hit) | GUARD | F / Left Shift |
-| Jump / **plunging strike** (attack in the air) | JUMP, then ATTACK | C, then J |
 | Lock-on (tap again for the next target) | LOCK | T / middle mouse |
 | Sprint | Keep moving ~0.5 s | Keep moving |
 | Breathing forms 1–3 | 1 / 2 / 3 | 1 2 3 or U I O |
@@ -103,8 +128,8 @@ To test on a phone, switch the platform to Android/iOS in **File → Build Setti
 - Arenas get houses, a torii gate, flickering stone lanterns, grass, fireflies and breakable crates/barrels (sometimes heal), all static-batched.
 - Adaptive music that crossfades explore → combat → boss → victory/defeat, a low-HP heartbeat, ducking under ultimates, plus new SFX.
 - Settings: Low/Medium/High/Ultra graphics (auto-detected), music/SFX volume, camera shake, damage numbers.
-- Rigged-model support: drop Higgsfield/Mixamo characters in `Assets/Art/…` and run **Hashira Chronicles → Build Character Prefabs**.
-  See [docs/ART_PIPELINE.md](docs/ART_PIPELINE.md).
+- Rigged-model support is still in the code but switched off (`GameConfig.UseImportedModels`); see
+  [docs/ART_PIPELINE.md](docs/ART_PIPELINE.md).
 
 - **Combat**: responsive 5-hit combos with aim assist and lunges, charged attack, dodge cancel,
   i-frames and perfect-dodge slow motion, hit-stop, screen shake, sword trails, damage numbers,
