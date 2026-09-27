@@ -118,7 +118,7 @@ namespace HashiraChronicles
             if (HudLayout.Attack.Contains(p.pos)) { attackFinger = p.id; s.attackDown = true; Pressed[0] = 1f; return; }
             if (HudLayout.Dodge.Contains(p.pos)) { s.dodgeDown = true; Pressed[1] = 1f; return; }
             if (HudLayout.Guard.Contains(p.pos)) { guardFinger = p.id; s.guardDown = true; Pressed[6] = 1f; return; }
-            if (HudLayout.Lock.Contains(p.pos)) { s.lockDown = true; Pressed[8] = 1f; return; }
+            // No on-screen lock button (keyboard T still locks on); the minimap sits there instead.
             for (int i = 0; i < 3; i++)
             {
                 if (!HudLayout.Skill(i).Contains(p.pos)) continue;

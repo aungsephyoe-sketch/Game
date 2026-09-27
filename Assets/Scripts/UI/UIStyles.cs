@@ -37,10 +37,10 @@ namespace HashiraChronicles
             CenterSmall = Label(24, FontStyle.Normal, TextAnchor.MiddleCenter, Color.white);
             Right = Label(30, FontStyle.Bold, TextAnchor.MiddleRight, Color.white);
 
-            // Lacquer-and-gold buttons: the same palette as the painted UI frame and the characters' art.
-            Button = MakeButton(32, new Color(0.13f, 0.1f, 0.2f), new Color(0.24f, 0.17f, 0.32f));
-            ButtonBig = MakeButton(48, new Color(0.55f, 0.08f, 0.14f), new Color(0.75f, 0.15f, 0.2f));
-            ButtonSmall = MakeButton(24, new Color(0.13f, 0.1f, 0.2f), new Color(0.24f, 0.17f, 0.32f));
+            // Flat rounded buttons, the same on every screen: dark navy for normal actions, red for the main one.
+            Button = MakeButton(30, new Color(0.13f, 0.16f, 0.27f), new Color(0.2f, 0.24f, 0.38f));
+            ButtonBig = MakeButton(44, new Color(0.84f, 0.13f, 0.13f), new Color(0.95f, 0.22f, 0.2f));
+            ButtonSmall = MakeButton(22, new Color(0.13f, 0.16f, 0.27f), new Color(0.2f, 0.24f, 0.38f));
         }
 
         static GUIStyle Label(int size, FontStyle style, TextAnchor anchor, Color color)
@@ -68,15 +68,40 @@ namespace HashiraChronicles
                 wordWrap = true,
                 richText = true
             };
-            s.normal.background = Lacquer(normal, new Color(0.78f, 0.62f, 0.3f));
-            s.hover.background = Lacquer(hover, new Color(1f, 0.85f, 0.45f));
-            s.active.background = Lacquer(hover * 1.25f, new Color(1f, 0.9f, 0.6f));
+            s.normal.background = RoundedTex(normal, new Color(1f, 1f, 1f, 0.14f));
+            s.hover.background = RoundedTex(hover, new Color(1f, 1f, 1f, 0.24f));
+            s.active.background = RoundedTex(normal * 0.85f, new Color(1f, 1f, 1f, 0.3f));
             s.focused.background = s.normal.background;
-            s.normal.textColor = s.focused.textColor = new Color(1f, 0.96f, 0.88f);
+            s.onNormal.background = s.normal.background;
+            s.normal.textColor = s.focused.textColor = Color.white;
             s.hover.textColor = s.active.textColor = Color.white;
-            s.border = new RectOffset(8, 8, 8, 8);
+            s.border = new RectOffset(14, 14, 14, 14);
             s.padding = new RectOffset(12, 12, 8, 8);
             return s;
+        }
+
+        /// <summary>A 9-sliceable rounded rectangle: fill with a lighter top half and a thin rim.</summary>
+        static Texture2D RoundedTex(Color fill, Color rim)
+        {
+            const int n = 48;
+            const float rad = 13f;
+            var t = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+            var px = new Color[n * n];
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float cx = Mathf.Clamp(x + 0.5f, rad, n - rad), cy = Mathf.Clamp(y + 0.5f, rad, n - rad);
+                    float d = Mathf.Sqrt((x + 0.5f - cx) * (x + 0.5f - cx) + (y + 0.5f - cy) * (y + 0.5f - cy)) - rad;
+                    float a = Mathf.Clamp01(0.5f - d);
+                    Color c = fill;
+                    if (y > n / 2) c = Color.Lerp(c, Color.white, 0.07f); // texture y is bottom-up: this is the top half
+                    if (d > -2f) c = Color.Lerp(c, new Color(rim.r, rim.g, rim.b, 1f), rim.a);
+                    c.a = a * fill.a;
+                    px[y * n + x] = c;
+                }
+            t.SetPixels(px);
+            t.Apply();
+            return t;
         }
 
         public static GUIStyle Sized(GUIStyle baseStyle, int size)
@@ -183,35 +208,27 @@ namespace HashiraChronicles
         /// Menu panel in the game's lacquer-and-gold style: dark lacquer, the painted Higgsfield panel texture
         /// underneath (when downloaded), a double gold border with corner ornaments, and an accent line.
         /// </summary>
+        /// <summary>The standard panel: dark translucent rounded rectangle, soft shadow, thin rim, optional accent strip.</summary>
         public static void PanelBox(Rect r, Color? accent = null)
         {
-            Rect(r, Panel);
-            var tex = ArtLibrary.Surface("ui_panel");
-            if (tex != null)
+            if (Event.current.type == EventType.Repaint)
             {
-                var old = GUI.color;
-                GUI.color = new Color(1f, 1f, 1f, 0.38f);
-                GUI.DrawTextureWithTexCoords(r, tex, new UnityEngine.Rect(0.18f, 0.18f, 0.64f, 0.64f));
-                GUI.color = old;
+                GUI.DrawTexture(new UnityEngine.Rect(r.x, r.y + 6f, r.width, r.height), Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, new Color(0f, 0f, 0f, 0.35f), 0f, 16f);
+                GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, new Color(0.05f, 0.06f, 0.1f, 0.9f), 0f, 16f);
+                GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, new Color(1f, 1f, 1f, 0.08f), 2f, 16f);
+                if (accent.HasValue)
+                    GUI.DrawTexture(new UnityEngine.Rect(r.x, r.y, r.width, 8f), Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, accent.Value, 0f, 4f);
             }
-            var gold = new Color(Gold.r, Gold.g, Gold.b, 0.75f);
-            Frame(r, gold, 2f);
-            Frame(new Rect(r.x + 5f, r.y + 5f, r.width - 10f, r.height - 10f), new Color(Gold.r, Gold.g, Gold.b, 0.25f), 1f);
-            float c = Mathf.Min(18f, Mathf.Min(r.width, r.height) * 0.2f);
-            foreach (var p in new[] { new Vector2(r.x, r.y), new Vector2(r.xMax - c, r.y), new Vector2(r.x, r.yMax - c), new Vector2(r.xMax - c, r.yMax - c) })
-            {
-                Rect(new Rect(p.x, p.y, c, 3f), Gold);
-                Rect(new Rect(p.x, p.y + c - 3f, c, 3f), Gold);
-                Rect(new Rect(p.x, p.y, 3f, c), Gold);
-                Rect(new Rect(p.x + c - 3f, p.y, 3f, c), Gold);
-            }
-            if (accent.HasValue) Rect(new Rect(r.x + c, r.y, r.width - c * 2f, 4f), accent.Value);
         }
 
+        /// <summary>Rounded progress bar.</summary>
         public static void Bar(Rect r, float fill, Color color, Color? back = null)
         {
-            Rect(r, back ?? new Color(0f, 0f, 0f, 0.6f));
-            Rect(new Rect(r.x + 2f, r.y + 2f, Mathf.Max(0f, (r.width - 4f) * Mathf.Clamp01(fill)), r.height - 4f), color);
+            if (Event.current.type != EventType.Repaint) return;
+            float rad = r.height * 0.5f;
+            GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, back ?? new Color(0f, 0f, 0f, 0.6f), 0f, rad);
+            float w = (r.width - 4f) * Mathf.Clamp01(fill);
+            if (w > 1f) GUI.DrawTexture(new UnityEngine.Rect(r.x + 2f, r.y + 2f, Mathf.Max(w, r.height - 4f), r.height - 4f), Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, color, 0f, rad - 2f);
         }
 
         public static void CircleTex(Vector2 center, float radius, Color c, Texture2D tex = null)

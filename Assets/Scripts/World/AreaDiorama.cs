@@ -12,7 +12,7 @@ namespace HashiraChronicles
     /// </summary>
     public static class AreaDiorama
     {
-        public enum Look { Meadow, Snow, Crimson, Coast }
+        public enum Look { Meadow, Snow, Crimson, Coast, Village, Ruins, Shrine, DarkForest }
 
         public class Result
         {
@@ -27,13 +27,15 @@ namespace HashiraChronicles
         {
             switch (regionId)
             {
+                case "village": return Look.Village;
                 case "forest": return Look.Meadow;
-                case "mountain":
-                case "temple": return Look.Snow;
-                case "demonland":
-                case "fallen":
-                case "castle": return Look.Crimson;
-                default: return Look.Coast; // village, kingdom
+                case "mountain": return Look.Snow;
+                case "kingdom": return Look.Coast;
+                case "demonland": return Look.Crimson;
+                case "temple": return Look.Shrine;
+                case "fallen": return Look.Ruins;
+                case "castle": return Look.DarkForest;
+                default: return Look.Village;
             }
         }
 
@@ -67,6 +69,10 @@ namespace HashiraChronicles
                 case Look.Meadow: return new[] { V(-9.5f, -3.5f), V(-6.5f, -1.5f), V(-3.5f, -2.5f), V(-1f, 0.5f), V(-2.5f, 3.5f), V(0.5f, 5.5f), V(4f, 4.2f), V(6.5f, 1.5f), V(9f, 3.5f) };
                 case Look.Snow: return new[] { V(-9f, -2.5f), V(-5.5f, -3.5f), V(-2.5f, -1.5f), V(-1.5f, 2.5f), V(1.5f, 5.5f), V(4.5f, 3f), V(5.5f, -0.5f), V(8.5f, -3f) };
                 case Look.Crimson: return new[] { V(-9.5f, -1.5f), V(-6.5f, 0.5f), V(-3.5f, 2.5f), V(-0.5f, 1f), V(2f, -1f), V(4.5f, -2.5f), V(7f, -3.5f), V(9f, -5.5f) };
+                case Look.Village: return new[] { V(-9f, -4f), V(-6f, -2f), V(-2.5f, -3f), V(0f, 0f), V(-1f, 3.5f), V(2.5f, 5f), V(6f, 3f), V(9f, 4.5f) };
+                case Look.Ruins: return new[] { V(-9.5f, -3f), V(-6f, -1f), V(-3f, -3f), V(0f, -1f), V(2f, 2f), V(5f, 3.5f), V(7.5f, 1.5f), V(9.5f, 4f) };
+                case Look.Shrine: return new[] { V(0f, -6.5f), V(-3f, -4f), V(-1f, -1.5f), V(2.5f, 0f), V(1f, 2.5f), V(-1.5f, 4f), V(0f, 6f) };
+                case Look.DarkForest: return new[] { V(-9.5f, -2f), V(-6.5f, -3.5f), V(-3.5f, -1f), V(-0.5f, -2.5f), V(2f, 0.5f), V(4.5f, -1f), V(7f, 1.5f), V(9f, 5f) };
                 default: return new[] { V(-7.5f, -3.5f), V(-4.5f, -2f), V(-1.5f, -2.5f), V(0.5f, 0.5f), V(2.5f, 2.5f), V(5f, 1f), V(7f, 3.5f), V(8.5f, 5.5f) };
             }
         }
@@ -110,6 +116,10 @@ namespace HashiraChronicles
                 case Look.Meadow: Meadow(res, trail); break;
                 case Look.Snow: Snow(res, trail, cum, total); break;
                 case Look.Crimson: Crimson(res, trail); break;
+                case Look.Village: Village(res, trail); break;
+                case Look.Ruins: Ruins(res, trail); break;
+                case Look.Shrine: Shrine(res, trail); break;
+                case Look.DarkForest: DarkForest(res, trail); break;
                 default: Coast(res, trail); break;
             }
 
@@ -505,6 +515,150 @@ namespace HashiraChronicles
                     Put(MeshFactory.FacetCone(6), p + Vector3.up * 1f, new Vector3(0.7f, 0.35f, 0.7f), M(new Color(0.2f, 0.17f, 0.19f)), R(0f, 60f));
                 }
             }
+        }
+
+        static void Village(Result res, List<Vector3> trail)
+        {
+            res.sky = new Color(0.55f, 0.7f, 0.4f);
+            res.fog = new Color(0.9f, 0.78f, 0.6f);
+            res.ambient = new Color(0.66f, 0.64f, 0.56f);
+            res.sun = new Color(1f, 0.88f, 0.7f);
+            res.sunIntensity = 1.25f;
+            Ground(new Color(0.48f, 0.66f, 0.28f), new Color(0.56f, 0.72f, 0.32f), 16);
+            // Rice paddies, a stream, houses, a well and a big old tree.
+            var paddy = M(new Color(0.45f, 0.7f, 0.75f));
+            for (int i = 0; i < 4; i++) Box(V(-9f + i * 2.4f, 7f) + Vector3.up * 0.01f, new Vector3(2.1f, 0.02f, 2.6f), paddy);
+            var stream = new[] { V(-14f, -8f), V(-8f, -6.5f), V(-2f, -8.5f), V(4f, -7f), V(14f, -9f) };
+            Ribbon(stream, 1.2f, M(new Color(0.3f, 0.62f, 0.9f)), 0.02f);
+            Bridge(V(-2.2f, -9.6f), V(-2f, -7f), 1.2f);
+            var keep = new List<Vector3> { V(-9f, 7f), V(4f, 7f), V(7f, 6.5f), V(9.5f, -1.5f), V(-6f, 2.5f), V(4.5f, -2.5f) };
+            House(V(4f, 7f), 1.1f, 5f, new Color(0.92f, 0.86f, 0.74f), new Color(0.45f, 0.3f, 0.2f));
+            House(V(7f, 6.5f), 1f, -12f, new Color(0.9f, 0.84f, 0.72f), new Color(0.55f, 0.28f, 0.2f));
+            House(V(9.5f, -1.5f), 1f, 30f, new Color(0.92f, 0.86f, 0.74f), new Color(0.4f, 0.28f, 0.18f));
+            House(V(-6f, 2.5f), 0.9f, -20f, new Color(0.9f, 0.84f, 0.72f), new Color(0.5f, 0.3f, 0.2f));
+            // The well.
+            Put(MeshFactory.FacetCylinder(10), V(4.5f, -2.5f), new Vector3(1f, 0.6f, 1f), M(new Color(0.55f, 0.55f, 0.58f)));
+            Put(MeshFactory.FacetCone(4), V(4.5f, -2.5f) + Vector3.up * 1.4f, new Vector3(1.6f, 0.6f, 1.6f), M(new Color(0.45f, 0.3f, 0.2f)), 45f);
+            // The great tree.
+            Put(MeshFactory.FacetCylinder(7), V(-10.5f, -1f), new Vector3(0.8f, 2.4f, 0.8f), M(new Color(0.42f, 0.28f, 0.16f)));
+            Bush(V(-10.5f, -1f) + Vector3.up * 2.4f, 3.4f, new Color(0.3f, 0.58f, 0.22f));
+            foreach (var p in Scatter(trail, 36, 1.5f, new Rect(-14f, -10f, 28f, 20f), keep, 2.2f))
+            {
+                double r = rng.NextDouble();
+                if (r < 0.4) Bush(p, R(0.6f, 1.2f), new Color(0.32f, R(0.55f, 0.65f), 0.22f));
+                else if (r < 0.7) Pine(p, R(0.9f, 1.3f), new Color(0.2f, 0.48f, 0.2f), false);
+                else if (r < 0.85) RockAt(p, R(0.4f, 0.8f), new Color(0.55f, 0.55f, 0.52f));
+                else Box(p + Vector3.up * 0.3f, new Vector3(1.4f, 0.6f, 0.1f), M(new Color(0.5f, 0.36f, 0.22f)), R(0f, 180f)); // fence
+            }
+            Lantern(V(0f, 1f) + Vector3.up * 1.5f, new Color(1f, 0.75f, 0.45f), 6f);
+        }
+
+        static void Ruins(Result res, List<Vector3> trail)
+        {
+            res.sky = new Color(0.45f, 0.4f, 0.42f);
+            res.fog = new Color(0.55f, 0.48f, 0.45f);
+            res.ambient = new Color(0.58f, 0.55f, 0.55f);
+            res.sun = new Color(1f, 0.8f, 0.65f);
+            res.sunIntensity = 1.1f;
+            Ground(new Color(0.46f, 0.42f, 0.38f), new Color(0.52f, 0.47f, 0.4f), 16);
+            var stone = M(new Color(0.62f, 0.6f, 0.56f));
+            var stoneDark = M(new Color(0.42f, 0.4f, 0.38f));
+            var keep = new List<Vector3> { V(7f, 6f), V(-8f, 6f) };
+            // A broken castle keep and fallen walls.
+            Put(MeshFactory.FacetCylinder(8), V(7f, 6f), new Vector3(3.5f, 4.5f, 3.5f), stone, 10f);
+            Put(MeshFactory.FacetCylinder(8), V(7f, 6f) + Vector3.up * 4.5f, new Vector3(3.8f, 0.4f, 3.8f), stoneDark, 10f);
+            for (int i = 0; i < 5; i++) Box(V(-10f + i * 1.6f, 6f) + Vector3.up * R(0.6f, 1.6f), new Vector3(1.4f, R(1.2f, 3.2f), 0.6f), stone, 5f);
+            for (int i = 0; i < 12; i++)
+            {
+                var p = V(R(-13f, 13f), R(-9f, 8f));
+                if (DistToTrail(trail, p) < 1.6f) continue;
+                if (i % 3 == 0)
+                {
+                    // Broken pillar and its fallen top.
+                    float h = R(1f, 2.6f);
+                    Put(MeshFactory.FacetCylinder(8), p, new Vector3(0.7f, h, 0.7f), stone, R(0f, 45f));
+                    var top = Put(MeshFactory.FacetCylinder(8), p + V(1f, 0.3f) + Vector3.up * 0.35f, new Vector3(0.7f, 1f, 0.7f), stone, R(0f, 45f));
+                    top.transform.localRotation = Quaternion.Euler(90f, R(0f, 180f), 0f);
+                }
+                else for (int k = 0; k < 4; k++) Box(p + new Vector3(R(-0.8f, 0.8f), 0.2f, R(-0.8f, 0.8f)), Vector3.one * R(0.3f, 0.7f), k % 2 == 0 ? stone : stoneDark, R(0f, 90f), R(-20f, 20f));
+            }
+            foreach (var p in Scatter(trail, 20, 1.5f, new Rect(-14f, -10f, 28f, 20f), keep, 3f))
+            {
+                if (rng.NextDouble() < 0.5) Bush(p, R(0.5f, 0.9f), new Color(0.4f, 0.5f, 0.3f));
+                else DeadTree(p, R(0.8f, 1.3f));
+            }
+            Lantern(V(7f, 3.5f) + Vector3.up * 2f, new Color(1f, 0.6f, 0.3f), 7f);
+        }
+
+        static void Shrine(Result res, List<Vector3> trail)
+        {
+            res.sky = new Color(0.62f, 0.72f, 0.66f);
+            res.fog = new Color(0.8f, 0.85f, 0.8f);
+            res.ambient = new Color(0.62f, 0.66f, 0.62f);
+            res.sun = new Color(1f, 0.92f, 0.8f);
+            res.sunIntensity = 1.2f;
+            Ground(new Color(0.4f, 0.58f, 0.34f), new Color(0.46f, 0.64f, 0.38f), 14);
+            // Stone courtyard and the shrine at the top of the trail, a row of torii along it.
+            Put(MeshFactory.FacetCylinder(8), V(0f, 7f), new Vector3(9f, 0.25f, 5f), M(new Color(0.7f, 0.68f, 0.62f)), 22.5f);
+            Pagoda(V(0f, 8.5f) + Vector3.up * 0.25f, 1.2f, 180f, new Color(0.85f, 0.25f, 0.2f), new Color(0.25f, 0.28f, 0.3f), new Color(1f, 0.8f, 0.45f), 2);
+            Torii(V(-1.2f, -4.5f), 0.8f, 20f, new Color(0.88f, 0.2f, 0.15f));
+            Torii(V(2.2f, -0.6f), 0.8f, -60f, new Color(0.88f, 0.2f, 0.15f));
+            Torii(V(-0.8f, 3.5f), 0.8f, 40f, new Color(0.88f, 0.2f, 0.15f));
+            var keep = new List<Vector3> { V(0f, 7.5f) };
+            // Stone lanterns lining the path.
+            for (int i = 0; i < 8; i++)
+            {
+                var p = V(R(-6f, 6f), R(-7f, 5f));
+                if (DistToTrail(trail, p) < 1.2f || DistToTrail(trail, p) > 2.6f) continue;
+                Put(MeshFactory.FacetCylinder(6), p, new Vector3(0.3f, 0.8f, 0.3f), M(new Color(0.6f, 0.6f, 0.58f)));
+                Put(MeshFactory.FacetCylinder(6), p + Vector3.up * 0.8f, new Vector3(0.45f, 0.3f, 0.45f), Glow(new Color(1f, 0.8f, 0.45f)));
+                Put(MeshFactory.FacetCone(6), p + Vector3.up * 1.1f, new Vector3(0.7f, 0.35f, 0.7f), M(new Color(0.5f, 0.5f, 0.48f)));
+            }
+            foreach (var p in Scatter(trail, 50, 1.6f, new Rect(-14f, -10f, 28f, 20f), keep, 5f))
+            {
+                // Cherry blossoms and pines.
+                if (rng.NextDouble() < 0.45)
+                {
+                    Put(MeshFactory.FacetCylinder(5), p, new Vector3(0.25f, 1.2f, 0.25f), M(new Color(0.35f, 0.24f, 0.2f)));
+                    Bush(p + Vector3.up * 1.1f, R(1.2f, 1.8f), new Color(0.98f, R(0.7f, 0.8f), 0.85f));
+                }
+                else Pine(p, R(0.9f, 1.4f), new Color(0.16f, 0.42f, 0.24f), false);
+            }
+        }
+
+        static void DarkForest(Result res, List<Vector3> trail)
+        {
+            res.sky = new Color(0.12f, 0.1f, 0.2f);
+            res.fog = new Color(0.2f, 0.16f, 0.3f);
+            res.ambient = new Color(0.42f, 0.38f, 0.55f);
+            res.sun = new Color(0.75f, 0.7f, 1f);
+            res.sunIntensity = 0.95f;
+            Ground(new Color(0.2f, 0.22f, 0.26f), new Color(0.24f, 0.2f, 0.3f), 14);
+            // The castle of the eclipse on the horizon, glowing mushrooms and twisted trees.
+            var castle = M(new Color(0.14f, 0.1f, 0.18f));
+            for (int i = 0; i < 5; i++)
+            {
+                float h = 6f - Mathf.Abs(i - 2) * 1.5f;
+                Put(MeshFactory.FacetCylinder(6), V(-4f + i * 2f, 10.5f), new Vector3(1.4f, h, 1.4f), castle);
+                Put(MeshFactory.FacetCone(6), V(-4f + i * 2f, 10.5f) + Vector3.up * h, new Vector3(1.8f, 1.6f, 1.8f), castle);
+                Put(MeshFactory.FacetCylinder(4), V(-4f + i * 2f, 10.1f) + Vector3.up * h * 0.6f, new Vector3(0.3f, 0.4f, 0.3f), Glow(new Color(0.8f, 0.3f, 1f)));
+            }
+            var ring = Put(MeshFactory.Ring(0.8f), V(0f, 11f) + Vector3.up * 9f, Vector3.one * 3f, Glow(new Color(0.8f, 0.2f, 0.35f)), 0f, false);
+            ring.transform.localRotation = Quaternion.Euler(-80f, 0f, 0f);
+            var mush = Glow(new Color(0.45f, 0.9f, 1f));
+            var stem = M(new Color(0.85f, 0.85f, 0.9f));
+            foreach (var p in Scatter(trail, 60, 1.5f, new Rect(-14f, -10f, 28f, 19f), null, 0f))
+            {
+                double r = rng.NextDouble();
+                if (r < 0.5) Pine(p, R(1f, 1.7f), new Color(0.14f, 0.16f, 0.26f), false);
+                else if (r < 0.75) DeadTree(p, R(1f, 1.5f));
+                else
+                {
+                    Put(MeshFactory.FacetCylinder(6), p, new Vector3(0.12f, 0.35f, 0.12f), stem);
+                    Put(MeshFactory.FacetCone(8), p + Vector3.up * 0.3f, new Vector3(0.5f, 0.22f, 0.5f), mush);
+                }
+            }
+            Lantern(V(0f, 2f) + Vector3.up * 1.5f, new Color(0.6f, 0.5f, 1f), 9f);
         }
 
         static void Coast(Result res, List<Vector3> trail)

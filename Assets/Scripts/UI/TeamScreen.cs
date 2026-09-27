@@ -129,7 +129,7 @@ namespace HashiraChronicles
             }
         }
 
-        void DrawTeamEdit(PlayerData d)
+        void DrawTeamEdit(PlayerData d, bool manage = false)
         {
             float x0 = safe.x + 24f, top = safe.y + 130f;
             // Element filters down the left.
@@ -144,7 +144,7 @@ namespace HashiraChronicles
 
             // Detail card on the right.
             var detail = new Rect(safe.xMax - 470f, top, 446f, H - top - 30f);
-            DrawRosterDetail(detail, d);
+            DrawRosterDetail(detail, d, manage);
 
             // Grid of slayer cards.
             var list = new List<OwnedCharacter>();
@@ -232,7 +232,7 @@ namespace HashiraChronicles
             }
         }
 
-        void DrawRosterDetail(Rect card, PlayerData d)
+        void DrawRosterDetail(Rect card, PlayerData d, bool manage = false)
         {
             Round(Offset(card, 0f, 5f), new Color(0f, 0f, 0f, 0.35f), 16f);
             Round(card, new Color(0.05f, 0.06f, 0.1f, 0.92f), 16f);
@@ -273,6 +273,29 @@ namespace HashiraChronicles
             }
 
             int inTeam = d.team.IndexOf(c.id);
+            if (manage)
+            {
+                // Characters screen: SELECT adds to the team; the other three open the right upgrade page.
+                bool inT = inTeam >= 0;
+                if (FlatBtn(new Rect(x, card.yMax - 250f, card.width - 48f, 80f), inT ? "IN TEAM" : "SELECT", TileRed, !inT, 32))
+                {
+                    if (d.team.Count < TeamSize) { d.team.Add(c.id); SaveTeam(d); Toast(def.displayName + " joined the team"); }
+                    else { teamSlot = 0; teamReturn = GameScreen.Characters; rosterPick = c.id; teamEditing = true; gm.GoTo(GameScreen.Team); }
+                }
+                float bw3 = (card.width - 48f - 20f) / 3f;
+                string[] labels = { "UPGRADE", "EQUIPMENT", "SKILLS" };
+                DetailTab[] tabsFor = { DetailTab.Stats, DetailTab.Gear, DetailTab.Skills };
+                for (int i = 0; i < 3; i++)
+                    if (FlatBtn(new Rect(x + i * (bw3 + 10f), card.yMax - 156f, bw3, 64f), labels[i], i == 0 ? TileGreen : i == 1 ? TileOrange : TileBlue, true, 20))
+                    {
+                        gm.SelectedCharacterId = c.id;
+                        detailTab = tabsFor[i];
+                        pickingSlot = null;
+                        gm.GoTo(GameScreen.CharacterDetail);
+                    }
+                GUI.Label(new Rect(x, card.yMax - 80f, card.width - 48f, 60f), "<color=#AAAAAA><size=18>Weapon: " + def.weapon + "\nSpecial: " + def.ultimate.name + "</size></color>", UIStyles.Small);
+                return;
+            }
             bool same = inTeam >= 0 && inTeam == teamSlot;
             GUI.Label(new Rect(x, card.yMax - 210f, card.width - 48f, 36f), "<color=#AAAAAA>Slot " + (teamSlot + 1) + " · " + (teamSlot == 0 ? "Leader" : SlotRoles[teamSlot].ToString()) + "</color>", UIStyles.Sized(UIStyles.Small, 20));
             if (FlatBtn(new Rect(x, card.yMax - 170f, card.width - 48f, 84f), same ? "IN TEAM" : "SELECT", TileRed, !same, 34)) AssignToSlot(c.id, -1);

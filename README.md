@@ -79,8 +79,13 @@ Bosses keep their camera reveal and phases and now fall in a slow-motion **defea
   with ship, village and lighthouse): mission stops on stone pedestals along a stepping-stone trail, locks and
   number plates, your leader on a glowing ring, and a mission list with stars, locks, the BOSS row and CONTINUE. Picking a mission elsewhere makes the leader **walk the road**
   there, camera following, before the mission starts.
-- **Mission pages**: number, title, story hook, quest giver, recommended level vs your team, enemy
-  types, boss info, objectives, rewards and first-clear rewards, and a big animated PLAY.
+- **Mission preparation** (after the reference): a story panel (breadcrumb, title, hook, recommended / your / enemy
+  level, enemy portraits, objectives with crystal bonuses, reward and first-clear lines), your leader standing on the
+  trail in 3D in the middle, and a YOUR TEAM panel with power, roles, character cards, CHANGE TEAM and TRAVEL & PLAY.
+- **Characters screen**: element filters (ALL, WATER, FLAME, THUNDER, WIND, DARK, LIGHT), a card grid, and a detail
+  card with power, HP / ATK / DEF and SELECT, UPGRADE, EQUIPMENT and SKILLS.
+- **Combat HUD**: party health cards on the left, objective and progress top-left, a minimap and pause top-right,
+  ATTACK, three skills, DODGE, GUARD and the SPECIAL on the right. No jump, no lock button (keyboard T still locks on).
 - **Story cutscenes** in-engine: camera cuts/dollies/orbits, dialogue with typewriter text and
   speaker name plates, title cards, fades, sky changes and music — skippable and replayable from the Journal.
 - **End-of-mission screen**: MISSION COMPLETE, S/A/B/C rating, counted-up EXP and gold, items,

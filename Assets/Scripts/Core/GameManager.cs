@@ -155,6 +155,8 @@ namespace HashiraChronicles
             CurrentScreen = screen;
             ScreenEnteredAt = Time.unscaledTime;
             if (StageFor(prev) != StageFor(screen)) TransitionAlpha = Mathf.Max(TransitionAlpha, 0.85f);
+            // A soft whoosh on every menu change (battles and cutscenes bring their own sound).
+            if (prev != screen && screen != GameScreen.Battle && screen != GameScreen.Cutscene && Audio != null) Audio.PlayPitched("whoosh", 0.16f, 1.25f);
             ShowStageFor(screen);
             var music = MusicFor(screen);
             if (music.HasValue) Audio.SetMusicState(music.Value);

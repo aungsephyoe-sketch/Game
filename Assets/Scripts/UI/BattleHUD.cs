@@ -32,10 +32,13 @@ namespace HashiraChronicles
             DrawSubtitle();
             DrawBossIntro();
 
+            if (!b.CinematicLock) DrawMinimap(b);
             // Pause button.
             var pr = HudLayout.Pause;
-            UIStyles.Rect(pr, new Color(0f, 0f, 0f, 0.45f));
-            GUI.Label(pr, "II", UIStyles.Sized(UIStyles.Center, 40));
+            Round(pr, new Color(0.05f, 0.06f, 0.1f, 0.7f), 16f);
+            RoundFrame(pr, new Color(1f, 1f, 1f, 0.15f), 2f, 16f);
+            Round(new Rect(pr.center.x - 16f, pr.center.y - 22f, 11f, 44f), Color.white, 4f);
+            Round(new Rect(pr.center.x + 5f, pr.center.y - 22f, 11f, 44f), Color.white, 4f);
 
             if (TimeController.Paused) DrawPauseMenu();
         }
@@ -94,8 +97,8 @@ namespace HashiraChronicles
         {
             var m = b.Mission;
             var r = new Rect(safe.x + 24f, safe.y + 20f, 540f, 214f);
-            UIStyles.Rect(r, new Color(0f, 0f, 0f, 0.42f));
-            UIStyles.Rect(new Rect(r.x, r.y, 4f, r.height), UIStyles.Gold);
+            Round(r, new Color(0.04f, 0.05f, 0.08f, 0.62f), 14f);
+            Round(new Rect(r.x, r.y + 12f, 5f, r.height - 24f), UIStyles.Gold, 2f);
             int secs = Mathf.FloorToInt(m.Elapsed);
             GUI.Label(new Rect(r.x + 18f, r.y + 8f, r.width - 36f, 30f), "<color=#FFD36B>CURRENT OBJECTIVE</color>   <color=#999999>" + m.Def.id + "  " + secs / 60 + ":" + (secs % 60).ToString("00") + "</color>",
                 UIStyles.Sized(UIStyles.Small, 20));
@@ -214,23 +217,71 @@ namespace HashiraChronicles
                 var r = HudLayout.Portrait(i);
                 bool active = i == team.ActiveIndex;
                 Color el = ElementChart.ColorOf(m.Element);
-                UIStyles.Rect(r, active ? new Color(el.r * 0.35f, el.g * 0.35f, el.b * 0.35f, 0.85f) : new Color(0f, 0f, 0f, 0.55f));
-                if (active) UIStyles.Frame(r, el, 4f);
-                UIStyles.Rect(new Rect(r.x, r.y, 12f, r.height), m.Def.haoriColor);
+                Round(r, active ? new Color(el.r * 0.3f, el.g * 0.3f, el.b * 0.3f, 0.88f) : new Color(0.04f, 0.05f, 0.08f, 0.7f), 14f);
+                RoundFrame(r, active ? el : new Color(1f, 1f, 1f, 0.12f), active ? 3f : 2f, 14f);
+                // Face portrait.
+                var face = new Rect(r.x + 8f, r.y + 8f, r.height - 16f, r.height - 16f);
+                Round(face, Color.Lerp(new Color(0.1f, 0.1f, 0.16f), el, 0.3f), 10f);
+                var tex = ArtLibrary.Character(m.Def);
+                if (tex != null) GUI.DrawTexture(face, tex, ScaleMode.ScaleAndCrop, true);
+                float tx = face.xMax + 12f, tw = r.xMax - tx - 12f;
                 string name = m.Def.displayName.Split(' ')[0].ToUpper();
-                GUI.Label(new Rect(r.x + 24f, r.y + 6f, r.width - 30f, 36f), name + "  <size=20><color=#AAAAAA>Lv." + m.Owned.level + "</color></size>", UIStyles.Sized(UIStyles.H2, 28));
+                GUI.Label(new Rect(tx, r.y + 4f, tw, 34f), name + "  <size=18><color=#AAAAAA>Lv." + m.Owned.level + "</color></size>", UIStyles.Sized(UIStyles.H2, 24));
                 if (!m.IsAlive)
                 {
-                    UIStyles.Colored(new Rect(r.x + 24f, r.y + 44f, r.width - 30f, 40f), "DOWN", UIStyles.Sized(UIStyles.H2, 30), UIStyles.Bad);
+                    UIStyles.Colored(new Rect(tx, r.y + 40f, tw, 36f), "DOWN", UIStyles.Sized(UIStyles.H2, 26), UIStyles.Bad);
                     continue;
                 }
                 float hp = m.Health.Normalized;
-                UIStyles.Bar(new Rect(r.x + 24f, r.y + 48f, r.width - 40f, 22f), hp, hp > 0.3f ? new Color(0.35f, 0.9f, 0.45f) : UIStyles.Bad);
-                UIStyles.Bar(new Rect(r.x + 24f, r.y + 76f, r.width - 40f, 14f), m.UltGauge / PlayerCharacter.UltMax, m.UltReady ? UIStyles.Gold : el * 0.9f);
+                Round(new Rect(tx, r.y + 44f, tw, 18f), new Color(0f, 0f, 0f, 0.5f), 6f);
+                if (hp > 0.01f) Round(new Rect(tx, r.y + 44f, Mathf.Max(12f, tw * hp), 18f), hp > 0.3f ? new Color(0.35f, 0.9f, 0.45f) : UIStyles.Bad, 6f);
+                Round(new Rect(tx, r.y + 68f, tw, 10f), new Color(0f, 0f, 0f, 0.5f), 4f);
+                float ug = m.UltGauge / PlayerCharacter.UltMax;
+                if (ug > 0.01f) Round(new Rect(tx, r.y + 68f, Mathf.Max(8f, tw * ug), 10f), m.UltReady ? UIStyles.Gold : el, 4f);
                 if (!active && team.SwitchTimer > 0f)
-                    UIStyles.Rect(new Rect(r.x, r.y, r.width * team.SwitchTimer / TeamSystem.SwitchCooldown, r.height), new Color(0f, 0f, 0f, 0.4f));
-                if (!active && m.UltReady) UIStyles.Colored(new Rect(r.xMax - 110f, r.y + 6f, 100f, 30f), "ULT", UIStyles.Sized(UIStyles.Right, 24), UIStyles.Gold);
+                    Round(new Rect(r.x, r.y, r.width * team.SwitchTimer / TeamSystem.SwitchCooldown, r.height), new Color(0f, 0f, 0f, 0.4f), 14f);
             }
+        }
+
+        /// <summary>North-up minimap: the road, demons, the objective and you.</summary>
+        void DrawMinimap(BattleController b)
+        {
+            var a = b.Team.Active;
+            if (a == null) return;
+            var s0 = HudLayout.Safe;
+            Vector2 c = new Vector2(s0.xMax - 255f, s0.y + 118f);
+            const float R = 92f, scale = 1.7f; // pixels per metre
+            UIStyles.CircleTex(c, R + 4f, new Color(1f, 1f, 1f, 0.18f));
+            UIStyles.CircleTex(c, R, new Color(0.04f, 0.06f, 0.1f, 0.78f));
+            Vector3 me = a.Position;
+            if (b.Journey != null)
+            {
+                var path = b.Journey.path;
+                for (int i = 0; i < path.Count; i++)
+                {
+                    Vector2 p = c + new Vector2(path[i].x - me.x, -(path[i].z - me.z)) * scale;
+                    if ((p - c).sqrMagnitude < (R - 6f) * (R - 6f)) UIStyles.CircleTex(p, 5f, new Color(0.9f, 0.85f, 0.7f, 0.55f));
+                }
+            }
+            foreach (var cb in Combatant.All)
+            {
+                var e = cb as EnemyController;
+                if (e == null || !e.IsAlive) continue;
+                Vector2 p = c + new Vector2(e.Position.x - me.x, -(e.Position.z - me.z)) * scale;
+                if ((p - c).sqrMagnitude < (R - 6f) * (R - 6f)) UIStyles.CircleTex(p, e.IsBoss ? 8f : 5f, e.IsBoss ? new Color(1f, 0.2f, 0.3f) : new Color(1f, 0.35f, 0.3f));
+            }
+            var m = b.Mission;
+            if (m != null && m.ObjectiveTarget.HasValue)
+            {
+                Vector3 t = m.ObjectiveTarget.Value;
+                Vector2 d = new Vector2(t.x - me.x, -(t.z - me.z)) * scale;
+                if (d.magnitude > R - 10f) d = d.normalized * (R - 10f);
+                UIStyles.CircleTex(c + d, 8f, new Color(1f, 0.85f, 0.25f));
+            }
+            // You: a white dot with a facing tick.
+            UIStyles.CircleTex(c, 8f, Color.white);
+            Vector3 f = a.transform.forward;
+            UIStyles.CircleTex(c + new Vector2(f.x, -f.z) * 12f, 4f, Color.white);
         }
 
         void DrawBossBar(BattleController b)
@@ -282,7 +333,6 @@ namespace HashiraChronicles
             if (pc.ChargeAmount > 0f) UIStyles.CircleFill(atk.center, atk.radius, pc.ChargeAmount, new Color(el.r, el.g, el.b, 0.45f));
 
             DrawButton(HudLayout.Dodge, "DODGE", "", 0f, controls.Pressed[1], new Color(0.55f, 0.75f, 1f), 0f, IconFactory.Get("dodge"));
-            DrawButton(HudLayout.Lock, "LOCK", "", 0f, controls.Pressed[8], PlayerCharacter.LockTarget != null ? UIStyles.Crimson : new Color(0.8f, 0.8f, 0.85f), 0f, IconFactory.Get("target"));
             DrawButton(HudLayout.Guard, "GUARD", pc.Guarding ? "PARRY: TAP" : "", 0f, Mathf.Max(controls.Pressed[6], pc.Guarding ? 0.6f : 0f), new Color(0.95f, 0.85f, 0.45f), 0f, IconFactory.Get("shield"));
 
             for (int i = 0; i < 3; i++)

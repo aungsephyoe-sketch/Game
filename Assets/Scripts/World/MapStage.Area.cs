@@ -90,7 +90,15 @@ namespace HashiraChronicles
             l.range = 5f;
             l.intensity = 1.4f;
 
-            string kind = area.look == AreaDiorama.Look.Snow ? "snow" : area.look == AreaDiorama.Look.Crimson ? "embers" : area.look == AreaDiorama.Look.Meadow ? "leaves" : null;
+            string kind = null;
+            switch (area.look)
+            {
+                case AreaDiorama.Look.Snow: kind = "snow"; break;
+                case AreaDiorama.Look.Crimson: kind = "embers"; break;
+                case AreaDiorama.Look.Meadow: case AreaDiorama.Look.Village: case AreaDiorama.Look.Shrine: kind = "leaves"; break;
+                case AreaDiorama.Look.Ruins: kind = "ash"; break;
+                case AreaDiorama.Look.DarkForest: kind = "motes"; break;
+            }
             if (kind != null) EnvFx.Weather(area.root.transform, Vector3.zero, kind, 30f);
         }
 
@@ -112,6 +120,12 @@ namespace HashiraChronicles
             }
         }
 
+        int focusIndex = -1;
+
+        /// <summary>Mission page view: the camera drops behind the leader standing on this stop, looking up the trail.</summary>
+        public void FocusStop(int index) { focusIndex = index; if (index >= 0 && index < AreaPoints.Count) areaCurrent = index; }
+        public void ClearFocus() { focusIndex = -1; }
+
         void UpdateArea()
         {
             if (area == null || AreaPoints.Count == 0) return;
@@ -121,7 +135,19 @@ namespace HashiraChronicles
             Vector3 shift = new Vector3(6.2f, 0f, 0.5f);
             float k = Mathf.SmoothStep(0f, 1f, areaBlend);
             float dist = Mathf.Lerp(1.25f, 1f, k);
-            CameraController.Instance.SetFixed(c + shift + new Vector3(0f, 19.5f, -15.5f) * dist, c + shift);
+            Vector3 lookDir = Vector3.forward;
+            if (focusIndex >= 0 && focusIndex < AreaPoints.Count)
+            {
+                // Behind the leader, looking along the trail toward the next stop.
+                Vector3 here = AreaPoints[focusIndex];
+                Vector3 next = focusIndex + 1 < AreaPoints.Count ? AreaPoints[focusIndex + 1] : here + (here - AreaPoints[Mathf.Max(0, focusIndex - 1)]);
+                lookDir = next - here;
+                lookDir.y = 0f;
+                if (lookDir.sqrMagnitude < 0.01f) lookDir = Vector3.forward;
+                lookDir.Normalize();
+                CameraController.Instance.SetFixed(here - lookDir * 4.2f + Vector3.up * 2.3f, here + lookDir * 5f + Vector3.up * 1.1f);
+            }
+            else CameraController.Instance.SetFixed(c + shift + new Vector3(0f, 19.5f, -15.5f) * dist, c + shift);
             CameraFocus = c;
 
             // The leader walks to the current stop.
@@ -140,7 +166,8 @@ namespace HashiraChronicles
             {
                 token.position = target;
                 if (tokenVisual != null) tokenVisual.SetMoving(0f);
-                token.rotation = Quaternion.Slerp(token.rotation, Quaternion.Euler(0f, 180f, 0f), Time.unscaledDeltaTime * 4f);
+                Quaternion face = focusIndex >= 0 ? Quaternion.LookRotation(lookDir) : Quaternion.Euler(0f, 180f, 0f);
+                token.rotation = Quaternion.Slerp(token.rotation, face, Time.unscaledDeltaTime * 4f);
             }
         }
     }
