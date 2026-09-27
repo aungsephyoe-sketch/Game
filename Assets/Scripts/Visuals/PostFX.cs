@@ -14,7 +14,7 @@ namespace HashiraChronicles
 
         public float Threshold = 0.85f;
         public float Knee = 0.35f;
-        public float BloomIntensity = 0.75f;
+        public float BloomIntensity = 0.45f;
         public float Saturation = 1.12f;
         public float Contrast = 1.06f;
         public float Vignette = 0.9f;

@@ -82,7 +82,7 @@ namespace HashiraChronicles
         bool BuildMonster(EnemyDefinition def, Transform model)
         {
             mRoot = model;
-            mNoTeeth = def.form == "knight" || def.form == "sentinel" || def.form == "dummy" || def.form == "shadow" || def.form == "guardian";
+            mNoTeeth = true; // PG: spooky eyes, no fangs
             mBody = MaterialFactory.Toon(def.bodyColor);
             mAccent = MaterialFactory.Toon(def.accentColor, 0.02f);
             mGlow = MaterialFactory.Toon(def.accentColor, 0f, def.accentColor);

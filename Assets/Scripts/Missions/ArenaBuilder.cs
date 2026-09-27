@@ -63,13 +63,14 @@ namespace HashiraChronicles
             RenderSettings.fogColor = theme.fog;
             RenderSettings.fogStartDistance = theme.fogStart;
             RenderSettings.fogEndDistance = theme.fogEnd;
-            RenderSettings.ambientLight = Color.Lerp(theme.sky, Color.white, theme.night ? 0.25f : 0.45f);
+            // Softer light overall so the characters read clearly (no washed-out faces).
+            RenderSettings.ambientLight = Color.Lerp(theme.sky, Color.white, theme.night ? 0.2f : 0.3f) * 0.8f;
             if (Camera.main != null) Camera.main.backgroundColor = theme.sky;
             var sun = RenderSettings.sun;
             if (sun != null)
             {
                 sun.color = theme.sun;
-                sun.intensity = theme.sunIntensity;
+                sun.intensity = theme.sunIntensity * 0.8f;
                 sun.transform.rotation = theme.night ? Quaternion.Euler(55f, -35f, 0f) : Quaternion.Euler(50f, 30f, 0f);
             }
         }

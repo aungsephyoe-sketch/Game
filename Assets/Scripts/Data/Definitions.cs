@@ -65,6 +65,8 @@ namespace HashiraChronicles
         public float bodyHeight = 1f, bodyWidth = 1f;
         public bool scarf, cape, pelt, armor, bell;
         public Color accentColor = new Color(0.9f, 0.9f, 0.9f);
+        /// <summary>Face and hands.</summary>
+        public Color skinTone = new Color(0.97f, 0.82f, 0.7f);
 
         public string FullName { get { return displayName + " — " + versionTitle; } }
         public Rarity RarityTier { get { return (Rarity)Mathf.Clamp(rarity, 3, 7); } }

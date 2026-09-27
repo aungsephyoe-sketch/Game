@@ -4,12 +4,15 @@ The whole game follows one simple, charming look taken from the original referen
 doubt, make it simpler, not more detailed. No realism, no painted textures, no imported models.
 
 ## Characters (chibi)
-- **Head**: one big white sphere (about 0.74 of body height), two small black oval dot eyes. No mouth
-  or nose on heroes.
-- **Body**: a short dark capsule with a coloured outfit capsule over it (the "haori"), an open coat
-  front and a belt in the slayer's element colour.
+- **Head**: one big smooth round head in the character's own skin tone (porcelain, light, medium, tan,
+  brown or deep), tall black oval eyes with a shine, brows that show personality, a small smile, rosy cheeks.
+- **Rating**: PG. Spooky, never gory: monsters have glowing eyes but no fangs, no bones or blood in the world.
+- **Body**: a smooth bell-shaped dark robe with coloured hem trim, crossed collar and a sash with a knot,
+  sleeves with cuffs, hands and little shoes under the hem.
+- **Lighting**: soft cel shading with a gentle light-to-shadow ramp; light is clamped so faces never wash out.
 - **What makes each slayer unique**, set in `GameDatabase.ApplyLooks()`:
-  - hair: Messy, Spiky, Long, Ponytail, Braid, Short, Bun, Hood, Cap, Straw Hat, Wild or Crest
+  - hair: Messy, Spiky, Long, Ponytail, Braid, Short, Bun, Hood, Cap, Straw Hat, Wild, Crest, Bob, Twintails or Curly
+    (every playable slayer has a different one)
   - weapon: Katana, Twin Blades, Greatsword, Sword & Shield, Spear, Staff, Bow, Fans, Cleavers, Cane or Moon.
     Every blade glows.
   - body height and width

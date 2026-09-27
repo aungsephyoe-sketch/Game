@@ -273,13 +273,15 @@ namespace HashiraChronicles
             Prim(PrimitiveType.Cube, p, at + Quaternion.Euler(0f, yaw, tilt) * new Vector3(0f, 1.7f, 0.035f), new Vector3(0.6f, 0.08f, 0.01f), k.accent, new Vector3(0f, yaw, tilt));
         }
 
+        /// <summary>Glowing crystal clusters (the demon lands' PG-friendly set dressing).</summary>
         static void Bones(PropKit k, Transform p, Vector3 at, float yaw)
         {
-            Prim(PrimitiveType.Sphere, p, at + Vector3.up * 0.2f, new Vector3(0.4f, 0.35f, 0.45f), k.bone, new Vector3(0f, yaw, 0f)); // skull
-            Prim(PrimitiveType.Sphere, p, at + Quaternion.Euler(0f, yaw, 0f) * new Vector3(0.08f, 0.24f, 0.2f), new Vector3(0.09f, 0.07f, 0.05f), MaterialFactory.Toon(Color.black, 0f), Vector3.zero);
-            Prim(PrimitiveType.Sphere, p, at + Quaternion.Euler(0f, yaw, 0f) * new Vector3(-0.08f, 0.24f, 0.2f), new Vector3(0.09f, 0.07f, 0.05f), MaterialFactory.Toon(Color.black, 0f), Vector3.zero);
-            for (int i = 0; i < 3; i++)
-                Prim(PrimitiveType.Capsule, p, at + new Vector3(R(-0.9f, 0.9f), 0.05f, R(-0.9f, 0.9f)), new Vector3(0.08f, 0.35f, 0.08f), k.bone, new Vector3(90f, R(0f, 360f), 0f));
+            var glow = MaterialFactory.Toon(new Color(0.75f, 0.3f, 0.9f), 0.01f, new Color(0.45f, 0.12f, 0.6f));
+            for (int i = 0; i < 4; i++)
+            {
+                var go = MeshFactory.MeshObject(MeshFactory.FacetCone(5), p, at + new Vector3(R(-0.4f, 0.4f), 0f, R(-0.4f, 0.4f)), new Vector3(0.25f, R(0.5f, 1.2f), 0.25f), glow, false);
+                go.transform.rotation = Quaternion.Euler(R(-20f, 20f), yaw, R(-20f, 20f));
+            }
         }
 
         static void Spikes(PropKit k, Transform p, Vector3 at, float yaw)

@@ -499,8 +499,10 @@ namespace HashiraChronicles
                 else if (r < 0.8) RockAt(p, R(0.7f, 1.8f), new Color(0.2f, 0.09f, 0.1f));
                 else
                 {
-                    // Gravestones.
-                    Box(p + Vector3.up * 0.35f, new Vector3(0.45f, 0.7f, 0.15f), M(new Color(0.3f, 0.26f, 0.28f)), R(-20f, 20f), R(-8f, 8f));
+                    // Stone lanterns glowing red.
+                    Put(MeshFactory.FacetCylinder(6), p, new Vector3(0.35f, 0.7f, 0.35f), M(new Color(0.3f, 0.26f, 0.28f)), R(0f, 60f));
+                    Put(MeshFactory.FacetCylinder(6), p + Vector3.up * 0.7f, new Vector3(0.45f, 0.3f, 0.45f), Glow(new Color(1f, 0.4f, 0.25f)), R(0f, 60f));
+                    Put(MeshFactory.FacetCone(6), p + Vector3.up * 1f, new Vector3(0.7f, 0.35f, 0.7f), M(new Color(0.2f, 0.17f, 0.19f)), R(0f, 60f));
                 }
             }
         }

@@ -490,7 +490,7 @@ namespace HashiraChronicles
         {
             switch (bossId)
             {
-                case "boss_gorvath": return entrance ? "The old man's student? Good. He screamed your name, you know." : "You'll burn like your village!";
+                case "boss_gorvath": return entrance ? "The old man's student? Good. Let's see what he taught you." : "Enough! Feel the heat of my true power!";
                 case "boss_thousandarm": return entrance ? "...Leave... this forest..." : "...THE ECLIPSE... CALLS...";
                 case "boss_hyoga": return entrance ? "No one crosses my pass. Not for a hundred years." : "The mountain itself will bury you!";
                 case "boss_chancellor": return entrance ? "Twenty years I served that fool of a king. Tonight, I serve my true master." : "Enough games. See what I really am!";

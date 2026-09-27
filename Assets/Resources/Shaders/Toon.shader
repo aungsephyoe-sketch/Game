@@ -71,15 +71,19 @@ Shader "Hashira/Toon"
                 float3 v = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
                 float ndl = dot(n, l);
                 float shadow = SHADOW_ATTENUATION(i);
-                float lit = smoothstep(0.0, 0.05, ndl) * smoothstep(0.3, 0.5, shadow);
+                // Soft cel shading: a smooth light-to-shadow ramp instead of a hard edge, and the light is
+                // clamped so bright surfaces (faces, white hair) keep their detail instead of blowing out.
+                float lit = smoothstep(-0.05, 0.35, ndl) * smoothstep(0.2, 0.6, shadow);
 
                 fixed3 baseCol = tex2D(_MainTex, i.uv).rgb * _Color.rgb;
                 fixed3 ambient = ShadeSH9(float4(n, 1.0));
-                fixed3 col = lerp(baseCol * _ShadowColor.rgb, baseCol * _LightColor0.rgb, lit);
-                col += baseCol * ambient * 0.35;
+                fixed3 light = min(_LightColor0.rgb, 1.0) * 0.9;
+                fixed3 col = lerp(baseCol * _ShadowColor.rgb * 0.95, baseCol * light, lit);
+                col += baseCol * ambient * 0.22;
 
                 float rim = pow(1.0 - saturate(dot(n, v)), _RimPower) * saturate(ndl + 0.4);
-                col += _RimColor.rgb * smoothstep(0.4, 0.5, rim) * 0.3;
+                col += _RimColor.rgb * smoothstep(0.35, 0.6, rim) * 0.12;
+                col = min(col, 0.96);
                 col += _Emission.rgb;
                 col = lerp(col, _FlashColor.rgb, saturate(_Flash) * 0.75);
 

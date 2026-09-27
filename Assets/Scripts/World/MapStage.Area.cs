@@ -102,12 +102,12 @@ namespace HashiraChronicles
             RenderSettings.fogColor = area.fog;
             RenderSettings.fogStartDistance = 40f;
             RenderSettings.fogEndDistance = 90f;
-            RenderSettings.ambientLight = area.ambient;
+            RenderSettings.ambientLight = area.ambient * 0.8f;
             if (Camera.main != null) Camera.main.backgroundColor = area.sky;
             if (RenderSettings.sun != null)
             {
                 RenderSettings.sun.color = area.sun;
-                RenderSettings.sun.intensity = area.sunIntensity;
+                RenderSettings.sun.intensity = area.sunIntensity * 0.8f;
                 RenderSettings.sun.transform.rotation = Quaternion.Euler(52f, -35f, 0f);
             }
         }

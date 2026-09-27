@@ -316,7 +316,7 @@ namespace HashiraChronicles
             {
                 Ab("Crescent Moon", AbilityShape.Wave, 5f, 1.8f, 3, 9f, 2f, "Three crescent blades."),
                 Ab("Moonfall", AbilityShape.Burst, 8f, 2f, 3, 0f, 6f, "Crescents rain from above."),
-                Ab("Blood Eclipse", AbilityShape.MultiSlash, 9f, 0.9f, 8, 0f, 5f, "Eight slashes in darkness.")
+                Ab("Crimson Eclipse", AbilityShape.MultiSlash, 9f, 0.9f, 8, 0f, 5f, "Eight slashes in darkness.")
             };
             kuroe.ultimate = Ab("Moon Breathing: Final Night", AbilityShape.MultiSlash, 0f, 1.6f, 14, 0f, 10f, "Night falls. Nothing survives it.", 30f, 7f);
             Characters.Add(kuroe);
@@ -359,19 +359,40 @@ namespace HashiraChronicles
                 ink, new Color(0.75f, 0.12f, 0.06f), new Color(1f, 0.35f, 0.08f), new Color(1f, 0.65f, 0.1f), 1.1f, 1.05f, false, true, false, true);
             Look("mina_ember", HairStyle.Long, WeaponKind.Katana, CombatStyle.Swift, MotionStyle.Light,
                 ink, new Color(0.25f, 0.18f, 0.35f), new Color(0.95f, 0.95f, 0.97f), new Color(0.75f, 0.4f, 1f), 0.9f, 0.88f);
-            Look("rokuro_hunter", HairStyle.Cap, WeaponKind.Bow, CombatStyle.Ranged, MotionStyle.Sly,
+            Look("rokuro_hunter", HairStyle.Curly, WeaponKind.Bow, CombatStyle.Ranged, MotionStyle.Sly,
                 new Color(0.3f, 0.26f, 0.2f), new Color(0.4f, 0.45f, 0.3f), new Color(0.15f, 0.12f, 0.1f), new Color(0.75f, 0.9f, 0.5f), 1.05f, 1.05f, false, false, true, false, false, new Color(0.42f, 0.26f, 0.14f));
             Look("genji_ronin", HairStyle.StrawHat, WeaponKind.Katana, CombatStyle.Technical, MotionStyle.Sly,
                 new Color(0.15f, 0.15f, 0.2f), new Color(0.35f, 0.42f, 0.58f), ink, new Color(0.7f, 0.85f, 1f), 1.05f, 1f, false, true, false, false, false, new Color(0.8f, 0.68f, 0.4f));
-            Look("yui_tide", HairStyle.Bun, WeaponKind.Fans, CombatStyle.Ranged, MotionStyle.Graceful,
+            Look("yui_tide", HairStyle.Twintails, WeaponKind.Fans, CombatStyle.Ranged, MotionStyle.Graceful,
                 new Color(0.1f, 0.12f, 0.2f), new Color(0.2f, 0.55f, 0.85f), new Color(0.2f, 0.4f, 0.8f), new Color(0.45f, 0.85f, 1f), 0.94f, 0.92f);
             Look("raiga_pillar", HairStyle.Crest, WeaponKind.Spear, CombatStyle.Swift, MotionStyle.Light,
                 ink, new Color(0.95f, 0.85f, 0.2f), new Color(0.96f, 0.96f, 0.98f), new Color(1f, 0.95f, 0.45f), 1.08f, 0.95f, false, false, false, true);
-            Look("kuroe_moon", HairStyle.Long, WeaponKind.Moon, CombatStyle.Technical, MotionStyle.Sly,
+            Look("kuroe_moon", HairStyle.Bob, WeaponKind.Moon, CombatStyle.Technical, MotionStyle.Sly,
                 new Color(0.1f, 0.05f, 0.1f), new Color(0.5f, 0.08f, 0.22f), new Color(0.05f, 0.05f, 0.07f), new Color(1f, 0.2f, 0.4f), 1.05f, 0.95f, false, true);
+            // Skin tones: a varied, friendly cast.
+            Color porcelain = new Color(0.99f, 0.88f, 0.8f), light = new Color(0.97f, 0.81f, 0.68f), medium = new Color(0.88f, 0.67f, 0.5f),
+                tan = new Color(0.78f, 0.56f, 0.4f), brown = new Color(0.6f, 0.41f, 0.28f), deep = new Color(0.44f, 0.29f, 0.2f);
+            Skin("ren_initiate", light); Skin("ren_sundance", light);
+            Skin("sora_initiate", medium);
+            Skin("kiba_initiate", tan);
+            Skin("hana_healer", porcelain);
+            Skin("tetsu_guard", brown);
+            Skin("homura_pillar", medium); Skin("homura_lastflame", medium);
+            Skin("mina_ember", porcelain);
+            Skin("rokuro_hunter", deep);
+            Skin("genji_ronin", tan);
+            Skin("yui_tide", light);
+            Skin("raiga_pillar", brown);
+            Skin("kuroe_moon", porcelain);
             // Mina's blade burns violet: she fights with dark flames.
             var mina = Characters.Find(x => x.id == "mina_ember");
             if (mina != null) mina.element = Element.Dark;
+        }
+
+        static void Skin(string id, Color c)
+        {
+            var d = Characters.Find(x => x.id == id) ?? Npcs.Find(x => x.id == id);
+            if (d != null) d.skinTone = c;
         }
 
         static void NpcLooks()
@@ -388,6 +409,12 @@ namespace HashiraChronicles
                 new Color(0.15f, 0.1f, 0.2f), new Color(0.45f, 0.2f, 0.55f), new Color(0.45f, 0.2f, 0.55f), new Color(0.6f, 0.3f, 0.8f), 1.1f, 0.95f, false, true);
             Look("npc_merchant", HairStyle.Cap, WeaponKind.Cane, CombatStyle.Balanced, MotionStyle.Steady,
                 new Color(0.4f, 0.3f, 0.2f), new Color(0.8f, 0.6f, 0.2f), new Color(0.2f, 0.15f, 0.1f), new Color(0.5f, 0.4f, 0.3f), 0.95f, 1.2f, false, false, false, false, false, new Color(0.8f, 0.6f, 0.2f));
+            Skin("npc_tessai", new Color(0.86f, 0.68f, 0.52f));
+            Skin("npc_villager", new Color(0.62f, 0.43f, 0.3f));
+            Skin("npc_villager2", new Color(0.97f, 0.82f, 0.7f));
+            Skin("npc_soldier", new Color(0.45f, 0.3f, 0.2f));
+            Skin("npc_chancellor", new Color(0.93f, 0.8f, 0.7f));
+            Skin("npc_merchant", new Color(0.8f, 0.6f, 0.44f));
         }
 
         static void BuildNpcs()
@@ -422,12 +449,12 @@ namespace HashiraChronicles
             Enemies.Add(new EnemyDefinition { id = "runner", form = "stalker", weakness = "Lunges in straight lines: sidestep, then punish.", displayName = "Swift Stalker", archetype = EnemyArchetype.Fast, element = Element.Thunder,
                 baseHp = 1500, baseAtk = 135, baseDef = 80, moveSpeed = 5.8f, attackRange = 3.2f, attackCooldown = 1.8f, windup = 0.4f,
                 scale = 0.85f, bodyColor = new Color(0.3f, 0.25f, 0.08f), accentColor = new Color(1f, 0.85f, 0.2f), description = "Lunges fast and dodges your swings." });
-            Enemies.Add(new EnemyDefinition { id = "brute", form = "beast", artKey = "blood_beast", weakness = "Charges in a straight line and stumbles after — dodge sideways, then strike its flank.", displayName = "Blood Beast", archetype = EnemyArchetype.Tank, element = Element.Flame,
+            Enemies.Add(new EnemyDefinition { id = "brute", form = "beast", artKey = "blood_beast", weakness = "Charges in a straight line and stumbles after — dodge sideways, then strike its flank.", displayName = "Ember Beast", archetype = EnemyArchetype.Tank, element = Element.Flame,
                 baseHp = 6500, baseAtk = 250, baseDef = 400, moveSpeed = 2.1f, attackRange = 2.6f, attackCooldown = 3f, windup = 0.95f,
                 poise = 6f, scale = 1.5f, radius = 0.9f, bodyColor = new Color(0.35f, 0.15f, 0.05f), accentColor = new Color(1f, 0.45f, 0.1f), description = "Slow, armoured, hits like a landslide." });
             Enemies.Add(new EnemyDefinition { id = "spitter", form = "void", artKey = "void_demon", weakness = "Floats out of reach and fires dark orbs — dash in; it is fragile up close.", displayName = "Void Demon", archetype = EnemyArchetype.Ranged, element = Element.Water,
                 baseHp = 1800, baseAtk = 170, baseDef = 90, moveSpeed = 2.8f, attackRange = 10f, attackCooldown = 2.8f, windup = 0.65f,
-                bodyColor = new Color(0.08f, 0.18f, 0.3f), accentColor = new Color(0.3f, 0.7f, 1f), description = "Keeps its distance and spits blood orbs." });
+                bodyColor = new Color(0.08f, 0.18f, 0.3f), accentColor = new Color(0.3f, 0.7f, 1f), description = "Keeps its distance and spits dark orbs." });
             Enemies.Add(new EnemyDefinition { id = "elite", form = "hunter", weakness = "Leaps before it strikes: move when it jumps.", displayName = "Crescent Hunter", archetype = EnemyArchetype.Elite, element = Element.Dark,
                 baseHp = 9000, baseAtk = 290, baseDef = 300, moveSpeed = 3.8f, attackRange = 2.6f, attackCooldown = 2.4f, windup = 0.7f,
                 poise = 10f, scale = 1.25f, radius = 0.75f, bodyColor = new Color(0.2f, 0.05f, 0.25f), accentColor = new Color(0.85f, 0.2f, 1f), description = "Elite hunter. Leaps across the field." });
@@ -442,7 +469,7 @@ namespace HashiraChronicles
                 poise = 8f, scale = 1.2f, radius = 0.7f, bodyColor = new Color(0.35f, 0.08f, 0.06f), accentColor = new Color(1f, 0.3f, 0.15f), description = "A demon trained in human swordplay." });
             Enemies.Add(new EnemyDefinition { id = "frost_oni", form = "oni", weakness = "Ice armour shatters under Flame.", displayName = "Frost Oni", archetype = EnemyArchetype.Tank, element = Element.Water,
                 baseHp = 7500, baseAtk = 260, baseDef = 380, moveSpeed = 2.3f, attackRange = 2.7f, attackCooldown = 2.8f, windup = 0.9f,
-                poise = 7f, scale = 1.55f, radius = 0.9f, bodyColor = new Color(0.55f, 0.7f, 0.85f), accentColor = new Color(0.8f, 0.95f, 1f), description = "Its breath freezes blood." });
+                poise = 7f, scale = 1.55f, radius = 0.9f, bodyColor = new Color(0.55f, 0.7f, 0.85f), accentColor = new Color(0.8f, 0.95f, 1f), description = "Its breath freezes the air." });
             Enemies.Add(new EnemyDefinition { id = "ice_wraith", form = "wraith", weakness = "Keeps its distance: close the gap with a dash attack.", displayName = "Ice Wraith", archetype = EnemyArchetype.Ranged, element = Element.Water,
                 baseHp = 2000, baseAtk = 190, baseDef = 90, moveSpeed = 3f, attackRange = 10f, attackCooldown = 2.5f, windup = 0.6f,
                 bodyColor = new Color(0.6f, 0.75f, 0.9f), accentColor = new Color(0.7f, 0.9f, 1f), description = "Hurls shards of ice from afar." });
@@ -723,9 +750,9 @@ namespace HashiraChronicles
             m = M(ch2, "2-1", MissionType.Story, "forest", "Into the Shadows", 6, "The only road to the capital runs through the Forest of Shadows.",
                 Wave("shadow_demon", 4), Wave("shadow_demon", 3, "spitter", 2));
             m.cutsceneBefore = "c2_forest";
-            m = M(ch2, "2-2", MissionType.Story, "forest", "The Frightened Swordsman", 7, "Someone is screaming deeper in the woods.",
+            m = M(ch2, "2-2", MissionType.Story, "forest", "The Frightened Swordsman", 7, "Someone is calling for help deeper in the woods.",
                 Wave("shadow_demon", 4, "runner", 2), Wave("forest_beast", 1, "shadow_demon", 3));
-            m.investigate = "the abandoned village"; m.investigateLine = "Doors torn open, rice still warm in the pots... and someone is screaming in the trees.";
+            m.investigate = "the abandoned village"; m.investigateLine = "Doors left open, rice still warm in the pots... and someone is calling for help in the trees.";
             m.cutsceneAfter = "c2_sora"; m.firstClearRewards.characterId = "sora_initiate";
             m = M(ch2, "2-S", MissionType.Side, "forest", "Hunt: The Forest Demons", 8, "A hunter's guild bounty on walking trees the size of houses.",
                 Wave("forest_beast", 2), Wave("forest_beast", 2, "shadow_demon", 3));

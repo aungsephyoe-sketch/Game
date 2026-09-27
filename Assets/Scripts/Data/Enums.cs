@@ -17,7 +17,7 @@ namespace HashiraChronicles
     public enum AbilityShape { Dash, Spin, Wave, Burst, MultiSlash, Heal }
 
     /// <summary>Hair / headwear silhouette of a chibi character.</summary>
-    public enum HairStyle { Messy, Spiky, Long, Ponytail, Braid, Short, Bun, Hood, Cap, StrawHat, Wild, Crest }
+    public enum HairStyle { Messy, Spiky, Long, Ponytail, Braid, Short, Bun, Hood, Cap, StrawHat, Wild, Crest, Bob, Twintails, Curly }
 
     public enum WeaponKind { Katana, TwinBlades, Greatsword, SwordShield, Spear, Staff, Bow, Fans, Cleavers, Cane, Moon, Fists }
 

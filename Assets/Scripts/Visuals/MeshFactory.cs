@@ -253,6 +253,43 @@ namespace HashiraChronicles
             return m;
         }
 
+        static Mesh smoothSphere;
+
+        /// <summary>High-resolution UV sphere (diameter 1, like Unity's primitive) for smooth faces and hair.</summary>
+        public static Mesh SmoothSphere()
+        {
+            if (smoothSphere != null) return smoothSphere;
+            const int lat = 28, lon = 44;
+            var v = new List<Vector3>();
+            var n = new List<Vector3>();
+            var t = new List<int>();
+            for (int i = 0; i <= lat; i++)
+            {
+                float phi = Mathf.PI * i / lat;
+                for (int j = 0; j <= lon; j++)
+                {
+                    float th = Mathf.PI * 2f * j / lon;
+                    var d = new Vector3(Mathf.Sin(phi) * Mathf.Cos(th), Mathf.Cos(phi), Mathf.Sin(phi) * Mathf.Sin(th));
+                    v.Add(d * 0.5f);
+                    n.Add(d);
+                }
+            }
+            int stride = lon + 1;
+            for (int i = 0; i < lat; i++)
+                for (int j = 0; j < lon; j++)
+                {
+                    int a = i * stride + j, b = a + 1, c = a + stride, d = c + 1;
+                    t.Add(a); t.Add(b); t.Add(c);
+                    t.Add(b); t.Add(d); t.Add(c);
+                }
+            smoothSphere = new Mesh { name = "SmoothSphere" };
+            smoothSphere.SetVertices(v);
+            smoothSphere.SetNormals(n);
+            smoothSphere.SetTriangles(t, 0);
+            smoothSphere.RecalculateBounds();
+            return smoothSphere;
+        }
+
         /// <summary>Game object rendering a given mesh with a material (no collider).</summary>
         public static GameObject MeshObject(Mesh mesh, Transform parent, Vector3 localPos, Vector3 localScale, Material mat, bool shadows = true)
         {
