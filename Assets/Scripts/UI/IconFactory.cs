@@ -313,6 +313,92 @@ namespace HashiraChronicles
                     };
                 case "heal":
                     return p => Mathf.Min(Box(p, Vector2.zero, V(0.2f, 0.7f), 0.08f), Box(p, Vector2.zero, V(0.7f, 0.2f), 0.08f));
+                case "person":
+                    return p => Mathf.Min(Circle(p, V(0f, 0.42f), 0.3f), Mathf.Max(Circle(p, V(0f, -0.62f), 0.62f), -(p.y + 0.85f)));
+                case "people":
+                    return p =>
+                    {
+                        float a = Mathf.Min(Circle(p, V(-0.36f, 0.3f), 0.24f), Mathf.Max(Circle(p, V(-0.36f, -0.62f), 0.5f), -(p.y + 0.85f)));
+                        float b = Mathf.Min(Circle(p, V(0.36f, 0.3f), 0.24f), Mathf.Max(Circle(p, V(0.36f, -0.62f), 0.5f), -(p.y + 0.85f)));
+                        float gap = Mathf.Min(Circle(p, V(0.36f, 0.3f), 0.31f), Mathf.Max(Circle(p, V(0.36f, -0.62f), 0.57f), -(p.y + 0.95f)));
+                        return Mathf.Min(Mathf.Max(a, -gap), b);
+                    };
+                case "group":
+                    return p =>
+                    {
+                        float c = Mathf.Min(Circle(p, V(0f, 0.36f), 0.26f), Mathf.Max(Circle(p, V(0f, -0.6f), 0.55f), -(p.y + 0.85f)));
+                        float cOut = Mathf.Min(Circle(p, V(0f, 0.36f), 0.33f), Mathf.Max(Circle(p, V(0f, -0.6f), 0.62f), -(p.y + 0.95f)));
+                        float l = Mathf.Min(Circle(p, V(-0.55f, 0.22f), 0.2f), Mathf.Max(Circle(p, V(-0.55f, -0.6f), 0.42f), -(p.y + 0.85f)));
+                        float r = Mathf.Min(Circle(p, V(0.55f, 0.22f), 0.2f), Mathf.Max(Circle(p, V(0.55f, -0.6f), 0.42f), -(p.y + 0.85f)));
+                        return Mathf.Min(c, Mathf.Max(Mathf.Min(l, r), -cOut));
+                    };
+                case "bag":
+                    return p =>
+                    {
+                        float body = Box(p, V(0f, -0.2f), V(0.62f, 0.52f), 0.18f);
+                        float handle = Arc(p, V(0f, 0.32f), 0.3f, 0.08f, 0f, 180f);
+                        float strap = Box(p, V(0f, -0.08f), V(0.64f, 0.05f));
+                        float clasp = Box(p, V(0f, -0.08f), V(0.12f, 0.12f), 0.03f);
+                        return Mathf.Min(Mathf.Min(Mathf.Max(body, -strap), handle), clasp);
+                    };
+                case "scroll":
+                    return p =>
+                    {
+                        float sheet = Box(p, V(0f, 0f), V(0.46f, 0.66f), 0.04f);
+                        float lines = 1e9f;
+                        for (int i = 0; i < 4; i++) lines = Mathf.Min(lines, Box(p, V(0f, 0.36f - i * 0.22f), V(0.28f, 0.035f)));
+                        float top = Box(p, V(0f, 0.72f), V(0.6f, 0.1f), 0.1f);
+                        float bottom = Box(p, V(0f, -0.72f), V(0.6f, 0.1f), 0.1f);
+                        return Mathf.Min(Mathf.Max(sheet, -lines), Mathf.Min(top, bottom));
+                    };
+                case "cart":
+                    return p =>
+                    {
+                        float basket = Poly(p, new[] { V(-0.55f, 0.45f), V(0.8f, 0.45f), V(0.62f, -0.2f), V(-0.4f, -0.2f) });
+                        float handle = Seg(p, V(-0.9f, 0.65f), V(-0.55f, 0.45f), 0.06f);
+                        float rail = Seg(p, V(-0.4f, -0.2f), V(-0.45f, -0.4f), 0.05f);
+                        float bar = Seg(p, V(-0.45f, -0.4f), V(0.62f, -0.4f), 0.05f);
+                        float w1 = Circle(p, V(-0.3f, -0.68f), 0.13f), w2 = Circle(p, V(0.5f, -0.68f), 0.13f);
+                        return Mathf.Min(Mathf.Min(Mathf.Min(basket, handle), Mathf.Min(rail, bar)), Mathf.Min(w1, w2));
+                    };
+                case "gear":
+                    return p =>
+                    {
+                        float a = Mathf.Atan2(p.y, p.x);
+                        float teeth = p.magnitude - (0.62f + 0.16f * Mathf.Clamp(Mathf.Cos(a * 8f) * 2.5f, -1f, 1f));
+                        return Mathf.Max(teeth, -Circle(p, Vector2.zero, 0.26f));
+                    };
+                case "mail":
+                    return p =>
+                    {
+                        float env = Box(p, Vector2.zero, V(0.75f, 0.5f), 0.08f);
+                        float flap = Mathf.Min(Seg(p, V(-0.66f, 0.4f), V(0f, -0.08f), 0.06f), Seg(p, V(0f, -0.08f), V(0.66f, 0.4f), 0.06f));
+                        return Mathf.Max(env, -flap);
+                    };
+                case "menu":
+                    return p => Mathf.Min(Box(p, V(0f, 0.45f), V(0.62f, 0.09f), 0.09f), Mathf.Min(Box(p, V(0f, 0f), V(0.62f, 0.09f), 0.09f), Box(p, V(0f, -0.45f), V(0.62f, 0.09f), 0.09f)));
+                case "swords":
+                    return p =>
+                    {
+                        System.Func<Vector2, float> one = q =>
+                        {
+                            float blade = Poly(q, new[] { V(0f, 0.95f), V(0.09f, 0.78f), V(0.09f, -0.25f), V(-0.09f, -0.25f), V(-0.09f, 0.78f) });
+                            float guard = Box(q, V(0f, -0.32f), V(0.26f, 0.05f), 0.03f);
+                            float grip = Box(q, V(0f, -0.55f), V(0.055f, 0.18f), 0.02f);
+                            return Mathf.Min(blade, Mathf.Min(guard, grip));
+                        };
+                        return Mathf.Min(one(Rot(p, 40f)), one(Rot(p, -40f)));
+                    };
+                case "heart":
+                    return p => Mathf.Min(Mathf.Min(Circle(p, V(-0.3f, 0.25f), 0.36f), Circle(p, V(0.3f, 0.25f), 0.36f)),
+                        Poly(p, new[] { V(-0.62f, 0.12f), V(0.62f, 0.12f), V(0f, -0.82f) }));
+                case "lock":
+                    return p => Mathf.Min(Box(p, V(0f, -0.25f), V(0.55f, 0.42f), 0.1f), Mathf.Max(Arc(p, V(0f, 0.2f), 0.34f, 0.1f, 0f, 180f), -Box(p, V(0f, -0.25f), V(0.55f, 0.42f))));
+                case "all":
+                    return p => Mathf.Min(Mathf.Min(Box(p, V(-0.4f, 0.4f), V(0.3f, 0.3f), 0.08f), Box(p, V(0.4f, 0.4f), V(0.3f, 0.3f), 0.08f)),
+                        Mathf.Min(Box(p, V(-0.4f, -0.4f), V(0.3f, 0.3f), 0.08f), Box(p, V(0.4f, -0.4f), V(0.3f, 0.3f), 0.08f)));
+                case "plus":
+                    return p => Mathf.Min(Box(p, Vector2.zero, V(0.14f, 0.62f), 0.06f), Box(p, Vector2.zero, V(0.62f, 0.14f), 0.06f));
                 default:
                     return p => Circle(p, Vector2.zero, 0.6f);
             }

@@ -62,7 +62,7 @@ namespace HashiraChronicles
         {
             if (loaded) return;
             loaded = true;
-            Tier = (GraphicsTier)PlayerPrefs.GetInt("gfx_tier", (int)DetectTier());
+            Tier = (GraphicsTier)PlayerPrefs.GetInt("gfx_tier_v2", (int)DetectTier());
             MusicVolume = PlayerPrefs.GetFloat("vol_music", 0.7f);
             SfxVolume = PlayerPrefs.GetFloat("vol_sfx", 0.9f);
             ShakeIntensity = PlayerPrefs.GetFloat("cam_shake", 1f);
@@ -72,7 +72,7 @@ namespace HashiraChronicles
 
         public static void Save()
         {
-            PlayerPrefs.SetInt("gfx_tier", (int)Tier);
+            PlayerPrefs.SetInt("gfx_tier_v2", (int)Tier);
             PlayerPrefs.SetFloat("vol_music", MusicVolume);
             PlayerPrefs.SetFloat("vol_sfx", SfxVolume);
             PlayerPrefs.SetFloat("cam_shake", ShakeIntensity);
@@ -84,7 +84,7 @@ namespace HashiraChronicles
         /// <summary>Picks a sensible default from the device's memory and GPU.</summary>
         public static GraphicsTier DetectTier()
         {
-            if (!Application.isMobilePlatform) return GraphicsTier.High;
+            if (!Application.isMobilePlatform) return GraphicsTier.Ultra;
             int mem = SystemInfo.systemMemorySize;
             int gpuMem = SystemInfo.graphicsMemorySize;
             if (mem < 3000 || gpuMem < 1024) return GraphicsTier.Low;
@@ -113,14 +113,22 @@ namespace HashiraChronicles
                     QualitySettings.shadows = ShadowQuality.All;
                     QualitySettings.shadowResolution = ShadowResolution.High;
                     QualitySettings.shadowDistance = 45f;
-                    QualitySettings.antiAliasing = 2;
+                    QualitySettings.shadowCascades = 2;
+                    QualitySettings.antiAliasing = 4;
+                    QualitySettings.anisotropicFiltering = AnisotropicFiltering.Enable;
+                    QualitySettings.pixelLightCount = 4;
                     Application.targetFrameRate = 60;
                     break;
                 default:
                     QualitySettings.shadows = ShadowQuality.All;
                     QualitySettings.shadowResolution = ShadowResolution.VeryHigh;
                     QualitySettings.shadowDistance = 60f;
-                    QualitySettings.antiAliasing = 4;
+                    QualitySettings.shadowCascades = 4;
+                    QualitySettings.antiAliasing = 8;
+                    QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
+                    QualitySettings.pixelLightCount = 8;
+                    QualitySettings.softParticles = true;
+                    QualitySettings.lodBias = 2f;
                     Application.targetFrameRate = 60;
                     break;
             }

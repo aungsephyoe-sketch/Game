@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace HashiraChronicles
@@ -26,6 +27,7 @@ namespace HashiraChronicles
         public void ShowHome(PlayerData data)
         {
             viewer = false;
+            ClearLineup();
             EnsureWorld();
             SetHero(data.team.Count > 0 ? data.team[0] : GameDatabase.Protagonist);
             gameObject.SetActive(true);
@@ -35,6 +37,7 @@ namespace HashiraChronicles
         public void ShowViewer(string characterId)
         {
             viewer = true;
+            ClearLineup();
             EnsureWorld();
             if (shownId != characterId) viewerYaw = 180f;
             SetHero(characterId);
@@ -141,10 +144,77 @@ namespace HashiraChronicles
             VFX.Breath(heroHolder.position, ElementChart.ColorOf(heroDef.element), 25);
         }
 
+        // ------------------------------------------------------------------ Team line-up
+
+        GameObject lineupRoot;
+        string lineupKey = "";
+        readonly List<Transform> lineupSlots = new List<Transform>();
+        readonly List<CharacterVisual> lineupVisuals = new List<CharacterVisual>();
+        public bool LineupActive { get { return lineupRoot != null; } }
+
+        /// <summary>Where slot i stands (feet), for the UI to place names and stats under each slayer.</summary>
+        public Vector3 LineupSlot(int i) { return new Vector3(-2.35f + i * 1.75f, 0f, 0.4f); }
+
+        /// <summary>The team stands side by side in the village, facing the camera (TEAM screen).</summary>
+        public void ShowLineup(List<string> ids)
+        {
+            string key = string.Join(",", ids.ToArray());
+            if (lineupRoot != null && key == lineupKey) return;
+            ClearLineup();
+            EnsureWorld();
+            lineupKey = key;
+            lineupRoot = new GameObject("Lineup");
+            lineupRoot.transform.SetParent(transform, false);
+            if (heroHolder != null) heroHolder.gameObject.SetActive(false);
+            for (int i = 0; i < 4; i++)
+            {
+                var slot = new GameObject("Slot" + i).transform;
+                slot.SetParent(lineupRoot.transform, false);
+                slot.position = LineupSlot(i);
+                slot.rotation = Quaternion.Euler(0f, 180f + (i - 1.5f) * -6f, 0f);
+                lineupSlots.Add(slot);
+                CharacterVisual v = null;
+                if (i < ids.Count)
+                {
+                    var def = GameDatabase.GetCharacter(ids[i]);
+                    if (def != null)
+                    {
+                        v = CharacterVisual.BuildHero(def, slot);
+                        VFX.Breath(slot.position, ElementChart.ColorOf(def.element), 12);
+                    }
+                }
+                lineupVisuals.Add(v);
+            }
+        }
+
+        public void ClearLineup()
+        {
+            if (lineupRoot != null) Destroy(lineupRoot);
+            lineupRoot = null;
+            lineupKey = "";
+            lineupSlots.Clear();
+            lineupVisuals.Clear();
+            if (heroHolder != null) heroHolder.gameObject.SetActive(true);
+        }
+
+        /// <summary>A little flourish from the slayer in slot i (when picked in the UI).</summary>
+        public void LineupCheer(int i)
+        {
+            if (i < 0 || i >= lineupVisuals.Count || lineupVisuals[i] == null) return;
+            lineupVisuals[i].Victory();
+            VFX.Breath(lineupSlots[i].position, Color.white, 15);
+        }
+
         void Update()
         {
             if (heroHolder == null) return;
             float t = Time.unscaledTime;
+            if (lineupRoot != null)
+            {
+                if (CameraController.Instance != null)
+                    CameraController.Instance.SetFixed(new Vector3(0.3f + Mathf.Sin(t * 0.15f) * 0.15f, 2.2f, -6.6f), new Vector3(0.3f, 1.2f, 0.4f));
+                return;
+            }
             if (viewer)
             {
                 heroHolder.rotation = Quaternion.Slerp(heroHolder.rotation, Quaternion.Euler(0f, viewerYaw, 0f), Time.unscaledDeltaTime * 10f);

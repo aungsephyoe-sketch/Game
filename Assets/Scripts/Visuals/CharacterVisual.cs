@@ -423,6 +423,7 @@ namespace HashiraChronicles
 
         IEnumerator PunchRoutine(float amount)
         {
+            punchUntil = Time.time + 0.15f;
             float t = 0f;
             while (t < 0.14f)
             {
@@ -436,6 +437,7 @@ namespace HashiraChronicles
         }
 
         float baseScale = 1f;
+        float punchUntil;
 
         void StartPose(IEnumerator routine)
         {
@@ -715,15 +717,35 @@ namespace HashiraChronicles
             }
             // Movement personality: every motion style walks, runs and breathes differently.
             var mp = MotionParams.For(Motion);
-            bob += Time.deltaTime * (moving > 0.1f ? (sprinting ? mp.walkFreq * 1.35f : mp.walkFreq) : mp.idleFreq);
-            float y = moving > 0.1f ? Mathf.Abs(Mathf.Sin(bob)) * mp.walkAmp * (sprinting ? 1.2f : 1f) : Mathf.Sin(bob) * mp.idleAmp;
+            float dt = Time.deltaTime;
+            // Everything eases: movement blends smoothly between idle, walk and run instead of snapping.
+            smoothMove = Mathf.SmoothDamp(smoothMove, moving, ref smoothMoveVel, 0.12f);
+            smoothSprint = Mathf.MoveTowards(smoothSprint, sprinting ? 1f : 0f, dt * 4f);
+            float freq = Mathf.Lerp(mp.idleFreq, mp.walkFreq * (1f + 0.35f * smoothSprint), Mathf.Clamp01(smoothMove * 1.5f));
+            bob += dt * freq;
+            float walkY = Mathf.Abs(Mathf.Sin(bob)) * mp.walkAmp * (1f + 0.2f * smoothSprint);
+            float idleY = Mathf.Sin(bob) * mp.idleAmp;
+            float y = Mathf.Lerp(idleY, walkY, Mathf.Clamp01(smoothMove * 1.5f));
             if (Hover > 0f) y = Hover + Mathf.Sin(Time.time * 2.2f) * 0.18f;
-            Model.localPosition = new Vector3(0f, y, 0f);
-            float lean = moving * (sprinting ? mp.lean * 1.7f : mp.lean) - (guarding ? 8f : 0f) + (moving < 0.1f ? mp.idleLean : 0f);
-            float roll = moving > 0.1f ? Mathf.Sin(bob) * mp.roll : Mathf.Sin(Time.time * mp.idleFreq * 0.5f) * mp.roll * 0.5f;
+            Model.localPosition = Vector3.Lerp(Model.localPosition, new Vector3(0f, y, 0f), 1f - Mathf.Exp(-dt * 25f));
+
+            // Bank into turns, with a little overshoot when the turn stops.
+            float yaw = transform.eulerAngles.y;
+            float turn = Mathf.DeltaAngle(lastYaw, yaw) / Mathf.Max(dt, 0.0001f);
+            lastYaw = yaw;
+            bank = Mathf.Lerp(bank, Mathf.Clamp(-turn * 0.03f, -14f, 14f) * Mathf.Clamp01(smoothMove * 2f), 1f - Mathf.Exp(-dt * 8f));
+
+            float lean = smoothMove * mp.lean * (1f + 0.7f * smoothSprint) - (guarding ? 8f : 0f) + (1f - Mathf.Clamp01(smoothMove * 3f)) * mp.idleLean;
+            float roll = Mathf.Lerp(Mathf.Sin(Time.time * mp.idleFreq * 0.5f) * mp.roll * 0.5f, Mathf.Sin(bob) * mp.roll, Mathf.Clamp01(smoothMove * 1.5f)) + bank;
             float jitter = mp.jitter > 0f ? (Mathf.PerlinNoise(Time.time * 6f, 0f) - 0.5f) * mp.jitter : 0f;
             var e = Model.localEulerAngles;
-            Model.localRotation = Quaternion.Euler(lean, e.y + jitter, roll);
+            Model.localRotation = Quaternion.Slerp(Model.localRotation, Quaternion.Euler(lean, e.y + jitter, roll), 1f - Mathf.Exp(-dt * 14f));
+
+            // Squash on each footfall and a soft breathing stretch at rest.
+            float squash = smoothMove > 0.1f ? (1f - Mathf.Abs(Mathf.Sin(bob))) * 0.05f * smoothMove : 0f;
+            float breathe = Mathf.Sin(Time.time * 2f) * 0.012f * (1f - Mathf.Clamp01(smoothMove * 2f));
+            if (Time.time > punchUntil)
+                Model.localScale = Vector3.Lerp(Model.localScale, new Vector3(1f + squash * 0.6f, 1f - squash + breathe, 1f + squash * 0.6f) * baseScale, 1f - Mathf.Exp(-dt * 20f));
             if (moving > 0.1f && mp.stomp && Mathf.Abs(Mathf.Sin(bob)) < 0.08f && Time.time - lastStomp > 0.2f)
             {
                 lastStomp = Time.time;
@@ -735,6 +757,7 @@ namespace HashiraChronicles
 
         float lastStomp;
         float nextFidget = -1f;
+        float smoothMove, smoothMoveVel, smoothSprint, lastYaw, bank;
 
         /// <summary>Idle personality: glances, nods, hops and weapon flourishes while standing still.</summary>
         void UpdateFidget(MotionParams mp)

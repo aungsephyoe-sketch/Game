@@ -128,7 +128,7 @@ namespace HashiraChronicles
             cam.transform.position = focus + new Vector3(0f, full ? 0.2f : 0.1f, dist);
             cam.transform.LookAt(focus);
 
-            var rt = new RenderTexture(full ? 256 : 192, full ? 384 : 192, 16, RenderTextureFormat.ARGB32) { name = "Portrait_" + key, antiAliasing = 2 };
+            var rt = new RenderTexture(full ? 384 : 256, full ? 576 : 256, 16, RenderTextureFormat.ARGB32) { name = "Portrait_" + key, antiAliasing = 4 };
             rt.Create();
             cam.targetTexture = rt;
 

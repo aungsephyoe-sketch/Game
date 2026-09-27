@@ -4,9 +4,11 @@ using UnityEngine;
 namespace HashiraChronicles
 {
     /// <summary>
-    /// The TEAM screen from the reference: TEAM 1-4 tabs, a line-up of four full-body cards (element, level,
-    /// stars, name, power), AUTO SET / EDIT TEAM, and on the right a roster grid with element filters and a
-    /// detail card (HP / ATK / DEF) with SELECT to put the slayer into the chosen slot.
+    /// The TEAM screen from the reference sheets.
+    ///   Line-up: TEAM 1-4 tabs down the left, the team standing in 3D in the village with element, level,
+    ///            stars, name and power under each, a + slot for empty places, team power, AUTO SET and EDIT TEAM.
+    ///   Edit:    element filters down the left, a grid of slayer cards, and a detail card with HP / ATK / DEF
+    ///            and SELECT to place the slayer in the chosen slot.
     /// </summary>
     public partial class UIManager
     {
@@ -15,84 +17,121 @@ namespace HashiraChronicles
         bool teamEditing;
         Vector2 rosterScroll;
 
+        static readonly Element[] FilterOrder = { Element.Water, Element.Flame, Element.Thunder, Element.Beast, Element.Dark, Element.Light };
+
         void DrawTeam()
         {
-            TopBar("TEAM", teamReturn);
             var d = gm.Data;
             EnsurePresets(d);
-            float x0 = safe.x + 30f, top = safe.y + 130f;
-
-            // TEAM 1-4 tabs.
-            for (int t = 0; t < 4; t++)
-                if (FlatBtn(new Rect(x0 + t * 170f, top, 158f, 58f), "TEAM " + (t + 1), d.activeTeam == t ? TileGreen : new Color(0.2f, 0.2f, 0.28f), true, 24))
-                    SwitchPreset(d, t);
-            GUI.Label(new Rect(x0 + 690f, top + 6f, 280f, 50f), "POWER <color=#FFD36B>" + CharacterSystem.TeamPower(d).ToString("N0") + "</color>", UIStyles.Sized(UIStyles.Right, 28));
-
-            // Line-up.
-            float cw = 228f, ch = 300f, gap = 14f;
-            float ly = top + 76f;
-            for (int i = 0; i < TeamSize; i++)
+            gm.Home.ShowLineup(d.team);
+            if (teamEditing)
             {
-                var r = new Rect(x0 + i * (cw + gap), ly, cw, ch);
-                bool sel = teamSlot == i;
-                string roleName = i == 0 ? "LEADER" : SlotRoles[i].ToString().ToUpper();
+                // BACK in the edit view returns to the line-up.
+                TopBar("TEAM", GameScreen.Team, () => { teamEditing = false; });
+                DrawTeamEdit(d);
+                return;
+            }
+            TopBar("TEAM", teamReturn);
+            float x0 = safe.x + 30f, top = safe.y + 136f;
+
+            // Team tabs down the left.
+            for (int t = 0; t < 4; t++)
+            {
+                var r = new Rect(x0, top + t * 92f, 300f, 78f);
+                bool on = d.activeTeam == t;
+                Round(Offset(r, 0f, 4f), new Color(0f, 0f, 0f, 0.35f), 12f);
+                Round(r, on ? TileRed : new Color(0.08f, 0.09f, 0.14f, 0.88f), 12f);
+                if (on) RoundFrame(Grow(r, 2f), new Color(1f, 0.5f, 0.45f, 0.8f), 2f, 13f);
+                GUI.DrawTexture(new Rect(r.x + 26f, r.y + 20f, 38f, 38f), IconFactory.Get(on ? "group" : "people"), ScaleMode.ScaleToFit, true);
+                GUI.Label(new Rect(r.x + 84f, r.y, 200f, r.height), "Team " + (t + 1), UIStyles.Sized(UIStyles.Body, 28));
+                if (GUI.Button(r, GUIContent.none, GUIStyle.none)) { gm.Audio.Play("click", 0.5f); SwitchPreset(d, t); }
+            }
+            var pw = new Rect(x0, top + 4f * 92f + 20f, 300f, 90f);
+            Round(pw, new Color(0.06f, 0.07f, 0.11f, 0.9f), 12f);
+            GUI.Label(new Rect(pw.x + 22f, pw.y, 150f, pw.height), "Team Power", UIStyles.Sized(UIStyles.Body, 24));
+            UIStyles.Colored(new Rect(pw.x + 150f, pw.y, 130f, pw.height), CharacterSystem.TeamPower(d).ToString("N0"), UIStyles.Sized(UIStyles.Right, 34), new Color(1f, 0.82f, 0.25f));
+
+            // The slayers standing in the village: info under each, LEADER above the first.
+            var cam = Camera.main;
+            float s = HudLayout.Scale;
+            for (int i = 0; i < TeamSize && cam != null; i++)
+            {
+                Vector3 feet = gm.Home.LineupSlot(i);
+                Vector3 sp = cam.WorldToScreenPoint(feet);
+                Vector3 hp = cam.WorldToScreenPoint(feet + Vector3.up * 2.35f);
+                if (sp.z <= 0f) continue;
+                var fp = new Vector2(sp.x / s, (Screen.height - sp.y) / s);
+                var headP = new Vector2(hp.x / s, (Screen.height - hp.y) / s);
+                var hit = new Rect(fp.x - 95f, headP.y, 190f, fp.y - headP.y + 10f);
                 if (i < d.team.Count)
                 {
                     var def = GameDatabase.GetCharacter(d.team[i]);
                     var c = d.GetCharacter(d.team[i]);
                     if (def == null || c == null) continue;
-                    PortraitCard(r, def, true, roleName, sel);
-                    var info = new Rect(r.x, r.yMax + 6f, cw, 84f);
-                    Round(info, new Color(0.08f, 0.08f, 0.14f, 0.9f), 10f);
-                    GUI.Label(new Rect(info.x + 10f, info.y + 4f, cw - 20f, 30f), "Lv." + c.level + "  <color=#FFD36B>" + Stars(c.stars) + "</color>", UIStyles.Sized(UIStyles.Body, 20));
-                    GUI.Label(new Rect(info.x + 10f, info.y + 28f, cw - 20f, 30f), def.displayName, UIStyles.Sized(UIStyles.H2, 24));
-                    GUI.Label(new Rect(info.x + 10f, info.y + 54f, cw - 20f, 28f), "<color=#AAAAAA>Power</color> " + CharacterSystem.Power(d, c).ToString("N0"), UIStyles.Sized(UIStyles.Small, 20));
-                    if (teamEditing && d.team.Count > 1)
+                    if (i == 0)
                     {
-                        UIStyles.CircleTex(new Vector2(r.xMax - 18f, r.y + 18f), 16f, UIStyles.Crimson);
-                        GUI.Label(new Rect(r.xMax - 34f, r.y + 2f, 32f, 32f), "✕", UIStyles.Sized(UIStyles.Center, 20));
+                        var lr = new Rect(headP.x - 70f, headP.y - 44f, 140f, 38f);
+                        Round(lr, new Color(0.12f, 0.2f, 0.45f, 0.95f), 6f);
+                        RoundFrame(lr, new Color(0.5f, 0.7f, 1f, 0.6f), 2f, 6f);
+                        GUI.Label(lr, "LEADER", UIStyles.Sized(UIStyles.Center, 22));
                     }
-                    if (GUI.Button(r, GUIContent.none, GUIStyle.none))
-                    {
-                        if (teamEditing && d.team.Count > 1) { d.team.RemoveAt(i); SaveTeam(d); }
-                        else { teamSlot = i; rosterPick = d.team[i]; }
-                    }
+                    if (teamSlot == i) RoundFrame(Grow(hit, 4f), new Color(1f, 0.85f, 0.35f, 0.5f + 0.3f * Mathf.Sin(Time.unscaledTime * 4f)), 3f, 14f);
+                    // Info block under the feet.
+                    float iy = fp.y + 8f;
+                    Color ec = ElementChart.ColorOf(def.element);
+                    UIStyles.CircleTex(new Vector2(fp.x - 72f, iy + 20f), 20f, Color.Lerp(ec, Color.black, 0.25f));
+                    GUI.DrawTexture(new Rect(fp.x - 86f, iy + 6f, 28f, 28f), IconFactory.Get(IconFactory.ForElement(def.element)), ScaleMode.ScaleToFit, true);
+                    UIStyles.Outlined(new Rect(fp.x - 44f, iy, 140f, 40f), "Lv. " + c.level, UIStyles.Sized(UIStyles.Body, 26), Color.white, 2f);
+                    StarStrip(new Vector2(fp.x - 44f, iy + 40f), c.stars, 22f);
+                    UIStyles.Outlined(new Rect(fp.x - 110f, iy + 66f, 220f, 32f), def.displayName, UIStyles.Sized(UIStyles.Center, 22), Color.white, 2f);
+                    UIStyles.Outlined(new Rect(fp.x - 110f, iy + 94f, 220f, 30f), "Power " + CharacterSystem.Power(d, c).ToString("N0"), UIStyles.Sized(UIStyles.Center, 20), new Color(0.9f, 0.9f, 0.9f), 2f);
+                    if (GUI.Button(hit, GUIContent.none, GUIStyle.none)) { gm.Audio.Play("click", 0.5f); teamSlot = i; rosterPick = d.team[i]; gm.Home.LineupCheer(i); }
                 }
                 else
                 {
-                    Round(r, new Color(1f, 1f, 1f, sel ? 0.14f : 0.06f), 12f);
-                    RoundFrame(r, sel ? UIStyles.Gold : new Color(1f, 1f, 1f, 0.2f), sel ? 5f : 2f, 12f);
-                    GUI.Label(r, "+\n<size=20>" + roleName + "</size>", UIStyles.Sized(UIStyles.Center, 60));
-                    if (GUI.Button(r, GUIContent.none, GUIStyle.none)) teamSlot = i;
+                    // Empty slot: a dark card with + and the role it wants.
+                    var card = new Rect(fp.x - 95f, headP.y + 10f, 190f, fp.y - headP.y + 40f);
+                    Round(card, new Color(0.08f, 0.09f, 0.13f, 0.85f), 14f);
+                    RoundFrame(card, teamSlot == i ? new Color(1f, 0.85f, 0.35f) : new Color(1f, 1f, 1f, 0.12f), 2f, 14f);
+                    GUI.DrawTexture(new Rect(card.center.x - 38f, card.center.y - 60f, 76f, 76f), IconFactory.Get("plus"), ScaleMode.ScaleToFit, true);
+                    GUI.Label(new Rect(card.x, card.center.y + 30f, card.width, 40f), SlotRoles[i] == Role.Support ? "SUPPORT" : SlotRoles[i] == Role.Tank ? "VANGUARD" : "STRIKER", UIStyles.Sized(UIStyles.Center, 24));
+                    if (GUI.Button(card, GUIContent.none, GUIStyle.none)) { gm.Audio.Play("click", 0.5f); teamSlot = i; teamEditing = true; }
                 }
             }
 
-            float by = ly + ch + 104f;
-            if (FlatBtn(new Rect(x0, by, 300f, 70f), "AUTO SET", TileGreen)) AutoSet(d);
-            if (FlatBtn(new Rect(x0 + 316f, by, 300f, 70f), teamEditing ? "DONE" : "EDIT TEAM", TilePurple)) teamEditing = !teamEditing;
-            GUI.Label(new Rect(x0 + 632f, by + 4f, 330f, 64f), teamEditing ? "<color=#AAAAAA>Tap ✕ to remove a slayer.</color>" : "<color=#AAAAAA>Pick a slot, then a slayer.</color>", UIStyles.Sized(UIStyles.Small, 20));
+            float by = H - 130f;
+            float bx = safe.xMax - 30f;
+            if (FlatBtn(new Rect(bx - 380f, by, 380f, 96f), "EDIT TEAM", TileRed, true, 34)) { teamEditing = true; if (string.IsNullOrEmpty(rosterPick) && d.team.Count > 0) rosterPick = d.team[0]; }
+            if (FlatBtn(new Rect(bx - 380f - 290f, by + 8f, 270f, 80f), "AUTO SET", new Color(0.12f, 0.16f, 0.28f), true, 28)) AutoSet(d);
+        }
 
-            // Detail card for the highlighted slayer.
-            if (string.IsNullOrEmpty(rosterPick) && d.team.Count > 0) rosterPick = d.team[Mathf.Clamp(teamSlot, 0, d.team.Count - 1)];
-            var card = new Rect(x0, by + 90f, 4f * cw + 3f * gap, H - (by + 90f) - 24f);
-            DrawRosterDetail(card, d);
-
-            // Roster grid with element filters.
-            float rx = x0 + 4f * (cw + gap) + 16f;
-            var rp = new Rect(rx, top, safe.xMax - 30f - rx, H - top - 24f);
-            Round(rp, new Color(0.06f, 0.06f, 0.12f, 0.88f), 18f);
-            GUI.Label(new Rect(rp.x + 20f, rp.y + 10f, 300f, 44f), "ROSTER", UIStyles.Sized(UIStyles.H2, 30));
-            float fx = rp.x + 20f, fy = rp.y + 60f;
-            if (FlatBtn(new Rect(fx, fy, 90f, 52f), "ALL", rosterFilter < 0 ? TileRed : new Color(0.22f, 0.22f, 0.3f), true, 22)) rosterFilter = -1;
-            for (int e = 0; e < 6; e++)
+        void StarStrip(Vector2 at, int stars, float size)
+        {
+            for (int i = 0; i < 5; i++)
             {
-                var el = (Element)e;
-                var fr = new Rect(fx + 100f + e * 62f, fy, 52f, 52f);
-                Round(fr, rosterFilter == e ? ElementChart.ColorOf(el) : new Color(0.22f, 0.22f, 0.3f), 26f);
-                GUI.Label(fr, ElementChart.Icon(el), UIStyles.Sized(UIStyles.Center, 26));
-                if (GUI.Button(fr, GUIContent.none, GUIStyle.none)) rosterFilter = rosterFilter == e ? -1 : e;
+                bool on = i < Mathf.Min(stars, 5);
+                UIStyles.Outlined(new Rect(at.x + i * size, at.y, size + 4f, size + 4f), "★", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(size)), on ? new Color(1f, 0.8f, 0.2f) : new Color(0.4f, 0.4f, 0.45f), 1.5f);
+            }
+        }
+
+        void DrawTeamEdit(PlayerData d)
+        {
+            float x0 = safe.x + 24f, top = safe.y + 130f;
+            // Element filters down the left.
+            var fr = new Rect(x0, top, 196f, 70f);
+            if (FilterButton(fr, "ALL", IconFactory.Get("all"), Color.white, rosterFilter < 0)) rosterFilter = -1;
+            for (int i = 0; i < FilterOrder.Length; i++)
+            {
+                var e = FilterOrder[i];
+                var r = new Rect(x0, top + (i + 1) * 80f, 196f, 70f);
+                if (FilterButton(r, ElementName(e), IconFactory.Get(IconFactory.ForElement(e)), ElementChart.ColorOf(e), rosterFilter == (int)e)) rosterFilter = rosterFilter == (int)e ? -1 : (int)e;
             }
 
+            // Detail card on the right.
+            var detail = new Rect(safe.xMax - 470f, top, 446f, H - top - 30f);
+            DrawRosterDetail(detail, d);
+
+            // Grid of slayer cards.
             var list = new List<OwnedCharacter>();
             foreach (var c in d.characters)
             {
@@ -101,61 +140,128 @@ namespace HashiraChronicles
                 if (rosterFilter >= 0 && (int)def.element != rosterFilter) continue;
                 list.Add(c);
             }
-            float gw = 150f, gh = 190f, gg = 14f;
-            var view = new Rect(rp.x + 16f, fy + 70f, rp.width - 32f, rp.yMax - fy - 86f);
+            var area = new Rect(x0 + 216f, top, detail.x - x0 - 236f, H - top - 30f);
+            Round(area, new Color(0.05f, 0.06f, 0.1f, 0.82f), 16f);
+            float gw = 168f, gh = 222f, gg = 16f;
+            var view = new Rect(area.x + 16f, area.y + 16f, area.width - 32f, area.height - 32f);
             int cols = Mathf.Max(1, Mathf.FloorToInt((view.width - 20f + gg) / (gw + gg)));
-            var content = new Rect(0f, 0f, view.width - 20f, Mathf.CeilToInt(list.Count / (float)cols) * (gh + gg));
+            int shown = Mathf.Max(list.Count, Mathf.CeilToInt(list.Count / (float)cols + 0.01f) * cols);
+            if (shown == list.Count) shown += cols - (list.Count % cols == 0 ? 0 : list.Count % cols);
+            var content = new Rect(0f, 0f, view.width - 20f, Mathf.CeilToInt(shown / (float)cols) * (gh + gg));
             rosterScroll = GUI.BeginScrollView(view, rosterScroll, content);
-            for (int i = 0; i < list.Count; i++)
+            for (int i = 0; i < shown; i++)
             {
+                var r = new Rect((i % cols) * (gw + gg), (i / cols) * (gh + gg), gw, gh);
+                if (i >= list.Count)
+                {
+                    // Locked slot: undiscovered slayers.
+                    Round(r, new Color(0.08f, 0.08f, 0.12f, 0.9f), 12f);
+                    RoundFrame(r, new Color(1f, 1f, 1f, 0.06f), 2f, 12f);
+                    var o = GUI.color;
+                    GUI.color = new Color(1f, 1f, 1f, 0.25f);
+                    GUI.DrawTexture(new Rect(r.center.x - 40f, r.y + 50f, 80f, 80f), IconFactory.Get("person"), ScaleMode.ScaleToFit, true);
+                    GUI.color = new Color(1f, 1f, 1f, 0.5f);
+                    GUI.DrawTexture(new Rect(r.xMax - 42f, r.yMax - 42f, 30f, 30f), IconFactory.Get("lock"), ScaleMode.ScaleToFit, true);
+                    GUI.color = o;
+                    continue;
+                }
                 var c = list[i];
                 var def = GameDatabase.GetCharacter(c.id);
-                var r = new Rect((i % cols) * (gw + gg), (i / cols) * (gh + gg), gw, gw);
-                int inTeam = d.team.IndexOf(c.id);
-                PortraitCard(r, def, false, "Lv." + c.level, rosterPick == c.id);
-                if (inTeam >= 0)
-                {
-                    UIStyles.CircleTex(new Vector2(r.xMax - 18f, r.yMax - 18f), 16f, TileGreen);
-                    GUI.Label(new Rect(r.xMax - 34f, r.yMax - 34f, 32f, 32f), (inTeam + 1).ToString(), UIStyles.Sized(UIStyles.Center, 20));
-                }
-                GUI.Label(new Rect(r.x, r.yMax + 2f, gw, 34f), def.displayName, UIStyles.Sized(UIStyles.Center, 20));
+                SlayerCard(r, def, c, rosterPick == c.id, d.team.IndexOf(c.id));
                 if (GUI.Button(r, GUIContent.none, GUIStyle.none)) { rosterPick = c.id; gm.Audio.Play("click", 0.4f); }
             }
             GUI.EndScrollView();
         }
 
+        bool FilterButton(Rect r, string label, Texture2D icon, Color ic, bool on)
+        {
+            Round(r, on ? TileRed : new Color(0.06f, 0.07f, 0.11f, 0.9f), 10f);
+            if (on) RoundFrame(Grow(r, 2f), new Color(1f, 0.5f, 0.45f, 0.8f), 2f, 11f);
+            var o = GUI.color;
+            GUI.color = on ? Color.white : ic;
+            GUI.DrawTexture(new Rect(r.x + 18f, r.y + 18f, 34f, 34f), icon, ScaleMode.ScaleToFit, true);
+            GUI.color = o;
+            GUI.Label(new Rect(r.x + 64f, r.y, r.width - 70f, r.height), label, UIStyles.Sized(UIStyles.Body, 22));
+            bool c = GUI.Button(r, GUIContent.none, GUIStyle.none);
+            if (c) gm.Audio.Play("click", 0.4f);
+            return c;
+        }
+
+        /// <summary>Roster card: the slayer's upper body on an element-tinted card, level, stars, element badge.</summary>
+        void SlayerCard(Rect r, CharacterDefinition def, OwnedCharacter c, bool selected, int teamIndex)
+        {
+            Color ec = ElementChart.ColorOf(def.element);
+            Color rc = RarityInfo.Color(c.stars);
+            Round(Offset(r, 0f, 4f), new Color(0f, 0f, 0f, 0.4f), 12f);
+            Round(r, Color.Lerp(new Color(0.1f, 0.1f, 0.16f), ec, 0.35f), 12f);
+            Round(new Rect(r.x, r.y, r.width, r.height * 0.55f), new Color(1f, 1f, 1f, 0.07f), 12f);
+            var tex = ArtLibrary.CharacterFull(def);
+            if (tex != null)
+            {
+                // Upper body only, like the reference cards.
+                GUI.BeginGroup(new Rect(r.x + 4f, r.y + 4f, r.width - 8f, r.height - 66f));
+                float w = r.width * 1.2f, h = w * 1.5f;
+                GUI.DrawTexture(new Rect((r.width - 8f - w) * 0.5f, -h * 0.02f, w, h), tex, ScaleMode.ScaleToFit, true);
+                GUI.EndGroup();
+            }
+            Round(new Rect(r.x + 2f, r.yMax - 64f, r.width - 4f, 62f), new Color(0f, 0f, 0f, 0.55f), 10f);
+            UIStyles.CircleTex(new Vector2(r.x + 22f, r.yMax - 82f), 17f, Color.Lerp(ec, Color.black, 0.2f));
+            GUI.DrawTexture(new Rect(r.x + 10f, r.yMax - 94f, 24f, 24f), IconFactory.Get(IconFactory.ForElement(def.element)), ScaleMode.ScaleToFit, true);
+            GUI.Label(new Rect(r.x + 12f, r.yMax - 64f, r.width - 20f, 32f), "Lv. " + c.level, UIStyles.Sized(UIStyles.Body, 22));
+            StarStrip(new Vector2(r.x + 10f, r.yMax - 32f), c.stars, 20f);
+            RoundFrame(r, selected ? new Color(0.45f, 0.85f, 1f) : Color.Lerp(rc, Color.black, 0.2f), selected ? 4f : 2f, 12f);
+            if (teamIndex >= 0)
+            {
+                UIStyles.CircleTex(new Vector2(r.xMax - 20f, r.y + 20f), 16f, TileGreen);
+                GUI.Label(new Rect(r.xMax - 36f, r.y + 4f, 32f, 32f), (teamIndex + 1).ToString(), UIStyles.Sized(UIStyles.Center, 20));
+            }
+        }
+
         void DrawRosterDetail(Rect card, PlayerData d)
         {
-            Round(card, new Color(0.08f, 0.08f, 0.15f, 0.9f), 16f);
+            Round(Offset(card, 0f, 5f), new Color(0f, 0f, 0f, 0.35f), 16f);
+            Round(card, new Color(0.05f, 0.06f, 0.1f, 0.92f), 16f);
             var c = string.IsNullOrEmpty(rosterPick) ? null : d.GetCharacter(rosterPick);
             var def = c != null ? GameDatabase.GetCharacter(c.id) : null;
             if (c == null || def == null)
             {
-                GUI.Label(card, "<color=#AAAAAA>Choose a slayer from the roster.</color>", UIStyles.CenterSmall);
+                GUI.Label(card, "<color=#AAAAAA>Choose a slayer.</color>", UIStyles.CenterSmall);
                 return;
             }
-            float ph = Mathf.Min(card.height - 24f, 200f);
-            PortraitCard(new Rect(card.x + 14f, card.y + 12f, ph, ph), def, false);
-            float tx = card.x + ph + 34f;
-            GUI.Label(new Rect(tx, card.y + 10f, 520f, 40f), def.displayName + "  <size=22><color=#AAAAAA>" + def.versionTitle + "</color></size>", UIStyles.Sized(UIStyles.H2, 30));
-            GUI.Label(new Rect(tx, card.y + 48f, 520f, 30f), ElementTag(def.element) + " " + def.element + " · " + def.role + " · " + def.style + "   Lv." + c.level + "  <color=#FFD36B>" + Stars(c.stars) + "</color>", UIStyles.Sized(UIStyles.Body, 20));
+            float x = card.x + 24f, y = card.y + 24f;
+            var pr = new Rect(x, y, 130f, 130f);
+            Round(pr, Color.Lerp(new Color(0.1f, 0.1f, 0.16f), ElementChart.ColorOf(def.element), 0.3f), 12f);
+            var head = ArtLibrary.Character(def);
+            if (head != null) GUI.DrawTexture(pr, head, ScaleMode.ScaleAndCrop, true);
+            float tx = x + 150f;
+            GUI.Label(new Rect(tx, y, card.xMax - tx - 16f, 40f), def.displayName, UIStyles.Sized(UIStyles.H2, 30));
+            GUI.DrawTexture(new Rect(tx, y + 48f, 28f, 28f), IconFactory.Get(IconFactory.ForElement(def.element)), ScaleMode.ScaleToFit, true);
+            GUI.Label(new Rect(tx + 36f, y + 42f, 220f, 40f), "Lv. " + c.level + " / " + ExperienceSystem.LevelCap(c.stars), UIStyles.Sized(UIStyles.Body, 24));
+            StarStrip(new Vector2(tx, y + 84f), c.stars, 24f);
+            GUI.Label(new Rect(x, y + 146f, card.width - 48f, 40f), "Power  <color=#FFD36B>" + CharacterSystem.Power(d, c).ToString("N0") + "</color>", UIStyles.Sized(UIStyles.Body, 26));
+            GUI.Label(new Rect(x, y + 184f, card.width - 48f, 34f), "<color=#AAAAAA>" + def.role + " · " + def.style + "</color>", UIStyles.Sized(UIStyles.Small, 20));
+            UIStyles.Rect(new Rect(x, y + 224f, card.width - 48f, 1f), new Color(1f, 1f, 1f, 0.12f));
+
             var st = CharacterSystem.ComputeStats(d, c);
             string[] names = { "HP", "ATK", "DEF" };
+            string[] icons = { "heart", "swords", "shield" };
             float[] vals = { st.hp, st.atk, st.def };
-            Color[] cols = { TileGreen, TileRed, TileBlue };
             for (int i = 0; i < 3; i++)
             {
-                var sr = new Rect(tx + i * 170f, card.y + 88f, 158f, 60f);
-                Round(sr, new Color(1f, 1f, 1f, 0.06f), 10f);
-                Round(new Rect(sr.x, sr.y, 6f, sr.height), cols[i], 3f);
-                GUI.Label(new Rect(sr.x + 14f, sr.y + 2f, 140f, 26f), "<color=#AAAAAA>" + names[i] + "</color>", UIStyles.Sized(UIStyles.Small, 18));
-                GUI.Label(new Rect(sr.x + 14f, sr.y + 24f, 140f, 34f), Mathf.RoundToInt(vals[i]).ToString("N0"), UIStyles.Sized(UIStyles.Body, 26));
+                float ry = y + 240f + i * 58f;
+                var o = GUI.color;
+                GUI.color = new Color(0.8f, 0.8f, 0.85f);
+                GUI.DrawTexture(new Rect(x + 4f, ry + 10f, 32f, 32f), IconFactory.Get(icons[i]), ScaleMode.ScaleToFit, true);
+                GUI.color = o;
+                GUI.Label(new Rect(x + 50f, ry, 150f, 52f), names[i], UIStyles.Sized(UIStyles.Body, 24));
+                GUI.Label(new Rect(x + 150f, ry, card.width - 198f, 52f), Mathf.RoundToInt(vals[i]).ToString("N0"), UIStyles.Sized(UIStyles.Right, 26));
             }
-            float bx = card.xMax - 250f;
+
             int inTeam = d.team.IndexOf(c.id);
             bool same = inTeam >= 0 && inTeam == teamSlot;
-            if (FlatBtn(new Rect(bx, card.y + 14f, 230f, 64f), same ? "IN SLOT" : "SELECT", TileRed, !same)) AssignToSlot(c.id, -1);
-            if (FlatBtn(new Rect(bx, card.y + 90f, 230f, 58f), "DETAILS", TileBlue, true, 24))
+            GUI.Label(new Rect(x, card.yMax - 210f, card.width - 48f, 36f), "<color=#AAAAAA>Slot " + (teamSlot + 1) + " · " + (teamSlot == 0 ? "Leader" : SlotRoles[teamSlot].ToString()) + "</color>", UIStyles.Sized(UIStyles.Small, 20));
+            if (FlatBtn(new Rect(x, card.yMax - 170f, card.width - 48f, 84f), same ? "IN TEAM" : "SELECT", TileRed, !same, 34)) AssignToSlot(c.id, -1);
+            if (FlatBtn(new Rect(x, card.yMax - 76f, card.width - 48f, 56f), "DETAILS", new Color(0.14f, 0.18f, 0.3f), true, 22))
             {
                 gm.SelectedCharacterId = c.id;
                 gm.GoTo(GameScreen.CharacterDetail);
@@ -176,7 +282,7 @@ namespace HashiraChronicles
             d.activeTeam = n;
             var next = d.teamPresets[n].ids;
             next.RemoveAll(id => d.GetCharacter(id) == null);
-            // An empty preset starts as a copy of the leader so there is always someone to fight.
+            // An empty preset starts with the leader so there is always someone to fight.
             if (next.Count == 0 && d.team.Count > 0) next.Add(d.team[0]);
             d.team = new List<string>(next);
             teamSlot = 0;

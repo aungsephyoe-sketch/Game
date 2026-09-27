@@ -159,40 +159,65 @@ namespace HashiraChronicles
             var d = gm.Data;
             TopBar("MISSIONS", GameScreen.MainMenu);
             QuestSystem.EnsureReset(d);
-            string[] tabs = { "DAILY", "WEEKLY", "SIDE STORIES", "EVENTS & TRAINING" };
-            float tx = safe.x + 30f, ty = safe.y + 130f;
+            string[] tabs = { "DAILY", "WEEKLY", "SIDE STORIES", "EVENTS &\nTRAINING" };
+            string[] tabIcons = { "scroll", "scroll", "scroll", "claw" };
+            float tx = safe.x + 60f, ty = safe.y + 124f;
+            float tabW = Mathf.Min(330f, (safe.width - 120f - 3f * 16f) / 4f);
             for (int t = 0; t < tabs.Length; t++)
-                if (FlatBtn(new Rect(tx + t * 330f, ty, 315f, 70f), tabs[t], boardTab == t ? TileMaroon : new Color(0.2f, 0.2f, 0.28f), true, 26)) { boardTab = t; boardScroll = Vector2.zero; }
-            var body = new Rect(safe.x + 30f, ty + 90f, safe.width - 60f, H - ty - 120f);
-            Round(body, new Color(0.06f, 0.06f, 0.12f, 0.88f), 18f);
+            {
+                var r = new Rect(tx + t * (tabW + 16f), ty, tabW, 88f);
+                bool on = boardTab == t;
+                Round(Offset(r, 0f, 4f), new Color(0f, 0f, 0f, 0.35f), 10f);
+                Round(r, on ? TileRed : new Color(0.08f, 0.09f, 0.13f, 0.92f), 10f);
+                RoundFrame(r, on ? new Color(1f, 0.55f, 0.45f) : new Color(1f, 1f, 1f, 0.1f), 2f, 10f);
+                GUI.DrawTexture(new Rect(r.x + 30f, r.y + 22f, 44f, 44f), IconFactory.Get(tabIcons[t]), ScaleMode.ScaleToFit, true);
+                GUI.Label(new Rect(r.x + 84f, r.y, r.width - 90f, r.height), tabs[t], UIStyles.Sized(UIStyles.Center, 26));
+                if (GUI.Button(r, GUIContent.none, GUIStyle.none)) { gm.Audio.Play("click", 0.5f); boardTab = t; boardScroll = Vector2.zero; }
+            }
+            var body = new Rect(safe.x + 60f, ty + 108f, safe.width - 120f, H - ty - 132f);
+            Round(body, new Color(0.04f, 0.05f, 0.08f, 0.9f), 16f);
 
             if (boardTab < 2)
             {
                 bool daily = boardTab == 0;
-                GUI.Label(new Rect(body.x + 30f, body.y + 14f, body.width - 60f, 36f), "<color=#AAAAAA>" + (daily ? "Resets every day (UTC)." : "Resets every week.") + "</color>", UIStyles.Small);
                 var quests = new List<QuestSystem.QuestDef>();
                 foreach (var def in QuestSystem.Defs) if (def.daily == daily) quests.Add(def);
-                var qview = new Rect(body.x + 20f, body.y + 56f, body.width - 40f, body.height - 70f);
-                var qcontent = new Rect(0f, 0f, qview.width - 24f, quests.Count * 122f);
+                var qview = new Rect(body.x + 16f, body.y + 16f, body.width - 32f, body.height - 32f);
+                float rowH = 124f;
+                var qcontent = new Rect(0f, 0f, qview.width - (quests.Count * (rowH + 10f) > qview.height ? 22f : 0f), quests.Count * (rowH + 10f));
                 boardScroll = GUI.BeginScrollView(qview, boardScroll, qcontent);
                 for (int i = 0; i < quests.Count; i++)
                 {
                     var def = quests[i];
                     var s = QuestSystem.State(d, def.id);
-                    var row = new Rect(0f, i * 122f, qcontent.width, 110f);
-                    Round(row, new Color(0.14f, 0.13f, 0.22f, 0.95f), 14f);
-                    // Icon disc.
-                    Color ic = QuestColor(def.kind);
-                    UIStyles.CircleTex(new Vector2(row.x + 60f, row.center.y), 40f, ic);
-                    GUI.Label(new Rect(row.x + 20f, row.y + 15f, 80f, 80f), QuestIcon(def.kind), UIStyles.Sized(UIStyles.Center, 40));
-                    GUI.Label(new Rect(row.x + 120f, row.y + 12f, 560f, 44f), def.title, UIStyles.Sized(UIStyles.H2, 30));
-                    ProgressBar(new Rect(row.x + 120f, row.y + 62f, 460f, 30f), (float)s.progress / def.target, Mathf.Min(s.progress, def.target) + " / " + def.target);
-                    RewardIcons(new Rect(row.x + 620f, row.y + 25f, row.width - 920f, 60f), def.reward);
-                    var cb = new Rect(row.xMax - 260f, row.y + 20f, 230f, 70f);
-                    if (s.claimed) FlatBtn(cb, "CLAIMED", new Color(0.22f, 0.66f, 0.36f), true, 28);
+                    var row = new Rect(0f, i * (rowH + 10f), qcontent.width, rowH);
+                    Round(row, new Color(0.1f, 0.11f, 0.16f, 0.95f), 12f);
+                    // Icon tile.
+                    var it = new Rect(row.x + 14f, row.y + 12f, 100f, 100f);
+                    Round(it, new Color(0.16f, 0.17f, 0.24f), 10f);
+                    RoundFrame(it, new Color(1f, 1f, 1f, 0.08f), 2f, 10f);
+                    var o = GUI.color;
+                    GUI.color = QuestColor(def.kind);
+                    GUI.DrawTexture(new Rect(it.x + 18f, it.y + 18f, 64f, 64f), IconFactory.Get(QuestIconKey(def.kind)), ScaleMode.ScaleToFit, true);
+                    GUI.color = o;
+                    GUI.Label(new Rect(row.x + 138f, row.y + 14f, 560f, 50f), def.title, UIStyles.Sized(UIStyles.H2, 34));
+                    GUI.Label(new Rect(row.x + 138f, row.y + 66f, 560f, 40f), "<color=#AAAAAA>" + RewardSummary(def.reward) + "</color>", UIStyles.Sized(UIStyles.Body, 22));
+                    float bx = row.x + 700f, bw = Mathf.Min(360f, row.width - 1320f + 360f);
+                    GUI.Label(new Rect(bx, row.y + 20f, bw, 40f), Mathf.Min(s.progress, def.target) + " / " + def.target, UIStyles.Sized(UIStyles.Center, 26));
+                    Round(new Rect(bx, row.y + 68f, bw, 18f), new Color(0.2f, 0.21f, 0.26f), 6f);
+                    float f = Mathf.Clamp01((float)s.progress / def.target);
+                    if (f > 0.01f) Round(new Rect(bx, row.y + 68f, Mathf.Max(18f, bw * f), 18f), ProgressYellow, 6f);
+                    RewardIconsRef(new Vector2(bx + bw + 40f, row.center.y), def.reward);
+                    var cb = new Rect(row.xMax - 230f, row.y + 26f, 206f, 72f);
+                    if (s.claimed)
+                    {
+                        Round(cb, new Color(0.08f, 0.22f, 0.14f), 10f);
+                        RoundFrame(cb, new Color(0.3f, 0.85f, 0.45f), 2f, 10f);
+                        UIStyles.Colored(cb, "✔ CLAIMED", UIStyles.Sized(UIStyles.Center, 28), new Color(0.4f, 0.95f, 0.5f));
+                    }
                     else if (s.progress >= def.target)
                     {
-                        if (FlatBtn(cb, "CLAIM", TileRed, true, 30))
+                        if (FlatBtn(cb, "CLAIM", TileRed, true, 32))
                         {
                             QuestSystem.Claim(d, def);
                             gm.Save();
@@ -200,7 +225,12 @@ namespace HashiraChronicles
                             Toast("Claimed: " + RewardText(def.reward));
                         }
                     }
-                    else FlatBtn(cb, "CLAIM", new Color(0.4f, 0.4f, 0.45f), false, 28);
+                    else
+                    {
+                        Round(cb, new Color(0.14f, 0.15f, 0.2f), 10f);
+                        RoundFrame(cb, new Color(1f, 1f, 1f, 0.08f), 2f, 10f);
+                        UIStyles.Colored(cb, "CLAIM", UIStyles.Sized(UIStyles.Center, 30), new Color(1f, 1f, 1f, 0.35f));
+                    }
                 }
                 GUI.EndScrollView();
                 return;
@@ -233,6 +263,49 @@ namespace HashiraChronicles
                 }
             }
             GUI.EndScrollView();
+        }
+
+        static string QuestIconKey(string kind)
+        {
+            switch (kind)
+            {
+                case "kill": return "claw";
+                case "boss": return "swords";
+                case "upgrade": return "person";
+                case "summon": return "spin";
+                default: return "scroll";
+            }
+        }
+
+        static string RewardSummary(RewardBundle r)
+        {
+            var parts = new List<string>();
+            if (r.coins > 0) parts.Add("Coins +" + r.coins.ToString("N0"));
+            if (r.crystals > 0) parts.Add("Crystals +" + r.crystals);
+            if (r.expScrolls > 0) parts.Add("EXP Scroll +" + r.expScrolls);
+            if (r.skillScrolls > 0) parts.Add("Skill Scroll +" + r.skillScrolls);
+            if (r.ascensionOre > 0) parts.Add("Ore +" + r.ascensionOre);
+            return string.Join("    ", parts.ToArray());
+        }
+
+        /// <summary>Reward icons with amounts, left to right from a centre-left point.</summary>
+        void RewardIconsRef(Vector2 at, RewardBundle rw)
+        {
+            float x = at.x;
+            var st = UIStyles.Sized(UIStyles.Body, 28);
+            if (rw.coins > 0) { CoinIcon(new Vector2(x + 20f, at.y), 40f); GUI.Label(new Rect(x + 48f, at.y - 22f, 120f, 44f), rw.coins.ToString("N0"), st); x += 170f; }
+            if (rw.crystals > 0) { DiamondIcon(new Vector2(x + 20f, at.y), 42f); GUI.Label(new Rect(x + 48f, at.y - 22f, 80f, 44f), rw.crystals.ToString(), st); x += 120f; }
+            if (rw.expScrolls > 0) { ScrollIcon(new Vector2(x + 20f, at.y), new Color(0.65f, 0.45f, 1f)); GUI.Label(new Rect(x + 48f, at.y - 22f, 60f, 44f), rw.expScrolls.ToString(), st); x += 100f; }
+            if (rw.skillScrolls > 0) { ScrollIcon(new Vector2(x + 20f, at.y), new Color(0.35f, 0.9f, 0.45f)); GUI.Label(new Rect(x + 48f, at.y - 22f, 60f, 44f), rw.skillScrolls.ToString(), st); x += 100f; }
+            if (rw.ascensionOre > 0) { UIStyles.CircleTex(new Vector2(x + 20f, at.y), 18f, new Color(1f, 0.6f, 0.2f)); GUI.Label(new Rect(x + 48f, at.y - 22f, 60f, 44f), rw.ascensionOre.ToString(), st); }
+        }
+
+        static void ScrollIcon(Vector2 c, Color col)
+        {
+            var o = GUI.color;
+            GUI.color = col;
+            GUI.DrawTexture(new Rect(c.x - 20f, c.y - 20f, 40f, 40f), IconFactory.Get("scroll"), ScaleMode.ScaleToFit, true);
+            GUI.color = o;
         }
 
         static string QuestIcon(string kind)

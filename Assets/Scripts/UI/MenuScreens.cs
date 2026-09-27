@@ -15,70 +15,85 @@ namespace HashiraChronicles
             var d = gm.Data;
             // A soft shade on the left so the tiles read over the living village.
             for (int i = 0; i < 6; i++)
-                UIStyles.Rect(new Rect(0f, 0f, 160f * (6 - i) + safe.x, H), new Color(0.02f, 0.02f, 0.06f, 0.06f));
+                UIStyles.Rect(new Rect(0f, 0f, 170f * (6 - i) + safe.x, H), new Color(0.02f, 0.02f, 0.06f, 0.05f));
 
-            float x = safe.x + 56f;
+            float x = safe.x + 60f;
             float k = Enter(0f, 0.6f);
-            UIStyles.Outlined(new Rect(x, 36f - (1f - k) * 80f, 900f, 60f), GameConfig.TitleLine1, UIStyles.Sized(UIStyles.Title, 40), UIStyles.Crimson, 3f);
-            UIStyles.Outlined(new Rect(x, 82f - (1f - k) * 80f, 1000f, 100f), GameConfig.TitleLine2, UIStyles.Sized(UIStyles.Title, 80), Color.white, 4f);
+            float ty = safe.y + 24f - (1f - k) * 80f;
+            UIStyles.Outlined(new Rect(x, ty, 900f, 60f), GameConfig.TitleLine1, UIStyles.Sized(UIStyles.Title, 46), new Color(0.9f, 0.12f, 0.12f), 3f);
+            string[] words = GameConfig.TitleLine2.Split(' ');
+            UIStyles.Outlined(new Rect(x - 4f, ty + 52f, 1000f, 110f), words[0], UIStyles.Sized(UIStyles.Title, 96), Color.white, 4f);
+            if (words.Length > 1) UIStyles.Outlined(new Rect(x - 4f, ty + 144f, 1000f, 110f), words[1], UIStyles.Sized(UIStyles.Title, 96), Color.white, 4f);
 
             var next = gm.NextStoryMission();
-            var chapter = next != null ? GameDatabase.ChapterOf(next) : null;
             string leaderId = d.team.Count > 0 ? d.team[0] : null;
             var leader = leaderId != null ? GameDatabase.GetCharacter(leaderId) : null;
 
-            // PLAY and STORY on the left, the coloured tiles beside them.
-            float top = 212f;
-            if (Tile(new Rect(x, top, 440f, 300f), "PLAY", "▶", TileRed, 0.1f, leader != null ? ArtLibrary.CharacterFull(leader) : null,
-                chapter != null ? "Chapter " + chapter.number + " · " + chapter.title : "Free play", 0, true))
+            // Row 1: PLAY and STORY.
+            float top = safe.y + 300f;
+            if (HomeTile(new Rect(x, top, 490f, 272f), "PLAY", null, new Color(1f, 0.25f, 0.2f), 0.1f, TileArt.Play, leader != null ? ArtLibrary.CharacterFull(leader) : null, 0, true))
                 gm.GoTo(GameScreen.WorldMap);
-            string storySub = next != null ? "Next: " + next.id + "  " + next.name : "The story is complete";
-            if (Tile(new Rect(x, top + 316f, 440f, 140f), "STORY", "☾", TileNavy, 0.18f, null, storySub))
+            if (HomeTile(new Rect(x + 506f, top, 420f, 272f), "STORY", null, new Color(0.9f, 0.9f, 0.95f), 0.16f, TileArt.Story))
             {
                 if (next != null) { gm.SelectedMission = next; gm.GoTo(GameScreen.MissionDetail); }
                 else gm.GoTo(GameScreen.Story);
             }
-            if (Tile(new Rect(x, top + 472f, 440f, 110f), "JOURNAL", "✎", new Color(0.3f, 0.25f, 0.2f), 0.24f)) OpenMenu("JOURNAL");
+            // Row 2: SUMMON, CHARACTERS, TEAM.
+            float r2 = top + 290f, h2 = 190f;
+            if (HomeTile(new Rect(x, r2, 262f, h2), "SUMMON", IconFactory.Get("flame"), new Color(0.52f, 0.26f, 0.85f), 0.22f, null, null, MenuBadge("SUMMON"))) OpenMenu("SUMMON");
+            if (HomeTile(new Rect(x + 278f, r2, 272f, h2), "CHARACTERS", IconFactory.Get("people"), new Color(0.2f, 0.42f, 0.85f), 0.26f)) OpenMenu("CHARACTERS");
+            if (HomeTile(new Rect(x + 566f, r2, 360f, h2), "TEAM", IconFactory.Get("group"), new Color(0.2f, 0.62f, 0.4f), 0.3f)) OpenMenu("TEAM");
+            // Row 3: EQUIPMENT, MISSIONS, SHOP, SETTINGS.
+            float r3 = r2 + h2 + 16f;
+            if (HomeTile(new Rect(x, r3, 262f, h2), "EQUIPMENT", IconFactory.Get("bag"), new Color(0.72f, 0.5f, 0.18f), 0.34f)) OpenMenu("EQUIPMENT");
+            if (HomeTile(new Rect(x + 278f, r3, 212f, h2), "MISSIONS", IconFactory.Get("scroll"), new Color(0.62f, 0.14f, 0.18f), 0.38f, null, null, MenuBadge("MISSIONS"))) OpenMenu("MISSIONS");
+            if (HomeTile(new Rect(x + 506f, r3, 196f, h2), "SHOP", IconFactory.Get("cart"), new Color(0.12f, 0.58f, 0.62f), 0.42f, null, null, MenuBadge("SHOP"))) OpenMenu("SHOP");
+            if (HomeTile(new Rect(x + 718f, r3, 208f, h2), "SETTINGS", IconFactory.Get("gear"), new Color(0.42f, 0.44f, 0.5f), 0.46f)) OpenMenu("SETTINGS");
 
-            string[] labels = { "SUMMON", "CHARACTERS", "TEAM", "EQUIPMENT", "MISSIONS", "SHOP", "SETTINGS" };
-            string[] icons = { "✦", "☺", "⚑", "⚔", "✔", "♦", "⚙" };
-            Color[] colors = { TilePurple, TileBlue, TileGreen, TileOrange, TileMaroon, TileTeal, TileGrey };
-            float gx = x + 456f, tw = 210f, th = 134f, gap = 12f;
-            for (int i = 0; i < labels.Length; i++)
-            {
-                var r = new Rect(gx + (i % 2) * (tw + gap), top + (i / 2) * (th + gap), tw, th);
-                if (i == labels.Length - 1) r.width = tw * 2f + gap;
-                Texture art = labels[i] == "CHARACTERS" && leader != null ? ArtLibrary.Character(leader) : null;
-                if (Tile(r, labels[i], icons[i], colors[i], 0.28f + i * 0.05f, art, null, MenuBadge(labels[i]))) OpenMenu(labels[i]);
-            }
+            // Top right: coins and crystals with +, mail (missions board) and menu (journal).
+            float px = safe.xMax - 40f;
+            if (IconButton(new Rect(px - 72f, safe.y + 24f, 72f, 64f), IconFactory.Get("menu"))) OpenMenu("JOURNAL");
+            if (IconButton(new Rect(px - 154f, safe.y + 24f, 72f, 64f), IconFactory.Get("mail"))) OpenMenu("MISSIONS");
+            PlusPill(new Rect(px - 430f, safe.y + 24f, 260f, 64f), false, d.crystals.ToString("N0"), () => OpenMenu("SHOP"));
+            PlusPill(new Rect(px - 740f, safe.y + 24f, 294f, 64f), true, d.coins.ToString("N0"), () => OpenMenu("SHOP"));
 
-            // Team power panel, bottom right: the four slayers' faces and the total.
+            // Team power panel, bottom right.
             float tk = Enter(0.5f, 0.5f);
-            var panel = new Rect(safe.xMax - 560f + (1f - tk) * 300f, H - 210f, 530f, 180f);
+            int rows = Mathf.Min(4, d.team.Count);
+            float ph = 96f + rows * 46f;
+            var panel = new Rect(safe.xMax - 590f + (1f - tk) * 300f, H - ph - 40f, 550f, ph);
             Round(Offset(panel, 0f, 5f), new Color(0f, 0f, 0f, 0.35f), 16f);
-            Round(panel, new Color(0.06f, 0.06f, 0.12f, 0.85f), 16f);
-            GUI.Label(new Rect(panel.x + 22f, panel.y + 10f, 300f, 40f), "TEAM POWER", UIStyles.Sized(UIStyles.H2, 26));
-            GUI.Label(new Rect(panel.x + 200f, panel.y + 8f, 310f, 44f), "<color=#FFD36B>" + CharacterSystem.TeamPower(d).ToString("N0") + "</color>", UIStyles.Sized(UIStyles.Right, 34));
-            for (int i = 0; i < 4; i++)
+            Round(panel, new Color(0.04f, 0.05f, 0.08f, 0.86f), 16f);
+            RoundFrame(panel, new Color(1f, 1f, 1f, 0.1f), 2f, 16f);
+            GUI.DrawTexture(new Rect(panel.x + 22f, panel.y + 18f, 48f, 48f), IconFactory.Get("swords"), ScaleMode.ScaleToFit, true);
+            GUI.Label(new Rect(panel.x + 84f, panel.y + 16f, 260f, 52f), "TEAM POWER", UIStyles.Sized(UIStyles.H2, 30));
+            UIStyles.Colored(new Rect(panel.x + 280f, panel.y + 10f, 250f, 60f), CharacterSystem.TeamPower(d).ToString("N0"), UIStyles.Sized(UIStyles.Right, 46), new Color(1f, 0.82f, 0.25f));
+            UIStyles.Rect(new Rect(panel.x + 22f, panel.y + 80f, panel.width - 44f, 1f), new Color(1f, 1f, 1f, 0.12f));
+            for (int i = 0; i < rows; i++)
             {
-                var r = new Rect(panel.x + 22f + i * 124f, panel.y + 58f, 110f, 110f);
-                if (i < d.team.Count)
-                {
-                    var def = GameDatabase.GetCharacter(d.team[i]);
-                    var c = d.GetCharacter(d.team[i]);
-                    if (def == null || c == null) continue;
-                    PortraitCard(r, def, false, "Lv." + c.level);
-                    if (GUI.Button(r, GUIContent.none, GUIStyle.none)) { teamReturn = GameScreen.MainMenu; gm.GoTo(GameScreen.Team); }
-                }
-                else
-                {
-                    Round(r, new Color(1f, 1f, 1f, 0.06f), 12f);
-                    GUI.Label(r, "+", UIStyles.Sized(UIStyles.Center, 44));
-                }
+                var c = d.GetCharacter(d.team[i]);
+                var def = GameDatabase.GetCharacter(d.team[i]);
+                if (c == null || def == null) continue;
+                float ry = panel.y + 92f + i * 46f;
+                Color ec = ElementChart.ColorOf(def.element);
+                var o2 = GUI.color;
+                GUI.color = ec;
+                GUI.DrawTexture(new Rect(panel.x + 26f, ry + 6f, 30f, 30f), IconFactory.Get(IconFactory.ForElement(def.element)), ScaleMode.ScaleToFit, true);
+                GUI.color = o2;
+                UIStyles.Colored(new Rect(panel.x + 66f, ry, 130f, 42f), ElementName(def.element), UIStyles.Sized(UIStyles.Body, 22), ec);
+                GUI.Label(new Rect(panel.x + 196f, ry, 200f, 42f), def.displayName, UIStyles.Sized(UIStyles.Body, 24));
+                GUI.Label(new Rect(panel.x + 360f, ry, 70f, 42f), "Lv. " + c.level, UIStyles.Sized(UIStyles.Body, 22));
+                UIStyles.Colored(new Rect(panel.x + 420f, ry, 110f, 42f), new string('★', Mathf.Clamp(c.stars, 1, 7)), UIStyles.Sized(UIStyles.Right, 20), Color.white);
+                if (GUI.Button(new Rect(panel.x, ry, panel.width, 44f), GUIContent.none, GUIStyle.none)) { teamReturn = GameScreen.MainMenu; gm.GoTo(GameScreen.Team); }
             }
-            Currencies(new Rect(safe.xMax - 980f, safe.y + 28f, 960f, 52f));
 
             DrawNpcBubbles();
+        }
+
+        static string ElementName(Element e)
+        {
+            // Beast is the green wind element in the menus.
+            return e == Element.Beast ? "WIND" : e.ToString().ToUpper();
         }
 
         void OpenMenu(string label)

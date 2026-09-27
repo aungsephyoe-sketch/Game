@@ -227,7 +227,7 @@ namespace HashiraChronicles
 
         // ------------------------------------------------------------------ Shared chrome
 
-        void TopBar(string title, GameScreen back)
+        void TopBar(string title, GameScreen back, System.Action onBack = null)
         {
             // Dark strip, small rounded BACK, gold title, resources on the right (reference layout).
             UIStyles.Rect(new Rect(0f, 0f, W, 104f + safe.y), new Color(0.05f, 0.06f, 0.1f, 0.92f));
@@ -240,7 +240,8 @@ namespace HashiraChronicles
             if (GUI.Button(br, GUIContent.none, GUIStyle.none) || (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape))
             {
                 gm.Audio.Play("click", 0.5f);
-                gm.GoTo(back);
+                if (onBack != null) onBack();
+                else gm.GoTo(back);
                 if (Event.current.type == EventType.KeyDown) Event.current.Use();
             }
             UIStyles.Outlined(new Rect(safe.x + 196f, safe.y + 18f, 800f, 70f), title, UIStyles.Sized(UIStyles.H1, 50), new Color(1f, 0.8f, 0.2f), 2f);

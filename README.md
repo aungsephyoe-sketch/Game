@@ -38,11 +38,21 @@ sly, light) and idle fidgets. Portraits for every menu are rendered live from th
 
 ### Every slayer fights differently
 - **Swift** (Sora, Mina, Raiga): fast multi-hit strings, double cuts, a 5-cut flurry finisher, long dash strikes, short recovery.
-- **Heavy** (Kiba, Tetsu): slower swings, big knockback, a ground-slam finisher, super armour while attacking.
-- **Ranged** (Hana, Rokuro, Yui): bolts and a five-way spread, area blasts on the charged attack; supports heal on hits.
+- **Heavy** (Tetsu, Homura — Last Flame): slower swings, big knockback, a ground-slam finisher, super armour while attacking.
+- **Brawler** (Kiba): hand-to-hand. Jab-cross strings that step in with every punch, a launching uppercut,
+  a leaping ground-pound, and a hundred-fist barrage special.
+- **Ranged** (Rokuro, Yui): bolts and a five-way spread, area blasts on the charged attack.
+- **Healer** (Hana): casting that mends the team with every volley, a sanctuary circle that heals and burns,
+  and a special that restores everyone while light rains on the demons.
 - **Technical** (Ren, Genji, Kuroe): a wider parry window that triggers an instant **COUNTER**, and after a parry or
   perfect dodge the next swings throw crescent waves.
 - **Balanced** (Homura): elemental bursts on every finisher.
+
+Every swing shows its element: Water throws blue arcs and spray, Flame leaves burning arcs and rising fire,
+Thunder cracks with forked lightning, Wind (Beast) whips green gusts and leaves, Light glitters gold and Dark
+bleeds violet smoke; finishers erupt (water column, fire pillar, lightning from the sky, whirlwind…).
+The combat buttons carry icons: a sword (or fist, arrow, staff) for ATTACK, the skill shapes with element
+badges, a shield for GUARD and the element symbol on the SPECIAL.
 
 Specials are long and cinematic: the fight freezes, the camera cuts to a character-specific angle, energy
 gathers in the slayer's element, then a release unique to their style (chain dashes, triple slams, a shot
@@ -64,9 +74,10 @@ Bosses keep their camera reveal and phases and now fall in a slow-motion **defea
 - **Team screen**: TEAM 1-4 presets, a full-body line-up, AUTO SET, EDIT TEAM, a roster grid with element
   filters and a detail card (HP / ATK / DEF) with SELECT.
 - **World map**: eight connected locations with paths, landmarks and markers (locked / you are here /
-  boss / side / treasure / complete). Your current region opens as an **area map**: numbered mission stops on
-  a dotted trail with your leader standing on the next one, and a mission list with stars, locks, the BOSS
-  row and CONTINUE. Picking a mission elsewhere makes the leader **walk the road**
+  boss / side / treasure / complete). Your current region opens as its own **area map**, a bright low-poly diorama
+  (pine meadow with torii and river, icy cliffs with shrine and portal, crimson valley under a red moon, a coast
+  with ship, village and lighthouse): mission stops on stone pedestals along a stepping-stone trail, locks and
+  number plates, your leader on a glowing ring, and a mission list with stars, locks, the BOSS row and CONTINUE. Picking a mission elsewhere makes the leader **walk the road**
   there, camera following, before the mission starts.
 - **Mission pages**: number, title, story hook, quest giver, recommended level vs your team, enemy
   types, boss info, objectives, rewards and first-clear rewards, and a big animated PLAY.

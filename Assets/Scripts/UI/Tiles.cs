@@ -109,6 +109,104 @@ namespace HashiraChronicles
             Round(new Rect(c.x - h * 0.04f, c.y + h * 0.18f, h * 0.08f, h * 0.18f), new Color(0.15f, 0.15f, 0.2f), h * 0.03f);
         }
 
+        /// <summary>
+        /// A home-screen tile in the reference style: vertical gradient, soft rim, big icon above a centred label,
+        /// or a painted background with the label bottom-left and a chevron (PLAY / STORY).
+        /// </summary>
+        bool HomeTile(Rect r, string label, Texture2D icon, Color c, float delay, Texture2D art = null, Texture portrait = null, int badge = 0, bool glow = false)
+        {
+            float k = Enter(delay);
+            if (k <= 0f) return false;
+            var rr = Offset(r, 0f, (1f - k) * 40f);
+            bool hover = rr.Contains(Event.current.mousePosition);
+            if (hover) rr = Grow(rr, 4f);
+            var old = GUI.color;
+            GUI.color = new Color(1f, 1f, 1f, k);
+            if (glow)
+            {
+                float g = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f);
+                for (int i = 3; i >= 1; i--) Round(Grow(rr, i * 5f), new Color(c.r, c.g, c.b, 0.07f + 0.05f * g), 16f + i * 5f);
+            }
+            Round(Offset(rr, 0f, 6f), new Color(0f, 0f, 0f, 0.4f), 14f);
+            if (art != null)
+            {
+                if (Event.current.type == EventType.Repaint) GUI.DrawTexture(rr, art, ScaleMode.ScaleAndCrop, false, 0f, Color.white, 0f, 14f);
+            }
+            else
+            {
+                Color bottom = Color.Lerp(c, Color.black, 0.35f);
+                Round(rr, bottom, 14f);
+                for (int i = 0; i < 6; i++)
+                {
+                    float f = i / 6f;
+                    Round(new Rect(rr.x, rr.y, rr.width, rr.height * (1f - f)), new Color(c.r, c.g, c.b, 0.22f), 14f);
+                }
+                Round(new Rect(rr.x + 3f, rr.y + 3f, rr.width - 6f, rr.height * 0.42f), new Color(1f, 1f, 1f, hover ? 0.12f : 0.07f), 12f);
+            }
+            if (portrait != null)
+            {
+                // A dark silhouette of the leader against the glow.
+                float h = rr.height * 0.98f, w = h * portrait.width / Mathf.Max(1f, portrait.height);
+                var pr = new Rect(rr.x + rr.width * 0.46f - w * 0.5f, rr.yMax - h, w, h);
+                var o2 = GUI.color;
+                GUI.color = new Color(0.12f, 0.01f, 0.03f, 0.92f * k);
+                GUI.DrawTexture(Offset(pr, 6f, 0f), portrait, ScaleMode.ScaleToFit, true);
+                GUI.color = new Color(0.25f, 0.02f, 0.05f, k);
+                GUI.DrawTexture(pr, portrait, ScaleMode.ScaleToFit, true);
+                GUI.color = o2;
+            }
+            RoundFrame(rr, Color.Lerp(c, Color.white, hover ? 0.6f : 0.4f), glow ? 3f : 2f, 14f);
+            if (art != null || portrait != null)
+            {
+                UIStyles.Outlined(new Rect(rr.x + 26f, rr.yMax - 76f, rr.width - 60f, 60f), label, UIStyles.Sized(UIStyles.H1, 46), Color.white, 2f);
+                UIStyles.Outlined(new Rect(rr.xMax - 56f, rr.yMax - 76f, 40f, 60f), "›", UIStyles.Sized(UIStyles.H1, 52), Color.white, 2f);
+            }
+            else
+            {
+                float isz = Mathf.Min(rr.height * 0.42f, 86f);
+                if (icon != null)
+                {
+                    var ir = new Rect(rr.center.x - isz * 0.5f, rr.y + rr.height * 0.18f, isz, isz);
+                    var o2 = GUI.color;
+                    GUI.color = new Color(0f, 0f, 0f, 0.35f * k);
+                    GUI.DrawTexture(Offset(ir, 2f, 3f), icon, ScaleMode.ScaleToFit, true);
+                    GUI.color = new Color(1f, 1f, 1f, k);
+                    GUI.DrawTexture(ir, icon, ScaleMode.ScaleToFit, true);
+                    GUI.color = o2;
+                }
+                UIStyles.Outlined(new Rect(rr.x, rr.yMax - 58f, rr.width, 44f), label, UIStyles.Sized(UIStyles.Center, 28), Color.white, 2f);
+            }
+            if (badge > 0) Badge(new Vector2(rr.xMax - 8f, rr.y + 8f), badge > 9 ? "!" : badge.ToString(), UIStyles.Crimson);
+            bool clicked = GUI.Button(rr, GUIContent.none, GUIStyle.none);
+            GUI.color = old;
+            if (clicked && k > 0.6f && gm != null) gm.Audio.Play("click", 0.5f);
+            return clicked && k > 0.6f;
+        }
+
+        /// <summary>Reference-style resource pill: icon, amount, and a + button.</summary>
+        void PlusPill(Rect r, bool coins, string value, System.Action onPlus)
+        {
+            Round(r, new Color(0.05f, 0.06f, 0.1f, 0.75f), 12f);
+            RoundFrame(r, new Color(1f, 1f, 1f, 0.1f), 2f, 12f);
+            Vector2 ic = new Vector2(r.x + r.height * 0.55f, r.center.y);
+            if (coins) CoinIcon(ic, r.height * 0.62f); else DiamondIcon(ic, r.height * 0.7f);
+            GUI.Label(new Rect(r.x + r.height, r.y, r.width - r.height * 2f, r.height), value, UIStyles.Sized(UIStyles.Body, 30));
+            var pr = new Rect(r.xMax - r.height, r.y, r.height, r.height);
+            GUI.Label(pr, "+", UIStyles.Sized(UIStyles.Center, 34));
+            if (GUI.Button(pr, GUIContent.none, GUIStyle.none) && onPlus != null) { gm.Audio.Play("click", 0.5f); onPlus(); }
+        }
+
+        bool IconButton(Rect r, Texture2D icon)
+        {
+            bool hover = r.Contains(Event.current.mousePosition);
+            Round(r, hover ? new Color(0.2f, 0.24f, 0.34f, 0.9f) : new Color(0.12f, 0.16f, 0.24f, 0.85f), 12f);
+            RoundFrame(r, new Color(1f, 1f, 1f, 0.12f), 2f, 12f);
+            GUI.DrawTexture(new Rect(r.x + r.width * 0.22f, r.y + r.height * 0.22f, r.width * 0.56f, r.height * 0.56f), icon, ScaleMode.ScaleToFit, true);
+            bool c = GUI.Button(r, GUIContent.none, GUIStyle.none);
+            if (c) gm.Audio.Play("click", 0.5f);
+            return c;
+        }
+
         /// <summary>Currency pill: dark rounded capsule, coloured icon disc, value.</summary>
         void Pill(Rect r, string icon, Color c, string value)
         {
