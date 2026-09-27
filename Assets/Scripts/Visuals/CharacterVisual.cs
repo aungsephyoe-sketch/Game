@@ -25,7 +25,7 @@ namespace HashiraChronicles
         float moving;
         float chargeGlow;
         Color chargeColor;
-        Quaternion swordRest = Quaternion.Euler(25f, 40f, 0f);
+        Quaternion swordRest = Quaternion.Euler(48f, 62f, 0f); // held low at the side, tip toward the ground
         Coroutine swingRoutine;
         Coroutine poseRoutine;
         bool dead;
@@ -284,8 +284,18 @@ namespace HashiraChronicles
             SwordPivot.localPosition = pivotPos;
             SwordPivot.localRotation = swordRest;
 
-            var bladeMat = MaterialFactory.Toon(bladeColor, 0.01f, bladeColor * 0.6f);
+            // A bright glowing blade with a soft halo around it.
+            var bladeMat = MaterialFactory.Toon(Color.Lerp(bladeColor, Color.white, 0.35f), 0.01f, bladeColor * 1.1f);
             Add(MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0f, 0f, length * 0.55f), new Vector3(0.05f, 0.08f, length), bladeMat));
+            if (length > 0.2f)
+            {
+                var halo = MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0f, 0f, length * 0.56f), new Vector3(0.16f, 0.2f, length * 1.04f),
+                    MaterialFactory.Additive(new Color(bladeColor.r, bladeColor.g, bladeColor.b, 0.35f)));
+                halo.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                var halo2 = MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0f, 0f, length * 0.56f), new Vector3(0.3f, 0.34f, length * 1.1f),
+                    MaterialFactory.Additive(new Color(bladeColor.r, bladeColor.g, bladeColor.b, 0.12f)));
+                halo2.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
             Add(MeshFactory.Primitive(PrimitiveType.Cube, SwordPivot, new Vector3(0f, 0f, 0.05f), new Vector3(0.18f, 0.05f, 0.05f),
                 MaterialFactory.Toon(new Color(0.15f, 0.12f, 0.1f), 0f)));
 

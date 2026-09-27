@@ -211,6 +211,48 @@ namespace HashiraChronicles
             return m;
         }
 
+        static readonly Dictionary<string, Mesh> lathes = new Dictionary<string, Mesh>();
+
+        /// <summary>Smooth surface of revolution around Y from a (radius, height) profile, bottom to top, capped.</summary>
+        public static Mesh Lathe(string key, Vector2[] profile, int segments = 28)
+        {
+            Mesh m;
+            if (lathes.TryGetValue(key, out m) && m != null) return m;
+            var v = new List<Vector3>();
+            var t = new List<int>();
+            int rows = profile.Length;
+            for (int r = 0; r < rows; r++)
+                for (int s = 0; s <= segments; s++)
+                {
+                    float a = s * Mathf.PI * 2f / segments;
+                    v.Add(new Vector3(Mathf.Cos(a) * profile[r].x, profile[r].y, Mathf.Sin(a) * profile[r].x));
+                }
+            int stride = segments + 1;
+            for (int r = 0; r < rows - 1; r++)
+                for (int s = 0; s < segments; s++)
+                {
+                    int a = r * stride + s, b = a + 1, c = a + stride, d = c + 1;
+                    t.Add(a); t.Add(c); t.Add(b);
+                    t.Add(b); t.Add(c); t.Add(d);
+                }
+            // Caps.
+            int bottom = v.Count; v.Add(new Vector3(0f, profile[0].y, 0f));
+            int top = v.Count; v.Add(new Vector3(0f, profile[rows - 1].y, 0f));
+            for (int s = 0; s < segments; s++)
+            {
+                t.Add(bottom); t.Add(s); t.Add(s + 1);
+                int o = (rows - 1) * stride;
+                t.Add(top); t.Add(o + s + 1); t.Add(o + s);
+            }
+            m = new Mesh { name = "Lathe_" + key };
+            m.SetVertices(v);
+            m.SetTriangles(t, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            lathes[key] = m;
+            return m;
+        }
+
         /// <summary>Game object rendering a given mesh with a material (no collider).</summary>
         public static GameObject MeshObject(Mesh mesh, Transform parent, Vector3 localPos, Vector3 localScale, Material mat, bool shadows = true)
         {

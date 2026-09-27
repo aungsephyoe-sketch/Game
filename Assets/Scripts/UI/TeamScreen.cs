@@ -17,6 +17,10 @@ namespace HashiraChronicles
         bool teamEditing;
         Vector2 rosterScroll;
 
+        static readonly int[] TeamUnlockClears = { 0, 5, 15, 30 };
+
+        static bool TeamUnlocked(PlayerData d, int t) { return t == 0 || d.missionsCleared >= TeamUnlockClears[t] || d.activeTeam == t; }
+
         static readonly Element[] FilterOrder = { Element.Water, Element.Flame, Element.Thunder, Element.Beast, Element.Dark, Element.Light };
 
         void DrawTeam()
@@ -39,12 +43,21 @@ namespace HashiraChronicles
             {
                 var r = new Rect(x0, top + t * 92f, 300f, 78f);
                 bool on = d.activeTeam == t;
+                bool open = TeamUnlocked(d, t);
                 Round(Offset(r, 0f, 4f), new Color(0f, 0f, 0f, 0.35f), 12f);
                 Round(r, on ? TileRed : new Color(0.08f, 0.09f, 0.14f, 0.88f), 12f);
                 if (on) RoundFrame(Grow(r, 2f), new Color(1f, 0.5f, 0.45f, 0.8f), 2f, 13f);
-                GUI.DrawTexture(new Rect(r.x + 26f, r.y + 20f, 38f, 38f), IconFactory.Get(on ? "group" : "people"), ScaleMode.ScaleToFit, true);
+                var o = GUI.color;
+                GUI.color = open ? Color.white : new Color(1f, 1f, 1f, 0.45f);
+                GUI.DrawTexture(new Rect(r.x + 26f, r.y + 20f, 38f, 38f), IconFactory.Get(!open ? "lock" : "group"), ScaleMode.ScaleToFit, true);
                 GUI.Label(new Rect(r.x + 84f, r.y, 200f, r.height), "Team " + (t + 1), UIStyles.Sized(UIStyles.Body, 28));
-                if (GUI.Button(r, GUIContent.none, GUIStyle.none)) { gm.Audio.Play("click", 0.5f); SwitchPreset(d, t); }
+                GUI.color = o;
+                if (GUI.Button(r, GUIContent.none, GUIStyle.none))
+                {
+                    gm.Audio.Play("click", 0.5f);
+                    if (open) SwitchPreset(d, t);
+                    else Toast("Team " + (t + 1) + " unlocks after clearing " + TeamUnlockClears[t] + " missions.");
+                }
             }
             var pw = new Rect(x0, top + 4f * 92f + 20f, 300f, 90f);
             Round(pw, new Color(0.06f, 0.07f, 0.11f, 0.9f), 12f);
@@ -93,7 +106,9 @@ namespace HashiraChronicles
                     var card = new Rect(fp.x - 95f, headP.y + 10f, 190f, fp.y - headP.y + 40f);
                     Round(card, new Color(0.08f, 0.09f, 0.13f, 0.85f), 14f);
                     RoundFrame(card, teamSlot == i ? new Color(1f, 0.85f, 0.35f) : new Color(1f, 1f, 1f, 0.12f), 2f, 14f);
-                    GUI.DrawTexture(new Rect(card.center.x - 38f, card.center.y - 60f, 76f, 76f), IconFactory.Get("plus"), ScaleMode.ScaleToFit, true);
+                    var box = new Rect(card.center.x - 60f, card.center.y - 90f, 120f, 120f);
+                    Round(box, new Color(0.16f, 0.17f, 0.22f, 0.95f), 12f);
+                    GUI.DrawTexture(new Rect(box.x + 26f, box.y + 26f, 68f, 68f), IconFactory.Get("plus"), ScaleMode.ScaleToFit, true);
                     GUI.Label(new Rect(card.x, card.center.y + 30f, card.width, 40f), SlotRoles[i] == Role.Support ? "SUPPORT" : SlotRoles[i] == Role.Tank ? "VANGUARD" : "STRIKER", UIStyles.Sized(UIStyles.Center, 24));
                     if (GUI.Button(card, GUIContent.none, GUIStyle.none)) { gm.Audio.Play("click", 0.5f); teamSlot = i; teamEditing = true; }
                 }

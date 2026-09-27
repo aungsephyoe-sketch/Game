@@ -345,8 +345,8 @@ namespace HashiraChronicles
                 ink, new Color(0.08f, 0.42f, 0.44f), new Color(0.8f, 0.12f, 0.12f), new Color(0.35f, 0.8f, 1f));
             Look("ren_sundance", HairStyle.Messy, WeaponKind.Katana, CombatStyle.Technical, MotionStyle.Confident,
                 ink, new Color(0.95f, 0.55f, 0.15f), new Color(0.8f, 0.12f, 0.12f), new Color(1f, 0.8f, 0.3f), 1.02f, 1f, false, true);
-            Look("sora_initiate", HairStyle.Spiky, WeaponKind.Katana, CombatStyle.Swift, MotionStyle.Nervous,
-                new Color(0.12f, 0.12f, 0.15f), new Color(0.45f, 0.47f, 0.52f), ink, new Color(1f, 0.85f, 0.25f), 0.92f, 0.9f, true, false, false, false, false, new Color(0.22f, 0.22f, 0.6f));
+            Look("sora_initiate", HairStyle.Spiky, WeaponKind.TwinBlades, CombatStyle.Swift, MotionStyle.Nervous,
+                new Color(0.12f, 0.12f, 0.15f), new Color(0.45f, 0.47f, 0.52f), ink, new Color(1f, 0.85f, 0.25f), 0.95f, 0.92f, false, false, false, false, false, new Color(0.22f, 0.22f, 0.6f));
             Look("kiba_initiate", HairStyle.Wild, WeaponKind.Fists, CombatStyle.Brawler, MotionStyle.Aggressive,
                 new Color(0.3f, 0.2f, 0.13f), new Color(0.35f, 0.25f, 0.15f), new Color(0.1f, 0.12f, 0.32f), new Color(0.9f, 0.6f, 0.3f), 1.1f, 1.25f, false, false, true);
             Look("hana_healer", HairStyle.Braid, WeaponKind.Staff, CombatStyle.Healer, MotionStyle.Graceful,
@@ -357,7 +357,7 @@ namespace HashiraChronicles
                 ink, new Color(0.6f, 0.08f, 0.1f), new Color(0.85f, 0.15f, 0.1f), new Color(1f, 0.5f, 0.1f), 1.08f, 1f, false, true);
             Look("homura_lastflame", HairStyle.Ponytail, WeaponKind.Greatsword, CombatStyle.Heavy, MotionStyle.Confident,
                 ink, new Color(0.75f, 0.12f, 0.06f), new Color(1f, 0.35f, 0.08f), new Color(1f, 0.65f, 0.1f), 1.1f, 1.05f, false, true, false, true);
-            Look("mina_ember", HairStyle.Long, WeaponKind.TwinBlades, CombatStyle.Swift, MotionStyle.Light,
+            Look("mina_ember", HairStyle.Long, WeaponKind.Katana, CombatStyle.Swift, MotionStyle.Light,
                 ink, new Color(0.25f, 0.18f, 0.35f), new Color(0.95f, 0.95f, 0.97f), new Color(0.75f, 0.4f, 1f), 0.9f, 0.88f);
             Look("rokuro_hunter", HairStyle.Cap, WeaponKind.Bow, CombatStyle.Ranged, MotionStyle.Sly,
                 new Color(0.3f, 0.26f, 0.2f), new Color(0.4f, 0.45f, 0.3f), new Color(0.15f, 0.12f, 0.1f), new Color(0.75f, 0.9f, 0.5f), 1.05f, 1.05f, false, false, true, false, false, new Color(0.42f, 0.26f, 0.14f));

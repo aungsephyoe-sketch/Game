@@ -38,28 +38,38 @@ namespace HashiraChronicles
             Motion = def.motion;
             Weapon = def.weapon;
             float h = def.bodyHeight, w = def.bodyWidth;
-            var body = MaterialFactory.Toon(def.bodyColor, 0.035f);
-            var outfit = MaterialFactory.Toon(def.haoriColor, 0.035f);
+            // The reference look: a near-black robe for everyone, the colour lives in the hair, hat and blade.
+            Color robeC = Color.Lerp(def.bodyColor, new Color(0.05f, 0.05f, 0.07f), 0.82f);
+            var body = MaterialFactory.Toon(robeC, 0.035f);
+            var outfit = MaterialFactory.Toon(Color.Lerp(def.haoriColor, robeC, 0.75f), 0.035f);
             var hair = MaterialFactory.Toon(def.hairColor, 0.035f);
             var accent = MaterialFactory.Toon(def.accentColor, 0.035f);
             var white = MaterialFactory.Toon(HeadWhite, 0.035f);
             var ink = MaterialFactory.Toon(Ink, 0f);
-            var element = MaterialFactory.Toon(ElementChart.ColorOf(def.element), 0.02f, ElementChart.ColorOf(def.element) * 0.35f);
 
-            // Body: one soft rounded shape, with the outfit wrapped around the lower half.
-            Part(PrimitiveType.Capsule, Model, new Vector3(0f, 0.55f * h, 0f), new Vector3(0.64f * w, 0.55f * h, 0.56f * w), body);
-            Part(PrimitiveType.Capsule, Model, new Vector3(0f, 0.46f * h, -0.02f), new Vector3(0.7f * w, 0.42f * h, 0.62f * w), outfit);
-            Part(PrimitiveType.Cube, Model, new Vector3(0f, 0.5f * h, 0.29f * w), new Vector3(0.16f * w, 0.62f * h, 0.04f), body); // open coat front
-            Part(PrimitiveType.Cylinder, Model, new Vector3(0f, 0.66f * h, 0f), new Vector3(0.68f * w, 0.045f, 0.6f * w), element); // belt in element colour
+            // Body: a bell-shaped robe, narrow at the shoulders and flaring to the hem, with short sleeves.
+            var robe = MeshFactory.Lathe("robe", new[]
+            {
+                new Vector2(0.44f, 0f), new Vector2(0.46f, 0.05f), new Vector2(0.42f, 0.2f), new Vector2(0.36f, 0.45f),
+                new Vector2(0.31f, 0.7f), new Vector2(0.28f, 0.88f), new Vector2(0.22f, 0.98f), new Vector2(0.1f, 1.02f)
+            });
+            var robeGo = MeshFactory.MeshObject(robe, Model, Vector3.zero, new Vector3(w, h, w * 0.92f), body);
+            Add(robeGo);
+            // A faint fold down the front and an inner collar in the outfit colour.
+            Part(PrimitiveType.Cube, Model, new Vector3(0.03f, 0.45f * h, 0.36f * w), new Vector3(0.03f, 0.75f * h, 0.03f), outfit, new Vector3(-10f, 0f, 0f));
+            Part(PrimitiveType.Sphere, Model, new Vector3(0f, 0.96f * h, 0.12f * w), new Vector3(0.26f * w, 0.12f, 0.16f * w), outfit);
+            // Sleeves hanging from the shoulders toward the hands.
+            Part(PrimitiveType.Capsule, Model, new Vector3(0.3f * w, 0.72f * h, 0.06f), new Vector3(0.17f, 0.24f * h, 0.17f), body, new Vector3(10f, 0f, 28f));
+            Part(PrimitiveType.Capsule, Model, new Vector3(-0.3f * w, 0.72f * h, 0.06f), new Vector3(0.17f, 0.24f * h, 0.17f), body, new Vector3(10f, 0f, -28f));
 
-            // Head.
-            HeadY = 1.12f * h + 0.3f;
+            // Head: big, round and white, resting on the robe, with two tall dot eyes.
+            HeadY = 1.0f * h + 0.36f;
             head = new GameObject("Head").transform;
             head.SetParent(Model, false);
             head.localPosition = new Vector3(0f, HeadY, 0f);
-            Part(PrimitiveType.Sphere, head, Vector3.zero, Vector3.one * 0.74f, white);
-            Part(PrimitiveType.Sphere, head, new Vector3(0.13f, 0.0f, 0.34f), new Vector3(0.075f, 0.14f, 0.05f), ink);
-            Part(PrimitiveType.Sphere, head, new Vector3(-0.13f, 0.0f, 0.34f), new Vector3(0.075f, 0.14f, 0.05f), ink);
+            Part(PrimitiveType.Sphere, head, Vector3.zero, new Vector3(0.8f, 0.78f, 0.78f), white);
+            Part(PrimitiveType.Sphere, head, new Vector3(0.13f, -0.03f, 0.365f), new Vector3(0.085f, 0.15f, 0.05f), ink);
+            Part(PrimitiveType.Sphere, head, new Vector3(-0.13f, -0.03f, 0.365f), new Vector3(0.085f, 0.15f, 0.05f), ink);
             BuildHair(def.hair, hair, accent);
 
             // Accessories.
@@ -94,22 +104,38 @@ namespace HashiraChronicles
             switch (style)
             {
                 case HairStyle.Messy:
-                    Part(PrimitiveType.Sphere, head, new Vector3(0f, 0.14f, -0.04f), new Vector3(0.8f, 0.56f, 0.8f), hair);
-                    for (int i = 0; i < 5; i++)
-                        Part(PrimitiveType.Sphere, head, new Vector3(-0.2f + i * 0.1f, 0.24f - Mathf.Abs(i - 2) * 0.03f, 0.27f), new Vector3(0.16f, 0.18f, 0.14f), hair);
+                    // A snug hood that covers the top, sides and back of the head, leaving the face open.
+                    Part(PrimitiveType.Sphere, head, new Vector3(0f, 0.06f, -0.08f), new Vector3(0.9f, 0.88f, 0.86f), hair);
+                    Part(PrimitiveType.Sphere, head, new Vector3(0f, 0.24f, 0.16f), new Vector3(0.66f, 0.3f, 0.44f), hair);
+                    Part(PrimitiveType.Capsule, head, new Vector3(0f, -0.34f, -0.18f), new Vector3(0.5f, 0.2f, 0.42f), hair, new Vector3(0f, 0f, 90f));
                     break;
                 case HairStyle.Spiky:
-                    Part(PrimitiveType.Sphere, head, new Vector3(0f, 0.14f, -0.05f), new Vector3(0.78f, 0.55f, 0.78f), hair);
-                    for (int i = 0; i < 8; i++)
+                    // Black spikes bursting out in every direction.
+                    Part(PrimitiveType.Sphere, head, new Vector3(0f, 0.1f, -0.06f), new Vector3(0.84f, 0.7f, 0.82f), hair);
+                    for (int ring = 0; ring < 2; ring++)
                     {
-                        float a = -70f + i * 20f;
-                        ConePart(head, Quaternion.Euler(0f, 0f, a) * new Vector3(0f, 0.3f, -0.08f), new Vector3(0.16f, 0.32f, 0.16f), hair, new Vector3(-25f, 0f, a));
+                        int n = ring == 0 ? 10 : 7;
+                        for (int i = 0; i < n; i++)
+                        {
+                            float a = -100f + i * (200f / (n - 1));
+                            float tilt = ring == 0 ? 0f : -35f;
+                            Vector3 dir = Quaternion.Euler(tilt, 0f, a) * Vector3.up;
+                            ConePart(head, dir * 0.3f + new Vector3(0f, 0.08f, -0.06f - ring * 0.12f), new Vector3(0.17f, 0.38f - ring * 0.06f, 0.17f), hair, new Vector3(tilt, 0f, a));
+                        }
                     }
+                    // Fringe spikes over the forehead.
+                    for (int i = 0; i < 4; i++)
+                        ConePart(head, new Vector3(-0.18f + i * 0.12f, 0.24f, 0.26f), new Vector3(0.13f, 0.22f, 0.13f), hair, new Vector3(150f, 0f, -20f + i * 13f));
                     break;
                 case HairStyle.Long:
-                    Part(PrimitiveType.Sphere, head, new Vector3(0f, 0.12f, -0.04f), new Vector3(0.8f, 0.58f, 0.8f), hair);
-                    Part(PrimitiveType.Capsule, head, new Vector3(0f, -0.35f, -0.22f), new Vector3(0.62f, 0.5f, 0.3f), hair);
-                    Part(PrimitiveType.Sphere, head, new Vector3(0f, 0.22f, 0.26f), new Vector3(0.5f, 0.16f, 0.14f), hair); // bangs
+                    // Flowing hair over the back and sides, bangs, and a little top-knot.
+                    Part(PrimitiveType.Sphere, head, new Vector3(0f, 0.08f, -0.06f), new Vector3(0.88f, 0.8f, 0.84f), hair);
+                    Part(PrimitiveType.Capsule, head, new Vector3(0f, -0.38f, -0.2f), new Vector3(0.74f, 0.46f, 0.36f), hair);
+                    Part(PrimitiveType.Capsule, head, new Vector3(0.33f, -0.22f, 0.08f), new Vector3(0.16f, 0.3f, 0.16f), hair);
+                    Part(PrimitiveType.Capsule, head, new Vector3(-0.33f, -0.22f, 0.08f), new Vector3(0.16f, 0.3f, 0.16f), hair);
+                    Part(PrimitiveType.Sphere, head, new Vector3(0.05f, 0.26f, 0.24f), new Vector3(0.58f, 0.2f, 0.2f), hair, new Vector3(0f, 0f, -8f));
+                    Part(PrimitiveType.Sphere, head, new Vector3(0f, 0.47f, -0.05f), new Vector3(0.18f, 0.2f, 0.18f), hair);
+                    ConePart(head, new Vector3(0.05f, 0.55f, -0.05f), new Vector3(0.1f, 0.18f, 0.1f), hair, new Vector3(0f, 0f, -20f));
                     break;
                 case HairStyle.Ponytail:
                     Part(PrimitiveType.Sphere, head, new Vector3(0f, 0.13f, -0.04f), new Vector3(0.78f, 0.55f, 0.78f), hair);
@@ -162,7 +188,7 @@ namespace HashiraChronicles
 
         void BuildWeapon(WeaponKind kind, Color blade, float h, float w)
         {
-            Vector3 hand = new Vector3(0.4f * w, 0.72f * h, 0.16f);
+            Vector3 hand = new Vector3(0.42f * w, 0.52f * h, 0.14f);
             var glow = MaterialFactory.Toon(blade, 0.01f, blade * 0.7f);
             switch (kind)
             {
@@ -172,7 +198,7 @@ namespace HashiraChronicles
                     BuildSword(blade, 0.05f, hand);
                     var gl = MaterialFactory.Toon(Color.Lerp(blade, Color.white, 0.2f), 0.02f, blade * 0.8f);
                     Add(MeshFactory.Primitive(PrimitiveType.Sphere, SwordPivot, Vector3.zero, new Vector3(0.3f, 0.3f, 0.34f), gl));
-                    Part(PrimitiveType.Sphere, Model, new Vector3(-0.4f * w, 0.72f * h, 0.16f), new Vector3(0.3f, 0.3f, 0.34f), gl, Vector3.zero);
+                    Part(PrimitiveType.Sphere, Model, new Vector3(-0.42f * w, 0.52f * h, 0.14f), new Vector3(0.3f, 0.3f, 0.34f), gl, Vector3.zero);
                     // Wrist wraps.
                     var wrap = MaterialFactory.Toon(new Color(0.9f, 0.88f, 0.8f), 0.02f);
                     Add(MeshFactory.Primitive(PrimitiveType.Cylinder, SwordPivot, new Vector3(0f, 0f, -0.2f), new Vector3(0.22f, 0.08f, 0.22f), wrap));
@@ -180,7 +206,16 @@ namespace HashiraChronicles
                 }
                 case WeaponKind.TwinBlades:
                     BuildSword(blade, 0.8f, hand);
-                    Part(PrimitiveType.Cube, Model, new Vector3(-0.42f * w, 0.62f * h, 0.3f), new Vector3(0.05f, 0.07f, 0.8f), glow, new Vector3(35f, -15f, 0f));
+                    {
+                        // Second blade, held low in the left hand like the reference.
+                        var left = new GameObject("LeftBlade").transform;
+                        left.SetParent(Model, false);
+                        left.localPosition = new Vector3(-0.42f * w, 0.52f * h, 0.14f);
+                        left.localRotation = Quaternion.Euler(48f, -62f, 0f);
+                        Add(MeshFactory.Primitive(PrimitiveType.Cube, left, new Vector3(0f, 0f, 0.45f), new Vector3(0.05f, 0.08f, 0.8f), glow));
+                        var lh = MeshFactory.Primitive(PrimitiveType.Cube, left, new Vector3(0f, 0f, 0.46f), new Vector3(0.16f, 0.2f, 0.84f), MaterialFactory.Additive(new Color(blade.r, blade.g, blade.b, 0.3f)));
+                        lh.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    }
                     break;
                 case WeaponKind.Greatsword:
                     BuildSword(blade, 1.5f, hand);
