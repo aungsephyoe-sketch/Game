@@ -46,7 +46,7 @@ namespace HashiraChronicles
             EnsureWorld();
             gameObject.SetActive(true);
             CurrentRegion = string.IsNullOrEmpty(data.currentRegion) || !nodes.ContainsKey(data.currentRegion) ? "village" : data.currentRegion;
-            if (travel == null) token.position = nodes[CurrentRegion].pos;
+            if (travel == null && !AreaMode) token.position = nodes[CurrentRegion].pos;
             string lead = data.team.Count > 0 ? data.team[0] : GameDatabase.Protagonist;
             if (lead != tokenHeroId)
             {
@@ -55,7 +55,8 @@ namespace HashiraChronicles
                 tokenHeroId = lead;
             }
             RefreshStates(data);
-            ApplyLighting();
+            if (AreaMode) ApplyAreaLighting();
+            else ApplyLighting();
         }
 
         public void Hide() { ExitArea(); gameObject.SetActive(false); }
@@ -95,6 +96,7 @@ namespace HashiraChronicles
         /// <summary>Walks the leader along the road to a region; the camera follows. Calls back on arrival.</summary>
         public void TravelTo(string regionId, PlayerData data, System.Action onArrive)
         {
+            ExitArea();
             if (!nodes.ContainsKey(regionId)) { if (onArrive != null) onArrive(); return; }
             if (travel != null) StopCoroutine(travel);
             travel = StartCoroutine(TravelRoutine(regionId, data, onArrive));

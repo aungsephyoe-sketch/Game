@@ -229,27 +229,54 @@ namespace HashiraChronicles
 
         void TopBar(string title, GameScreen back)
         {
-            UIStyles.Rect(new Rect(0f, 0f, W, 110f + safe.y), UIStyles.Panel);
-            UIStyles.Rect(new Rect(0f, 108f + safe.y, W, 3f), UIStyles.Gold * 0.7f);
-            if (Btn(new Rect(safe.x + 20f, safe.y + 18f, 150f, 74f), "◀ BACK") || (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape))
+            // Dark strip, small rounded BACK, gold title, resources on the right (reference layout).
+            UIStyles.Rect(new Rect(0f, 0f, W, 104f + safe.y), new Color(0.05f, 0.06f, 0.1f, 0.92f));
+            UIStyles.Rect(new Rect(0f, 104f + safe.y, W, 2f), new Color(1f, 1f, 1f, 0.06f));
+            var br = new Rect(safe.x + 22f, safe.y + 24f, 150f, 58f);
+            bool hover = br.Contains(Event.current.mousePosition);
+            Round(br, hover ? new Color(0.28f, 0.26f, 0.45f) : new Color(0.18f, 0.17f, 0.3f), 10f);
+            RoundFrame(br, new Color(1f, 1f, 1f, 0.12f), 2f, 10f);
+            GUI.Label(br, "‹  BACK", UIStyles.Sized(UIStyles.Center, 26));
+            if (GUI.Button(br, GUIContent.none, GUIStyle.none) || (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape))
             {
+                gm.Audio.Play("click", 0.5f);
                 gm.GoTo(back);
                 if (Event.current.type == EventType.KeyDown) Event.current.Use();
             }
-            GUI.Label(new Rect(safe.x + 200f, safe.y + 22f, 700f, 70f), title, UIStyles.H1);
-            Currencies(new Rect(safe.xMax - 980f, safe.y + 28f, 960f, 60f));
+            UIStyles.Outlined(new Rect(safe.x + 196f, safe.y + 18f, 800f, 70f), title, UIStyles.Sized(UIStyles.H1, 50), new Color(1f, 0.8f, 0.2f), 2f);
+            Currencies(new Rect(safe.xMax - 1000f, safe.y + 26f, 980f, 56f));
         }
 
         void Currencies(Rect r)
         {
             var d = gm.Data;
-            float h = Mathf.Min(52f, r.height);
-            float w = 210f, gap = 12f;
-            float x = r.xMax - w;
-            Pill(new Rect(x, r.y, w, h), "✦", new Color(0.3f, 0.65f, 1f), d.crystals.ToString("N0")); x -= w + gap;
-            Pill(new Rect(x, r.y, w, h), "◆", new Color(0.95f, 0.72f, 0.2f), d.coins.ToString("N0")); x -= w + gap;
-            Pill(new Rect(x, r.y, 150f, h), "✎", new Color(0.6f, 0.4f, 0.9f), "×" + d.expScrolls); x -= 150f + gap;
-            Pill(new Rect(x, r.y, 150f, h), "▲", new Color(0.9f, 0.45f, 0.3f), "×" + d.ascensionOre);
+            float h = r.height;
+            float x = r.xMax;
+            var st = UIStyles.Sized(UIStyles.Body, 30);
+            // Right to left: ORE, SKILL, EXP, crystals, coins.
+            x = TextRes(x, r.y, h, "ORE", "×" + d.ascensionOre, new Color(1f, 0.62f, 0.3f), st);
+            x = TextRes(x, r.y, h, "SKILL", "×" + d.skillScrolls, new Color(0.45f, 0.95f, 0.4f), st);
+            x = TextRes(x, r.y, h, "EXP", "×" + d.expScrolls, new Color(0.75f, 0.5f, 1f), st);
+            string cr = d.crystals.ToString("N0");
+            float cw = st.CalcSize(new GUIContent(cr)).x;
+            x -= cw + 12f;
+            GUI.Label(new Rect(x, r.y, cw + 4f, h), cr, st);
+            DiamondIcon(new Vector2(x - 24f, r.y + h * 0.5f), 34f);
+            x -= 70f;
+            string co = d.coins.ToString("N0");
+            float ow = st.CalcSize(new GUIContent(co)).x;
+            x -= ow;
+            GUI.Label(new Rect(x, r.y, ow + 4f, h), co, st);
+            CoinIcon(new Vector2(x - 24f, r.y + h * 0.5f), 34f);
+        }
+
+        float TextRes(float right, float y, float h, string label, string value, Color c, GUIStyle st)
+        {
+            string text = label + " <size=26>" + value + "</size>";
+            float w = st.CalcSize(new GUIContent(label + " " + value)).x + 6f;
+            float x = right - w;
+            UIStyles.Colored(new Rect(x, y, w + 10f, h), text, st, c);
+            return x - 34f;
         }
 
         static string Stars(int n) { return CharacterSystem.Stars(n); }

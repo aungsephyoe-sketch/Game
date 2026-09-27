@@ -166,6 +166,18 @@ namespace HashiraChronicles
             var glow = MaterialFactory.Toon(blade, 0.01f, blade * 0.7f);
             switch (kind)
             {
+                case WeaponKind.Fists:
+                {
+                    // Glowing gauntlets on both fists; the "sword" pivot is the right fist.
+                    BuildSword(blade, 0.05f, hand);
+                    var gl = MaterialFactory.Toon(Color.Lerp(blade, Color.white, 0.2f), 0.02f, blade * 0.8f);
+                    Add(MeshFactory.Primitive(PrimitiveType.Sphere, SwordPivot, Vector3.zero, new Vector3(0.3f, 0.3f, 0.34f), gl));
+                    Part(PrimitiveType.Sphere, Model, new Vector3(-0.4f * w, 0.72f * h, 0.16f), new Vector3(0.3f, 0.3f, 0.34f), gl, Vector3.zero);
+                    // Wrist wraps.
+                    var wrap = MaterialFactory.Toon(new Color(0.9f, 0.88f, 0.8f), 0.02f);
+                    Add(MeshFactory.Primitive(PrimitiveType.Cylinder, SwordPivot, new Vector3(0f, 0f, -0.2f), new Vector3(0.22f, 0.08f, 0.22f), wrap));
+                    break;
+                }
                 case WeaponKind.TwinBlades:
                     BuildSword(blade, 0.8f, hand);
                     Part(PrimitiveType.Cube, Model, new Vector3(-0.42f * w, 0.62f * h, 0.3f), new Vector3(0.05f, 0.07f, 0.8f), glow, new Vector3(35f, -15f, 0f));

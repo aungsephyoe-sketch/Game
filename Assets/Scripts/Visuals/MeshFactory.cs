@@ -104,6 +104,113 @@ namespace HashiraChronicles
             return cone;
         }
 
+        static readonly Dictionary<int, Mesh> facetCones = new Dictionary<int, Mesh>();
+        static readonly Dictionary<int, Mesh> facetCylinders = new Dictionary<int, Mesh>();
+        static readonly Dictionary<int, Mesh> rocks = new Dictionary<int, Mesh>();
+
+        /// <summary>Flat-shaded cone with a base cap (unit height, radius 0.5): low-poly trees, roofs, spires.</summary>
+        public static Mesh FacetCone(int sides)
+        {
+            Mesh m;
+            if (facetCones.TryGetValue(sides, out m) && m != null) return m;
+            var v = new List<Vector3>();
+            var t = new List<int>();
+            for (int i = 0; i < sides; i++)
+            {
+                float a0 = i * Mathf.PI * 2f / sides, a1 = (i + 1) * Mathf.PI * 2f / sides;
+                Vector3 p0 = new Vector3(Mathf.Cos(a0) * 0.5f, 0f, Mathf.Sin(a0) * 0.5f);
+                Vector3 p1 = new Vector3(Mathf.Cos(a1) * 0.5f, 0f, Mathf.Sin(a1) * 0.5f);
+                int b = v.Count;
+                v.Add(Vector3.up); v.Add(p1); v.Add(p0);
+                t.Add(b); t.Add(b + 1); t.Add(b + 2);
+                b = v.Count;
+                v.Add(Vector3.zero); v.Add(p0); v.Add(p1);
+                t.Add(b); t.Add(b + 1); t.Add(b + 2);
+            }
+            m = new Mesh { name = "FacetCone" + sides };
+            m.SetVertices(v);
+            m.SetTriangles(t, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            facetCones[sides] = m;
+            return m;
+        }
+
+        /// <summary>Flat-shaded prism (unit height from 0 to 1, radius 0.5) with caps: pedestals, towers, cliffs.</summary>
+        public static Mesh FacetCylinder(int sides)
+        {
+            Mesh m;
+            if (facetCylinders.TryGetValue(sides, out m) && m != null) return m;
+            var v = new List<Vector3>();
+            var t = new List<int>();
+            for (int i = 0; i < sides; i++)
+            {
+                float a0 = i * Mathf.PI * 2f / sides, a1 = (i + 1) * Mathf.PI * 2f / sides;
+                Vector3 p0 = new Vector3(Mathf.Cos(a0) * 0.5f, 0f, Mathf.Sin(a0) * 0.5f);
+                Vector3 p1 = new Vector3(Mathf.Cos(a1) * 0.5f, 0f, Mathf.Sin(a1) * 0.5f);
+                Vector3 up = Vector3.up;
+                int b = v.Count;
+                v.Add(p0); v.Add(p1 + up); v.Add(p1); v.Add(p0 + up);
+                t.Add(b); t.Add(b + 1); t.Add(b + 2);
+                t.Add(b); t.Add(b + 3); t.Add(b + 1);
+                b = v.Count;
+                v.Add(up); v.Add(p1 + up); v.Add(p0 + up);
+                t.Add(b); t.Add(b + 1); t.Add(b + 2);
+                b = v.Count;
+                v.Add(Vector3.zero); v.Add(p0); v.Add(p1);
+                t.Add(b); t.Add(b + 1); t.Add(b + 2);
+            }
+            m = new Mesh { name = "FacetCylinder" + sides };
+            m.SetVertices(v);
+            m.SetTriangles(t, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            facetCylinders[sides] = m;
+            return m;
+        }
+
+        /// <summary>A lumpy flat-shaded boulder (about unit size, sitting on y = 0). Variants are cached by seed.</summary>
+        public static Mesh Rock(int seed)
+        {
+            seed = Mathf.Abs(seed) % 8;
+            Mesh m;
+            if (rocks.TryGetValue(seed, out m) && m != null) return m;
+            var rng = new System.Random(seed * 7919 + 13);
+            const int rings = 3, seg = 7;
+            var pts = new List<Vector3>();
+            pts.Add(new Vector3(0f, 0.95f + (float)rng.NextDouble() * 0.15f, 0f));
+            for (int r = 1; r <= rings; r++)
+            {
+                float phi = r * Mathf.PI * 0.5f / rings;
+                for (int s = 0; s < seg; s++)
+                {
+                    float th = s * Mathf.PI * 2f / seg + r * 0.4f;
+                    float k = 0.8f + (float)rng.NextDouble() * 0.35f;
+                    pts.Add(new Vector3(Mathf.Sin(phi) * Mathf.Cos(th) * 0.55f * k, Mathf.Cos(phi) * 0.95f * k, Mathf.Sin(phi) * Mathf.Sin(th) * 0.55f * k));
+                }
+            }
+            for (int i = 1; i < pts.Count; i++) if (i > pts.Count - seg - 1) pts[i] = new Vector3(pts[i].x, 0f, pts[i].z);
+            var v = new List<Vector3>();
+            var t = new List<int>();
+            System.Action<Vector3, Vector3, Vector3> tri = (a, b, c) => { int n = v.Count; v.Add(a); v.Add(b); v.Add(c); t.Add(n); t.Add(n + 1); t.Add(n + 2); };
+            for (int s = 0; s < seg; s++) tri(pts[0], pts[1 + (s + 1) % seg], pts[1 + s]);
+            for (int r = 0; r < rings - 1; r++)
+                for (int s = 0; s < seg; s++)
+                {
+                    int a = 1 + r * seg + s, b = 1 + r * seg + (s + 1) % seg;
+                    int c = 1 + (r + 1) * seg + s, d = 1 + (r + 1) * seg + (s + 1) % seg;
+                    tri(pts[a], pts[b], pts[d]);
+                    tri(pts[a], pts[d], pts[c]);
+                }
+            m = new Mesh { name = "Rock" + seed };
+            m.SetVertices(v);
+            m.SetTriangles(t, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            rocks[seed] = m;
+            return m;
+        }
+
         /// <summary>Game object rendering a given mesh with a material (no collider).</summary>
         public static GameObject MeshObject(Mesh mesh, Transform parent, Vector3 localPos, Vector3 localScale, Material mat, bool shadows = true)
         {

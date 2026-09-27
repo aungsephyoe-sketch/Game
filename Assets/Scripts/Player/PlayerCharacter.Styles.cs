@@ -24,6 +24,7 @@ namespace HashiraChronicles
                 switch (Def.style)
                 {
                     case CombatStyle.Swift: return 1.5f;
+                    case CombatStyle.Brawler: return 1.35f;
                     case CombatStyle.Heavy: return 0.72f;
                     default: return 1f;
                 }
@@ -38,6 +39,8 @@ namespace HashiraChronicles
                 {
                     case CombatStyle.Heavy: return 1.45f;
                     case CombatStyle.Ranged: return 0.9f;
+                    case CombatStyle.Healer: return 0.75f;
+                    case CombatStyle.Brawler: return 0.9f;
                     default: return 1f;
                 }
             }
@@ -67,7 +70,7 @@ namespace HashiraChronicles
                         // The second cut of every swing.
                         yield return new WaitForSeconds(0.05f);
                         CombatSystem.HitArc(this, Position, transform.forward, range, arc, tag);
-                        VFX.Slash(Position, transform.forward, range * 0.9f, 150f, -SlashRoll[step % 5], ElementColor, 0.15f);
+                        ElementFx.Slash(Position, transform.forward, range * 0.9f, 150f, -SlashRoll[step % 5], Def.element, 0.7f);
                         if (Audio != null) Audio.PlayPitched("slash", 0.35f, 1.5f);
                     }
                     else
@@ -80,7 +83,7 @@ namespace HashiraChronicles
                         {
                             yield return new WaitForSeconds(0.045f);
                             CombatSystem.HitRadius(this, Position + transform.forward * 1.2f, 2.4f, flurry);
-                            VFX.Slash(Position + transform.forward * 1.2f, Random.insideUnitSphere, 1.8f, 160f, Random.Range(-80f, 80f), ElementColor, 0.12f);
+                            ElementFx.Slash(Position + transform.forward * 1.2f, Random.insideUnitSphere, 1.8f, 160f, Random.Range(-80f, 80f), Def.element, 0.6f);
                             if (Audio != null) Audio.PlayPitched("slash", 0.3f, 1.4f + i * 0.08f);
                         }
                     }
@@ -162,7 +165,7 @@ namespace HashiraChronicles
                     for (int i = -2; i <= 2; i++)
                         EnemyProjectile.Fire(this, muzzle, Quaternion.Euler(0f, i * 12f, 0f) * dir, 24f, 16f, tag, ElementColor, 0.42f);
                     VFX.BurstDisc(muzzle, 1.2f, ElementColor, 0.25f);
-                    if (Def.role == Role.Support)
+                    if (Def.role == Role.Support || Def.style == CombatStyle.Healer)
                     {
                         // Healers mend the team a little with every volley.
                         var b = BattleController.Current;

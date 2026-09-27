@@ -133,6 +133,7 @@ namespace HashiraChronicles
             Vector3 hitPos = target.Position + Vector3.up * (1f * target.transform.localScale.y);
             bool playerHit = target is PlayerCharacter;
             VFX.HitSpark(hitPos, playerHit ? new Color(1f, 0.25f, 0.2f) : tag.color, info.crit ? 22 : 12);
+            if (!playerHit && attacker is PlayerCharacter) ElementFx.Impact(hitPos, attacker.Element, tag.heavy || info.crit);
             DamageNumbers.Spawn(hitPos, info.amount, info.crit, info.elementMultiplier, playerHit);
             if (GameManager.Instance != null && GameManager.Instance.Audio != null)
             {

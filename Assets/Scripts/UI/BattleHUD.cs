@@ -277,19 +277,21 @@ namespace HashiraChronicles
 
             // Attack (shows charge).
             var atk = HudLayout.Attack;
-            DrawButton(atk, "ATTACK", pc.ChargeAmount > 0f ? "CHARGE" : (pc.ComboStep > 0 ? "COMBO " + pc.ComboStep : ""), 0f, controls.Pressed[0], el);
+            DrawButton(atk, "ATTACK", pc.ChargeAmount > 0f ? "CHARGE" : (pc.ComboStep > 0 ? "COMBO " + pc.ComboStep : ""), 0f, controls.Pressed[0], el, 0f,
+                IconFactory.Get(IconFactory.ForAttack(pc.Def.style, pc.Def.weapon)));
             if (pc.ChargeAmount > 0f) UIStyles.CircleFill(atk.center, atk.radius, pc.ChargeAmount, new Color(el.r, el.g, el.b, 0.45f));
 
-            DrawButton(HudLayout.Dodge, "DODGE", "", 0f, controls.Pressed[1], new Color(0.7f, 0.8f, 1f));
-            DrawButton(HudLayout.Lock, PlayerCharacter.LockTarget != null ? "◎" : "LOCK", "", 0f, controls.Pressed[8], PlayerCharacter.LockTarget != null ? UIStyles.Crimson : Color.white);
-            DrawButton(HudLayout.Guard, "GUARD", pc.Guarding ? "PARRY: TAP" : "", 0f, Mathf.Max(controls.Pressed[6], pc.Guarding ? 0.6f : 0f), new Color(0.9f, 0.9f, 0.6f));
+            DrawButton(HudLayout.Dodge, "DODGE", "", 0f, controls.Pressed[1], new Color(0.55f, 0.75f, 1f), 0f, IconFactory.Get("dodge"));
+            DrawButton(HudLayout.Lock, "LOCK", "", 0f, controls.Pressed[8], PlayerCharacter.LockTarget != null ? UIStyles.Crimson : new Color(0.8f, 0.8f, 0.85f), 0f, IconFactory.Get("target"));
+            DrawButton(HudLayout.Guard, "GUARD", pc.Guarding ? "PARRY: TAP" : "", 0f, Mathf.Max(controls.Pressed[6], pc.Guarding ? 0.6f : 0f), new Color(0.95f, 0.85f, 0.45f), 0f, IconFactory.Get("shield"));
 
             for (int i = 0; i < 3; i++)
             {
                 var ab = pc.Def.skills[i];
                 float cd = pc.Cooldowns[i];
                 string shortName = ab.name.Contains(":") ? ab.name.Substring(ab.name.IndexOf(':') + 1).Trim() : ab.name;
-                DrawButton(HudLayout.Skill(i), (i + 1).ToString(), shortName, cd > 0f ? cd / ab.cooldown : 0f, controls.Pressed[2 + i], el, cd);
+                DrawButton(HudLayout.Skill(i), (i + 1).ToString(), shortName, cd > 0f ? cd / ab.cooldown : 0f, controls.Pressed[2 + i], el, cd,
+                    IconFactory.Get(IconFactory.ForSkill(ab.shape)), IconFactory.Get(IconFactory.ForElement(pc.Element)));
             }
 
             var ult = HudLayout.Ultimate;
@@ -298,24 +300,51 @@ namespace HashiraChronicles
             UIStyles.CircleFill(ult.center, ult.radius, gauge, new Color(el.r, el.g, el.b, pc.UltReady ? 0.9f : 0.45f));
             float ring = pc.UltReady ? 0.7f + 0.3f * Mathf.Sin(Time.unscaledTime * 8f) : 0.4f;
             UIStyles.CircleTex(ult.center, ult.radius + (pc.UltReady ? 6f * ring : 0f), new Color(1f, 0.85f, 0.4f, ring), UIStyles.Ring);
-            UIStyles.Outlined(new Rect(ult.center.x - ult.radius, ult.center.y - 30f, ult.radius * 2f, 40f), "ULT", UIStyles.Sized(UIStyles.Center, 34), Color.white, 2f);
-            GUI.Label(new Rect(ult.center.x - ult.radius, ult.center.y + 8f, ult.radius * 2f, 30f), pc.UltReady ? "READY" : Mathf.FloorToInt(gauge * 100f) + "%",
-                UIStyles.Sized(UIStyles.CenterSmall, 22));
+            float ui = ult.radius * 0.95f;
+            DrawIcon(new Rect(ult.center.x - ui * 0.5f, ult.center.y - ui * 0.62f, ui, ui), IconFactory.Get(IconFactory.ForElement(pc.Element)), pc.UltReady ? Color.white : new Color(1f, 1f, 1f, 0.6f));
+            UIStyles.Outlined(new Rect(ult.center.x - ult.radius, ult.center.y + ult.radius * 0.28f, ult.radius * 2f, 30f), pc.UltReady ? "SPECIAL" : Mathf.FloorToInt(gauge * 100f) + "%",
+                UIStyles.Sized(UIStyles.Center, 20), Color.white, 2f);
         }
 
-        void DrawButton(HudLayout.Circle c, string label, string sub, float cooldown01, float pressed, Color accent, float seconds = 0f)
+        void DrawButton(HudLayout.Circle c, string label, string sub, float cooldown01, float pressed, Color accent, float seconds = 0f, Texture2D icon = null, Texture2D badge = null)
         {
             float r = c.radius * (1f - pressed * 0.08f);
-            UIStyles.CircleTex(c.center, r, new Color(0f, 0f, 0f, 0.5f));
-            UIStyles.CircleTex(c.center, r, new Color(accent.r, accent.g, accent.b, 0.25f + pressed * 0.4f));
-            UIStyles.CircleTex(c.center, r, new Color(1f, 1f, 1f, 0.55f), UIStyles.Ring);
+            // Dark base, element-tinted fill with a lighter core, bright rim.
+            UIStyles.CircleTex(c.center + new Vector2(0f, 4f), r, new Color(0f, 0f, 0f, 0.35f));
+            UIStyles.CircleTex(c.center, r, new Color(0.04f, 0.04f, 0.08f, 0.7f));
+            UIStyles.CircleTex(c.center, r * 0.94f, new Color(accent.r * 0.6f, accent.g * 0.6f, accent.b * 0.6f, 0.55f + pressed * 0.35f));
+            UIStyles.CircleTex(c.center - new Vector2(0f, r * 0.18f), r * 0.62f, new Color(1f, 1f, 1f, 0.08f + pressed * 0.1f));
+            UIStyles.CircleTex(c.center, r, new Color(Mathf.Lerp(accent.r, 1f, 0.5f), Mathf.Lerp(accent.g, 1f, 0.5f), Mathf.Lerp(accent.b, 1f, 0.5f), 0.75f), UIStyles.Ring);
             if (cooldown01 > 0f)
             {
+                if (icon != null) DrawIcon(new Rect(c.center.x - r * 0.55f, c.center.y - r * 0.55f, r * 1.1f, r * 1.1f), icon, new Color(1f, 1f, 1f, 0.25f));
                 UIStyles.CircleFill(c.center, r, cooldown01, new Color(0f, 0f, 0f, 0.6f));
                 UIStyles.Outlined(new Rect(c.center.x - r, c.center.y - 26f, r * 2f, 50f), Mathf.CeilToInt(seconds).ToString(), UIStyles.Sized(UIStyles.Center, 40), Color.white, 2f);
             }
+            else if (icon != null)
+            {
+                float s = r * (sub == "" ? 1.1f : 0.9f);
+                float cy = c.center.y - (sub == "" ? 0f : r * 0.16f);
+                DrawIcon(new Rect(c.center.x - s * 0.5f + 2f, cy - s * 0.5f + 3f, s, s), icon, new Color(0f, 0f, 0f, 0.45f));
+                DrawIcon(new Rect(c.center.x - s * 0.5f, cy - s * 0.5f, s, s), icon, Color.white);
+            }
             else UIStyles.Outlined(new Rect(c.center.x - r, c.center.y - (sub == "" ? 20f : 34f), r * 2f, 40f), label, UIStyles.Sized(UIStyles.Center, label.Length > 2 ? 28 : 38), Color.white, 2f);
-            if (sub != "") GUI.Label(new Rect(c.center.x - r - 20f, c.center.y + 6f, r * 2f + 40f, 50f), sub, UIStyles.Sized(UIStyles.CenterSmall, 18));
+            if (badge != null)
+            {
+                Vector2 bc = c.center + new Vector2(r * 0.72f, -r * 0.72f);
+                UIStyles.CircleTex(bc, r * 0.32f, new Color(0.05f, 0.05f, 0.1f, 0.9f));
+                DrawIcon(new Rect(bc.x - r * 0.22f, bc.y - r * 0.22f, r * 0.44f, r * 0.44f), badge, accent);
+            }
+            if (sub != "") UIStyles.Outlined(new Rect(c.center.x - r, c.center.y + r * 0.34f, r * 2f, 28f), sub, UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(Mathf.Clamp(r * 0.26f, 13f, 18f))), new Color(1f, 1f, 1f, 0.92f), 2f);
+        }
+
+        static void DrawIcon(Rect r, Texture2D icon, Color c)
+        {
+            if (icon == null) return;
+            var old = GUI.color;
+            GUI.color = new Color(old.r * c.r, old.g * c.g, old.b * c.b, old.a * c.a);
+            GUI.DrawTexture(r, icon, ScaleMode.ScaleToFit, true);
+            GUI.color = old;
         }
 
         void DrawEnemyBars(Camera cam)

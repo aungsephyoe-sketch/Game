@@ -19,10 +19,10 @@ namespace HashiraChronicles
     /// <summary>Hair / headwear silhouette of a chibi character.</summary>
     public enum HairStyle { Messy, Spiky, Long, Ponytail, Braid, Short, Bun, Hood, Cap, StrawHat, Wild, Crest }
 
-    public enum WeaponKind { Katana, TwinBlades, Greatsword, SwordShield, Spear, Staff, Bow, Fans, Cleavers, Cane, Moon }
+    public enum WeaponKind { Katana, TwinBlades, Greatsword, SwordShield, Spear, Staff, Bow, Fans, Cleavers, Cane, Moon, Fists }
 
     /// <summary>How a character fights: each style has its own combo timing, reach and signature mechanic.</summary>
-    public enum CombatStyle { Balanced, Swift, Heavy, Ranged, Technical }
+    public enum CombatStyle { Balanced, Swift, Heavy, Ranged, Technical, Brawler, Healer }
 
     /// <summary>Movement personality used by idle, walk and run animation.</summary>
     public enum MotionStyle { Steady, Nervous, Aggressive, Graceful, Stoic, Confident, Sly, Light }

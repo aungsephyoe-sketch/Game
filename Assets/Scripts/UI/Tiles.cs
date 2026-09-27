@@ -79,6 +79,36 @@ namespace HashiraChronicles
             return clicked && k > 0.6f;
         }
 
+        /// <summary>Gold coin with a $ stamp.</summary>
+        public static void CoinIcon(Vector2 c, float size)
+        {
+            UIStyles.CircleTex(c, size * 0.5f, new Color(0.85f, 0.55f, 0.08f));
+            UIStyles.CircleTex(c, size * 0.42f, new Color(1f, 0.8f, 0.2f));
+            UIStyles.CircleTex(c + new Vector2(-size * 0.08f, -size * 0.1f), size * 0.18f, new Color(1f, 0.93f, 0.55f, 0.6f));
+            UIStyles.Colored(new Rect(c.x - size * 0.5f, c.y - size * 0.5f, size, size), "$", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(size * 0.55f)), new Color(0.7f, 0.42f, 0.05f));
+        }
+
+        /// <summary>Blue faceted crystal.</summary>
+        public static void DiamondIcon(Vector2 c, float size)
+        {
+            var old = GUI.matrix;
+            GUIUtility.RotateAroundPivot(45f, c);
+            float s = size * 0.62f;
+            Round(new Rect(c.x - s * 0.5f, c.y - s * 0.5f, s, s), new Color(0.12f, 0.45f, 0.95f), s * 0.12f);
+            Round(new Rect(c.x - s * 0.5f, c.y - s * 0.5f, s * 0.5f, s * 0.5f), new Color(0.55f, 0.85f, 1f), s * 0.1f);
+            Round(new Rect(c.x, c.y, s * 0.5f, s * 0.5f), new Color(0.08f, 0.3f, 0.75f), s * 0.1f);
+            GUI.matrix = old;
+        }
+
+        /// <summary>Padlock: rounded body, shackle and keyhole.</summary>
+        public static void LockIcon(Vector2 c, float h, Color col)
+        {
+            RoundFrame(new Rect(c.x - h * 0.3f, c.y - h * 0.52f, h * 0.6f, h * 0.8f), col, h * 0.14f, h * 0.3f);
+            Round(new Rect(c.x - h * 0.45f, c.y - h * 0.08f, h * 0.9f, h * 0.62f), col, h * 0.12f);
+            UIStyles.CircleTex(new Vector2(c.x, c.y + h * 0.16f), h * 0.09f, new Color(0.15f, 0.15f, 0.2f));
+            Round(new Rect(c.x - h * 0.04f, c.y + h * 0.18f, h * 0.08f, h * 0.18f), new Color(0.15f, 0.15f, 0.2f), h * 0.03f);
+        }
+
         /// <summary>Currency pill: dark rounded capsule, coloured icon disc, value.</summary>
         void Pill(Rect r, string icon, Color c, string value)
         {

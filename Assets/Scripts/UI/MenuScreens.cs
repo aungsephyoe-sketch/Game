@@ -207,46 +207,53 @@ namespace HashiraChronicles
             if (inArea) DrawAreaNodes(list, current);
 
             float pk = Enter(0.1f, 0.4f);
-            var panel = new Rect(safe.xMax - 640f + (1f - pk) * 300f, safe.y + 130f, 620f, H - safe.y - 150f);
-            Round(Offset(panel, 0f, 6f), new Color(0f, 0f, 0f, 0.35f), 18f);
-            Round(panel, new Color(0.06f, 0.06f, 0.12f, 0.9f), 18f);
-            Round(new Rect(panel.x, panel.y, panel.width, 8f), region2.mapColor, 4f);
-            GUI.Label(new Rect(panel.x + 26f, panel.y + 16f, panel.width - 52f, 56f), region2.name, UIStyles.H1);
-            GUI.Label(new Rect(panel.x + 26f, panel.y + 72f, panel.width - 52f, 36f), region2.subtitle, UIStyles.Small);
-            float y = panel.y + 116f;
+            var panel = new Rect(safe.xMax - 610f + (1f - pk) * 300f, safe.y + 124f, 590f, H - safe.y - 144f);
+            Round(Offset(panel, 0f, 6f), new Color(0f, 0f, 0f, 0.35f), 16f);
+            Round(panel, new Color(0.07f, 0.08f, 0.13f, 0.94f), 16f);
+            float px = panel.x + 26f, pw = panel.width - 52f;
+            float y = panel.y + 18f;
+            UIStyles.Outlined(new Rect(px, y, pw, 56f), region2.name, UIStyles.Sized(UIStyles.H1, 42), new Color(1f, 0.74f, 0.22f), 1.5f);
+            y += 56f;
+            int chapterNo = 0;
+            foreach (var m in list) if (m.chapter > 0) { chapterNo = m.chapter; break; }
+            if (chapterNo > 0) { GUI.Label(new Rect(px, y, pw, 32f), "<color=#B8B8C8>Chapter " + chapterNo + "</color>", UIStyles.Sized(UIStyles.Body, 24)); y += 36f; }
+            GUI.Label(new Rect(px, y, pw, 60f), region2.subtitle, UIStyles.Sized(UIStyles.Body, 21));
+            y += 66f;
             if (mapSelected != d.currentRegion && d.IsRegionUnlocked(region2))
             {
-                if (FlatBtn(new Rect(panel.x + 26f, y, panel.width - 52f, 66f), "TRAVEL HERE", TileBlue)) { mapOverview = false; gm.TravelTo(mapSelected); }
-                y += 80f;
-            }
-            else if (mapSelected == d.currentRegion)
-            {
-                if (FlatBtn(new Rect(panel.x + 26f, y, panel.width - 52f, 56f), mapOverview ? "ENTER AREA" : "◀ WORLD MAP", new Color(0.25f, 0.25f, 0.34f), true, 24)) mapOverview = !mapOverview;
-                y += 70f;
+                if (FlatBtn(new Rect(px, y, pw, 60f), "TRAVEL HERE", TileBlue, true, 26)) { mapOverview = false; gm.TravelTo(mapSelected); }
+                y += 72f;
             }
 
-            var view = new Rect(panel.x + 16f, y, panel.width - 32f, panel.yMax - y - 110f);
-            float rowH = 82f;
-            var content = new Rect(0f, 0f, view.width - 24f, list.Count * (rowH + 8f));
+            var view = new Rect(panel.x + 14f, y, panel.width - 28f, panel.yMax - y - 116f);
+            float rowH = 64f;
+            var content = new Rect(0f, 0f, view.width - (list.Count * (rowH + 4f) > view.height ? 22f : 0f), list.Count * (rowH + 4f));
             mapScroll = GUI.BeginScrollView(view, mapScroll, content);
             for (int i = 0; i < list.Count; i++)
             {
                 var m = list[i];
                 bool unlocked = d.IsMissionUnlocked(m);
-                bool cleared = d.IsMissionCleared(m.id);
                 bool boss = m.type == MissionType.Boss;
-                var r = new Rect(0f, i * (rowH + 8f), content.width, rowH);
+                var r = new Rect(0f, i * (rowH + 4f), content.width, rowH);
                 bool picked = i == areaPick;
-                Round(r, boss ? new Color(0.35f, 0.08f, 0.12f, 0.95f) : new Color(0.14f, 0.13f, 0.22f, 0.95f), 12f);
-                if (picked) RoundFrame(r, UIStyles.Gold, 3f, 12f);
-                Color nc = !unlocked ? new Color(0.35f, 0.35f, 0.4f) : cleared ? new Color(0.95f, 0.72f, 0.2f) : TileRed;
-                UIStyles.CircleTex(new Vector2(r.x + 40f, r.center.y), 26f, nc);
-                GUI.Label(new Rect(r.x + 14f, r.y + 14f, 52f, 52f), boss ? "☠" : (i + 1).ToString(), UIStyles.Sized(UIStyles.Center, 26));
-                string title = (boss ? "<color=#FF7A7A>BOSS</color>  " : "") + m.name;
-                GUI.Label(new Rect(r.x + 80f, r.y + 8f, r.width - 250f, 38f), title, UIStyles.Sized(UIStyles.H2, 24));
-                GUI.Label(new Rect(r.x + 80f, r.y + 44f, r.width - 250f, 30f), "<color=#AAAAAA>" + m.id + " · Rec. Lv." + m.recommendedLevel + "</color>", UIStyles.Sized(UIStyles.Small, 18));
-                if (unlocked) GUI.Label(new Rect(r.xMax - 170f, r.y, 160f, rowH), "<color=#FFD36B>" + StarRow(d, m) + "</color>", UIStyles.Sized(UIStyles.Right, 28));
-                else GUI.Label(new Rect(r.xMax - 170f, r.y, 160f, rowH), "<color=#999999>LOCKED</color>", UIStyles.Sized(UIStyles.Right, 20));
+                if (picked) Round(r, new Color(0.2f, 0.22f, 0.32f), 8f);
+                else if (r.Contains(Event.current.mousePosition)) Round(r, new Color(1f, 1f, 1f, 0.05f), 8f);
+                if (picked) Round(new Rect(r.x, r.y + 4f, 6f, r.height - 8f), new Color(1f, 0.78f, 0.25f), 3f);
+                else if (boss) Round(new Rect(r.x, r.y + 14f, 6f, r.height - 28f), UIStyles.Crimson, 3f);
+                float tx = r.x + 20f;
+                if (boss)
+                {
+                    UIStyles.Colored(new Rect(tx, r.y, 80f, r.height), "BOSS", UIStyles.Sized(UIStyles.Body, 22), new Color(1f, 0.3f, 0.3f));
+                    tx += 70f;
+                }
+                if (picked && !boss)
+                {
+                    Round(new Rect(tx - 4f, r.y + 12f, 64f, r.height - 24f), new Color(0.1f, 0.1f, 0.16f), 6f);
+                }
+                UIStyles.Colored(new Rect(tx, r.y, 70f, r.height), "<b>" + m.MissionLabel + "</b>", UIStyles.Sized(UIStyles.Body, boss ? 22 : 26), unlocked ? Color.white : new Color(1f, 0.75f, 0.35f));
+                GUI.Label(new Rect(tx + 76f, r.y, r.width - tx - 190f, r.height), m.name, UIStyles.Sized(UIStyles.Body, 22));
+                if (!unlocked) LockIcon(new Vector2(r.xMax - 34f, r.center.y), 30f, new Color(0.85f, 0.85f, 0.9f));
+                else StarsIcons(new Vector2(r.xMax - 118f, r.center.y), 28f, d, m);
                 if (GUI.Button(r, GUIContent.none, GUIStyle.none))
                 {
                     gm.Audio.Play("click", 0.5f);
@@ -258,9 +265,10 @@ namespace HashiraChronicles
             GUI.EndScrollView();
 
             var chosen = areaPick >= 0 && areaPick < list.Count ? list[areaPick] : null;
+            var cb = new Rect(px - 4f, panel.yMax - 100f, pw + 8f, 78f);
             if (chosen != null && d.IsMissionUnlocked(chosen))
             {
-                if (FlatBtn(new Rect(panel.x + 26f, panel.yMax - 94f, panel.width - 52f, 76f), "CONTINUE ▶  " + chosen.id, TileRed, true, 32))
+                if (FlatBtn(cb, "CONTINUE " + chosen.MissionLabel + "   ›", TileRed, true, 34))
                 {
                     gm.SelectedMission = chosen;
                     gm.GoTo(GameScreen.MissionDetail);
@@ -269,12 +277,32 @@ namespace HashiraChronicles
             else
             {
                 var next = gm.NextStoryMission();
-                if (next != null && FlatBtn(new Rect(panel.x + 26f, panel.yMax - 94f, panel.width - 52f, 76f), "CONTINUE STORY ▶ " + next.id, TileRed, true, 30))
+                if (next != null && FlatBtn(cb, "CONTINUE " + next.MissionLabel + "   ›", TileRed, true, 34))
                 {
                     gm.SelectedMission = next;
                     mapSelected = next.regionId;
                     gm.GoTo(GameScreen.MissionDetail);
                 }
+            }
+
+            // Small toggle between this area and the whole world, under the top bar.
+            if (mapSelected == d.currentRegion)
+            {
+                var tr = new Rect(safe.x + 22f, safe.y + 124f, 230f, 50f);
+                if (FlatBtn(tr, mapOverview ? "‹ AREA MAP" : "ALL REGIONS", new Color(0.15f, 0.16f, 0.26f, 0.9f), true, 20)) mapOverview = !mapOverview;
+            }
+        }
+
+        /// <summary>Three star glyphs: gold for objectives done, dim for the rest.</summary>
+        void StarsIcons(Vector2 left, float size, PlayerData d, MissionDefinition m)
+        {
+            var p = d.GetMission(m.id);
+            int mask = p != null ? p.objectivesMask : 0;
+            for (int i = 0; i < 3; i++)
+            {
+                bool on = (mask & (1 << i)) != 0;
+                UIStyles.Colored(new Rect(left.x + i * size * 1.05f, left.y - size * 0.6f, size * 1.1f, size * 1.2f), "★", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(size)),
+                    on ? new Color(1f, 0.8f, 0.2f) : new Color(1f, 1f, 1f, 0.18f));
             }
         }
 
@@ -292,53 +320,50 @@ namespace HashiraChronicles
             return sb.ToString();
         }
 
-        /// <summary>Numbered stops and the dotted trail between them, drawn over the area's 3D pads.</summary>
+        /// <summary>Locks and number plates over the area's stone pedestals (the trail itself is 3D).</summary>
         void DrawAreaNodes(List<MissionDefinition> list, int current)
         {
             var cam = Camera.main;
             var pts = gm.Map.AreaPoints;
             if (cam == null || pts.Count != list.Count) return;
             float s = HudLayout.Scale;
-            var screen = new List<Vector2>();
-            foreach (var p in pts)
-            {
-                Vector3 sp = cam.WorldToScreenPoint(p);
-                screen.Add(sp.z > 0f ? new Vector2(sp.x / s, (Screen.height - sp.y) / s) : new Vector2(-9999f, -9999f));
-            }
             var d = gm.Data;
-            // Dotted trail.
-            for (int i = 0; i < screen.Count - 1; i++)
+            for (int i = 0; i < pts.Count; i++)
             {
-                bool open = d.IsMissionUnlocked(list[i + 1]);
-                float len = Vector2.Distance(screen[i], screen[i + 1]);
-                int dots = Mathf.Max(2, Mathf.FloorToInt(len / 22f));
-                for (int k = 1; k < dots; k++)
-                    UIStyles.CircleTex(Vector2.Lerp(screen[i], screen[i + 1], (float)k / dots), 5f, open ? new Color(1f, 1f, 1f, 0.9f) : new Color(0.3f, 0.3f, 0.35f, 0.7f));
-            }
-            for (int i = 0; i < screen.Count; i++)
-            {
+                Vector3 top = pts[i] + Vector3.up * 0.4f;
+                Vector3 sp = cam.WorldToScreenPoint(top);
+                if (sp.z <= 0f) continue;
+                var c = new Vector2(sp.x / s, (Screen.height - sp.y) / s);
+                // Size the icons with the pedestal on screen.
+                Vector3 edge = cam.WorldToScreenPoint(top + cam.transform.right * 0.7f);
+                float px = Mathf.Clamp(Mathf.Abs(edge.x - sp.x) / s, 18f, 60f);
                 var m = list[i];
                 bool unlocked = d.IsMissionUnlocked(m);
                 bool cleared = d.IsMissionCleared(m.id);
                 bool boss = m.type == MissionType.Boss;
-                float rad = boss ? 40f : 30f;
-                // The leader stands on the current stop, so its marker sits just in front of their feet.
-                if (i == current) rad = rad * 0.75f + Mathf.Sin(Time.unscaledTime * 4f) * 3f;
-                Vector2 c = screen[i] + new Vector2(0f, i == current ? rad + 12f : 0f);
-                Color col = !unlocked ? new Color(0.35f, 0.35f, 0.4f) : boss ? UIStyles.Crimson : cleared ? new Color(0.95f, 0.72f, 0.2f) : TileRed;
-                UIStyles.CircleTex(c + new Vector2(0f, 4f), rad + 4f, new Color(0f, 0f, 0f, 0.4f));
-                UIStyles.CircleTex(c, rad + 4f, i == areaPick ? UIStyles.Gold : Color.white);
-                UIStyles.CircleTex(c, rad, col);
-                string label = !unlocked ? "✕" : boss ? "☠" : (i + 1).ToString();
-                GUI.Label(new Rect(c.x - rad, c.y - rad, rad * 2f, rad * 2f), label, UIStyles.Sized(UIStyles.Center, boss ? 34 : 28));
-                if (unlocked) UIStyles.Outlined(new Rect(c.x - 60f, c.y + rad + 2f, 120f, 30f), StarRow(d, m), UIStyles.Sized(UIStyles.Center, 20), new Color(1f, 0.83f, 0.3f), 2f);
-                if (boss) UIStyles.Outlined(new Rect(c.x - 60f, c.y - rad - 34f, 120f, 30f), "BOSS", UIStyles.Sized(UIStyles.Center, 22), UIStyles.Bad, 2f);
-                var hit = new Rect(c.x - rad, c.y - rad, rad * 2f, rad * 2f);
+                if (i != current)
+                {
+                    if (!unlocked) LockIcon(c + new Vector2(0f, -px * 0.55f), px * 0.95f, Color.white);
+                    else if (cleared) UIStyles.Outlined(new Rect(c.x - px, c.y - px * 1.4f, px * 2f, px * 1.4f), "★", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(px * 1.1f)), new Color(1f, 0.82f, 0.25f), 2f);
+                    else UIStyles.Outlined(new Rect(c.x - px, c.y - px * 1.4f, px * 2f, px * 1.4f), "!", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(px * 1.1f)), new Color(1f, 0.9f, 0.4f), 2f);
+                    if (boss) UIStyles.Outlined(new Rect(c.x - px * 1.5f, c.y - px * 2.4f, px * 3f, px), "BOSS", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(px * 0.55f)), new Color(1f, 0.35f, 0.3f), 2f);
+                }
+                // Number plate under the pedestal.
+                string label = m.MissionLabel;
+                var st = UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(Mathf.Clamp(px * 0.62f, 18f, 30f)));
+                float lw = Mathf.Max(px * 1.9f, st.CalcSize(new GUIContent(label)).x + 22f), lh = px * 0.95f;
+                var plate = new Rect(c.x - lw * 0.5f, c.y + px * 0.55f, lw, lh);
+                Round(Offset(plate, 0f, 3f), new Color(0f, 0f, 0f, 0.35f), lh * 0.3f);
+                Round(plate, i == areaPick ? new Color(0.2f, 0.18f, 0.08f, 0.95f) : new Color(0.1f, 0.11f, 0.16f, 0.92f), lh * 0.3f);
+                RoundFrame(plate, i == areaPick ? new Color(1f, 0.8f, 0.3f) : new Color(1f, 1f, 1f, 0.15f), 2f, lh * 0.3f);
+                GUI.Label(plate, "<b>" + label + "</b>", st);
+                var hit = new Rect(c.x - px * 1.1f, c.y - px * 1.6f, px * 2.2f, px * 3.2f);
                 if (GUI.Button(hit, GUIContent.none, GUIStyle.none))
                 {
                     gm.Audio.Play("click", 0.5f);
-                    if (unlocked) areaPick = i;
-                    else Toast("Locked — clear " + m.requiresMissionId + " first.");
+                    if (!unlocked) Toast("Locked — clear " + m.requiresMissionId + " first.");
+                    else if (areaPick == i) { gm.SelectedMission = m; gm.GoTo(GameScreen.MissionDetail); }
+                    else areaPick = i;
                 }
             }
         }

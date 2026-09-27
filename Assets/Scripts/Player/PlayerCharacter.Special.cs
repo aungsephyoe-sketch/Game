@@ -132,7 +132,7 @@ namespace HashiraChronicles
                 {
                     float a = i * 45f;
                     Vector3 p = Position + Quaternion.Euler(0f, a, 0f) * Vector3.forward * 3f;
-                    VFX.Slash(p, Quaternion.Euler(0f, a + 90f, 0f) * Vector3.forward, 2.4f, 200f, 60f, color, 0.3f);
+                    ElementFx.Slash(p, Quaternion.Euler(0f, a + 90f, 0f) * Vector3.forward, 2.4f, 200f, 60f, Def.element, 1.4f);
                     tally.Add(CombatSystem.HitRadius(this, p, 2f, tag));
                     if (Audio != null) Audio.PlayPitched("slash", 0.5f, 0.8f + i * 0.05f);
                     yield return new WaitForSeconds(0.06f);
@@ -179,6 +179,12 @@ namespace HashiraChronicles
                     }
                     break;
                 }
+                case CombatStyle.Brawler:
+                    yield return BrawlerSpecial(tag, color, target, tally);
+                    break;
+                case CombatStyle.Healer:
+                    yield return HealerSpecial(tag, color, target, tally);
+                    break;
                 case CombatStyle.Ranged:
                 {
                     // A storm of shots rains down across the area.
@@ -207,7 +213,7 @@ namespace HashiraChronicles
                     {
                         float a = i * 36f;
                         Vector3 dir = Quaternion.Euler(0f, a, 0f) * Vector3.forward;
-                        VFX.Slash(Position + Vector3.up * (i * 0.15f), dir, 3.4f, 170f, i * 18f, color, 0.25f);
+                        ElementFx.Slash(Position + Vector3.up * (i * 0.15f), dir, 3.4f, 170f, i * 18f, Def.element, 1.4f);
                         Visual.Swing(a - 90f, a + 90f, 0.06f, 20f);
                         tally.Add(CombatSystem.HitArc(this, Position, dir, 3.6f, 90f, tag));
                         if (Audio != null) Audio.PlayPitched("slash", 0.5f, 0.9f + i * 0.05f);

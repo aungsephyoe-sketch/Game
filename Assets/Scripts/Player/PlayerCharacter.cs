@@ -393,7 +393,9 @@ namespace HashiraChronicles
 
         IEnumerator ComboRoutine()
         {
-            return Def.style == CombatStyle.Ranged ? RangedCombo() : MeleeCombo();
+            if (Def.style == CombatStyle.Ranged || Def.style == CombatStyle.Healer) return RangedCombo();
+            if (Def.style == CombatStyle.Brawler) return BrawlerCombo();
+            return MeleeCombo();
         }
 
         IEnumerator MeleeCombo()
@@ -451,8 +453,8 @@ namespace HashiraChronicles
                 }
                 if (Def.style == CombatStyle.Swift && !finisher) tag.multiplier *= 0.58f;
                 CombatSystem.HitArc(this, Position, transform.forward, range, arc, tag);
-                VFX.Slash(Position, transform.forward, range, finisher ? 330f : 160f, SlashRoll[step % 5], ElementColor, 0.2f);
-                if (finisher) VFX.Shockwave(Position, range, ElementColor, 0.3f);
+                ElementFx.Slash(Position, transform.forward, range, finisher ? 330f : 160f, SlashRoll[step % 5], Def.element, finisher ? 2f : 1f);
+                if (finisher) ElementFx.Finisher(Position + transform.forward * 0.8f, transform.forward, Def.element, range);
                 PlayStyleSwing(finisher);
                 yield return StyleFollowUp(step, finisher, range, arc, tag);
 
@@ -512,6 +514,8 @@ namespace HashiraChronicles
         IEnumerator ChargedRoutine()
         {
             if (Def.style == CombatStyle.Ranged) { yield return RangedCharged(); yield break; }
+            if (Def.style == CombatStyle.Healer) { yield return HealerCharged(); yield break; }
+            if (Def.style == CombatStyle.Brawler) { yield return BrawlerCharged(); yield break; }
             AutoAim(6f);
             Visual.SetCharge(0f, ElementColor);
             Visual.HeavyAttack(0.16f);
@@ -523,7 +527,8 @@ namespace HashiraChronicles
             tag.shake = 0.45f;
             tag.heavy = true;
             CombatSystem.HitArc(this, Position, transform.forward, 4.4f, 210f, tag);
-            VFX.Slash(Position, transform.forward, 4.4f, 210f, 0f, ElementColor, 0.3f);
+            ElementFx.Slash(Position, transform.forward, 4.4f, 210f, 0f, Def.element, 2.2f);
+            ElementFx.Finisher(Position + transform.forward * 2f, transform.forward, Def.element, 3.5f);
             VFX.Breath(Position + transform.forward * 2f, ElementColor, 30);
             VFX.Dust(Position + transform.forward * 1.5f, 10);
             Play("heavy", 0.9f);
@@ -537,7 +542,7 @@ namespace HashiraChronicles
         IEnumerator DodgeRoutine()
         {
             Vector3 dir = moveInput.sqrMagnitude > 0.05f ? moveInput.normalized : -transform.forward;
-            dodgeCooldown = Def.style == CombatStyle.Swift ? 0.22f : Def.style == CombatStyle.Heavy ? 0.55f : 0.4f;
+            dodgeCooldown = Def.style == CombatStyle.Swift || Def.style == CombatStyle.Brawler ? 0.24f : Def.style == CombatStyle.Heavy ? 0.55f : 0.4f;
             const float duration = 0.2f;
             Health.GrantInvulnerability(0.3f);
             Visual.Dodge(dir, duration);

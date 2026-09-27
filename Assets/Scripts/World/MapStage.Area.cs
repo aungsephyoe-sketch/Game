@@ -4,99 +4,141 @@ using UnityEngine;
 namespace HashiraChronicles
 {
     /// <summary>
-    /// Area view: the camera drops close over one region and its missions become numbered stops along a
-    /// winding trail, with the leader standing on the current stop (the per-chapter maps of the reference).
-    /// The UI draws the numbers and the dotted trail over the points in <see cref="AreaPoints"/>.
+    /// Area view: each region opens as its own bright low-poly diorama (see <see cref="AreaDiorama"/>) with the
+    /// region's missions as numbered stops along a stepping-stone trail and the leader standing on the current
+    /// one, the per-chapter maps of the reference sheets. The UI draws the locks and number plates over the
+    /// points in <see cref="AreaPoints"/>.
     /// </summary>
     public partial class MapStage
     {
+        static readonly Vector3 AreaOrigin = new Vector3(1000f, 0f, 0f);
+
         public bool AreaMode { get; private set; }
         public string AreaRegion { get; private set; }
         public readonly List<Vector3> AreaPoints = new List<Vector3>();
+        public AreaDiorama.Look AreaLook { get; private set; }
         int areaCurrent;
         float areaBlend;
-        GameObject areaDecor;
+        AreaDiorama.Result area;
+        Transform currentRing;
 
         public void EnterArea(string regionId, int stops, int current)
         {
             if (!nodes.ContainsKey(regionId) || travel != null) return;
-            if (!AreaMode || AreaRegion != regionId || AreaPoints.Count != stops)
+            if (area == null || AreaRegion != regionId || AreaPoints.Count != stops)
             {
+                DestroyArea();
+                area = AreaDiorama.Build(regionId, stops, AreaOrigin, transform);
                 AreaPoints.Clear();
-                Vector3 c = nodes[regionId].pos;
-                // An S-shaped trail across the region, left to right, gently weaving.
-                for (int i = 0; i < stops; i++)
-                {
-                    float k = stops > 1 ? (float)i / (stops - 1) : 0.5f;
-                    float x = Mathf.Lerp(-6.5f, 6.5f, k);
-                    float z = Mathf.Sin(k * Mathf.PI * 2.2f) * 3.2f - 1f;
-                    AreaPoints.Add(c + new Vector3(x, 0.05f, z));
-                }
-                BuildAreaPads();
+                AreaPoints.AddRange(area.nodes);
+                AreaLook = area.look;
+                BuildAreaExtras();
                 areaBlend = 0f;
+                if (token != null && AreaPoints.Count > 0) token.position = AreaPoints[Mathf.Clamp(current, 0, AreaPoints.Count - 1)] + Vector3.up * 0.37f;
+                if (AreaMode) ApplyAreaLighting();
             }
-            AreaMode = true;
+            if (!AreaMode)
+            {
+                AreaMode = true;
+                if (world != null) world.SetActive(false);
+                ApplyAreaLighting();
+            }
             AreaRegion = regionId;
             areaCurrent = Mathf.Clamp(current, 0, Mathf.Max(0, stops - 1));
+            if (token != null) token.localScale = Vector3.one * 1.35f;
         }
 
         public void ExitArea()
         {
-            if (!AreaMode) return;
+            if (!AreaMode && area == null) return;
             AreaMode = false;
-            if (areaDecor != null) Destroy(areaDecor);
-            areaDecor = null;
-            if (token != null && nodes.ContainsKey(CurrentRegion)) token.position = nodes[CurrentRegion].pos;
+            DestroyArea();
+            if (world != null) world.SetActive(true);
+            if (token != null)
+            {
+                token.localScale = Vector3.one * 1.8f;
+                if (!string.IsNullOrEmpty(CurrentRegion) && nodes.ContainsKey(CurrentRegion)) token.position = nodes[CurrentRegion].pos;
+            }
             if (tokenVisual != null) tokenVisual.SetMoving(0f);
+            ApplyLighting();
         }
 
-        /// <summary>Small stone pads under each stop so the trail reads in 3D too.</summary>
-        void BuildAreaPads()
+        void DestroyArea()
         {
-            if (areaDecor != null) Destroy(areaDecor);
-            areaDecor = new GameObject("AreaPads");
-            areaDecor.transform.SetParent(transform, false);
-            var pad = MaterialFactory.Toon(new Color(0.92f, 0.86f, 0.7f), 0.02f);
-            var dot = MaterialFactory.Toon(new Color(0.98f, 0.95f, 0.85f), 0f);
-            for (int i = 0; i < AreaPoints.Count; i++)
+            if (area != null && area.root != null) Destroy(area.root);
+            area = null;
+            currentRing = null;
+            AreaPoints.Clear();
+        }
+
+        /// <summary>The glowing ring under the current stop, and the region's weather.</summary>
+        void BuildAreaExtras()
+        {
+            var ringGo = new GameObject("CurrentRing");
+            ringGo.transform.SetParent(area.root.transform, false);
+            currentRing = ringGo.transform;
+            Color rc = area.look == AreaDiorama.Look.Crimson ? new Color(1f, 0.35f, 0.25f) : area.look == AreaDiorama.Look.Snow ? new Color(0.5f, 0.85f, 1f) : new Color(1f, 0.9f, 0.4f);
+            var ring = MeshFactory.MeshObject(MeshFactory.Ring(0.72f), currentRing, Vector3.up * 0.4f, new Vector3(1.05f, 1f, 1.05f), MaterialFactory.Additive(new Color(rc.r, rc.g, rc.b, 0.95f)), false);
+            ring.AddComponent<Pulse>().Speed = 3f;
+            MeshFactory.MeshObject(MeshFactory.Disc(), currentRing, Vector3.up * 0.39f, new Vector3(0.95f, 1f, 0.95f), MaterialFactory.Additive(new Color(rc.r, rc.g, rc.b, 0.35f)), false);
+            var lg = new GameObject("RingLight");
+            lg.transform.SetParent(currentRing, false);
+            lg.transform.localPosition = Vector3.up * 1.2f;
+            var l = lg.AddComponent<Light>();
+            l.type = LightType.Point;
+            l.color = rc;
+            l.range = 5f;
+            l.intensity = 1.4f;
+
+            string kind = area.look == AreaDiorama.Look.Snow ? "snow" : area.look == AreaDiorama.Look.Crimson ? "embers" : area.look == AreaDiorama.Look.Meadow ? "leaves" : null;
+            if (kind != null) EnvFx.Weather(area.root.transform, Vector3.zero, kind, 30f);
+        }
+
+        void ApplyAreaLighting()
+        {
+            if (area == null) return;
+            RenderSettings.fog = true;
+            RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogColor = area.fog;
+            RenderSettings.fogStartDistance = 40f;
+            RenderSettings.fogEndDistance = 90f;
+            RenderSettings.ambientLight = area.ambient;
+            if (Camera.main != null) Camera.main.backgroundColor = area.sky;
+            if (RenderSettings.sun != null)
             {
-                MeshFactory.Primitive(PrimitiveType.Cylinder, areaDecor.transform, AreaPoints[i], new Vector3(1.2f, 0.06f, 1.2f), pad);
-                if (i == AreaPoints.Count - 1) continue;
-                // Stepping stones between stops.
-                for (int k = 1; k < 5; k++)
-                {
-                    Vector3 p = Vector3.Lerp(AreaPoints[i], AreaPoints[i + 1], k / 5f);
-                    MeshFactory.Primitive(PrimitiveType.Cylinder, areaDecor.transform, p, new Vector3(0.28f, 0.03f, 0.28f), dot);
-                }
+                RenderSettings.sun.color = area.sun;
+                RenderSettings.sun.intensity = area.sunIntensity;
+                RenderSettings.sun.transform.rotation = Quaternion.Euler(52f, -35f, 0f);
             }
         }
 
         void UpdateArea()
         {
-            if (AreaPoints.Count == 0) return;
-            areaBlend = Mathf.MoveTowards(areaBlend, 1f, Time.unscaledDeltaTime * 1.5f);
-            Vector3 c = nodes[AreaRegion].pos;
-            CameraFocus = c;
-            Vector3 from = token.position + new Vector3(0f, 26f, -21f);
-            // Offset to the right so the trail sits clear of the mission panel on the right of the screen.
-            Vector3 shift = new Vector3(4.5f, 0f, 0f);
-            Vector3 to = c + shift + new Vector3(0f, 15f, -13f);
+            if (area == null || AreaPoints.Count == 0) return;
+            areaBlend = Mathf.MoveTowards(areaBlend, 1f, Time.unscaledDeltaTime * 0.8f);
+            // Framed like the reference: high three-quarter view, the map shifted left of the mission panel.
+            Vector3 c = AreaOrigin;
+            Vector3 shift = new Vector3(6.2f, 0f, 0.5f);
             float k = Mathf.SmoothStep(0f, 1f, areaBlend);
-            CameraController.Instance.SetFixed(Vector3.Lerp(from, to, k), Vector3.Lerp(token.position, c + shift + Vector3.forward * 1.5f, k));
+            float dist = Mathf.Lerp(1.25f, 1f, k);
+            CameraController.Instance.SetFixed(c + shift + new Vector3(0f, 19.5f, -15.5f) * dist, c + shift);
+            CameraFocus = c;
 
             // The leader walks to the current stop.
-            Vector3 target = AreaPoints[areaCurrent];
+            Vector3 target = AreaPoints[areaCurrent] + Vector3.up * 0.37f;
+            if (currentRing != null) currentRing.position = AreaPoints[areaCurrent];
             Vector3 d = target - token.position;
             d.y = 0f;
             if (d.magnitude > 0.05f)
             {
-                float step = Time.unscaledDeltaTime * 5f;
-                token.position = d.magnitude <= step ? new Vector3(target.x, token.position.y, target.z) : token.position + d.normalized * step;
+                float step = Time.unscaledDeltaTime * 4.5f;
+                token.position = d.magnitude <= step ? target : new Vector3(token.position.x + d.normalized.x * step, target.y, token.position.z + d.normalized.z * step);
                 token.rotation = Quaternion.Slerp(token.rotation, Quaternion.LookRotation(d.normalized), Time.unscaledDeltaTime * 10f);
                 if (tokenVisual != null) tokenVisual.SetMoving(1f);
             }
             else
             {
+                token.position = target;
                 if (tokenVisual != null) tokenVisual.SetMoving(0f);
                 token.rotation = Quaternion.Slerp(token.rotation, Quaternion.Euler(0f, 180f, 0f), Time.unscaledDeltaTime * 4f);
             }
