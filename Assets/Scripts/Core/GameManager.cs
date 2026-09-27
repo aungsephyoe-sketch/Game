@@ -204,6 +204,10 @@ namespace HashiraChronicles
             else if (st == 4) SummonHall.Show();
             else if (screen == GameScreen.Results && Battle == null) Map.Show(Data); // after a story scene, results sit over the world map
             if (st != 0 && Battle != null) { Destroy(Battle.gameObject); Battle = null; }
+            // Background sound for the calm screens; battles set their own region ambience.
+            if (st == 1 || st == 2) Audio.SetAmbience("village");
+            else if (st == 3) Audio.SetAmbience("wind");
+            else if (st == 4) Audio.SetAmbience(null);
         }
 
         /// <summary>Refreshes the visible stage after team or roster changes.</summary>

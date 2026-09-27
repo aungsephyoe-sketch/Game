@@ -9,7 +9,7 @@ namespace HashiraChronicles
     /// landmarks that guide the eye (lanterns, torches, flags, braziers), bridges over ravines, region scenery
     /// on both sides, a distinct boss arena at the destination, and the next region's landmark on the horizon.
     /// </summary>
-    public static class JourneyBuilder
+    public static partial class JourneyBuilder
     {
         public class Result
         {
@@ -70,6 +70,9 @@ namespace HashiraChronicles
             ArenaDecor.Ambient = true;
 
             RoadsideGuides(j, theme, stat, dyn);
+            RoadsideScatter(j, theme, stat, dyn);
+            BackgroundLayers(j, theme, stat, center, extent);
+            Prowlers(j, theme, dyn);
             foreach (var pl in j.places)
                 if (pl.isBridge) Bridge(j, pl, theme, stat);
             foreach (var pl in j.places)

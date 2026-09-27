@@ -362,15 +362,13 @@ namespace HashiraChronicles
                 var bd = GameDatabase.GetEnemy(bossIds[i]);
                 ObjectiveTitle = "Defeat " + (bd != null ? bd.displayName : "the boss");
                 yield return BossEntrance(bossIds[i], i, pl);
-                while (Boss != null && Boss.IsAlive && !Finished) yield return null;
+                Vector3 lastPos = Boss != null ? Boss.Position : pl.pos;
+                while (Boss != null && Boss.IsAlive && !Finished) { lastPos = Boss.Position; yield return null; }
+                if (!Finished && bd != null) yield return BossDefeat(bd, lastPos, i == bossIds.Count - 1);
                 // Clear leftover summons once a boss falls.
                 foreach (var e in new List<EnemyController>(alive))
                     if (e != null && e.IsAlive) e.Health.TakeDamage(new DamageInfo { amount = 1e9f, unavoidable = true });
-                if (i < bossIds.Count - 1 && !Finished)
-                {
-                    GameEvents.RaiseBanner("DEFEATED", Boss != null ? Boss.Def.displayName : "");
-                    yield return new WaitForSeconds(2f);
-                }
+
             }
             battle.Unlock();
         }
@@ -440,6 +438,49 @@ namespace HashiraChronicles
             VFX.ImpactLight(bossPos + Vector3.up * h, bossDef.accentColor, 14f, 0.6f);
             GameEvents.RaiseImpact(0.9f);
             yield return new WaitForSeconds(2.2f);
+            if (cam != null && battle.Team.Active != null) cam.Follow(battle.Team.Active.transform, false);
+            battle.CinematicLock = false;
+        }
+
+        /// <summary>
+        /// Boss defeat: time slows, the camera circles the falling boss, its body cracks with bursts of light,
+        /// then one final blast and the DEFEATED card.
+        /// </summary>
+        IEnumerator BossDefeat(EnemyDefinition bd, Vector3 pos, bool last)
+        {
+            var gm = GameManager.Instance;
+            var cam = CameraController.Instance;
+            battle.CinematicLock = true;
+            float h = 2f * Mathf.Max(1f, bd.scale);
+            TimeController.SlowMotion(0.25f, 1.6f);
+            if (gm != null) { gm.Audio.SetMusicState(MusicState.None); gm.Audio.PlayPitched("roar", 0.9f, 0.7f); }
+            if (cam != null)
+            {
+                Vector3 side = Quaternion.Euler(0f, Random.value < 0.5f ? 50f : -50f, 0f) * Vector3.forward;
+                cam.Cut(pos + side * (6f + h * 1.5f) + Vector3.up * h, pos + Vector3.up * h * 0.6f);
+                cam.Dolly(pos + Quaternion.Euler(0f, 40f, 0f) * side * (4.5f + h) + Vector3.up * h * 0.8f, pos + Vector3.up * h * 0.6f, 2.6f);
+            }
+            // The body cracks: bursts of its own colour tear out of it.
+            for (int k = 0; k < 5; k++)
+            {
+                Vector3 p = pos + new Vector3(Random.Range(-1f, 1f), Random.Range(0.3f, 1.2f) * h, Random.Range(-1f, 1f));
+                VFX.HitSpark(p, bd.accentColor, 24);
+                VFX.Breath(p, bd.accentColor, 20);
+                VFX.ImpactLight(p, bd.accentColor, 8f, 0.25f);
+                if (gm != null) gm.Audio.PlayVaried("impact", 0.7f, 0.15f);
+                if (cam != null) cam.Shake(0.15f + k * 0.05f);
+                yield return new WaitForSecondsRealtime(0.32f);
+            }
+            // The final blast.
+            VFX.Pillar(pos, Color.white, 14f, 0.8f);
+            VFX.Shockwave(pos, 9f, bd.accentColor, 0.7f);
+            VFX.Smoke(pos, new Color(0.12f, 0.05f, 0.12f, 0.9f), 60);
+            VFX.ImpactLight(pos + Vector3.up * h, Color.white, 20f, 0.6f);
+            GameEvents.RaiseImpact(1f);
+            if (gm != null) { gm.Audio.Play("bossSlam", 1f); gm.Audio.Play("specialRelease", 0.6f); }
+            if (cam != null) cam.Shake(0.6f);
+            GameEvents.RaiseBanner("DEFEATED", bd.displayName);
+            yield return new WaitForSecondsRealtime(last ? 1.4f : 2.2f);
             if (cam != null && battle.Team.Active != null) cam.Follow(battle.Team.Active.transform, false);
             battle.CinematicLock = false;
         }

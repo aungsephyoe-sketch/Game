@@ -34,15 +34,55 @@ namespace HashiraChronicles
         void Eyes(float y, float z, float spread, float size, Color c, bool single = false)
         {
             var m = MaterialFactory.Toon(c, 0f, c);
-            if (single) { P(PrimitiveType.Sphere, new Vector3(0f, y, z), Vector3.one * size, m); return; }
-            P(PrimitiveType.Sphere, new Vector3(spread, y, z), new Vector3(size, size * 0.6f, size * 0.5f), m);
-            P(PrimitiveType.Sphere, new Vector3(-spread, y, z), new Vector3(size, size * 0.6f, size * 0.5f), m);
+            // A soft halo around every eye so they burn out of the dark.
+            var halo = MaterialFactory.Additive(new Color(c.r, c.g, c.b, 0.45f));
+            if (single)
+            {
+                P(PrimitiveType.Sphere, new Vector3(0f, y, z), Vector3.one * size, m);
+                P(PrimitiveType.Sphere, new Vector3(0f, y, z), Vector3.one * size * 2.4f, halo);
+                return;
+            }
+            // Angry slant: the eyes tilt down toward the middle.
+            P(PrimitiveType.Sphere, new Vector3(spread, y, z), new Vector3(size * 1.2f, size * 0.55f, size * 0.5f), m, new Vector3(0f, 0f, 18f));
+            P(PrimitiveType.Sphere, new Vector3(-spread, y, z), new Vector3(size * 1.2f, size * 0.55f, size * 0.5f), m, new Vector3(0f, 0f, -18f));
+            P(PrimitiveType.Sphere, new Vector3(spread, y, z), new Vector3(size, size * 0.7f, size * 0.4f) * 2.6f, halo);
+            P(PrimitiveType.Sphere, new Vector3(-spread, y, z), new Vector3(size, size * 0.7f, size * 0.4f) * 2.6f, halo);
+            if (!mNoTeeth)
+            {
+                // A jagged grin under the eyes.
+                float ty = y - size * 2.2f;
+                for (int i = 0; i < 5; i++)
+                {
+                    float x = (i - 2) * spread * 0.55f;
+                    Cone(new Vector3(x, ty, z + 0.01f), new Vector3(size * 0.35f, size * (i % 2 == 0 ? 0.9f : 0.6f), size * 0.3f), mBone, new Vector3(180f, 0f, 0f));
+                }
+            }
+        }
+
+        bool mNoTeeth;
+
+        /// <summary>Shared menace for every demon: a creeping dark aura and a glowing ground stain.</summary>
+        void AddMenace(EnemyDefinition def)
+        {
+            if (def.form == "dummy") return;
+            var aura = EnvFx.Smoke(mRoot, new Vector3(0f, 0.15f, 0f), 0.5f);
+            if (aura != null)
+            {
+                var m = aura.main;
+                m.startColor = new Color(0.08f, 0.02f, 0.1f, 0.55f);
+            }
+            var stain = MaterialFactory.Additive(new Color(def.accentColor.r, def.accentColor.g, def.accentColor.b, 0.22f));
+            var disc = MeshFactory.MeshObject(MeshFactory.PlanarDisc(), mRoot, Vector3.up * 0.04f, new Vector3(0.9f, 1f, 0.9f), stain, false);
+            Add(disc);
+            var pulse = disc.AddComponent<Pulse>();
+            pulse.Speed = 2.2f + Random.value;
         }
 
         /// <summary>Returns false for unknown forms so the legacy generic demon is built instead.</summary>
         bool BuildMonster(EnemyDefinition def, Transform model)
         {
             mRoot = model;
+            mNoTeeth = def.form == "knight" || def.form == "sentinel" || def.form == "dummy" || def.form == "shadow" || def.form == "guardian";
             mBody = MaterialFactory.Toon(def.bodyColor);
             mAccent = MaterialFactory.Toon(def.accentColor, 0.02f);
             mGlow = MaterialFactory.Toon(def.accentColor, 0f, def.accentColor);
@@ -71,6 +111,7 @@ namespace HashiraChronicles
                 case "lord": Lord(def); break;
                 default: return false;
             }
+            AddMenace(def);
             if (Trail != null && def.archetype != EnemyArchetype.Boss && def.archetype != EnemyArchetype.Elite) Trail.widthMultiplier = 0.25f;
             return true;
         }
