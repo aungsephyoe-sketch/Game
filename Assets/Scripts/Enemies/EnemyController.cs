@@ -9,7 +9,7 @@ namespace HashiraChronicles
     /// the ground and resolved against the zone when it lands, so a well-timed dodge always works.
     /// An attack-token limit stops crowds from attacking all at once.
     /// </summary>
-    public class EnemyController : Combatant
+    public partial class EnemyController : Combatant
     {
         protected enum State { Spawning, Chase, Attacking, Staggered, Airborne, Down, Dead }
 
@@ -57,6 +57,16 @@ namespace HashiraChronicles
 
         public static void ResetTokens() { attackTokensInUse = 0; }
 
+        /// <summary>The demon's own voice: shrieks for the quick and eerie ones, growls for the big ones.</summary>
+        protected void Voice(float volume)
+        {
+            var gm = GameManager.Instance;
+            if (gm == null || Def == null) return;
+            bool shrill = Def.form == "shadow" || Def.form == "stalker" || Def.form == "void" || Def.form == "wraith" || Def.form == "imp" || Def.form == "hunter";
+            float pitch = Mathf.Clamp(1.25f - Def.scale * 0.25f, 0.55f, 1.25f) * Random.Range(0.92f, 1.08f);
+            gm.Audio.PlayPitched(shrill ? "screech" : "growl", volume, pitch);
+        }
+
         public virtual void Init(EnemyDefinition def, int level)
         {
             Def = def;
@@ -82,6 +92,7 @@ namespace HashiraChronicles
         IEnumerator SpawnRoutine()
         {
             state = State.Spawning;
+            if (Def.ambush && !IsBoss) { yield return AmbushRoutine(); yield break; }
             VFX.Smoke(Position, new Color(0.3f, 0.1f, 0.25f, 0.8f), 18);
             Vector3 end = transform.position;
             Vector3 start = end - Vector3.up * 2f;
@@ -102,9 +113,13 @@ namespace HashiraChronicles
             }
         }
 
+        /// <summary>While a special attack plays, every demon holds still.</summary>
+        public static bool Frozen;
+
         protected virtual void Update()
         {
             if (state == State.Dead) return;
+            if (Frozen) { if (visual != null) visual.SetMoving(0f); return; }
             float dt = Time.deltaTime;
 
             if (knockVelocity.sqrMagnitude > 0.01f)
@@ -116,6 +131,7 @@ namespace HashiraChronicles
             poiseResetTimer -= dt;
             if (poiseResetTimer <= 0f) poiseDamage = 0f;
             dodgeCooldown -= dt;
+            UpdateBehaviours(dt);
 
             switch (state)
             {
@@ -171,6 +187,7 @@ namespace HashiraChronicles
             attackTimer -= dt;
 
             if (TryEvade(player, to, dist)) return;
+            if (TrySpecialBehaviour(player, to, dist)) return;
 
             float desired = Def.archetype == EnemyArchetype.Ranged ? 7f : Def.attackRange * 0.8f;
             Vector3 move = Vector3.zero;
@@ -348,7 +365,7 @@ namespace HashiraChronicles
                 ClearTelegraphs();
                 visual.Swing(-100f, 100f, 0.12f, 20f);
                 VFX.Slash(Position, fwd, range, 110f, 0f, Def.accentColor, 0.18f);
-                if (GameManager.Instance != null) GameManager.Instance.Audio.Play("enemyAttack", 0.5f);
+                if (GameManager.Instance != null) { GameManager.Instance.Audio.PlayVaried("enemyAttack", 0.5f, 0.1f); Voice(0.35f); }
                 CombatSystem.HitArc(this, Position, fwd, range, 110f, EnemyTag(multiplier));
                 yield return new WaitForSeconds(0.35f);
             }
@@ -386,7 +403,7 @@ namespace HashiraChronicles
             visual.Swing(0f, 0f, 0.1f, 90f);
             VFX.Shockwave(Position, r, Def.accentColor, 0.35f);
             VFX.Smoke(Position, new Color(0.5f, 0.4f, 0.3f, 0.6f), 14);
-            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("slam", 0.8f);
+            if (GameManager.Instance != null) GameManager.Instance.Audio.PlayPitched("slam", 0.8f, Mathf.Clamp(1.15f - Def.scale * 0.15f, 0.7f, 1.1f));
             if (CameraController.Instance != null) CameraController.Instance.Shake(0.2f);
             CombatSystem.HitRadius(this, Position, r, EnemyTag(1.4f, 6f, 4f));
             yield return new WaitForSeconds(0.8f);
@@ -425,7 +442,7 @@ namespace HashiraChronicles
             ClearTelegraphs();
             VFX.Shockwave(landing, r, Def.accentColor, 0.35f);
             VFX.Smoke(landing, new Color(0.4f, 0.2f, 0.4f, 0.6f), 16);
-            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("slam", 0.8f);
+            if (GameManager.Instance != null) GameManager.Instance.Audio.PlayPitched("slam", 0.8f, Mathf.Clamp(1.15f - Def.scale * 0.15f, 0.7f, 1.1f));
             if (CameraController.Instance != null) CameraController.Instance.Shake(0.25f);
             CombatSystem.HitRadius(this, landing, r, EnemyTag(1.6f, 6f, 4f));
             yield return new WaitForSeconds(0.7f);

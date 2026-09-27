@@ -19,7 +19,6 @@ namespace HashiraChronicles
         /// <summary>Team slot to switch to, or -1.</summary>
         public int switchTo;
         public bool pauseDown;
-        public bool jumpDown;
         /// <summary>Toggle lock-on (or cycle to the next target).</summary>
         public bool lockDown;
 

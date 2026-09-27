@@ -44,7 +44,6 @@ namespace HashiraChronicles
         public float SwingWeight { get { return SwordPivot == null ? 0f : Mathf.Clamp01(Quaternion.Angle(SwordPivot.localRotation, swordRest) / 50f); } }
         public AnimatorDriver Driver { get { return driver; } }
 
-        static readonly Color Skin = new Color(1f, 0.86f, 0.74f);
 
         // ------------------------------------------------------------------ Builders
 
@@ -56,29 +55,9 @@ namespace HashiraChronicles
             var model = new GameObject("Model").transform;
             model.SetParent(root.transform, false);
             v.Model = model;
-            if (v.TryLoadModel("Characters/" + def.id, def.bladeColor, 1f, 1.75f * def.scale)) return v;
-            // Every version of a character shares one model (e.g. "Characters/ren").
-            if (!string.IsNullOrEmpty(def.baseId) && v.TryLoadModel("Characters/" + def.baseId, def.bladeColor, 1f, 1.75f * def.scale)) return v;
+            if (GameConfig.UseImportedModels && v.TryLoadModel("Characters/" + def.id, def.bladeColor, 1f, 1.75f * def.scale)) return v;
 
-            var hakama = MaterialFactory.Toon(def.bodyColor * 0.8f);
-            var uniform = MaterialFactory.Toon(def.bodyColor);
-            var haori = MaterialFactory.Toon(def.haoriColor);
-            var skin = MaterialFactory.Toon(Skin, 0.02f);
-            var hair = MaterialFactory.Toon(def.hairColor);
-            var dark = MaterialFactory.Toon(new Color(0.05f, 0.05f, 0.07f), 0f);
-
-            v.Add(MeshFactory.Primitive(PrimitiveType.Capsule, model, new Vector3(0f, 0.55f, 0f), new Vector3(0.62f, 0.55f, 0.62f), hakama));
-            v.Add(MeshFactory.Primitive(PrimitiveType.Capsule, model, new Vector3(0f, 1.15f, 0.02f), new Vector3(0.56f, 0.42f, 0.48f), uniform));
-            v.Add(MeshFactory.Primitive(PrimitiveType.Capsule, model, new Vector3(0f, 1.0f, -0.06f), new Vector3(0.68f, 0.5f, 0.6f), haori));
-            v.Add(MeshFactory.Primitive(PrimitiveType.Sphere, model, new Vector3(0f, 1.72f, 0.02f), Vector3.one * 0.42f, skin));
-            v.Add(MeshFactory.Primitive(PrimitiveType.Sphere, model, new Vector3(0f, 1.8f, -0.06f), new Vector3(0.47f, 0.42f, 0.44f), hair));
-            v.Add(MeshFactory.Primitive(PrimitiveType.Sphere, model, new Vector3(0.08f, 1.74f, 0.2f), Vector3.one * 0.06f, dark));
-            v.Add(MeshFactory.Primitive(PrimitiveType.Sphere, model, new Vector3(-0.08f, 1.74f, 0.2f), Vector3.one * 0.06f, dark));
-            // Sash in the element colour so teams read at a glance.
-            v.Add(MeshFactory.Primitive(PrimitiveType.Cylinder, model, new Vector3(0f, 0.92f, 0f), new Vector3(0.66f, 0.05f, 0.6f),
-                MaterialFactory.Toon(ElementChart.ColorOf(def.element), 0f)));
-
-            v.BuildSword(def.bladeColor, 1.25f, new Vector3(0.38f, 1.1f, 0.12f));
+            v.BuildChibi(def);
             return v;
         }
 
@@ -91,7 +70,7 @@ namespace HashiraChronicles
             model.SetParent(root.transform, false);
             model.localScale = Vector3.one * def.scale;
             v.Model = model;
-            if (v.TryLoadModel("Enemies/" + def.id, def.accentColor, 0.6f, 2.1f)) return v;
+            if (GameConfig.UseImportedModels && v.TryLoadModel("Enemies/" + def.id, def.accentColor, 0.6f, 2.1f)) return v;
 
             if (v.BuildMonster(def, model)) return v;
 
@@ -734,14 +713,123 @@ namespace HashiraChronicles
                 UpdateFlash();
                 return;
             }
-            bob += Time.deltaTime * (moving > 0.1f ? (sprinting ? 16f : 12f) : 3f);
-            float y = moving > 0.1f ? Mathf.Abs(Mathf.Sin(bob)) * 0.1f : Mathf.Sin(bob) * 0.025f;
+            // Movement personality: every motion style walks, runs and breathes differently.
+            var mp = MotionParams.For(Motion);
+            bob += Time.deltaTime * (moving > 0.1f ? (sprinting ? mp.walkFreq * 1.35f : mp.walkFreq) : mp.idleFreq);
+            float y = moving > 0.1f ? Mathf.Abs(Mathf.Sin(bob)) * mp.walkAmp * (sprinting ? 1.2f : 1f) : Mathf.Sin(bob) * mp.idleAmp;
             if (Hover > 0f) y = Hover + Mathf.Sin(Time.time * 2.2f) * 0.18f;
             Model.localPosition = new Vector3(0f, y, 0f);
-            float lean = moving * (sprinting ? 22f : 12f) - (guarding ? 8f : 0f);
+            float lean = moving * (sprinting ? mp.lean * 1.7f : mp.lean) - (guarding ? 8f : 0f) + (moving < 0.1f ? mp.idleLean : 0f);
+            float roll = moving > 0.1f ? Mathf.Sin(bob) * mp.roll : Mathf.Sin(Time.time * mp.idleFreq * 0.5f) * mp.roll * 0.5f;
+            float jitter = mp.jitter > 0f ? (Mathf.PerlinNoise(Time.time * 6f, 0f) - 0.5f) * mp.jitter : 0f;
             var e = Model.localEulerAngles;
-            Model.localRotation = Quaternion.Euler(lean, e.y, 0f);
+            Model.localRotation = Quaternion.Euler(lean, e.y + jitter, roll);
+            if (moving > 0.1f && mp.stomp && Mathf.Abs(Mathf.Sin(bob)) < 0.08f && Time.time - lastStomp > 0.2f)
+            {
+                lastStomp = Time.time;
+                VFX.Dust(transform.position, 2);
+            }
+            UpdateFidget(mp);
             UpdateFlash();
+        }
+
+        float lastStomp;
+        float nextFidget = -1f;
+
+        /// <summary>Idle personality: glances, nods, hops and weapon flourishes while standing still.</summary>
+        void UpdateFidget(MotionParams mp)
+        {
+            if (head == null) return;
+            if (nextFidget < 0f) nextFidget = Time.time + Random.Range(3f, 7f);
+            float look = Mathf.Sin(Time.time * (Motion == MotionStyle.Nervous ? 2.2f : 0.6f)) * mp.headLook;
+            head.localRotation = Quaternion.Slerp(head.localRotation, Quaternion.Euler(0f, moving > 0.1f ? 0f : look, Motion == MotionStyle.Sly ? 8f : 0f), Time.deltaTime * 6f);
+            if (moving > 0.1f || Time.time < nextFidget || !FidgetsEnabled) return;
+            nextFidget = Time.time + Random.Range(5f, 10f);
+            switch (Motion)
+            {
+                case MotionStyle.Light: StartPose(HopRoutine(0.35f)); break;
+                case MotionStyle.Nervous: StartPose(HopRoutine(0.15f)); break;
+                case MotionStyle.Aggressive: HeavyAttack(0.2f); VFX.Dust(transform.position + transform.forward, 5); break;
+                case MotionStyle.Graceful: Spin(0.6f); break;
+                case MotionStyle.Confident: Swing(-120f, 200f, 0.35f, 60f); break;
+                case MotionStyle.Stoic: StartPose(NodRoutine()); break;
+                case MotionStyle.Sly: Swing(40f, -40f, 0.5f, 10f); break;
+                default: Swing(-60f, 60f, 0.3f, 30f); break;
+            }
+        }
+
+        /// <summary>Idle flourishes (off in battle, where the slayer's pose must stay readable).</summary>
+        public bool FidgetsEnabled = true;
+
+        System.Collections.IEnumerator HopRoutine(float height)
+        {
+            float t = 0f;
+            while (t < 0.3f)
+            {
+                t += Time.deltaTime;
+                Model.localPosition = new Vector3(0f, Mathf.Sin(t / 0.3f * Mathf.PI) * height, 0f);
+                yield return null;
+            }
+            Model.localPosition = Vector3.zero;
+        }
+
+        System.Collections.IEnumerator NodRoutine()
+        {
+            float t = 0f;
+            while (t < 0.6f)
+            {
+                t += Time.deltaTime;
+                if (head != null) head.localRotation = Quaternion.Euler(Mathf.Sin(t / 0.6f * Mathf.PI) * 18f, 0f, 0f);
+                yield return null;
+            }
+        }
+
+        /// <summary>Plays a named animation for the character viewer: idle, walk, run, attack, heavy, special, hit, victory, defeat.</summary>
+        public void PlayPreview(string anim)
+        {
+            StopAllCoroutines();
+            posing = false;
+            ResetPose();
+            switch (anim)
+            {
+                case "walk": StartCoroutine(PreviewMove(0.6f, false)); break;
+                case "run": StartCoroutine(PreviewMove(1f, true)); break;
+                case "attack": StartCoroutine(PreviewCombo()); break;
+                case "heavy": HeavyAttack(0.22f); break;
+                case "special": StartCoroutine(PreviewSpecial()); break;
+                case "hit": Hit(transform.forward); break;
+                case "victory": Victory(); break;
+                case "defeat": Defeat(); break;
+                default: nextFidget = Time.time; break;
+            }
+        }
+
+        System.Collections.IEnumerator PreviewMove(float amount, bool sprint)
+        {
+            float t = 0f;
+            while (t < 2.2f) { t += Time.deltaTime; SetMoving(amount, sprint); yield return null; }
+            SetMoving(0f);
+        }
+
+        System.Collections.IEnumerator PreviewCombo()
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                Attack(i, 0.12f);
+                yield return new WaitForSeconds(i == 4 ? 0.45f : 0.26f);
+            }
+        }
+
+        System.Collections.IEnumerator PreviewSpecial()
+        {
+            SetCharge(1f, Color.white);
+            yield return new WaitForSeconds(0.9f);
+            SetCharge(0f, Color.white);
+            Spin(0.35f, 2);
+            yield return new WaitForSeconds(0.4f);
+            HeavyAttack(0.2f);
+            yield return new WaitForSeconds(0.5f);
+            Victory();
         }
 
         void UpdateFlash()

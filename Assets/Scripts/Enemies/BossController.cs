@@ -357,7 +357,7 @@ namespace HashiraChronicles
             visual.Swing(0f, 0f, 0.1f, 90f);
             VFX.Shockwave(center, radius, Def.accentColor, 0.4f);
             VFX.BurstDisc(center, radius, Def.accentColor * 0.6f, 0.3f);
-            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("slam", 1f);
+            if (GameManager.Instance != null) GameManager.Instance.Audio.PlayVaried("bossSlam", 1f, 0.06f);
             if (CameraController.Instance != null) CameraController.Instance.Shake(0.3f);
             CombatSystem.HitRadius(this, center, radius, EnemyTag(mult, 7f, 4f));
         }
@@ -409,7 +409,7 @@ namespace HashiraChronicles
             yield return new WaitForSeconds(Windup(0.8f));
             ClearTelegraphs();
             VFX.Shockwave(Position, outer, Def.accentColor, 0.45f);
-            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("slam", 1f);
+            if (GameManager.Instance != null) GameManager.Instance.Audio.PlayVaried("bossSlam", 1f, 0.06f);
             var targets = new List<Combatant>(CombatSystem.Query(this, Position, Vector3.forward, outer, 360f));
             foreach (var t in targets)
             {
@@ -532,7 +532,7 @@ namespace HashiraChronicles
         {
             VFX.Pillar(spot, Def.accentColor, 3f, 0.35f);
             VFX.Smoke(spot, new Color(0.3f, 0.35f, 0.2f, 0.7f), 10);
-            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("slam", 0.6f);
+            if (GameManager.Instance != null) GameManager.Instance.Audio.PlayVaried("bossSlam", 0.7f, 0.06f);
             CombatSystem.HitRadius(this, spot, 1.9f, EnemyTag(1.2f, 4f, 3f));
             yield return null;
         }

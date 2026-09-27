@@ -56,6 +56,16 @@ namespace HashiraChronicles
         public bool npc;
         public float scale = 1f;
 
+        // ---- Chibi look & fighting identity
+        public HairStyle hair = HairStyle.Messy;
+        public WeaponKind weapon = WeaponKind.Katana;
+        public CombatStyle style = CombatStyle.Balanced;
+        public MotionStyle motion = MotionStyle.Steady;
+        /// <summary>Body proportions (1 = standard chibi).</summary>
+        public float bodyHeight = 1f, bodyWidth = 1f;
+        public bool scarf, cape, pelt, armor, bell;
+        public Color accentColor = new Color(0.9f, 0.9f, 0.9f);
+
         public string FullName { get { return displayName + " — " + versionTitle; } }
         public Rarity RarityTier { get { return (Rarity)Mathf.Clamp(rarity, 3, 7); } }
     }
@@ -120,6 +130,14 @@ namespace HashiraChronicles
         public string description = "";
         /// <summary>HP fractions at which a boss enters its next phase (descending).</summary>
         public float[] phaseThresholds;
+        /// <summary>Hides as a shadow puddle until the player comes close, then bursts out.</summary>
+        public bool ambush;
+        /// <summary>Periodically calls these smaller demons to its side (empty = never).</summary>
+        public string summonId;
+        /// <summary>Rushes across the field in a long, telegraphed straight-line charge.</summary>
+        public bool charger;
+        /// <summary>HP fraction under which a regular demon enrages: faster, shorter wind-ups (0 = never).</summary>
+        public float enrageAt = 0.4f;
     }
 
     [System.Serializable]

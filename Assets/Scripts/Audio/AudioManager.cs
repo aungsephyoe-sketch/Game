@@ -21,7 +21,9 @@ namespace HashiraChronicles
         readonly Dictionary<string, float> lastPlayed = new Dictionary<string, float>();
         readonly Dictionary<MusicState, AudioClip> tracks = new Dictionary<MusicState, AudioClip>();
         AudioSource sfx;
-        AudioSource musicA, musicB, heartbeat;
+        AudioSource musicA, musicB, heartbeat, ambience;
+        readonly AudioSource[] voices = new AudioSource[10];
+        int nextVoice;
         AudioSource currentMusic;
         MusicState state = MusicState.None;
         float duckUntil;
@@ -39,6 +41,12 @@ namespace HashiraChronicles
             musicA = MakeMusicSource();
             musicB = MakeMusicSource();
             heartbeat = MakeMusicSource();
+            ambience = MakeMusicSource();
+            for (int i = 0; i < voices.Length; i++)
+            {
+                voices[i] = gameObject.AddComponent<AudioSource>();
+                voices[i].playOnAwake = false;
+            }
             Generate();
             heartbeat.clip = clips["heartbeat"];
             heartbeat.volume = 0f;
@@ -79,6 +87,38 @@ namespace HashiraChronicles
             sfx.PlayOneShot(clip, volume * SfxVolume);
         }
 
+        /// <summary>Plays a sound at a given pitch on its own voice (so pitches never bleed into each other).</summary>
+        public void PlayPitched(string id, float volume, float pitch)
+        {
+            AudioClip clip;
+            if (!clips.TryGetValue(id, out clip)) return;
+            float last;
+            string key = id + ((int)(pitch * 10f));
+            if (lastPlayed.TryGetValue(key, out last) && Time.unscaledTime - last < 0.03f) return;
+            lastPlayed[key] = Time.unscaledTime;
+            var v = voices[nextVoice];
+            nextVoice = (nextVoice + 1) % voices.Length;
+            v.pitch = pitch;
+            v.PlayOneShot(clip, volume * SfxVolume);
+        }
+
+        /// <summary>A randomly varied version of a sound so repeated hits never sound identical.</summary>
+        public void PlayVaried(string id, float volume, float spread = 0.08f)
+        {
+            PlayPitched(id, volume, 1f + Random.Range(-spread, spread));
+        }
+
+        /// <summary>Looping environmental bed for the current location (forest, wind, fire, dark, village, none).</summary>
+        public void SetAmbience(string kind)
+        {
+            AudioClip clip = null;
+            if (!string.IsNullOrEmpty(kind)) clips.TryGetValue("amb_" + kind, out clip);
+            if (ambience.clip == clip) return;
+            ambience.clip = clip;
+            if (clip != null) { ambience.volume = 0f; ambience.Play(); }
+            else ambience.Stop();
+        }
+
         /// <summary>Kept for older callers: true = combat, false = menu.</summary>
         public void PlayMusic(bool battle)
         {
@@ -108,6 +148,8 @@ namespace HashiraChronicles
         void Update()
         {
             float dt = Time.unscaledDeltaTime;
+            if (ambience != null && ambience.clip != null)
+                ambience.volume = Mathf.MoveTowards(ambience.volume, GameSettings.SfxVolume * 0.35f, dt * 0.3f);
             fade = Mathf.MoveTowards(fade, 1f, dt / CrossfadeSeconds);
             float duck = Time.unscaledTime < duckUntil ? 0.35f : 1f;
             float vol = MusicVolume * duck;
@@ -254,6 +296,7 @@ namespace HashiraChronicles
             b = Buffer(0.4f); AddTone(b, 0, 0.4f, 70f, 35f, 1f, 9f); AddNoise(b, 0, 0.25f, 0.7f, 14f, 0.2f); Make("thud", b, 0.8f);
             b = Buffer(1.0f); AddTone(b, 0f, 0.18f, 60f, 40f, 1f, 18f); AddTone(b, 0.22f, 0.18f, 55f, 38f, 0.7f, 18f); Make("heartbeat", b, 0.9f);
 
+            GenerateCombatSounds();
             tracks[MusicState.Menu] = BuildMenuMusic(scale);
             tracks[MusicState.Explore] = BuildExploreMusic(scale);
             tracks[MusicState.Combat] = BuildBattleMusic(scale);
@@ -263,6 +306,62 @@ namespace HashiraChronicles
             tracks[MusicState.Summon] = BuildSummonMusic();
             tracks[MusicState.Victory] = clips["victory"];
             tracks[MusicState.Defeat] = clips["defeat"];
+        }
+
+        /// <summary>
+        /// Weightier combat sounds: heavy swings, big impacts, special-attack build-ups and releases, monster voices,
+        /// boss slams, plus looping ambience beds for each kind of location.
+        /// </summary>
+        void GenerateCombatSounds()
+        {
+            float[] b;
+            b = Buffer(0.3f); AddNoise(b, 0, 0.28f, 1f, 12f, 0.55f, 0.02f); AddTone(b, 0, 0.2f, 500f, 120f, 0.35f, 12f); Make("slashHeavy", b, 0.8f);
+            b = Buffer(0.9f); AddTone(b, 0, 0.9f, 75f, 28f, 1f, 4.5f); AddNoise(b, 0, 0.6f, 0.9f, 7f, 0.35f); AddNoise(b, 0, 0.06f, 0.8f, 60f, 1f); AddTaiko(b, 0f, 0.7f); Make("impact", b, 1f);
+            // Special build-up: a rising shimmer over a swelling drone (long, so the moment breathes).
+            b = Buffer(1.6f);
+            AddTone(b, 0, 1.6f, 110f, 220f, 0.6f, 0.2f, 0.4f);
+            AddTone(b, 0, 1.6f, 440f, 1760f, 0.25f, 0.3f, 0.6f);
+            AddNoise(b, 0.2f, 1.4f, 0.5f, 0.5f, 0.9f, 1f);
+            for (int i = 0; i < 8; i++) AddTone(b, 0.2f + i * 0.17f, 0.15f, 900f + i * 180f, 1100f + i * 180f, 0.15f, 20f);
+            Make("buildup", b, 0.8f);
+            // Special release: a huge layered boom with a long tail.
+            b = Buffer(2.2f);
+            AddTone(b, 0, 2.2f, 60f, 25f, 1f, 1.8f);
+            AddNoise(b, 0, 1.8f, 1f, 2.2f, 0.45f, 0.005f);
+            AddNoise(b, 0, 0.12f, 1f, 30f, 1f);
+            AddTone(b, 0, 1.4f, 880f, 220f, 0.25f, 2f);
+            AddTaiko(b, 0f, 1f); AddTaiko(b, 0.18f, 0.7f);
+            Make("specialRelease", b, 1f);
+            // Monster voices.
+            b = Buffer(0.6f);
+            for (int i = 0; i < b.Length; i++)
+            {
+                float t = (float)i / Rate;
+                float f = 70f + Mathf.Sin(t * 45f) * 12f;
+                b[i] = (((t * f) % 1f) * 2f - 1f) * Mathf.Min(1f, t * 12f) * Mathf.Exp(-t * 3.5f);
+            }
+            AddNoise(b, 0, 0.6f, 0.6f, 4f, 0.25f, 0.05f);
+            Make("growl", b, 0.7f);
+            b = Buffer(0.5f); AddTone(b, 0, 0.5f, 1800f, 900f, 0.6f, 5f, 0.02f, true); AddNoise(b, 0, 0.5f, 0.7f, 6f, 0.95f, 0.02f); Make("screech", b, 0.6f);
+            b = Buffer(1.1f); AddTone(b, 0, 1.1f, 55f, 22f, 1f, 3f); AddNoise(b, 0, 0.8f, 1f, 4f, 0.2f); AddTaiko(b, 0f, 1f); Make("bossSlam", b, 1f);
+            b = Buffer(0.25f); AddNoise(b, 0, 0.25f, 1f, 9f, 0.95f, 0.06f); AddTone(b, 0, 0.2f, 300f, 700f, 0.15f, 8f); Make("whoosh", b, 0.55f);
+            b = Buffer(0.3f); AddTone(b, 0, 0.3f, 2100f, 2000f, 0.5f, 10f); AddTone(b, 0, 0.25f, 3150f, 3000f, 0.3f, 12f); AddNoise(b, 0, 0.05f, 0.8f, 60f, 1f); AddTone(b, 0, 0.12f, 150f, 70f, 0.8f, 18f); Make("clang", b, 0.8f);
+
+            // Ambience beds (loopable).
+            b = Buffer(8f); AddNoise(b, 0, 8f, 0.25f, 0f, 0.15f, 2f);
+            for (int i = 0; i < 9; i++) { float t0 = 0.4f + i * 0.85f; AddTone(b, t0, 0.08f, 3200f, 3800f, 0.12f, 30f); AddTone(b, t0 + 0.1f, 0.08f, 3600f, 3000f, 0.1f, 30f); }
+            MakeLoopable(b); Make("amb_forest", b, 0.35f);
+            b = Buffer(8f); AddNoise(b, 0, 8f, 0.6f, 0f, 0.3f, 3f);
+            for (int i = 0; i < b.Length; i++) b[i] *= 0.6f + 0.4f * Mathf.Sin((float)i / Rate * 0.8f);
+            MakeLoopable(b); Make("amb_wind", b, 0.35f);
+            b = Buffer(6f); AddNoise(b, 0, 6f, 0.2f, 0f, 0.2f, 1f);
+            for (int i = 0; i < 40; i++) AddNoise(b, (float)rng.NextDouble() * 5.8f, 0.03f, 0.5f, 90f, 1f);
+            MakeLoopable(b); Make("amb_fire", b, 0.35f);
+            b = Buffer(8f); AddTone(b, 0, 8f, 55f, 55f, 0.5f, 0f, 2f); AddTone(b, 0, 8f, 82.4f, 80f, 0.3f, 0f, 2f); AddNoise(b, 0, 8f, 0.2f, 0f, 0.1f, 2f);
+            MakeLoopable(b); Make("amb_dark", b, 0.35f);
+            b = Buffer(8f); AddNoise(b, 0, 8f, 0.18f, 0f, 0.2f, 2f);
+            for (int i = 0; i < 5; i++) AddTone(b, 1f + i * 1.4f, 0.1f, 2500f, 2900f, 0.1f, 25f);
+            MakeLoopable(b); Make("amb_village", b, 0.3f);
         }
 
         AudioClip BuildBattleMusic(float[] scale)

@@ -16,6 +16,17 @@ namespace HashiraChronicles
     /// <summary>How an ability is executed by the AbilitySystem.</summary>
     public enum AbilityShape { Dash, Spin, Wave, Burst, MultiSlash, Heal }
 
+    /// <summary>Hair / headwear silhouette of a chibi character.</summary>
+    public enum HairStyle { Messy, Spiky, Long, Ponytail, Braid, Short, Bun, Hood, Cap, StrawHat, Wild, Crest }
+
+    public enum WeaponKind { Katana, TwinBlades, Greatsword, SwordShield, Spear, Staff, Bow, Fans, Cleavers, Cane, Moon }
+
+    /// <summary>How a character fights: each style has its own combo timing, reach and signature mechanic.</summary>
+    public enum CombatStyle { Balanced, Swift, Heavy, Ranged, Technical }
+
+    /// <summary>Movement personality used by idle, walk and run animation.</summary>
+    public enum MotionStyle { Steady, Nervous, Aggressive, Graceful, Stoic, Confident, Sly, Light }
+
     public enum EnemyArchetype { Normal, Fast, Tank, Ranged, Elite, Boss }
 
     public enum EquipSlot { Sword, Haori, Accessory }

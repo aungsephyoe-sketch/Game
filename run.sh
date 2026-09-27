@@ -11,7 +11,7 @@ echo "== 1/4 Getting the latest code"
 git pull --ff-only || { echo "!! git pull failed (see above)."; exit 1; }
 git log --oneline -1
 
-echo "   Downloading Higgsfield art (first run only)..."
+echo "   Updating art files..."
 bash tools/fetch_art.sh
 
 echo "== 2/4 Checking Unity"

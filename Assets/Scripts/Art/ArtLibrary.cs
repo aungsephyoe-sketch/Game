@@ -22,28 +22,20 @@ namespace HashiraChronicles
         }
 
         /// <summary>Master art for a character (by base id, e.g. "ren" for every version of Ren).</summary>
-        public static Texture2D Character(CharacterDefinition def)
-        {
-            if (def == null) return null;
-            return Load("Art/Characters/" + (string.IsNullOrEmpty(def.baseId) ? def.id : def.baseId));
-        }
+        public static Texture Character(CharacterDefinition def) { return PortraitStudio.Hero(def); }
 
-        public static Texture2D Monster(EnemyDefinition def)
-        {
-            if (def == null || string.IsNullOrEmpty(def.artKey)) return null;
-            return Load("Art/Monsters/" + def.artKey);
-        }
+        public static Texture CharacterFull(CharacterDefinition def) { return PortraitStudio.Hero(def, true); }
 
-        public static Texture2D Region(string regionId)
-        {
-            if (string.IsNullOrEmpty(regionId)) return null;
-            // The fallen capital reuses the capital art; everything else has its own.
-            return Load("Art/Regions/" + (regionId == "fallen" ? "kingdom" : regionId));
-        }
+        public static Texture Monster(EnemyDefinition def) { return PortraitStudio.Enemy(def); }
+
+        /// <summary>Region key art belonged to the earlier painted art direction; scenes are shown in 3D instead.</summary>
+        public static Texture2D Region(string regionId) { return null; }
 
         /// <summary>Hand-painted tileable surface textures (grass, dirt, stone, snow, demon, wall, roof, bark, ui_panel).</summary>
         public static Texture2D Surface(string key)
         {
+            // Flat low-poly colours are the art direction; painted textures are no longer used.
+            if (key != null) return null;
             var t = Load("Art/Textures/" + key);
             if (t != null && t.wrapMode != TextureWrapMode.Repeat && key != "ui_panel") t.wrapMode = TextureWrapMode.Repeat;
             return t;
@@ -88,19 +80,13 @@ namespace HashiraChronicles
             }
         }
 
-        public static Texture2D WorldMap() { return Load("Art/Regions/worldmap"); }
+        public static Texture2D WorldMap() { return null; }
 
         /// <summary>Chapter key art: a cinematic keyframe for the big story moments, else the chapter's region.</summary>
-        public static Texture2D Chapter(ChapterDefinition ch)
-        {
-            if (ch == null) return null;
-            string key = ch.number == 1 ? "awakening" : ch.number == 5 ? "guardian_reveal" : ch.number == 7 ? "final_confrontation" : null;
-            var t = key != null ? Load("Art/Keyframes/" + key) : null;
-            return t != null ? t : Region(ch.regionId);
-        }
+        public static Texture2D Chapter(ChapterDefinition ch) { return null; }
 
         /// <summary>Draws a texture cropped to fill the rect (like CSS object-fit: cover).</summary>
-        public static void DrawCover(Rect r, Texture2D tex, float alpha = 1f)
+        public static void DrawCover(Rect r, Texture tex, float alpha = 1f)
         {
             if (tex == null) return;
             float ta = (float)tex.width / tex.height, ra = r.width / r.height;
@@ -112,7 +98,7 @@ namespace HashiraChronicles
         }
 
         /// <summary>Draws a texture scaled to fit inside the rect, keeping its aspect ratio.</summary>
-        public static void DrawFit(Rect r, Texture2D tex, float alpha = 1f)
+        public static void DrawFit(Rect r, Texture tex, float alpha = 1f)
         {
             if (tex == null) return;
             var old = GUI.color;

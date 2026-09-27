@@ -145,6 +145,7 @@ namespace HashiraChronicles
                 }
             }
 
+            if (GameManager.Instance != null) GameManager.Instance.Audio.SetAmbience(AmbienceFor(def.theme));
             var teamGo = new GameObject("Team");
             teamGo.transform.SetParent(transform, false);
             Team = teamGo.AddComponent<TeamSystem>();
@@ -165,6 +166,19 @@ namespace HashiraChronicles
 
             Mission = gameObject.AddComponent<MissionSystem>();
             Mission.Begin(def, this);
+        }
+
+        public static string AmbienceFor(ArenaTheme t)
+        {
+            switch (t.kind)
+            {
+                case EnvironmentKind.Village: return t.burning ? "fire" : "village";
+                case EnvironmentKind.Forest: case EnvironmentKind.Temple: return "forest";
+                case EnvironmentKind.Mountain: return "wind";
+                case EnvironmentKind.Kingdom: return "village";
+                case EnvironmentKind.FallenCity: case EnvironmentKind.DemonLand: return "fire";
+                default: return "dark";
+            }
         }
 
         void OnActiveChanged(PlayerCharacter pc)
@@ -197,6 +211,7 @@ namespace HashiraChronicles
             TimeController.ResetAll();
             DamageNumbers.Clear();
             RenderSettings.fog = false;
+            if (GameManager.Instance != null) GameManager.Instance.Audio.SetAmbience(null);
         }
     }
 }

@@ -12,7 +12,7 @@ namespace HashiraChronicles
     ///  • Guard (hold) with parry (tap just before a hit), dodge with i-frames and perfect-dodge slow motion.
     ///  • Hit stun and knockdown with quick-rise (dodge while down), super armour during skills, invulnerable ultimates.
     /// </summary>
-    public class PlayerCharacter : Combatant
+    public partial class PlayerCharacter : Combatant
     {
         public enum ActionKind { None, Attack, Charged, DashAttack, Skill, Dodge, Ultimate, SwitchIn, HitStun, Knockdown, Jump }
 
@@ -82,6 +82,9 @@ namespace HashiraChronicles
             Health.Died += OnDied;
             Health.Filter = GuardFilter;
             Visual = CharacterVisual.BuildHero(def, transform);
+            Visual.FidgetsEnabled = false;
+            if (def.style == CombatStyle.Heavy) Stats.speed *= 0.88f;
+            else if (def.style == CombatStyle.Swift) Stats.speed *= 1.12f;
         }
 
         float SkillLevelMult(int index) { return CharacterSystem.SkillLevelMultiplier(Owned.skillLevels[index]); }
@@ -115,8 +118,6 @@ namespace HashiraChronicles
 
             if (input.lockDown) CycleLock();
             if (LockTarget != null && !LockTarget.IsAlive) LockTarget = null;
-            if (input.jumpDown && (Action == ActionKind.None || ((Action == ActionKind.Attack || Action == ActionKind.DashAttack) && canMoveCancel)))
-                StartAction(JumpRoutine(), ActionKind.Jump);
 
             // Record the newest press; priority order resolves same-frame presses.
             if (input.dodgeDown) Buffer(Buffered.Dodge);
@@ -162,7 +163,7 @@ namespace HashiraChronicles
                 StopAction();
 
             if (Action == ActionKind.None) Move(dt);
-            else if (Action != ActionKind.Jump)
+            else
             {
                 moveTime = 0f;
                 Sprinting = false;
@@ -192,61 +193,7 @@ namespace HashiraChronicles
             Play("click", 0.4f);
         }
 
-        // ------------------------------------------------------------------ Jump / plunge
 
-        IEnumerator JumpRoutine()
-        {
-            const float up = 0.42f, height = 2.3f;
-            Play("dodge", 0.5f);
-            VFX.Dust(Position, 6);
-            Health.GrantInvulnerability(0.35f);
-            var model = Visual.transform;
-            float t = 0f;
-            bool plunge = false;
-            while (t < up * 2f)
-            {
-                t += Time.deltaTime;
-                float k = t / (up * 2f);
-                model.localPosition = new Vector3(0f, Mathf.Sin(Mathf.Clamp01(k) * Mathf.PI) * height, 0f);
-                // Air control.
-                transform.position = BattleController.ClampToArena(transform.position + moveInput * Stats.speed * 0.8f * Time.deltaTime);
-                if (moveInput.sqrMagnitude > 0.01f) Face(moveInput, 12f * Time.deltaTime);
-                if (buffered == Buffered.Attack && t > 0.12f) { buffered = Buffered.None; plunge = true; break; }
-                yield return null;
-            }
-            if (plunge)
-            {
-                // Plunging strike: hang for a beat, then slam down.
-                AutoAim(6f);
-                Visual.HeavyAttack(0.12f);
-                float y0 = model.localPosition.y;
-                yield return new WaitForSeconds(0.06f);
-                float e = 0f;
-                while (e < 0.1f)
-                {
-                    e += Time.deltaTime;
-                    model.localPosition = new Vector3(0f, Mathf.Lerp(y0, 0f, e / 0.1f), 0f);
-                    yield return null;
-                }
-                model.localPosition = Vector3.zero;
-                var tag = AttackTag.Basic(Def.chargedMultiplier * 0.9f, ElementColor);
-                tag.knockback = 6f; tag.stagger = 6f; tag.hitStop = 0.09f; tag.shake = 0.4f; tag.heavy = true;
-                CombatSystem.HitRadius(this, Position, 3.2f, tag);
-                VFX.Shockwave(Position, 3.4f, ElementColor, 0.4f);
-                VFX.BurstDisc(Position, 2.5f, ElementColor, 0.3f);
-                VFX.Dust(Position, 14);
-                Play("heavy", 0.9f);
-                UltGauge = Mathf.Min(UltMax, UltGauge + 3f);
-                yield return new WaitForSeconds(0.25f);
-            }
-            else
-            {
-                model.localPosition = Vector3.zero;
-                VFX.Dust(Position, 5);
-                Play("step", 0.4f);
-                yield return new WaitForSeconds(0.06f);
-            }
-        }
 
         void Move(float dt)
         {
@@ -435,7 +382,6 @@ namespace HashiraChronicles
             actionRoutine = null;
             if (Action == ActionKind.Ultimate) FinishUltimateEffects();
             if (Action == ActionKind.Knockdown) Visual.GetUp(0.15f);
-            if (Action == ActionKind.Jump) Visual.transform.localPosition = Vector3.zero;
             Action = ActionKind.None;
             attackQueued = false;
             canMoveCancel = false;
@@ -447,14 +393,19 @@ namespace HashiraChronicles
 
         IEnumerator ComboRoutine()
         {
+            return Def.style == CombatStyle.Ranged ? RangedCombo() : MeleeCombo();
+        }
+
+        IEnumerator MeleeCombo()
+        {
             while (true)
             {
                 attackQueued = false;
                 canMoveCancel = false;
                 int step = comboIndex;
                 bool finisher = step >= Def.comboMultipliers.Length - 1;
-                float spd = Def.attackSpeed;
-                var target = AutoAim(5.5f);
+                float spd = Def.attackSpeed * StyleSpeed;
+                var target = AutoAim(Def.style == CombatStyle.Heavy ? 6f : 5.5f);
 
                 float lunge = 0.35f;
                 if (target != null)
@@ -473,8 +424,16 @@ namespace HashiraChronicles
                     yield return null;
                 }
 
-                var tag = AttackTag.Basic(Def.comboMultipliers[step], ElementColor);
-                float range = 2.7f, arc = 170f;
+                var tag = AttackTag.Basic(Def.comboMultipliers[step] * StyleDamage, ElementColor);
+                float range = Def.style == CombatStyle.Heavy ? 3.1f : 2.7f, arc = 170f;
+                if (Def.style == CombatStyle.Heavy)
+                {
+                    tag.knockback *= 2.2f;
+                    tag.stagger *= 1.8f;
+                    tag.hitStop = 0.07f;
+                    tag.shake = 0.25f;
+                    tag.heavy = step >= 2;
+                }
                 if (finisher)
                 {
                     tag.knockback = 6f;
@@ -490,14 +449,16 @@ namespace HashiraChronicles
                     tag.stagger = 1.6f;
                     tag.launch = true; // third hit pops light demons into the air for juggles
                 }
+                if (Def.style == CombatStyle.Swift && !finisher) tag.multiplier *= 0.58f;
                 CombatSystem.HitArc(this, Position, transform.forward, range, arc, tag);
                 VFX.Slash(Position, transform.forward, range, finisher ? 330f : 160f, SlashRoll[step % 5], ElementColor, 0.2f);
                 if (finisher) VFX.Shockwave(Position, range, ElementColor, 0.3f);
-                Play(finisher ? "heavy" : "slash", finisher ? 0.7f : 0.5f);
+                PlayStyleSwing(finisher);
+                yield return StyleFollowUp(step, finisher, range, arc, tag);
 
                 comboIndex = finisher ? 0 : step + 1;
 
-                float recovery = (finisher ? 0.4f : 0.2f) / spd;
+                float recovery = (finisher ? 0.4f : 0.2f) / spd * (Def.style == CombatStyle.Swift ? 0.7f : 1f);
                 float cancelAt = (finisher ? 0.22f : 0.07f) / spd;
                 float r = 0f;
                 while (r < recovery)
@@ -527,7 +488,7 @@ namespace HashiraChronicles
             while (t < 0.14f)
             {
                 t += Time.deltaTime;
-                transform.position = BattleController.ClampToArena(start + dir * 4.2f * Mathf.Clamp01(t / 0.14f));
+                transform.position = BattleController.ClampToArena(start + dir * (Def.style == CombatStyle.Swift ? 6f : 4.2f) * Mathf.Clamp01(t / 0.14f));
                 CombatSystem.HitRadius(this, Position, 1.6f, tag, hit);
                 yield return null;
             }
@@ -550,6 +511,7 @@ namespace HashiraChronicles
 
         IEnumerator ChargedRoutine()
         {
+            if (Def.style == CombatStyle.Ranged) { yield return RangedCharged(); yield break; }
             AutoAim(6f);
             Visual.SetCharge(0f, ElementColor);
             Visual.HeavyAttack(0.16f);
@@ -575,12 +537,12 @@ namespace HashiraChronicles
         IEnumerator DodgeRoutine()
         {
             Vector3 dir = moveInput.sqrMagnitude > 0.05f ? moveInput.normalized : -transform.forward;
-            dodgeCooldown = 0.4f;
+            dodgeCooldown = Def.style == CombatStyle.Swift ? 0.22f : Def.style == CombatStyle.Heavy ? 0.55f : 0.4f;
             const float duration = 0.2f;
             Health.GrantInvulnerability(0.3f);
             Visual.Dodge(dir, duration);
             VFX.Dust(Position, 6);
-            Play("dodge", 0.6f);
+            if (Audio != null) Audio.PlayVaried("whoosh", 0.6f, 0.1f);
             Vector3 start = Position;
             float t = 0f;
             while (t < duration)
@@ -604,6 +566,7 @@ namespace HashiraChronicles
             TimeController.SlowMotion(0.25f, 0.6f);
             Health.GrantInvulnerability(0.4f);
             DamageNumbers.SpawnText(Position + Vector3.up * 2.4f, "PERFECT DODGE", new Color(0.6f, 0.9f, 1f), 48f);
+            techReadyUntil = Time.time + 2.5f;
             Play("perfect", 0.8f);
             GameEvents.RaisePerfectDodge();
         }
@@ -616,7 +579,7 @@ namespace HashiraChronicles
             to.y = 0f;
             if (to.sqrMagnitude > 0.01f && Vector3.Dot(transform.forward, to.normalized) < 0.1f) return true;
 
-            if (Time.time - guardPressedAt <= ParryWindow && Time.unscaledTime - lastParry > 0.3f)
+            if (Time.time - guardPressedAt <= (Def.style == CombatStyle.Technical ? 0.3f : ParryWindow) && Time.unscaledTime - lastParry > 0.3f)
             {
                 Parry(info.source);
                 return false;
@@ -626,7 +589,7 @@ namespace HashiraChronicles
             info.staggerPower = 0f;
             info.knockback *= 0.35f;
             VFX.HitSpark(Position + Vector3.up * 1.1f + transform.forward * 0.5f, new Color(1f, 0.9f, 0.6f), 10);
-            Play("block", 0.6f);
+            if (Audio != null) Audio.PlayVaried("clang", 0.75f, 0.08f);
             return true;
         }
 
@@ -645,6 +608,9 @@ namespace HashiraChronicles
             if (CameraController.Instance != null) CameraController.Instance.Punch(0.9f, 0.25f);
             GameEvents.RaiseImpact(0.6f);
             Play("parry", 1f);
+            techReadyUntil = Time.time + 2.5f;
+            // Technical fighters answer every parry with an instant counter-slash.
+            if (Def.style == CombatStyle.Technical && attacker != null) StartAction(CounterRoutine(attacker), ActionKind.Attack);
         }
 
         // ------------------------------------------------------------------ Skills & ultimate
@@ -662,40 +628,14 @@ namespace HashiraChronicles
 
         IEnumerator UltimateRoutine()
         {
-            var ab = Def.ultimate;
-            UltGauge = 0f;
-            AutoAim(8f);
-            Health.PushInvulnerable();
-            ultimateActive = true;
-            GameEvents.RaiseUltimateStarted(this, ab);
-            Play("ultimate", 1f);
-            Visual.Ultimate();
-            if (CameraController.Instance != null) CameraController.Instance.PlayUltimateCinematic(transform, 0.95f);
-            SceneLighting.UltimateMood(ElementColor, 1.8f);
-            TimeController.SlowMotion(0.12f, 0.95f);
-            VFX.Breath(Position, ElementColor, 80);
-            VFX.ImpactLight(Position + Vector3.up * 1.5f, ElementColor, 8f, 1f);
-            Visual.SetCharge(1f, ElementColor);
-            yield return new WaitForSecondsRealtime(0.95f);
-
-            Visual.SetCharge(0f, ElementColor);
-            if (CameraController.Instance != null)
-            {
-                CameraController.Instance.SetZoom(1.15f, 3f);
-                CameraController.Instance.Shake(0.6f);
-            }
-            GameEvents.RaiseImpact(1f);
-            var tally = new DamageTally();
-            yield return AbilitySystem.Execute(this, ab, SkillLevelMult(3), true, tally);
-            yield return new WaitForSeconds(0.2f);
-            FinishUltimateEffects();
-            GameEvents.RaiseUltimateFinished(this, tally.total);
+            return SpecialSequence();
         }
 
         void FinishUltimateEffects()
         {
             if (!ultimateActive) return;
             ultimateActive = false;
+            EnemyController.Frozen = false;
             Health.PopInvulnerable();
             Visual.SetCharge(0f, ElementColor);
             if (CameraController.Instance != null)
@@ -772,6 +712,12 @@ namespace HashiraChronicles
             UltGauge = Mathf.Min(UltMax, UltGauge + 4f);
             knockVelocity += info.knockback * 1.5f;
             if (Action == ActionKind.Ultimate || Action == ActionKind.Skill || Action == ActionKind.Knockdown) return; // super armour
+            // Heavy fighters shrug off hits in the middle of their swings.
+            if (Def.style == CombatStyle.Heavy && (Action == ActionKind.Attack || Action == ActionKind.Charged || Action == ActionKind.DashAttack))
+            {
+                knockVelocity -= info.knockback * 1.2f;
+                return;
+            }
 
             Vector3 from = info.source != null ? info.source.Position - Position : -transform.forward;
             bool heavy = info.staggerPower >= 4f && info.amount >= Health.Max * 0.08f;

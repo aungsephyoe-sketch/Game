@@ -35,6 +35,7 @@ namespace HashiraChronicles
 
         void Update()
         {
+            if (EnemyController.Frozen && owner != null && owner.Team == CombatTeam.Enemy) return;
             float step = speed * Time.deltaTime;
             transform.position += dir * step;
             travelled += step;

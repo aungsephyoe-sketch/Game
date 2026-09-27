@@ -281,7 +281,6 @@ namespace HashiraChronicles
             if (pc.ChargeAmount > 0f) UIStyles.CircleFill(atk.center, atk.radius, pc.ChargeAmount, new Color(el.r, el.g, el.b, 0.45f));
 
             DrawButton(HudLayout.Dodge, "DODGE", "", 0f, controls.Pressed[1], new Color(0.7f, 0.8f, 1f));
-            DrawButton(HudLayout.Jump, "JUMP", "then ATK", 0f, controls.Pressed[7], new Color(0.8f, 1f, 0.8f));
             DrawButton(HudLayout.Lock, PlayerCharacter.LockTarget != null ? "◎" : "LOCK", "", 0f, controls.Pressed[8], PlayerCharacter.LockTarget != null ? UIStyles.Crimson : Color.white);
             DrawButton(HudLayout.Guard, "GUARD", pc.Guarding ? "PARRY: TAP" : "", 0f, Mathf.Max(controls.Pressed[6], pc.Guarding ? 0.6f : 0f), new Color(0.9f, 0.9f, 0.6f));
 

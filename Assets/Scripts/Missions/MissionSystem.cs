@@ -92,7 +92,7 @@ namespace HashiraChronicles
                 yield return new WaitForSeconds(2.4f);
                 GameEvents.RaiseBanner("RED ZONES = INCOMING ATTACK", "Dodge through at the last moment, or tap GUARD just before the hit to parry");
                 yield return new WaitForSeconds(2.4f);
-                GameEvents.RaiseBanner("JUMP · LOCK-ON", "JUMP then ATTACK for a plunging strike · LOCK keeps your blade on one demon");
+                GameEvents.RaiseBanner("BUILD ENERGY · UNLEASH YOUR SPECIAL", "Hits fill the gauge — press SPECIAL when it glows · LOCK keeps your blade on one demon");
                 yield return new WaitForSeconds(2.2f);
             }
             started = true;

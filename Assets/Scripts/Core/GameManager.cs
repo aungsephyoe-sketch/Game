@@ -119,6 +119,7 @@ namespace HashiraChronicles
             if (Cam == null) Cam = cam.gameObject.AddComponent<CameraController>();
             if (cam.GetComponent<PostFX>() == null) cam.gameObject.AddComponent<PostFX>();
             cam.allowHDR = false;
+            cam.cullingMask &= ~(1 << PortraitStudio.Layer); // the portrait studio renders on its own layer
             cam.allowMSAA = true;
         }
 

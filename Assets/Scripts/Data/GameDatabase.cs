@@ -34,6 +34,7 @@ namespace HashiraChronicles
             built = true;
             BuildCharacters();
             BuildNpcs();
+            NpcLooks();
             BuildEnemies();
             BuildEquipment();
             BuildRegions();
@@ -319,6 +320,74 @@ namespace HashiraChronicles
             };
             kuroe.ultimate = Ab("Moon Breathing: Final Night", AbilityShape.MultiSlash, 0f, 1.6f, 14, 0f, 10f, "Night falls. Nothing survives it.", 30f, 7f);
             Characters.Add(kuroe);
+            ApplyLooks();
+        }
+
+        static void Look(string id, HairStyle hair, WeaponKind weapon, CombatStyle style, MotionStyle motion, Color body, Color outfit, Color hairC, Color blade,
+            float h = 1f, float w = 1f, bool scarf = false, bool cape = false, bool pelt = false, bool armor = false, bool bell = false, Color? accent = null)
+        {
+            var c = Characters.Find(x => x.id == id) ?? Npcs.Find(x => x.id == id);
+            if (c == null) return;
+            c.hair = hair; c.weapon = weapon; c.style = style; c.motion = motion;
+            c.bodyColor = body; c.haoriColor = outfit; c.hairColor = hairC; c.bladeColor = blade;
+            c.bodyHeight = h; c.bodyWidth = w; c.scarf = scarf; c.cape = cape; c.pelt = pelt; c.armor = armor; c.bell = bell;
+            c.accentColor = accent ?? outfit;
+        }
+
+        /// <summary>
+        /// Every slayer has their own silhouette (hair, weapon, proportions, accessories), fighting style and
+        /// movement personality, in the simple chibi art style of the game.
+        /// </summary>
+        static void ApplyLooks()
+        {
+            var ink = new Color(0.08f, 0.08f, 0.1f);
+            Look("ren_initiate", HairStyle.Messy, WeaponKind.Katana, CombatStyle.Technical, MotionStyle.Steady,
+                ink, new Color(0.08f, 0.42f, 0.44f), new Color(0.8f, 0.12f, 0.12f), new Color(0.35f, 0.8f, 1f));
+            Look("ren_sundance", HairStyle.Messy, WeaponKind.Katana, CombatStyle.Technical, MotionStyle.Confident,
+                ink, new Color(0.95f, 0.55f, 0.15f), new Color(0.8f, 0.12f, 0.12f), new Color(1f, 0.8f, 0.3f), 1.02f, 1f, false, true);
+            Look("sora_initiate", HairStyle.Spiky, WeaponKind.Katana, CombatStyle.Swift, MotionStyle.Nervous,
+                new Color(0.12f, 0.12f, 0.15f), new Color(0.45f, 0.47f, 0.52f), ink, new Color(1f, 0.85f, 0.25f), 0.92f, 0.9f, true, false, false, false, false, new Color(0.22f, 0.22f, 0.6f));
+            Look("kiba_initiate", HairStyle.Wild, WeaponKind.Cleavers, CombatStyle.Heavy, MotionStyle.Aggressive,
+                new Color(0.3f, 0.2f, 0.13f), new Color(0.35f, 0.25f, 0.15f), new Color(0.1f, 0.12f, 0.32f), new Color(0.9f, 0.6f, 0.3f), 1.1f, 1.25f, false, false, true);
+            Look("hana_healer", HairStyle.Braid, WeaponKind.Staff, CombatStyle.Ranged, MotionStyle.Graceful,
+                new Color(0.95f, 0.94f, 0.98f), new Color(0.76f, 0.62f, 0.92f), new Color(0.82f, 0.76f, 0.94f), new Color(0.95f, 0.72f, 1f), 0.95f, 0.92f, false, false, false, false, true);
+            Look("tetsu_guard", HairStyle.Short, WeaponKind.SwordShield, CombatStyle.Heavy, MotionStyle.Stoic,
+                new Color(0.33f, 0.4f, 0.55f), new Color(0.14f, 0.18f, 0.4f), new Color(0.28f, 0.18f, 0.1f), new Color(0.85f, 0.85f, 0.9f), 1.15f, 1.3f, false, true, false, true);
+            Look("homura_pillar", HairStyle.Ponytail, WeaponKind.Katana, CombatStyle.Balanced, MotionStyle.Confident,
+                ink, new Color(0.6f, 0.08f, 0.1f), new Color(0.85f, 0.15f, 0.1f), new Color(1f, 0.5f, 0.1f), 1.08f, 1f, false, true);
+            Look("homura_lastflame", HairStyle.Ponytail, WeaponKind.Greatsword, CombatStyle.Balanced, MotionStyle.Confident,
+                ink, new Color(0.75f, 0.12f, 0.06f), new Color(1f, 0.35f, 0.08f), new Color(1f, 0.65f, 0.1f), 1.1f, 1.05f, false, true, false, true);
+            Look("mina_ember", HairStyle.Long, WeaponKind.TwinBlades, CombatStyle.Swift, MotionStyle.Light,
+                ink, new Color(0.25f, 0.18f, 0.35f), new Color(0.95f, 0.95f, 0.97f), new Color(0.75f, 0.4f, 1f), 0.9f, 0.88f);
+            Look("rokuro_hunter", HairStyle.Cap, WeaponKind.Bow, CombatStyle.Ranged, MotionStyle.Sly,
+                new Color(0.3f, 0.26f, 0.2f), new Color(0.4f, 0.45f, 0.3f), new Color(0.15f, 0.12f, 0.1f), new Color(0.75f, 0.9f, 0.5f), 1.05f, 1.05f, false, false, true, false, false, new Color(0.42f, 0.26f, 0.14f));
+            Look("genji_ronin", HairStyle.StrawHat, WeaponKind.Katana, CombatStyle.Technical, MotionStyle.Sly,
+                new Color(0.15f, 0.15f, 0.2f), new Color(0.35f, 0.42f, 0.58f), ink, new Color(0.7f, 0.85f, 1f), 1.05f, 1f, false, true, false, false, false, new Color(0.8f, 0.68f, 0.4f));
+            Look("yui_tide", HairStyle.Bun, WeaponKind.Fans, CombatStyle.Ranged, MotionStyle.Graceful,
+                new Color(0.1f, 0.12f, 0.2f), new Color(0.2f, 0.55f, 0.85f), new Color(0.2f, 0.4f, 0.8f), new Color(0.45f, 0.85f, 1f), 0.94f, 0.92f);
+            Look("raiga_pillar", HairStyle.Crest, WeaponKind.Spear, CombatStyle.Swift, MotionStyle.Light,
+                ink, new Color(0.95f, 0.85f, 0.2f), new Color(0.96f, 0.96f, 0.98f), new Color(1f, 0.95f, 0.45f), 1.08f, 0.95f, false, false, false, true);
+            Look("kuroe_moon", HairStyle.Long, WeaponKind.Moon, CombatStyle.Technical, MotionStyle.Sly,
+                new Color(0.1f, 0.05f, 0.1f), new Color(0.5f, 0.08f, 0.22f), new Color(0.05f, 0.05f, 0.07f), new Color(1f, 0.2f, 0.4f), 1.05f, 0.95f, false, true);
+            // Mina's blade burns violet: she fights with dark flames.
+            var mina = Characters.Find(x => x.id == "mina_ember");
+            if (mina != null) mina.element = Element.Dark;
+        }
+
+        static void NpcLooks()
+        {
+            Look("npc_tessai", HairStyle.Bun, WeaponKind.Cane, CombatStyle.Balanced, MotionStyle.Stoic,
+                new Color(0.35f, 0.38f, 0.45f), new Color(0.5f, 0.52f, 0.58f), new Color(0.95f, 0.95f, 0.97f), new Color(0.8f, 0.8f, 0.85f), 0.95f);
+            Look("npc_villager", HairStyle.StrawHat, WeaponKind.Cane, CombatStyle.Balanced, MotionStyle.Steady,
+                new Color(0.45f, 0.35f, 0.25f), new Color(0.6f, 0.5f, 0.35f), new Color(0.15f, 0.1f, 0.08f), new Color(0.5f, 0.4f, 0.3f), 0.95f, 1f, false, false, false, false, false, new Color(0.85f, 0.72f, 0.42f));
+            Look("npc_villager2", HairStyle.Cap, WeaponKind.Cane, CombatStyle.Balanced, MotionStyle.Light,
+                new Color(0.3f, 0.35f, 0.45f), new Color(0.7f, 0.4f, 0.4f), new Color(0.12f, 0.08f, 0.06f), new Color(0.5f, 0.4f, 0.3f), 0.9f, 1f, false, false, false, false, false, new Color(0.7f, 0.25f, 0.2f));
+            Look("npc_soldier", HairStyle.Crest, WeaponKind.Spear, CombatStyle.Balanced, MotionStyle.Stoic,
+                new Color(0.28f, 0.32f, 0.42f), new Color(0.2f, 0.3f, 0.65f), new Color(0.75f, 0.75f, 0.8f), new Color(0.8f, 0.8f, 0.85f), 1.05f, 1.1f, false, false, false, true);
+            Look("npc_chancellor", HairStyle.Hood, WeaponKind.Cane, CombatStyle.Balanced, MotionStyle.Sly,
+                new Color(0.15f, 0.1f, 0.2f), new Color(0.45f, 0.2f, 0.55f), new Color(0.45f, 0.2f, 0.55f), new Color(0.6f, 0.3f, 0.8f), 1.1f, 0.95f, false, true);
+            Look("npc_merchant", HairStyle.Cap, WeaponKind.Cane, CombatStyle.Balanced, MotionStyle.Steady,
+                new Color(0.4f, 0.3f, 0.2f), new Color(0.8f, 0.6f, 0.2f), new Color(0.2f, 0.15f, 0.1f), new Color(0.5f, 0.4f, 0.3f), 0.95f, 1.2f, false, false, false, false, false, new Color(0.8f, 0.6f, 0.2f));
         }
 
         static void BuildNpcs()
@@ -338,6 +407,12 @@ namespace HashiraChronicles
         }
 
         // ------------------------------------------------------------------ Enemies
+
+        static EnemyDefinition GetEnemyRaw(string id)
+        {
+            foreach (var e in Enemies) if (e.id == id) return e;
+            return new EnemyDefinition();
+        }
 
         static void BuildEnemies()
         {
@@ -387,6 +462,17 @@ namespace HashiraChronicles
             Enemies.Add(new EnemyDefinition { id = "dummy", form = "dummy", weakness = "It doesn't mind.", displayName = "Training Dummy", archetype = EnemyArchetype.Normal, element = Element.Beast,
                 baseHp = 30000, baseAtk = 1, baseDef = 50, moveSpeed = 0.8f, attackRange = 1.5f, attackCooldown = 99f, windup = 1f,
                 bodyColor = new Color(0.6f, 0.5f, 0.35f), accentColor = new Color(0.8f, 0.7f, 0.5f), description = "Hit it. It doesn't mind." });
+
+            // Distinct behaviours: who hides, who calls for help, who charges.
+            GetEnemyRaw("shadow_demon").ambush = true;
+            GetEnemyRaw("runner").ambush = true;
+            GetEnemyRaw("spitter").summonId = "grunt";
+            GetEnemyRaw("forest_beast").summonId = "shadow_demon";
+            GetEnemyRaw("castle_sentinel").summonId = "lava_imp";
+            GetEnemyRaw("brute").charger = true;
+            GetEnemyRaw("flame_beast").charger = true;
+            GetEnemyRaw("frost_oni").charger = true;
+            GetEnemyRaw("dummy").enrageAt = 0f;
 
             // ---- Bosses ----
             Boss("boss_gorvath", "Gorvath", "The Horned Butcher of Kiriha", "thousandarm", Element.Beast, 22000, 230, 240, 2.4f, 2f,

@@ -135,7 +135,12 @@ namespace HashiraChronicles
             VFX.HitSpark(hitPos, playerHit ? new Color(1f, 0.25f, 0.2f) : tag.color, info.crit ? 22 : 12);
             DamageNumbers.Spawn(hitPos, info.amount, info.crit, info.elementMultiplier, playerHit);
             if (GameManager.Instance != null && GameManager.Instance.Audio != null)
-                GameManager.Instance.Audio.Play(info.crit ? "crit" : "hit", playerHit ? 0.8f : 0.55f);
+            {
+                // Bigger targets sound heavier; every hit is slightly different.
+                float pitch = playerHit ? 0.85f : Mathf.Clamp(1.25f - target.Radius * 0.45f, 0.7f, 1.25f);
+                GameManager.Instance.Audio.PlayPitched(info.crit ? "crit" : "hit", playerHit ? 0.8f : 0.6f, pitch * Random.Range(0.93f, 1.07f));
+                if (tag.heavy && !playerHit) GameManager.Instance.Audio.PlayVaried("impact", 0.45f, 0.1f);
+            }
             TimeController.HitStop(info.crit ? tag.hitStop * 1.6f : tag.hitStop);
             if (CameraController.Instance != null)
                 CameraController.Instance.Shake(info.blocked ? 0.08f : playerHit ? 0.35f : (info.crit ? tag.shake * 1.5f : tag.shake));

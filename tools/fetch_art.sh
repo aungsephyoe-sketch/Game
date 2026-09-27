@@ -1,14 +1,18 @@
 #!/bin/bash
-# Downloads the Higgsfield-generated art listed in tools/art_manifest.txt into Assets/.
-# Safe to re-run: files that already exist are skipped.
+# Downloads any external art listed in tools/art_manifest.txt, and removes art from earlier art directions.
 cd "$(dirname "$0")/.."
-ok=0; skip=0; fail=0
+# The earlier realistic Higgsfield art and 3D models are no longer part of the game's style.
+for old in Assets/Resources/Art Assets/Art/Reference Assets/Resources/Characters/ren.glb Assets/Resources/Enemies/boss_veyrath.glb; do
+  if [ -e "$old" ]; then rm -rf "$old" "$old.meta"; echo "   Removed old art: $old"; fi
+done
+ok=0; fail=0
 while read -r dest url; do
   [ -z "$dest" ] && continue
   case "$dest" in \#*) continue;; esac
   out="Assets/$dest"
-  if [ -s "$out" ]; then skip=$((skip+1)); continue; fi
+  [ -s "$out" ] && continue
   mkdir -p "$(dirname "$out")"
-  if curl -sSfL --retry 2 -o "$out.part" "$url"; then mv "$out.part" "$out"; ok=$((ok+1)); else rm -f "$out.part"; echo "   !! could not download $dest"; fail=$((fail+1)); fi
+  if curl -sSfL --retry 2 -o "$out.part" "$url"; then mv "$out.part" "$out"; ok=$((ok+1)); else rm -f "$out.part"; fail=$((fail+1)); fi
 done < tools/art_manifest.txt
-echo "   Art: $ok downloaded, $skip already present, $fail failed."
+[ $ok -gt 0 ] || [ $fail -gt 0 ] && echo "   Art: $ok downloaded, $fail failed."
+exit 0

@@ -130,7 +130,6 @@ namespace HashiraChronicles
                     set = new GameObject("Set");
                     set.transform.SetParent(transform, false);
                     ArenaBuilder.Build(s.theme, set.transform, false, s.theme.GetHashCode());
-                    PaintedBackdrop.Create(set.transform, ArtLibrary.Region(ArtLibrary.RegionFor(s.theme.kind)), Vector3.zero, 115f, PaintedBackdrop.TintFor(s.theme));
                     break;
 
                 case StepKind.Actor:
