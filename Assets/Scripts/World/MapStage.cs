@@ -9,7 +9,7 @@ namespace HashiraChronicles
     /// the burning wastes, the temple, the fallen city, the Demon Lord's castle), winding stone paths, glowing
     /// location markers, drifting clouds, and the team leader who physically walks the road between locations.
     /// </summary>
-    public class MapStage : MonoBehaviour
+    public partial class MapStage : MonoBehaviour
     {
         public static readonly string[] RouteOrder = { "village", "forest", "mountain", "kingdom", "demonland", "temple", "fallen", "castle" };
 
@@ -58,7 +58,7 @@ namespace HashiraChronicles
             ApplyLighting();
         }
 
-        public void Hide() { gameObject.SetActive(false); }
+        public void Hide() { ExitArea(); gameObject.SetActive(false); }
 
         void OnDisable()
         {
@@ -184,6 +184,7 @@ namespace HashiraChronicles
         void Update()
         {
             if (token == null || CameraController.Instance == null) return;
+            if (AreaMode) { UpdateArea(); return; }
             CameraFocus = token.position;
             float t = Time.unscaledTime;
             Vector3 far = new Vector3(Mathf.Sin(t * 0.1f) * 1.5f, 26f, -21f);

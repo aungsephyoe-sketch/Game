@@ -58,6 +58,12 @@ namespace HashiraChronicles
     }
 
     [System.Serializable]
+    public class TeamPreset
+    {
+        public List<string> ids = new List<string>();
+    }
+
+    [System.Serializable]
     public class QuestState
     {
         public string id;
@@ -82,6 +88,9 @@ namespace HashiraChronicles
 
         public List<OwnedCharacter> characters = new List<OwnedCharacter>();
         public List<string> team = new List<string>();
+        /// <summary>Saved line-ups for TEAM 1-4; <see cref="team"/> is always the active one.</summary>
+        public List<TeamPreset> teamPresets = new List<TeamPreset>();
+        public int activeTeam;
         public List<EquipmentItem> equipment = new List<EquipmentItem>();
         public List<MissionProgress> missions = new List<MissionProgress>();
 

@@ -13,62 +13,70 @@ namespace HashiraChronicles
         void DrawMainMenu()
         {
             var d = gm.Data;
-            // Soft gradient on the left so the menu reads over the living village.
-            for (int i = 0; i < 8; i++)
-                UIStyles.Rect(new Rect(0f, 0f, 120f * (8 - i) + safe.x, H), new Color(0.02f, 0.01f, 0.05f, 0.07f));
+            // A soft shade on the left so the tiles read over the living village.
+            for (int i = 0; i < 6; i++)
+                UIStyles.Rect(new Rect(0f, 0f, 160f * (6 - i) + safe.x, H), new Color(0.02f, 0.02f, 0.06f, 0.06f));
 
-            float x = safe.x + 70f;
+            float x = safe.x + 56f;
             float k = Enter(0f, 0.6f);
-            UIStyles.Outlined(new Rect(x, 60f - (1f - k) * 80f, 900f, 90f), GameConfig.TitleLine1, UIStyles.Sized(UIStyles.Title, 60), UIStyles.Crimson, 3f);
-            UIStyles.Outlined(new Rect(x, 130f - (1f - k) * 80f, 1000f, 130f), GameConfig.TitleLine2, UIStyles.Sized(UIStyles.Title, 104), Color.white, 4f);
-            var old = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, Enter(0.3f, 0.6f));
-            GUI.Label(new Rect(x + 6f, 258f, 800f, 40f), GameConfig.Subtitle, UIStyles.Small);
+            UIStyles.Outlined(new Rect(x, 36f - (1f - k) * 80f, 900f, 60f), GameConfig.TitleLine1, UIStyles.Sized(UIStyles.Title, 40), UIStyles.Crimson, 3f);
+            UIStyles.Outlined(new Rect(x, 82f - (1f - k) * 80f, 1000f, 100f), GameConfig.TitleLine2, UIStyles.Sized(UIStyles.Title, 80), Color.white, 4f);
 
-            // Where the story stands.
             var next = gm.NextStoryMission();
             var chapter = next != null ? GameDatabase.ChapterOf(next) : null;
-            string where = chapter != null ? "CHAPTER " + chapter.number + " — " + chapter.title.ToUpper() : "THE STORY IS COMPLETE";
-            GUI.Label(new Rect(x + 6f, 310f, 900f, 44f), "<color=#FFD36B>" + where + "</color>", UIStyles.H2);
-            if (next != null)
-                GUI.Label(new Rect(x + 6f, 356f, 900f, 40f), "Next: " + next.id + "  " + next.name + "   <color=#AAAAAA>" + RegionName(next.regionId) + "</color>", UIStyles.Small);
-            GUI.color = old;
+            string leaderId = d.team.Count > 0 ? d.team[0] : null;
+            var leader = leaderId != null ? GameDatabase.GetCharacter(leaderId) : null;
 
-            // Primary actions.
-            if (AnimBtn(new Rect(x, 420f, 560f, 130f), "PLAY", UIStyles.ButtonBig, 0.15f, true, true)) gm.GoTo(GameScreen.WorldMap);
-            string storyLabel = next != null ? "STORY  <size=24>▶ " + next.id + "</size>" : "STORY";
-            if (AnimBtn(new Rect(x, 566f, 560f, 96f), storyLabel, UIStyles.Button, 0.22f))
+            // PLAY and STORY on the left, the coloured tiles beside them.
+            float top = 212f;
+            if (Tile(new Rect(x, top, 440f, 300f), "PLAY", "▶", TileRed, 0.1f, leader != null ? ArtLibrary.CharacterFull(leader) : null,
+                chapter != null ? "Chapter " + chapter.number + " · " + chapter.title : "Free play", 0, true))
+                gm.GoTo(GameScreen.WorldMap);
+            string storySub = next != null ? "Next: " + next.id + "  " + next.name : "The story is complete";
+            if (Tile(new Rect(x, top + 316f, 440f, 140f), "STORY", "☾", TileNavy, 0.18f, null, storySub))
             {
                 if (next != null) { gm.SelectedMission = next; gm.GoTo(GameScreen.MissionDetail); }
                 else gm.GoTo(GameScreen.Story);
             }
+            if (Tile(new Rect(x, top + 472f, 440f, 110f), "JOURNAL", "✎", new Color(0.3f, 0.25f, 0.2f), 0.24f)) OpenMenu("JOURNAL");
 
-            // Secondary menu.
-            string[] labels = { "SUMMON", "CHARACTERS", "TEAM", "EQUIPMENT", "MISSIONS", "SHOP", "JOURNAL", "SETTINGS" };
-            float bx = x, by = 684f, bw = 272f, bh = 78f, gap = 16f;
+            string[] labels = { "SUMMON", "CHARACTERS", "TEAM", "EQUIPMENT", "MISSIONS", "SHOP", "SETTINGS" };
+            string[] icons = { "✦", "☺", "⚑", "⚔", "✔", "♦", "⚙" };
+            Color[] colors = { TilePurple, TileBlue, TileGreen, TileOrange, TileMaroon, TileTeal, TileGrey };
+            float gx = x + 456f, tw = 210f, th = 134f, gap = 12f;
             for (int i = 0; i < labels.Length; i++)
             {
-                var r = new Rect(bx + (i % 2) * (bw + gap), by + (i / 2) * (bh + 12f), bw, bh);
-                if (AnimBtn(r, labels[i], UIStyles.Button, 0.3f + i * 0.05f)) OpenMenu(labels[i]);
-                int badge = MenuBadge(labels[i]);
-                if (badge > 0) Badge(new Vector2(r.xMax - 12f, r.y + 8f), badge > 9 ? "!" : badge.ToString(), UIStyles.Crimson);
+                var r = new Rect(gx + (i % 2) * (tw + gap), top + (i / 2) * (th + gap), tw, th);
+                if (i == labels.Length - 1) r.width = tw * 2f + gap;
+                Texture art = labels[i] == "CHARACTERS" && leader != null ? ArtLibrary.Character(leader) : null;
+                if (Tile(r, labels[i], icons[i], colors[i], 0.28f + i * 0.05f, art, null, MenuBadge(labels[i]))) OpenMenu(labels[i]);
             }
 
-            // Team strip.
+            // Team power panel, bottom right: the four slayers' faces and the total.
             float tk = Enter(0.5f, 0.5f);
-            var strip = new Rect(safe.xMax - 620f + (1f - tk) * 300f, H - 250f, 600f, 220f);
-            UIStyles.PanelBox(strip, UIStyles.Gold);
-            GUI.Label(new Rect(strip.x + 24f, strip.y + 14f, 560f, 44f), "TEAM POWER  <color=#FFD36B>" + CharacterSystem.TeamPower(d).ToString("N0") + "</color>", UIStyles.H2);
-            float ty = strip.y + 64f;
-            for (int i = 0; i < d.team.Count; i++)
+            var panel = new Rect(safe.xMax - 560f + (1f - tk) * 300f, H - 210f, 530f, 180f);
+            Round(Offset(panel, 0f, 5f), new Color(0f, 0f, 0f, 0.35f), 16f);
+            Round(panel, new Color(0.06f, 0.06f, 0.12f, 0.85f), 16f);
+            GUI.Label(new Rect(panel.x + 22f, panel.y + 10f, 300f, 40f), "TEAM POWER", UIStyles.Sized(UIStyles.H2, 26));
+            GUI.Label(new Rect(panel.x + 200f, panel.y + 8f, 310f, 44f), "<color=#FFD36B>" + CharacterSystem.TeamPower(d).ToString("N0") + "</color>", UIStyles.Sized(UIStyles.Right, 34));
+            for (int i = 0; i < 4; i++)
             {
-                var c = d.GetCharacter(d.team[i]);
-                var def = GameDatabase.GetCharacter(d.team[i]);
-                if (c == null || def == null) continue;
-                GUI.Label(new Rect(strip.x + 24f, ty, 560f, 36f), ElementTag(def.element) + "  " + def.displayName + "  <color=#AAAAAA>Lv." + c.level + "  " + Stars(c.stars) + "</color>", UIStyles.Sized(UIStyles.Body, 24));
-                ty += 36f;
+                var r = new Rect(panel.x + 22f + i * 124f, panel.y + 58f, 110f, 110f);
+                if (i < d.team.Count)
+                {
+                    var def = GameDatabase.GetCharacter(d.team[i]);
+                    var c = d.GetCharacter(d.team[i]);
+                    if (def == null || c == null) continue;
+                    PortraitCard(r, def, false, "Lv." + c.level);
+                    if (GUI.Button(r, GUIContent.none, GUIStyle.none)) { teamReturn = GameScreen.MainMenu; gm.GoTo(GameScreen.Team); }
+                }
+                else
+                {
+                    Round(r, new Color(1f, 1f, 1f, 0.06f), 12f);
+                    GUI.Label(r, "+", UIStyles.Sized(UIStyles.Center, 44));
+                }
             }
-            Currencies(new Rect(safe.xMax - 980f, safe.y + 28f, 960f, 60f));
+            Currencies(new Rect(safe.xMax - 980f, safe.y + 28f, 960f, 52f));
 
             DrawNpcBubbles();
         }
@@ -142,8 +150,8 @@ namespace HashiraChronicles
             var cam = Camera.main;
             float s = HudLayout.Scale;
 
-            // Location labels floating over the 3D markers.
-            if (cam != null)
+            // Location labels floating over the 3D markers (world overview only).
+            if (cam != null && !gm.Map.AreaMode)
             {
                 foreach (var id in MapStage.RouteOrder)
                 {
@@ -165,7 +173,7 @@ namespace HashiraChronicles
                     if (!gm.Map.Traveling && GUI.Button(r, GUIContent.none, GUIStyle.none))
                     {
                         gm.Audio.Play("click", 0.6f);
-                        if (unlocked) mapSelected = id;
+                        if (unlocked) { mapSelected = id; if (id == d.currentRegion) mapOverview = false; }
                         else Toast("Clear " + region.unlockAfterMission + " to open the road to this land.");
                     }
                 }
@@ -188,44 +196,150 @@ namespace HashiraChronicles
             // Region panel.
             var region2 = GameDatabase.GetRegion(mapSelected);
             if (region2 == null) return;
+            var list = GameDatabase.MissionsInRegion(mapSelected);
+            bool inArea = mapSelected == d.currentRegion && !mapOverview && list.Count > 0;
+            int current = list.Count - 1;
+            for (int i = 0; i < list.Count; i++)
+                if (d.IsMissionUnlocked(list[i]) && !d.IsMissionCleared(list[i].id)) { current = i; break; }
+            if (inArea) gm.Map.EnterArea(mapSelected, list.Count, current);
+            else gm.Map.ExitArea();
+            if (areaPick < 0 || areaPick >= list.Count || areaRegion != mapSelected) { areaPick = current; areaRegion = mapSelected; }
+            if (inArea) DrawAreaNodes(list, current);
+
             float pk = Enter(0.1f, 0.4f);
-            var panel = new Rect(safe.xMax - 660f + (1f - pk) * 300f, safe.y + 130f, 640f, H - safe.y - 150f);
-            UIStyles.PanelBox(panel, region2.mapColor);
+            var panel = new Rect(safe.xMax - 640f + (1f - pk) * 300f, safe.y + 130f, 620f, H - safe.y - 150f);
+            Round(Offset(panel, 0f, 6f), new Color(0f, 0f, 0f, 0.35f), 18f);
+            Round(panel, new Color(0.06f, 0.06f, 0.12f, 0.9f), 18f);
+            Round(new Rect(panel.x, panel.y, panel.width, 8f), region2.mapColor, 4f);
             GUI.Label(new Rect(panel.x + 26f, panel.y + 16f, panel.width - 52f, 56f), region2.name, UIStyles.H1);
-            GUI.Label(new Rect(panel.x + 26f, panel.y + 74f, panel.width - 52f, 40f), region2.subtitle, UIStyles.Small);
-            float y = panel.y + 124f;
+            GUI.Label(new Rect(panel.x + 26f, panel.y + 72f, panel.width - 52f, 36f), region2.subtitle, UIStyles.Small);
+            float y = panel.y + 116f;
             if (mapSelected != d.currentRegion && d.IsRegionUnlocked(region2))
             {
-                if (Btn(new Rect(panel.x + 26f, y, panel.width - 52f, 70f), "TRAVEL HERE")) gm.TravelTo(mapSelected);
-                y += 84f;
+                if (FlatBtn(new Rect(panel.x + 26f, y, panel.width - 52f, 66f), "TRAVEL HERE", TileBlue)) { mapOverview = false; gm.TravelTo(mapSelected); }
+                y += 80f;
             }
-            var list = GameDatabase.MissionsInRegion(mapSelected);
-            var view = new Rect(panel.x + 16f, y, panel.width - 32f, panel.yMax - y - 120f);
-            var content = new Rect(0f, 0f, view.width - 24f, list.Count * 104f);
+            else if (mapSelected == d.currentRegion)
+            {
+                if (FlatBtn(new Rect(panel.x + 26f, y, panel.width - 52f, 56f), mapOverview ? "ENTER AREA" : "◀ WORLD MAP", new Color(0.25f, 0.25f, 0.34f), true, 24)) mapOverview = !mapOverview;
+                y += 70f;
+            }
+
+            var view = new Rect(panel.x + 16f, y, panel.width - 32f, panel.yMax - y - 110f);
+            float rowH = 82f;
+            var content = new Rect(0f, 0f, view.width - 24f, list.Count * (rowH + 8f));
             mapScroll = GUI.BeginScrollView(view, mapScroll, content);
             for (int i = 0; i < list.Count; i++)
             {
                 var m = list[i];
                 bool unlocked = d.IsMissionUnlocked(m);
                 bool cleared = d.IsMissionCleared(m.id);
-                var r = new Rect(0f, i * 104f, content.width, 94f);
-                string tag = TypeTag(m.type);
-                string label = "<size=26>" + tag + "  " + m.id + "  " + m.name + "</size>\n<size=20><color=#AAAAAA>" +
-                               (unlocked ? "Rec. Lv." + m.recommendedLevel : "Locked — clear " + m.requiresMissionId) + (cleared ? "   <color=#7CFF8A>✔ CLEARED</color>" : "") + "</color></size>";
-                if (Btn(r, label, UIStyles.Button, unlocked))
+                bool boss = m.type == MissionType.Boss;
+                var r = new Rect(0f, i * (rowH + 8f), content.width, rowH);
+                bool picked = i == areaPick;
+                Round(r, boss ? new Color(0.35f, 0.08f, 0.12f, 0.95f) : new Color(0.14f, 0.13f, 0.22f, 0.95f), 12f);
+                if (picked) RoundFrame(r, UIStyles.Gold, 3f, 12f);
+                Color nc = !unlocked ? new Color(0.35f, 0.35f, 0.4f) : cleared ? new Color(0.95f, 0.72f, 0.2f) : TileRed;
+                UIStyles.CircleTex(new Vector2(r.x + 40f, r.center.y), 26f, nc);
+                GUI.Label(new Rect(r.x + 14f, r.y + 14f, 52f, 52f), boss ? "☠" : (i + 1).ToString(), UIStyles.Sized(UIStyles.Center, 26));
+                string title = (boss ? "<color=#FF7A7A>BOSS</color>  " : "") + m.name;
+                GUI.Label(new Rect(r.x + 80f, r.y + 8f, r.width - 250f, 38f), title, UIStyles.Sized(UIStyles.H2, 24));
+                GUI.Label(new Rect(r.x + 80f, r.y + 44f, r.width - 250f, 30f), "<color=#AAAAAA>" + m.id + " · Rec. Lv." + m.recommendedLevel + "</color>", UIStyles.Sized(UIStyles.Small, 18));
+                if (unlocked) GUI.Label(new Rect(r.xMax - 170f, r.y, 160f, rowH), "<color=#FFD36B>" + StarRow(d, m) + "</color>", UIStyles.Sized(UIStyles.Right, 28));
+                else GUI.Label(new Rect(r.xMax - 170f, r.y, 160f, rowH), "<color=#999999>LOCKED</color>", UIStyles.Sized(UIStyles.Right, 20));
+                if (GUI.Button(r, GUIContent.none, GUIStyle.none))
                 {
-                    gm.SelectedMission = m;
-                    gm.GoTo(GameScreen.MissionDetail);
+                    gm.Audio.Play("click", 0.5f);
+                    if (!unlocked) Toast("Locked — clear " + m.requiresMissionId + " first.");
+                    else if (picked) { gm.SelectedMission = m; gm.GoTo(GameScreen.MissionDetail); }
+                    else areaPick = i;
                 }
             }
             GUI.EndScrollView();
 
-            var next = gm.NextStoryMission();
-            if (next != null && Btn(new Rect(panel.x + 26f, panel.yMax - 100f, panel.width - 52f, 80f), "CONTINUE STORY ▶ " + next.id, UIStyles.ButtonBig))
+            var chosen = areaPick >= 0 && areaPick < list.Count ? list[areaPick] : null;
+            if (chosen != null && d.IsMissionUnlocked(chosen))
             {
-                gm.SelectedMission = next;
-                mapSelected = next.regionId;
-                gm.GoTo(GameScreen.MissionDetail);
+                if (FlatBtn(new Rect(panel.x + 26f, panel.yMax - 94f, panel.width - 52f, 76f), "CONTINUE ▶  " + chosen.id, TileRed, true, 32))
+                {
+                    gm.SelectedMission = chosen;
+                    gm.GoTo(GameScreen.MissionDetail);
+                }
+            }
+            else
+            {
+                var next = gm.NextStoryMission();
+                if (next != null && FlatBtn(new Rect(panel.x + 26f, panel.yMax - 94f, panel.width - 52f, 76f), "CONTINUE STORY ▶ " + next.id, TileRed, true, 30))
+                {
+                    gm.SelectedMission = next;
+                    mapSelected = next.regionId;
+                    gm.GoTo(GameScreen.MissionDetail);
+                }
+            }
+        }
+
+        bool mapOverview;
+        int areaPick = -1;
+        string areaRegion;
+
+        /// <summary>★ per objective ever completed, ☆ for the rest.</summary>
+        static string StarRow(PlayerData d, MissionDefinition m)
+        {
+            var p = d.GetMission(m.id);
+            int mask = p != null ? p.objectivesMask : 0;
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < 3; i++) sb.Append((mask & (1 << i)) != 0 ? "★" : "☆");
+            return sb.ToString();
+        }
+
+        /// <summary>Numbered stops and the dotted trail between them, drawn over the area's 3D pads.</summary>
+        void DrawAreaNodes(List<MissionDefinition> list, int current)
+        {
+            var cam = Camera.main;
+            var pts = gm.Map.AreaPoints;
+            if (cam == null || pts.Count != list.Count) return;
+            float s = HudLayout.Scale;
+            var screen = new List<Vector2>();
+            foreach (var p in pts)
+            {
+                Vector3 sp = cam.WorldToScreenPoint(p);
+                screen.Add(sp.z > 0f ? new Vector2(sp.x / s, (Screen.height - sp.y) / s) : new Vector2(-9999f, -9999f));
+            }
+            var d = gm.Data;
+            // Dotted trail.
+            for (int i = 0; i < screen.Count - 1; i++)
+            {
+                bool open = d.IsMissionUnlocked(list[i + 1]);
+                float len = Vector2.Distance(screen[i], screen[i + 1]);
+                int dots = Mathf.Max(2, Mathf.FloorToInt(len / 22f));
+                for (int k = 1; k < dots; k++)
+                    UIStyles.CircleTex(Vector2.Lerp(screen[i], screen[i + 1], (float)k / dots), 5f, open ? new Color(1f, 1f, 1f, 0.9f) : new Color(0.3f, 0.3f, 0.35f, 0.7f));
+            }
+            for (int i = 0; i < screen.Count; i++)
+            {
+                var m = list[i];
+                bool unlocked = d.IsMissionUnlocked(m);
+                bool cleared = d.IsMissionCleared(m.id);
+                bool boss = m.type == MissionType.Boss;
+                float rad = boss ? 40f : 30f;
+                // The leader stands on the current stop, so its marker sits just in front of their feet.
+                if (i == current) rad = rad * 0.75f + Mathf.Sin(Time.unscaledTime * 4f) * 3f;
+                Vector2 c = screen[i] + new Vector2(0f, i == current ? rad + 12f : 0f);
+                Color col = !unlocked ? new Color(0.35f, 0.35f, 0.4f) : boss ? UIStyles.Crimson : cleared ? new Color(0.95f, 0.72f, 0.2f) : TileRed;
+                UIStyles.CircleTex(c + new Vector2(0f, 4f), rad + 4f, new Color(0f, 0f, 0f, 0.4f));
+                UIStyles.CircleTex(c, rad + 4f, i == areaPick ? UIStyles.Gold : Color.white);
+                UIStyles.CircleTex(c, rad, col);
+                string label = !unlocked ? "✕" : boss ? "☠" : (i + 1).ToString();
+                GUI.Label(new Rect(c.x - rad, c.y - rad, rad * 2f, rad * 2f), label, UIStyles.Sized(UIStyles.Center, boss ? 34 : 28));
+                if (unlocked) UIStyles.Outlined(new Rect(c.x - 60f, c.y + rad + 2f, 120f, 30f), StarRow(d, m), UIStyles.Sized(UIStyles.Center, 20), new Color(1f, 0.83f, 0.3f), 2f);
+                if (boss) UIStyles.Outlined(new Rect(c.x - 60f, c.y - rad - 34f, 120f, 30f), "BOSS", UIStyles.Sized(UIStyles.Center, 22), UIStyles.Bad, 2f);
+                var hit = new Rect(c.x - rad, c.y - rad, rad * 2f, rad * 2f);
+                if (GUI.Button(hit, GUIContent.none, GUIStyle.none))
+                {
+                    gm.Audio.Play("click", 0.5f);
+                    if (unlocked) areaPick = i;
+                    else Toast("Locked — clear " + m.requiresMissionId + " first.");
+                }
             }
         }
 
@@ -367,40 +481,50 @@ namespace HashiraChronicles
             if (m == null) { gm.GoTo(GameScreen.WorldMap); return; }
             var d = gm.Data;
             var prog = d.GetMission(m.id);
-            // The destination itself, painted (Higgsfield key art), behind the page.
-            var regionArt = ArtLibrary.Region(m.regionId);
-            if (regionArt != null)
-            {
-                ArtLibrary.DrawCover(new Rect(0f, 0f, W, H), regionArt, Enter(0f, 0.8f));
-                UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(0f, 0f, 0f, 0.5f));
-            }
-            else UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(0f, 0f, 0f, 0.35f));
+            // The region itself stays visible in the middle of the page (the 3D area map behind the UI).
             TopBar(m.type == MissionType.Training ? "TRAINING" : "MISSION " + m.MissionLabel, GameScreen.WorldMap);
             bool unlocked = d.IsMissionUnlocked(m);
 
             float k = Enter(0f, 0.4f);
-            var left = new Rect(safe.x + 30f - (1f - k) * 200f, safe.y + 130f, W * 0.58f - safe.x - 45f, H - safe.y - 150f);
-            UIStyles.PanelBox(left, m.type == MissionType.Boss ? UIStyles.Crimson : UIStyles.Gold);
-            float x = left.x + 30f, w = left.width - 60f, y = left.y + 18f;
-            GUI.Label(new Rect(x, y, w, 40f), TypeTag(m.type) + "   <color=#AAAAAA>" + RegionName(m.regionId) + (m.chapter > 0 ? "  ·  Chapter " + m.chapter : "") + "</color>", UIStyles.Small);
+            var left = new Rect(safe.x + 24f - (1f - k) * 200f, safe.y + 126f, 760f, H - safe.y - 146f);
+            Round(Offset(left, 0f, 6f), new Color(0f, 0f, 0f, 0.35f), 18f);
+            Round(left, new Color(0.06f, 0.06f, 0.12f, 0.9f), 18f);
+            Round(new Rect(left.x, left.y, left.width, 8f), m.type == MissionType.Boss ? UIStyles.Crimson : UIStyles.Gold, 4f);
+            float x = left.x + 28f, w = left.width - 56f, y = left.y + 18f;
+            // Breadcrumb.
+            GUI.Label(new Rect(x, y, w, 40f), "<color=#AAAAAA>WORLD MAP  ›  " + RegionName(m.regionId).ToUpper() + (m.chapter > 0 ? "  ›  CHAPTER " + m.chapter : "") + "  ›  </color>" + TypeTag(m.type), UIStyles.Sized(UIStyles.Small, 19));
             y += 40f;
-            UIStyles.Outlined(new Rect(x, y, w, 70f), m.name, UIStyles.Sized(UIStyles.H1, 52), Color.white, 2f);
-            y += 74f;
+            UIStyles.Outlined(new Rect(x, y, w, 64f), m.name, UIStyles.Sized(UIStyles.H1, 44), Color.white, 2f);
+            y += 64f;
             if (!string.IsNullOrEmpty(m.questGiver))
             {
                 GUI.Label(new Rect(x, y, w, 34f), "<color=#7FD8FF>Requested by " + m.questGiver + "</color>", UIStyles.Small);
                 y += 36f;
             }
-            GUI.Label(new Rect(x, y, w, 80f), "<i>" + m.storyText + "</i>", UIStyles.Body);
-            y += 84f;
+            GUI.Label(new Rect(x, y, w, 76f), "<i>" + m.storyText + "</i>", UIStyles.Sized(UIStyles.Body, 22));
+            y += 78f;
 
             int avgLevel = 0;
             foreach (var id in d.team) { var c = d.GetCharacter(id); if (c != null) avgLevel += c.level; }
             avgLevel = d.team.Count > 0 ? avgLevel / d.team.Count : 1;
-            string lc = avgLevel >= m.recommendedLevel ? "#7CFF8A" : "#FF7070";
-            GUI.Label(new Rect(x, y, w, 36f), "Recommended Lv. <b>" + m.recommendedLevel + "</b>   Your team <color=" + lc + ">Lv." + avgLevel + "</color>   ·   Enemy Lv." + m.enemyLevel +
-                (m.allies > 0 ? "   ·   <color=#7FD8FF>" + m.allies + " allied soldiers</color>" : "") + (m.sealPuzzle ? "   ·   <color=#7FD8FF>Seal puzzle</color>" : ""), UIStyles.Small);
-            y += 46f;
+            // Three level chips: recommended, yours, enemy.
+            string[] lvNames = { "RECOMMENDED", "YOUR LEVEL", "ENEMY LEVEL" };
+            int[] lvVals = { m.recommendedLevel, avgLevel, m.enemyLevel };
+            Color[] lvCols = { TileBlue, avgLevel >= m.recommendedLevel ? TileGreen : TileRed, TileMaroon };
+            for (int i = 0; i < 3; i++)
+            {
+                var lr = new Rect(x + i * (w / 3f), y, w / 3f - 10f, 58f);
+                Round(lr, new Color(1f, 1f, 1f, 0.06f), 10f);
+                Round(new Rect(lr.x, lr.y, 6f, lr.height), lvCols[i], 3f);
+                GUI.Label(new Rect(lr.x + 14f, lr.y + 2f, lr.width - 16f, 24f), "<color=#AAAAAA>" + lvNames[i] + "</color>", UIStyles.Sized(UIStyles.Small, 16));
+                GUI.Label(new Rect(lr.x + 14f, lr.y + 22f, lr.width - 16f, 34f), "Lv. " + lvVals[i], UIStyles.Sized(UIStyles.Body, 26));
+            }
+            y += 66f;
+            if (m.allies > 0 || m.sealPuzzle)
+            {
+                GUI.Label(new Rect(x, y, w, 30f), (m.allies > 0 ? "<color=#7FD8FF>" + m.allies + " allied soldiers</color>   " : "") + (m.sealPuzzle ? "<color=#7FD8FF>Seal puzzle</color>" : ""), UIStyles.Sized(UIStyles.Small, 19));
+                y += 30f;
+            }
 
             // The road ahead.
             if (!m.training)
@@ -422,7 +546,7 @@ namespace HashiraChronicles
                 var b = GameDatabase.GetEnemy(bid);
                 if (b == null) continue;
                 var br = new Rect(x, y, w, 72f);
-                UIStyles.Rect(br, new Color(0.35f, 0.04f, 0.06f, 0.6f));
+                Round(br, new Color(0.35f, 0.04f, 0.06f, 0.75f), 10f);
                 var art = ArtLibrary.Monster(b);
                 float tx = br.x + 12f;
                 if (art != null) { ArtLibrary.DrawCover(new Rect(br.x + 4f, br.y + 4f, 64f, 64f), art); tx = br.x + 80f; }
@@ -444,37 +568,58 @@ namespace HashiraChronicles
                     y += 32f;
                 }
                 y += 8f;
-                GUI.Label(new Rect(x, y, w, 60f), "REWARDS  <size=22>" + RewardText(m.rewards) + "</size>", UIStyles.Sized(UIStyles.Body, 24));
-                y += 44f;
+                GUI.Label(new Rect(x, y, 170f, 44f), "REWARDS", UIStyles.Sized(UIStyles.H2, 22));
+                RewardIcons(new Rect(x + 170f, y, w - 170f, 44f), m.rewards);
+                y += 52f;
                 if (prog == null || !prog.cleared)
-                    GUI.Label(new Rect(x, y, w, 60f), "<color=#FF9C7A>FIRST CLEAR</color>  <size=22>" + RewardText(m.firstClearRewards) + "</size>", UIStyles.Sized(UIStyles.Body, 24));
+                {
+                    GUI.Label(new Rect(x, y, 170f, 44f), "<color=#FF9C7A>FIRST CLEAR</color>", UIStyles.Sized(UIStyles.H2, 22));
+                    RewardIcons(new Rect(x + 170f, y, w - 170f, 44f), m.firstClearRewards);
+                }
             }
 
             // Team + PLAY.
-            var right = new Rect(W * 0.58f + 5f + (1f - k) * 200f, safe.y + 130f, safe.xMax - W * 0.58f - 35f, H - safe.y - 150f);
-            UIStyles.PanelBox(right, UIStyles.Crimson);
-            float ry = right.y + 20f;
-            GUI.Label(new Rect(right.x + 26f, ry, right.width - 52f, 44f), "YOUR TEAM   <color=#FFD36B>" + CharacterSystem.TeamPower(d).ToString("N0") + "</color>", UIStyles.H2);
-            ry += 54f;
-            for (int i = 0; i < d.team.Count; i++)
+            var right = new Rect(safe.xMax - 560f + (1f - k) * 200f, safe.y + 126f, 536f, H - safe.y - 146f);
+            Round(Offset(right, 0f, 6f), new Color(0f, 0f, 0f, 0.35f), 18f);
+            Round(right, new Color(0.06f, 0.06f, 0.12f, 0.9f), 18f);
+            float ry = right.y + 16f;
+            GUI.Label(new Rect(right.x + 24f, ry, 260f, 44f), "YOUR TEAM", UIStyles.Sized(UIStyles.H2, 30));
+            GUI.Label(new Rect(right.x + 250f, ry, right.width - 274f, 44f), "<color=#FFD36B>" + CharacterSystem.TeamPower(d).ToString("N0") + "</color>", UIStyles.Sized(UIStyles.Right, 30));
+            ry += 56f;
+            float pw = (right.width - 48f - 3f * 10f) / 4f;
+            for (int i = 0; i < 4; i++)
             {
-                var c = d.GetCharacter(d.team[i]);
-                var def = GameDatabase.GetCharacter(d.team[i]);
-                if (c == null || def == null) continue;
-                GUI.Label(new Rect(right.x + 26f, ry, right.width - 52f, 40f), "<color=#AAAAAA><size=18>" + SlotNames[i].Split(' ')[0] + "</size></color>  " + ElementTag(def.element) + " " + def.displayName +
-                    "  <color=#AAAAAA>Lv." + c.level + " " + Stars(c.stars) + "</color>", UIStyles.Sized(UIStyles.Body, 24));
-                ry += 42f;
+                var pr = new Rect(right.x + 24f + i * (pw + 10f), ry, pw, pw * 1.5f);
+                if (i < d.team.Count)
+                {
+                    var c = d.GetCharacter(d.team[i]);
+                    var def = GameDatabase.GetCharacter(d.team[i]);
+                    if (c == null || def == null) continue;
+                    PortraitCard(pr, def, true, null, i == 0);
+                    Round(new Rect(pr.x, pr.yMax - 30f, pr.width, 30f), new Color(0f, 0f, 0f, 0.6f), 8f);
+                    GUI.Label(new Rect(pr.x, pr.yMax - 30f, pr.width, 30f), "Lv." + c.level, UIStyles.Sized(UIStyles.Center, 18));
+                    GUI.Label(new Rect(pr.x - 4f, pr.yMax + 2f, pr.width + 8f, 28f), def.displayName, UIStyles.Sized(UIStyles.Center, 18));
+                }
+                else
+                {
+                    Round(pr, new Color(1f, 1f, 1f, 0.06f), 12f);
+                    GUI.Label(pr, "+", UIStyles.Sized(UIStyles.Center, 40));
+                }
             }
-            ry += 10f;
-            GUI.Label(new Rect(right.x + 26f, ry, right.width - 52f, 70f), "<size=20><color=#AAAAAA>Tip: element advantage deals ×1.5.  " +
+            ry += pw * 1.5f + 40f;
+            GUI.Label(new Rect(right.x + 24f, ry, right.width - 48f, 70f), "<size=19><color=#AAAAAA>Element advantage deals ×1.5.\n" +
                 "Water ▶ Flame ▶ Beast ▶ Thunder ▶ Water;  Light ◀▶ Dark.</color></size>", UIStyles.Small);
-            if (Btn(new Rect(right.x + 26f, right.yMax - 250f, right.width - 52f, 80f), "CHANGE TEAM")) { teamReturn = GameScreen.MissionDetail; gm.GoTo(GameScreen.Team); }
+            if (FlatBtn(new Rect(right.x + 24f, right.yMax - 236f, right.width - 48f, 76f), "CHANGE TEAM", TilePurple, true, 30)) { teamReturn = GameScreen.MissionDetail; gm.GoTo(GameScreen.Team); }
             if (!unlocked)
-                GUI.Label(new Rect(right.x + 26f, right.yMax - 160f, right.width - 52f, 130f), "<color=#FF7070>Clear " + m.requiresMissionId + " first.</color>", UIStyles.Sized(UIStyles.Center, 32));
-            else if (AnimBtn(new Rect(right.x + 26f, right.yMax - 160f, right.width - 52f, 136f),
-                         m.regionId != d.currentRegion && System.Array.IndexOf(MapStage.RouteOrder, m.regionId) >= 0 && m.type != MissionType.Training && m.type != MissionType.Event
-                             ? "TRAVEL & PLAY" : "PLAY", UIStyles.ButtonBig, 0.35f, true, true, 60f))
-                gm.BeginMission(m);
+                GUI.Label(new Rect(right.x + 24f, right.yMax - 150f, right.width - 48f, 130f), "<color=#FF7070>Clear " + m.requiresMissionId + " first.</color>", UIStyles.Sized(UIStyles.Center, 32));
+            else
+            {
+                bool travel = m.regionId != d.currentRegion && System.Array.IndexOf(MapStage.RouteOrder, m.regionId) >= 0 && m.type != MissionType.Training && m.type != MissionType.Event;
+                var pr = new Rect(right.x + 24f, right.yMax - 146f, right.width - 48f, 124f);
+                float pulse = (Mathf.Sin(Time.unscaledTime * 4f) * 0.5f + 0.5f);
+                RoundFrame(Grow(pr, 4f + pulse * 3f), new Color(1f, 0.85f, 0.4f, 0.4f + 0.4f * pulse), 3f, 16f);
+                if (FlatBtn(pr, travel ? "TRAVEL & PLAY" : "PLAY", TileRed, true, 44)) gm.BeginMission(m);
+            }
         }
 
         static readonly Dictionary<string, string> routeCache = new Dictionary<string, string>();
@@ -505,8 +650,8 @@ namespace HashiraChronicles
                 var e = GameDatabase.GetEnemy(seen[i]);
                 if (e == null) continue;
                 var r = new Rect(row.x + i * (cw + 8f), row.y, cw, row.height);
-                UIStyles.Rect(r, new Color(0f, 0f, 0f, 0.45f));
-                UIStyles.Rect(new Rect(r.x, r.yMax - 3f, r.width, 3f), ElementChart.ColorOf(e.element));
+                Round(r, new Color(1f, 1f, 1f, 0.06f), 10f);
+                Round(new Rect(r.x, r.yMax - 5f, r.width, 5f), ElementChart.ColorOf(e.element), 2f);
                 var art = ArtLibrary.Monster(e);
                 float tx = r.x + 8f;
                 if (art != null) { ArtLibrary.DrawCover(new Rect(r.x + 3f, r.y + 3f, 74f, 74f), art); tx = r.x + 84f; }

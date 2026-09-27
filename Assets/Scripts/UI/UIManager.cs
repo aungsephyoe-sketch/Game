@@ -12,7 +12,6 @@ namespace HashiraChronicles
         GameManager gm;
         float W, H;
         Rect safe;
-        Vector2 scroll;
         string toast = "";
         float toastUntil;
 
@@ -244,10 +243,13 @@ namespace HashiraChronicles
         void Currencies(Rect r)
         {
             var d = gm.Data;
-            string text = "<color=#FFD36B>◆ " + d.coins.ToString("N0") + "</color>    <color=#7FD8FF>✦ " + d.crystals.ToString("N0") +
-                          "</color>    <color=#C9A7FF>EXP ×" + d.expScrolls + "</color>    <color=#9CF29C>SKILL ×" + d.skillScrolls +
-                          "</color>    <color=#FF9C7A>ORE ×" + d.ascensionOre + "</color>";
-            GUI.Label(r, text, UIStyles.Sized(UIStyles.Right, 26));
+            float h = Mathf.Min(52f, r.height);
+            float w = 210f, gap = 12f;
+            float x = r.xMax - w;
+            Pill(new Rect(x, r.y, w, h), "✦", new Color(0.3f, 0.65f, 1f), d.crystals.ToString("N0")); x -= w + gap;
+            Pill(new Rect(x, r.y, w, h), "◆", new Color(0.95f, 0.72f, 0.2f), d.coins.ToString("N0")); x -= w + gap;
+            Pill(new Rect(x, r.y, 150f, h), "✎", new Color(0.6f, 0.4f, 0.9f), "×" + d.expScrolls); x -= 150f + gap;
+            Pill(new Rect(x, r.y, 150f, h), "▲", new Color(0.9f, 0.45f, 0.3f), "×" + d.ascensionOre);
         }
 
         static string Stars(int n) { return CharacterSystem.Stars(n); }
@@ -284,51 +286,7 @@ namespace HashiraChronicles
         int teamSlot;
         GameScreen teamReturn = GameScreen.MainMenu;
 
-        void DrawTeam()
-        {
-            TopBar("TEAM", teamReturn);
-            var d = gm.Data;
-            float top = safe.y + 140f;
-            GUI.Label(new Rect(safe.x + 30f, top, 1600f, 40f), "Tap a slot, then a slayer. The LEADER starts the battle; swap to the others at any time. Tap a slotted slayer again to remove them.", UIStyles.Small);
-            top += 50f;
-            float sw = (safe.width - 60f - 60f) / 4f;
-            for (int i = 0; i < TeamSize; i++)
-            {
-                var r = new Rect(safe.x + 30f + i * (sw + 20f), top, sw, 140f);
-                bool roleMatch = i < d.team.Count && i > 0 && GameDatabase.GetCharacter(d.team[i]).role == SlotRoles[i];
-                string label = SlotNames[i] + (roleMatch ? "  <color=#7CFF8A>✔</color>" : "");
-                if (i < d.team.Count)
-                {
-                    var def = GameDatabase.GetCharacter(d.team[i]);
-                    var c = d.GetCharacter(d.team[i]);
-                    label += "\n" + def.FullName + "\n<size=22>" + ElementChart.Icon(def.element) + "  Lv." + c.level + "  " + Stars(c.stars) + "</size>";
-                }
-                else label += "\n(empty)";
-                if (Btn(r, label, teamSlot == i ? UIStyles.ButtonBig : UIStyles.Button)) teamSlot = i;
-            }
-
-            top += 170f;
-            GUI.Label(new Rect(safe.x + 30f, top, 600f, 50f), "ROSTER", UIStyles.H2);
-            top += 55f;
-            var view = new Rect(safe.x + 30f, top, safe.width - 60f, H - top - 30f);
-            float rowH = 96f;
-            var content = new Rect(0f, 0f, view.width - 30f, d.characters.Count * (rowH + 10f));
-            scroll = GUI.BeginScrollView(view, scroll, content);
-            for (int i = 0; i < d.characters.Count; i++)
-            {
-                var c = d.characters[i];
-                var def = GameDatabase.GetCharacter(c.id);
-                var r = new Rect(0f, i * (rowH + 10f), content.width, rowH);
-                int inTeam = d.team.IndexOf(c.id);
-                string label = ElementTag(def.element) + "   " + def.FullName + "   <size=24>" + Stars(c.stars) + "  Lv." + c.level + "   Power " +
-                               CharacterSystem.Power(d, c).ToString("N0") + (inTeam >= 0 ? "   <color=#FFD36B>[SLOT " + (inTeam + 1) + "]</color>" : "") + "</size>";
-                if (Btn(r, label)) AssignToSlot(c.id, inTeam);
-            }
-            GUI.EndScrollView();
-        }
-
         const int TeamSize = 4;
-        static readonly string[] SlotNames = { "LEADER", "VANGUARD <size=20>(Tank)</size>", "STRIKER <size=20>(DPS)</size>", "SUPPORT" };
         static readonly Role[] SlotRoles = { Role.DPS, Role.Tank, Role.DPS, Role.Support };
 
         void AssignToSlot(string id, int inTeam)
@@ -339,8 +297,7 @@ namespace HashiraChronicles
             {
                 // Tapping the slotted slayer again removes them (the team always keeps one member).
                 team.RemoveAt(inTeam);
-                gm.Save();
-                gm.RefreshStage();
+                SaveTeam(gm.Data);
                 return;
             }
             if (teamSlot >= team.Count)
@@ -355,8 +312,7 @@ namespace HashiraChronicles
                 team[existing] = other;
             }
             else team[teamSlot] = id;
-            gm.Save();
-            gm.RefreshStage();
+            SaveTeam(gm.Data);
             teamSlot = Mathf.Min((teamSlot + 1) % TeamSize, team.Count);
         }
 

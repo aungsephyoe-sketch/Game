@@ -96,7 +96,7 @@ namespace HashiraChronicles
             if (k < 1f) UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(1f, 1f, 1f, (1f - k) * 0.8f));
             var card = new Rect(safe.xMax - 820f + (1f - k) * 400f, H * 0.5f - 200f, 760f, 400f);
             UIStyles.Rect(card, new Color(0f, 0f, 0f, 0.6f * k));
-            var portrait = ArtLibrary.Character(r.def);
+            var portrait = ArtLibrary.CharacterFull(r.def);
             if (portrait != null)
             {
                 // The character's master art slides in beside the name card.
@@ -131,19 +131,17 @@ namespace HashiraChronicles
                 if (k <= 0f) continue;
                 var rect = new Rect(startX + (i % cols) * (cw + gap), startY + (i / cols) * (ch + gap) + (1f - k) * 40f, cw, ch);
                 Color rc = RarityInfo.Color(r.rarity);
-                UIStyles.Rect(rect, new Color(0.05f, 0.04f, 0.08f, 0.9f * k));
-                UIStyles.Frame(rect, rc, r.rarity >= 6 ? 4f : 2f);
-                UIStyles.Colored(new Rect(rect.x, rect.y + 10f, cw, 30f), RarityInfo.Name(r.rarity), UIStyles.Sized(UIStyles.Center, 22), rc);
+                Round(rect, new Color(0.08f, 0.07f, 0.13f, 0.92f * k), 14f);
+                RoundFrame(rect, rc, r.rarity >= 6 ? 4f : 2f, 14f);
                 var thumb = ArtLibrary.Character(r.def);
-                if (thumb != null)
-                {
-                    GUI.DrawTextureWithTexCoords(new Rect(rect.x + 2f, rect.y + 2f, cw - 4f, ch - 4f), thumb, new Rect(0.15f, 0.5f, 0.7f, 0.45f));
-                    UIStyles.Rect(new Rect(rect.x + 2f, rect.y + 2f, cw - 4f, ch - 4f), new Color(0f, 0f, 0f, 0.45f));
-                    UIStyles.Colored(new Rect(rect.x, rect.y + 10f, cw, 30f), RarityInfo.Name(r.rarity), UIStyles.Sized(UIStyles.Center, 22), rc);
-                }
-                GUI.Label(new Rect(rect.x + 8f, rect.y + 44f, cw - 16f, 44f), r.def.displayName, UIStyles.Sized(UIStyles.Center, 30));
-                GUI.Label(new Rect(rect.x + 8f, rect.y + 88f, cw - 16f, 30f), "<color=#AAAAAA>" + r.def.versionTitle + "</color>", UIStyles.Sized(UIStyles.Center, 18));
-                GUI.Label(new Rect(rect.x, rect.y + 120f, cw, 40f), r.isNew ? "<color=#7CFF8A>NEW!</color>" : "<color=#FF9C7A>+Ore</color>", UIStyles.Sized(UIStyles.Center, 24));
+                var tr = new Rect(rect.x + 10f, rect.y + 20f, 130f, 130f);
+                Round(tr, Color.Lerp(new Color(0.1f, 0.1f, 0.16f), ElementChart.ColorOf(r.def.element), 0.3f), 12f);
+                if (thumb != null) GUI.DrawTexture(tr, thumb, ScaleMode.ScaleAndCrop, true);
+                float tx = rect.x + 150f, tw = cw - 158f;
+                UIStyles.Colored(new Rect(tx, rect.y + 14f, tw, 30f), RarityInfo.Name(r.rarity), UIStyles.Sized(UIStyles.Body, 20), rc);
+                GUI.Label(new Rect(tx, rect.y + 44f, tw, 40f), r.def.displayName, UIStyles.Sized(UIStyles.H2, 26));
+                GUI.Label(new Rect(tx, rect.y + 84f, tw, 30f), "<color=#AAAAAA>" + r.def.versionTitle + "</color>", UIStyles.Sized(UIStyles.Small, 16));
+                GUI.Label(new Rect(tx, rect.y + 118f, tw, 40f), r.isNew ? "<color=#7CFF8A>NEW!</color>" : "<color=#FF9C7A>+Ore</color>", UIStyles.Sized(UIStyles.Body, 24));
             }
             float by = H - 150f;
             if (Btn(new Rect(W * 0.5f - 470f, by, 440f, 100f), "OK")) st.CloseSummary();
@@ -164,36 +162,47 @@ namespace HashiraChronicles
             string[] tabs = { "DAILY", "WEEKLY", "SIDE STORIES", "EVENTS & TRAINING" };
             float tx = safe.x + 30f, ty = safe.y + 130f;
             for (int t = 0; t < tabs.Length; t++)
-                if (Btn(new Rect(tx + t * 330f, ty, 315f, 76f), tabs[t], boardTab == t ? UIStyles.ButtonBig : UIStyles.Button)) { boardTab = t; boardScroll = Vector2.zero; }
-            var body = new Rect(safe.x + 30f, ty + 96f, safe.width - 60f, H - ty - 126f);
-            UIStyles.PanelBox(body);
+                if (FlatBtn(new Rect(tx + t * 330f, ty, 315f, 70f), tabs[t], boardTab == t ? TileMaroon : new Color(0.2f, 0.2f, 0.28f), true, 26)) { boardTab = t; boardScroll = Vector2.zero; }
+            var body = new Rect(safe.x + 30f, ty + 90f, safe.width - 60f, H - ty - 120f);
+            Round(body, new Color(0.06f, 0.06f, 0.12f, 0.88f), 18f);
 
             if (boardTab < 2)
             {
                 bool daily = boardTab == 0;
-                float y = body.y + 20f;
-                GUI.Label(new Rect(body.x + 30f, y, body.width - 60f, 36f), "<color=#AAAAAA>" + (daily ? "Resets every day (UTC)." : "Resets every week.") + "</color>", UIStyles.Small);
-                y += 44f;
-                foreach (var def in QuestSystem.Defs)
+                GUI.Label(new Rect(body.x + 30f, body.y + 14f, body.width - 60f, 36f), "<color=#AAAAAA>" + (daily ? "Resets every day (UTC)." : "Resets every week.") + "</color>", UIStyles.Small);
+                var quests = new List<QuestSystem.QuestDef>();
+                foreach (var def in QuestSystem.Defs) if (def.daily == daily) quests.Add(def);
+                var qview = new Rect(body.x + 20f, body.y + 56f, body.width - 40f, body.height - 70f);
+                var qcontent = new Rect(0f, 0f, qview.width - 24f, quests.Count * 122f);
+                boardScroll = GUI.BeginScrollView(qview, boardScroll, qcontent);
+                for (int i = 0; i < quests.Count; i++)
                 {
-                    if (def.daily != daily) continue;
+                    var def = quests[i];
                     var s = QuestSystem.State(d, def.id);
-                    var row = new Rect(body.x + 30f, y, body.width - 60f, 96f);
-                    UIStyles.Rect(row, UIStyles.PanelLight);
-                    GUI.Label(new Rect(row.x + 24f, row.y + 8f, row.width - 520f, 44f), def.title, UIStyles.H2);
-                    GUI.Label(new Rect(row.x + 24f, row.y + 52f, row.width - 900f, 36f), "<color=#AAAAAA>" + RewardText(def.reward) + "</color>", UIStyles.Sized(UIStyles.Small, 20));
-                    UIStyles.Bar(new Rect(row.xMax - 820f, row.y + 60f, 300f, 16f), (float)s.progress / def.target, UIStyles.Gold);
-                    GUI.Label(new Rect(row.xMax - 820f, row.y + 16f, 300f, 36f), s.progress + " / " + def.target, UIStyles.Sized(UIStyles.Center, 24));
-                    if (s.claimed) GUI.Label(new Rect(row.xMax - 280f, row.y + 20f, 250f, 56f), "<color=#7CFF8A>CLAIMED</color>", UIStyles.Center);
-                    else if (Btn(new Rect(row.xMax - 280f, row.y + 12f, 250f, 72f), "CLAIM", s.progress >= def.target ? UIStyles.ButtonBig : UIStyles.Button, s.progress >= def.target))
+                    var row = new Rect(0f, i * 122f, qcontent.width, 110f);
+                    Round(row, new Color(0.14f, 0.13f, 0.22f, 0.95f), 14f);
+                    // Icon disc.
+                    Color ic = QuestColor(def.kind);
+                    UIStyles.CircleTex(new Vector2(row.x + 60f, row.center.y), 40f, ic);
+                    GUI.Label(new Rect(row.x + 20f, row.y + 15f, 80f, 80f), QuestIcon(def.kind), UIStyles.Sized(UIStyles.Center, 40));
+                    GUI.Label(new Rect(row.x + 120f, row.y + 12f, 560f, 44f), def.title, UIStyles.Sized(UIStyles.H2, 30));
+                    ProgressBar(new Rect(row.x + 120f, row.y + 62f, 460f, 30f), (float)s.progress / def.target, Mathf.Min(s.progress, def.target) + " / " + def.target);
+                    RewardIcons(new Rect(row.x + 620f, row.y + 25f, row.width - 920f, 60f), def.reward);
+                    var cb = new Rect(row.xMax - 260f, row.y + 20f, 230f, 70f);
+                    if (s.claimed) FlatBtn(cb, "CLAIMED", new Color(0.22f, 0.66f, 0.36f), true, 28);
+                    else if (s.progress >= def.target)
                     {
-                        QuestSystem.Claim(d, def);
-                        gm.Save();
-                        gm.Audio.Play("perfect", 0.6f);
-                        Toast("Claimed: " + RewardText(def.reward));
+                        if (FlatBtn(cb, "CLAIM", TileRed, true, 30))
+                        {
+                            QuestSystem.Claim(d, def);
+                            gm.Save();
+                            gm.Audio.Play("perfect", 0.6f);
+                            Toast("Claimed: " + RewardText(def.reward));
+                        }
                     }
-                    y += 106f;
+                    else FlatBtn(cb, "CLAIM", new Color(0.4f, 0.4f, 0.45f), false, 28);
                 }
+                GUI.EndScrollView();
                 return;
             }
 
@@ -212,18 +221,55 @@ namespace HashiraChronicles
                 bool unlocked = d.IsMissionUnlocked(m);
                 bool cleared = d.IsMissionCleared(m.id);
                 var row = new Rect(0f, i * 124f, content.width, 114f);
-                UIStyles.Rect(row, UIStyles.PanelLight);
+                Round(row, new Color(0.14f, 0.13f, 0.22f, 0.95f), 14f);
                 GUI.Label(new Rect(row.x + 20f, row.y + 8f, row.width - 320f, 44f), TypeTag(m.type) + "  " + m.id + "  " + m.name + (cleared ? "   <color=#7CFF8A>✔</color>" : ""), UIStyles.H2);
                 string giver = string.IsNullOrEmpty(m.questGiver) ? "" : "<color=#7FD8FF>" + m.questGiver + ":</color> ";
                 GUI.Label(new Rect(row.x + 20f, row.y + 54f, row.width - 320f, 56f), giver + (unlocked ? m.storyText : "Locked — clear " + m.requiresMissionId + " first.") +
                     "  <color=#AAAAAA>" + RegionName(m.regionId) + "</color>", UIStyles.Sized(UIStyles.Small, 21));
-                if (Btn(new Rect(row.xMax - 270f, row.y + 20f, 250f, 74f), "GO", UIStyles.Button, unlocked))
+                if (FlatBtn(new Rect(row.xMax - 270f, row.y + 20f, 250f, 74f), unlocked ? "GO" : "LOCKED", TileRed, unlocked, 30))
                 {
                     gm.SelectedMission = m;
                     gm.GoTo(GameScreen.MissionDetail);
                 }
             }
             GUI.EndScrollView();
+        }
+
+        static string QuestIcon(string kind)
+        {
+            switch (kind)
+            {
+                case "kill": return "⚔";
+                case "boss": return "☠";
+                case "upgrade": return "▲";
+                case "summon": return "✦";
+                default: return "✔";
+            }
+        }
+
+        static Color QuestColor(string kind)
+        {
+            switch (kind)
+            {
+                case "kill": return TileRed;
+                case "boss": return TileMaroon;
+                case "upgrade": return TileGreen;
+                case "summon": return TilePurple;
+                default: return TileBlue;
+            }
+        }
+
+        /// <summary>Rewards as small icon + amount chips.</summary>
+        void RewardIcons(Rect r, RewardBundle rw)
+        {
+            float x = r.x;
+            float h = Mathf.Min(r.height, 52f);
+            if (rw.crystals > 0) { Pill(new Rect(x, r.y, 150f, h), "✦", new Color(0.3f, 0.65f, 1f), rw.crystals.ToString()); x += 160f; }
+            if (rw.coins > 0) { Pill(new Rect(x, r.y, 170f, h), "◆", new Color(0.95f, 0.72f, 0.2f), rw.coins.ToString("N0")); x += 180f; }
+            if (rw.expScrolls > 0) { Pill(new Rect(x, r.y, 120f, h), "✎", new Color(0.6f, 0.4f, 0.9f), "×" + rw.expScrolls); x += 130f; }
+            if (rw.skillScrolls > 0) { Pill(new Rect(x, r.y, 120f, h), "✧", new Color(0.35f, 0.8f, 0.45f), "×" + rw.skillScrolls); x += 130f; }
+            if (rw.ascensionOre > 0) { Pill(new Rect(x, r.y, 120f, h), "▲", new Color(0.9f, 0.45f, 0.3f), "×" + rw.ascensionOre); x += 130f; }
+            if (rw.exp > 0 && x < r.xMax - 150f) Pill(new Rect(x, r.y, 150f, h), "★", new Color(0.8f, 0.8f, 0.3f), rw.exp.ToString("N0"));
         }
 
         // ------------------------------------------------------------------ Shop

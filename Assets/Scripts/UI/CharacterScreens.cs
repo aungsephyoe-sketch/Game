@@ -13,33 +13,39 @@ namespace HashiraChronicles
 
         // ------------------------------------------------------------------ Collection
 
+        Vector2 slayerScroll;
+
         void DrawCharacters()
         {
             TopBar("SLAYERS", GameScreen.MainMenu);
             var d = gm.Data;
-            float top = safe.y + 140f;
-            float cardW = 400f, cardH = 250f, gap = 24f;
+            float top = safe.y + 136f;
+            float cardW = 420f, cardH = 250f, gap = 22f;
             int cols = Mathf.Max(1, Mathf.FloorToInt((safe.width - 60f + gap) / (cardW + gap)));
+            var view = new Rect(safe.x + 30f, top, safe.width - 60f, H - top - 80f);
+            var content = new Rect(0f, 0f, view.width - 24f, Mathf.CeilToInt(d.characters.Count / (float)cols) * (cardH + gap));
+            slayerScroll = GUI.BeginScrollView(view, slayerScroll, content);
             int i = 0;
             foreach (var c in d.characters)
             {
                 var def = GameDatabase.GetCharacter(c.id);
-                var r = new Rect(safe.x + 30f + (i % cols) * (cardW + gap), top + (i / cols) * (cardH + gap), cardW, cardH);
-                UIStyles.PanelBox(r, ElementChart.ColorOf(def.element));
-                var portrait = ArtLibrary.Character(def);
-                if (portrait != null)
-                {
-                    // Master art (Higgsfield), cropped to the upper body, fading into the card.
-                    var pr = new Rect(r.xMax - 170f, r.y + 6f, 164f, r.height - 12f);
-                    GUI.DrawTextureWithTexCoords(pr, portrait, new Rect(0.2f, 0.45f, 0.6f, 0.52f));
-                    UIStyles.Rect(new Rect(pr.x, pr.y, 30f, pr.height), new Color(0.06f, 0.05f, 0.1f, 0.6f));
-                }
-                UIStyles.Rect(new Rect(r.x, r.y + 4f, 10f, r.height - 4f), RarityInfo.Color(c.stars));
-                GUI.Label(new Rect(r.x + 30f, r.y + 18f, r.width - 40f, 44f), def.displayName, UIStyles.H2);
-                GUI.Label(new Rect(r.x + 30f, r.y + 62f, r.width - 40f, 36f), def.versionTitle, UIStyles.Small);
-                UIStyles.Colored(new Rect(r.x + 30f, r.y + 100f, r.width - 40f, 44f), Stars(c.stars), UIStyles.Sized(UIStyles.H2, 34), UIStyles.Gold);
-                GUI.Label(new Rect(r.x + 30f, r.y + 146f, r.width - 40f, 40f), ElementTag(def.element) + "  " + def.role + "   Lv." + c.level, UIStyles.Body);
-                GUI.Label(new Rect(r.x + 30f, r.y + 190f, r.width - 40f, 40f), "Power " + CharacterSystem.Power(d, c).ToString("N0"), UIStyles.Small);
+                if (def == null) continue;
+                var r = new Rect((i % cols) * (cardW + gap), (i / cols) * (cardH + gap), cardW, cardH);
+                Color ec = ElementChart.ColorOf(def.element);
+                bool hover = r.Contains(Event.current.mousePosition);
+                Round(Offset(r, 0f, 5f), new Color(0f, 0f, 0f, 0.35f), 16f);
+                Round(r, Color.Lerp(new Color(0.1f, 0.1f, 0.17f), ec, hover ? 0.4f : 0.28f), 16f);
+                Round(new Rect(r.x, r.y, r.width, r.height * 0.4f), new Color(1f, 1f, 1f, 0.06f), 16f);
+                // The slayer, full body, standing on the right of the card.
+                var portrait = ArtLibrary.CharacterFull(def);
+                if (portrait != null) GUI.DrawTexture(new Rect(r.xMax - 170f, r.y + 4f, 160f, r.height - 8f), portrait, ScaleMode.ScaleToFit, true);
+                Round(new Rect(r.x + 10f, r.y + 14f, 8f, r.height - 28f), RarityInfo.Color(c.stars), 4f);
+                GUI.Label(new Rect(r.x + 30f, r.y + 14f, r.width - 190f, 44f), def.displayName, UIStyles.Sized(UIStyles.H2, 32));
+                GUI.Label(new Rect(r.x + 30f, r.y + 56f, r.width - 190f, 34f), def.versionTitle, UIStyles.Sized(UIStyles.Small, 19));
+                UIStyles.Colored(new Rect(r.x + 30f, r.y + 90f, r.width - 190f, 40f), Stars(c.stars), UIStyles.Sized(UIStyles.H2, 30), UIStyles.Gold);
+                GUI.Label(new Rect(r.x + 30f, r.y + 134f, r.width - 190f, 34f), ElementTag(def.element) + "  " + def.role + " · " + def.style, UIStyles.Sized(UIStyles.Body, 21));
+                GUI.Label(new Rect(r.x + 30f, r.y + 168f, r.width - 190f, 34f), "Lv." + c.level, UIStyles.Sized(UIStyles.Body, 22));
+                GUI.Label(new Rect(r.x + 30f, r.y + 200f, r.width - 190f, 34f), "<color=#AAAAAA>Power</color> " + CharacterSystem.Power(d, c).ToString("N0"), UIStyles.Sized(UIStyles.Small, 20));
                 if (GUI.Button(r, GUIContent.none, GUIStyle.none))
                 {
                     gm.Audio.Play("click", 0.6f);
@@ -50,7 +56,8 @@ namespace HashiraChronicles
                 }
                 i++;
             }
-            GUI.Label(new Rect(safe.x + 30f, H - 70f, 1600f, 40f),
+            GUI.EndScrollView();
+            GUI.Label(new Rect(safe.x + 30f, H - 64f, 1600f, 40f),
                 "Allies join as the story unfolds. Summon at the shrine for more slayers.", UIStyles.Small);
         }
 
@@ -74,6 +81,18 @@ namespace HashiraChronicles
             UIStyles.Colored(new Rect(lx, safe.y + 186f, 700f, 44f), Stars(c.stars), UIStyles.Sized(UIStyles.H2, 34), UIStyles.Gold);
             GUI.Label(new Rect(lx, safe.y + 232f, 700f, 40f), def.versionTitle + "   " + ElementTag(def.element) + "  " + def.role, UIStyles.Small);
             GUI.Label(new Rect(lx, H - 330f, W * 0.4f, 44f), "<color=#AAAAAA>◀ drag to rotate ▶</color>", UIStyles.Sized(UIStyles.Small, 20));
+
+            // Animation sheet: every move this slayer has, front and back.
+            GUI.Label(new Rect(lx, safe.y + 282f, 300f, 34f), "ANIMATIONS", UIStyles.Sized(UIStyles.H2, 22));
+            string[] anims = { "idle", "walk", "run", "attack", "heavy", "special", "hit", "victory", "defeat" };
+            for (int i = 0; i < anims.Length; i++)
+            {
+                var ar = new Rect(lx + (i % 2) * 138f, safe.y + 320f + (i / 2) * 56f, 128f, 48f);
+                if (FlatBtn(ar, anims[i].ToUpper(), i == 5 ? TileRed : new Color(0.22f, 0.22f, 0.32f), true, 18)) gm.Home.PreviewAnim(anims[i]);
+            }
+            float fy = safe.y + 320f + 5f * 56f;
+            if (FlatBtn(new Rect(lx, fy, 128f, 48f), "FRONT", TileBlue, true, 18)) gm.Home.FaceViewer(false);
+            if (FlatBtn(new Rect(lx + 138f, fy, 128f, 48f), "BACK", TileBlue, true, 18)) gm.Home.FaceViewer(true);
             string lore = string.IsNullOrEmpty(def.story) ? def.description : def.story;
             GUI.Label(new Rect(lx, H - 290f, W * 0.4f, 90f), "<i>" + lore + "</i>", UIStyles.Sized(UIStyles.Small, 20));
             GUI.Label(new Rect(lx, H - 196f, 400f, 36f), "TEST SKILLS", UIStyles.Sized(UIStyles.H2, 26));

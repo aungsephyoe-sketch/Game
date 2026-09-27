@@ -46,6 +46,26 @@ namespace HashiraChronicles
 
         public void RotateViewer(float degrees) { viewerYaw += degrees; }
 
+        /// <summary>Turns the viewer model to face the camera (front) or away from it (back).</summary>
+        public void FaceViewer(bool back) { viewerYaw = back ? 0f : 180f; }
+
+        /// <summary>Plays one of the slayer's animations on the viewer model (idle, walk, run, attack, heavy,
+        /// special, hit, victory, defeat).</summary>
+        public void PreviewAnim(string anim)
+        {
+            if (hero == null || heroDef == null) return;
+            hero.PlayPreview(anim);
+            if (anim == "special")
+            {
+                Color c = ElementChart.ColorOf(heroDef.element);
+                VFX.Breath(heroHolder.position, c, 60);
+                if (GameManager.Instance != null) GameManager.Instance.Audio.Play("buildup", 0.5f);
+            }
+            else if ((anim == "attack" || anim == "heavy") && GameManager.Instance != null)
+                GameManager.Instance.Audio.PlayVaried(anim == "heavy" ? "slashHeavy" : "slash", 0.5f, 0.1f);
+            nextFlourish = Time.time + 8f;
+        }
+
         /// <summary>Plays the selected skill's motion and elemental effects on the viewer model.</summary>
         public void PreviewSkill(int index)
         {
