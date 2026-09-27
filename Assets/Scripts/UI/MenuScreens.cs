@@ -62,8 +62,10 @@ namespace HashiraChronicles
             float px = safe.xMax - 40f;
             if (IconButton(new Rect(px - 72f, safe.y + 24f, 72f, 64f), IconFactory.Get("menu"))) OpenMenu("JOURNAL");
             if (IconButton(new Rect(px - 154f, safe.y + 24f, 72f, 64f), IconFactory.Get("mail"))) OpenMenu("MISSIONS");
-            PlusPill(new Rect(px - 430f, safe.y + 24f, 260f, 64f), false, d.crystals.ToString("N0"), () => OpenMenu("SHOP"));
-            PlusPill(new Rect(px - 740f, safe.y + 24f, 294f, 64f), true, d.coins.ToString("N0"), () => OpenMenu("SHOP"));
+            // Three currencies: gold, diamonds and XP.
+            PlusPill(new Rect(px - 430f, safe.y + 24f, 250f, 64f), 2, d.xp.ToString("N0"), () => OpenMenu("SHOP"));
+            PlusPill(new Rect(px - 696f, safe.y + 24f, 250f, 64f), 1, d.crystals.ToString("N0"), () => OpenMenu("SHOP"));
+            PlusPill(new Rect(px - 992f, safe.y + 24f, 280f, 64f), 0, d.coins.ToString("N0"), () => OpenMenu("SHOP"));
 
             // Team power panel, bottom right.
             float tk = Enter(0.5f, 0.5f);
@@ -655,8 +657,8 @@ namespace HashiraChronicles
             ry += 62f;
             UIStyles.Rect(new Rect(rx, ry, rw, 1f), new Color(1f, 1f, 1f, 0.15f));
             ry += 10f;
-            string[] roles = { "LEADER", "VANGUARD", "STRIKER", "SUPPORT" };
-            for (int i = 0; i < d.team.Count && i < 4; i++)
+            string[] roles = { "LEADER", "VANGUARD", "SUPPORT" };
+            for (int i = 0; i < d.team.Count && i < 3; i++)
             {
                 var c = d.GetCharacter(d.team[i]);
                 var def = GameDatabase.GetCharacter(d.team[i]);
@@ -669,10 +671,10 @@ namespace HashiraChronicles
             ry += 6f;
             GUI.Label(new Rect(rx, ry, rw, 54f), "<color=#AAAAAA><size=17>Type advantage deals ×1.5. Water › Flame › Beast › Thunder › Water, Light ↔ Dark.</size></color>", UIStyles.Small);
             ry += 58f;
-            float pw = (rw - 3f * 10f) / 4f, ph = pw * 1.32f;
-            for (int i = 0; i < 4; i++)
+            float pw = (rw - 2f * 12f) / 3f, ph = pw * 1.25f;
+            for (int i = 0; i < 3; i++)
             {
-                var pr = new Rect(rx + i * (pw + 10f), ry, pw, ph);
+                var pr = new Rect(rx + i * (pw + 12f), ry, pw, ph);
                 if (i < d.team.Count)
                 {
                     var c = d.GetCharacter(d.team[i]);
@@ -758,9 +760,7 @@ namespace HashiraChronicles
             if (r.exp > 0) parts.Add("<color=#C9A7FF>EXP +" + r.exp.ToString("N0") + "</color>");
             if (r.coins > 0) parts.Add("<color=#FFD36B>Coins +" + r.coins.ToString("N0") + "</color>");
             if (r.crystals > 0) parts.Add("<color=#7FD8FF>Crystals +" + r.crystals + "</color>");
-            if (r.expScrolls > 0) parts.Add("EXP Scroll ×" + r.expScrolls);
-            if (r.skillScrolls > 0) parts.Add("Skill Scroll ×" + r.skillScrolls);
-            if (r.ascensionOre > 0) parts.Add("Ore ×" + r.ascensionOre);
+            if (r.XpValue > 0) parts.Add("<color=#C9A7FF>XP +" + r.XpValue.ToString("N0") + "</color>");
             foreach (var e in r.equipmentIds)
             {
                 var def = GameDatabase.GetEquipment(e);
@@ -870,60 +870,81 @@ namespace HashiraChronicles
             {
                 string rating = Rating(r);
                 Color rc = rating == "S" ? UIStyles.Gold : rating == "A" ? new Color(0.6f, 0.85f, 1f) : Color.white;
-                int rs = Mathf.RoundToInt(Mathf.Lerp(260f, 150f, rk));
-                UIStyles.Outlined(new Rect(panel.xMax - 330f, panel.y + 160f, 280f, 220f), rating, UIStyles.Sized(UIStyles.Big, rs), new Color(rc.r, rc.g, rc.b, rk), 5f);
-                GUI.Label(new Rect(panel.xMax - 330f, panel.y + 370f, 280f, 40f), "RATING", UIStyles.Sized(UIStyles.Center, 26));
+                int rs = Mathf.RoundToInt(Mathf.Lerp(200f, 110f, rk));
+                UIStyles.Outlined(new Rect(panel.xMax - 200f, panel.y + 20f, 170f, 140f), rating, UIStyles.Sized(UIStyles.Big, rs), new Color(rc.r, rc.g, rc.b, rk), 5f);
+                GUI.Label(new Rect(panel.xMax - 200f, panel.y + 150f, 170f, 30f), "RATING", UIStyles.Sized(UIStyles.Center, 20));
             }
 
-            float x = panel.x + 60f, y = panel.y + 200f;
+            // Stars earned this run pop in one by one, with the diamonds they paid.
+            if (r.victory)
+            {
+                float sc = panel.center.x;
+                for (int i = 0; i < 3; i++)
+                {
+                    float sk = Enter(0.45f + i * 0.22f, 0.3f);
+                    bool on = i < r.stars;
+                    float sz = (i == 1 ? 104f : 84f) * (on ? Mathf.Lerp(1.8f, 1f, sk) : 1f);
+                    var sr = new Rect(sc + (i - 1) * 118f - sz * 0.6f, panel.y + 176f + (i == 1 ? 0f : 16f) - sz * 0.1f, sz * 1.2f, sz * 1.2f);
+                    Color scol = on ? new Color(1f, 0.82f, 0.22f, sk) : new Color(0.3f, 0.3f, 0.36f, Mathf.Max(0.5f, sk));
+                    if (on && sk > 0.99f) UIStyles.CircleTex(sr.center, sz * 0.62f, new Color(1f, 0.8f, 0.2f, 0.12f + 0.06f * Mathf.Sin(Time.unscaledTime * 4f + i)));
+                    UIStyles.Outlined(sr, "★", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(sz)), scol, 3f);
+                }
+                if (Enter(1.2f) > 0f)
+                {
+                    string dl = r.starDiamonds > 0 ? "+" + r.starDiamonds + (r.starDiamonds == 1 ? " DIAMOND" : " DIAMONDS") : r.stars > 0 ? "Best stars already claimed" : "Clear objectives for diamonds";
+                    var dr = new Rect(sc - 200f, panel.y + 296f, 400f, 40f);
+                    if (r.starDiamonds > 0) DiamondIcon(new Vector2(dr.x + 70f, dr.center.y), 34f);
+                    UIStyles.Outlined(dr, dl, UIStyles.Sized(UIStyles.Center, r.starDiamonds > 0 ? 26 : 20), r.starDiamonds > 0 ? new Color(0.55f, 0.85f, 1f) : new Color(0.7f, 0.7f, 0.75f), 2f);
+                }
+            }
+
+            float x = panel.x + 60f, y = panel.y + 180f;
             int mins = Mathf.FloorToInt(r.time / 60f), secs = Mathf.FloorToInt(r.time % 60f);
             string[] stats = { "Time  " + mins + ":" + secs.ToString("00"), "Demons slain  " + r.kills, "Max combo  " + r.maxCombo, "Total damage  " + Mathf.RoundToInt(r.totalDamage).ToString("N0") };
             for (int i = 0; i < stats.Length; i++)
             {
                 float sk = Enter(0.3f + i * 0.1f, 0.25f);
                 if (sk <= 0f) continue;
-                GUI.Label(new Rect(x - (1f - sk) * 60f, y, 700f, 44f), stats[i], UIStyles.H2);
-                y += 50f;
+                GUI.Label(new Rect(x - (1f - sk) * 60f, y, 560f, 40f), stats[i], UIStyles.Sized(UIStyles.H2, 28));
+                y += 42f;
             }
-            y += 16f;
+            y += 10f;
             for (int i = 0; i < 3; i++)
             {
                 if (Enter(0.7f + i * 0.12f) <= 0f) continue;
-                GUI.Label(new Rect(x, y, 760f, 42f), (r.objectives[i] ? "<color=#FFD36B>★</color> " : "<color=#888888>☆</color> ") + r.objectiveLabels[i], UIStyles.Body);
-                y += 44f;
+                GUI.Label(new Rect(x, y, 600f, 38f), (r.objectives[i] ? "<color=#FFD36B>★</color> " : "<color=#888888>☆</color> ") + r.objectiveLabels[i], UIStyles.Sized(UIStyles.Body, 22));
+                y += 38f;
             }
 
-            // Rewards count up.
-            float rx = panel.x + 830f, ry = panel.y + 200f;
+            // Rewards count up (right column, under the rating).
+            float rx = panel.xMax - 560f, ry = panel.y + 180f;
             float ck = Enter(1f, 1.2f);
-            GUI.Label(new Rect(rx, ry, 600f, 50f), "REWARDS" + (r.firstClear ? "  <color=#FF9C7A>FIRST CLEAR</color>" : ""), UIStyles.H2);
-            ry += 54f;
+            GUI.Label(new Rect(rx, ry, 520f, 44f), "REWARDS" + (r.firstClear ? "  <color=#FF9C7A><size=20>FIRST CLEAR</size></color>" : ""), UIStyles.Sized(UIStyles.H2, 30));
+            ry += 50f;
             var g = r.granted;
-            GUI.Label(new Rect(rx, ry, 560f, 40f), "Slayer EXP  <color=#C9A7FF>+" + Mathf.RoundToInt(g.exp * ck).ToString("N0") + "</color>", UIStyles.Body); ry += 42f;
-            GUI.Label(new Rect(rx, ry, 560f, 40f), "Gold  <color=#FFD36B>+" + Mathf.RoundToInt(g.coins * ck).ToString("N0") + "</color>", UIStyles.Body); ry += 42f;
-            if (g.crystals > 0) { GUI.Label(new Rect(rx, ry, 560f, 40f), "Crystals  <color=#7FD8FF>+" + Mathf.RoundToInt(g.crystals * ck) + "</color>", UIStyles.Body); ry += 42f; }
-            string items = "";
-            if (g.expScrolls > 0) items += "EXP Scroll ×" + g.expScrolls + "   ";
-            if (g.skillScrolls > 0) items += "Skill Scroll ×" + g.skillScrolls + "   ";
-            if (g.ascensionOre > 0) items += "Ore ×" + g.ascensionOre;
-            if (items.Length > 0 && Enter(1.6f) > 0f) { GUI.Label(new Rect(rx, ry, 600f, 40f), "Items  " + items, UIStyles.Small); ry += 40f; }
+            CoinIcon(new Vector2(rx + 18f, ry + 20f), 32f);
+            GUI.Label(new Rect(rx + 44f, ry, 480f, 40f), "Gold  <color=#FFD36B>+" + Mathf.RoundToInt(g.coins * ck).ToString("N0") + "</color>" + (r.goldCollected > 0 ? "  <color=#AAAAAA><size=18>(" + r.goldCollected.ToString("N0") + " picked up)</size></color>" : ""), UIStyles.Body); ry += 44f;
+            DiamondIcon(new Vector2(rx + 18f, ry + 20f), 32f);
+            GUI.Label(new Rect(rx + 44f, ry, 480f, 40f), "Diamonds  <color=#7FD8FF>+" + Mathf.RoundToInt(g.crystals * ck) + "</color>", UIStyles.Body); ry += 44f;
+            XpIcon(new Vector2(rx + 18f, ry + 20f), 32f);
+            GUI.Label(new Rect(rx + 44f, ry, 480f, 40f), "XP  <color=#C9A7FF>+" + Mathf.RoundToInt((g.exp / 2 + g.XpValue) * ck).ToString("N0") + "</color>", UIStyles.Body); ry += 44f;
             if (Enter(1.8f) > 0f)
                 foreach (var e in r.droppedEquipmentNames)
                 {
-                    GUI.Label(new Rect(rx, ry, 600f, 40f), "<color=#C9A7FF>EQUIPMENT</color>  " + e, UIStyles.Body);
-                    ry += 40f;
-                }
-            if (Enter(2f) > 0f)
-                foreach (var lu in r.levelUps)
-                {
-                    float pulse = 1f + Mathf.Sin(Time.unscaledTime * 6f) * 0.04f;
-                    UIStyles.Outlined(new Rect(rx, ry, 600f, 44f), "LEVEL UP!  " + lu.name + "  Lv." + lu.from + " → " + lu.to, UIStyles.Sized(UIStyles.Body, Mathf.RoundToInt(28 * pulse)), UIStyles.Good, 2f);
-                    ry += 44f;
+                    GUI.Label(new Rect(rx, ry, 520f, 36f), "<color=#C9A7FF>ITEM</color>  " + e, UIStyles.Sized(UIStyles.Body, 22));
+                    ry += 36f;
                 }
             if (!string.IsNullOrEmpty(r.unlockedCharacterName) && Enter(2.2f) > 0f)
+                UIStyles.Outlined(new Rect(rx, ry + 4f, 540f, 40f), "NEW ALLY: " + r.unlockedCharacterName, UIStyles.Sized(UIStyles.H2, 24), UIStyles.Gold);
+
+            // The team: each slayer's face with their EXP bar filling up, rolling over on every level gained.
+            int n = r.members.Count;
+            if (n > 0)
             {
-                ry += 6f;
-                UIStyles.Outlined(new Rect(rx, ry, 800f, 50f), "NEW ALLY JOINED: " + r.unlockedCharacterName, UIStyles.Sized(UIStyles.H2, 32), UIStyles.Gold);
+                float cw = 500f, cg = 24f, ch = 200f;
+                float cx0 = panel.center.x - (n * cw + (n - 1) * cg) * 0.5f, cy = panel.yMax - 124f - ch - 28f;
+                for (int i = 0; i < n; i++)
+                    ResultMember(new Rect(cx0 + i * (cw + cg), cy, cw, ch), r.members[i], 1.3f + i * 0.15f);
             }
 
             // Next steps.
@@ -955,6 +976,55 @@ namespace HashiraChronicles
             }
             if ((Enter(1.4f) > 0f && FlatBtn(new Rect(bx + (bw + gap) * 2f, by, bw, 100f), "RETURN TO MAP", new Color(0.14f, 0.17f, 0.28f), true, 30))) gm.GoTo(GameScreen.WorldMap);
             if ((Enter(1.5f) > 0f && FlatBtn(new Rect(bx + (bw + gap) * 3f, by, bw, 100f), "CHARACTERS", new Color(0.14f, 0.17f, 0.28f), true, 30))) gm.GoTo(GameScreen.Characters);
+        }
+
+        /// <summary>One team member on the results screen: face with aura, level, and an EXP bar that animates from
+        /// where they started to where they ended, rolling over (with a LEVEL UP! flash) on each level gained.</summary>
+        void ResultMember(Rect r, MemberGain m, float delay)
+        {
+            var def = GameDatabase.GetCharacter(m.id);
+            var c = gm.Data.GetCharacter(m.id);
+            if (def == null || c == null) return;
+            float ek = Enter(delay, 0.3f);
+            if (ek <= 0f) return;
+            r.y += (1f - ek) * 40f;
+            Color ec = ElementChart.ColorOf(def.element);
+            Color rc = RarityInfo.Color(c.stars);
+            Round(Offset(r, 0f, 5f), new Color(0f, 0f, 0f, 0.4f), 16f);
+            Round(r, Color.Lerp(new Color(0.08f, 0.09f, 0.14f), rc, 0.18f), 16f);
+            if (m.maxed) RoundFrame(r, new Color(1f, 0.2f, 0.15f, 0.6f + 0.3f * Mathf.Sin(Time.unscaledTime * 5f)), 3f, 16f);
+
+            // Progress through the gained levels over ~1.6 s.
+            float t = Enter(delay + 0.4f, 1.6f);
+            float span = (m.toLevel - m.fromLevel) + m.toFill - m.fromFill;
+            float pos = m.fromFill + span * t;
+            int lv = m.fromLevel + Mathf.FloorToInt(pos);
+            float fill = pos - Mathf.Floor(pos);
+            if (lv >= m.toLevel) { lv = m.toLevel; fill = Mathf.Clamp01(pos - (m.toLevel - m.fromLevel)); }
+            bool leveled = lv > m.fromLevel;
+            bool atMax = m.maxed && t >= 1f;
+
+            var face = new Rect(r.x + 14f, r.y + 14f, 150f, 150f);
+            Aura(face.center, 78f, ec, atMax);
+            Round(face, new Color(0f, 0f, 0f, 0.25f), 75f);
+            var tex = ArtLibrary.Character(def);
+            if (tex != null) GUI.DrawTexture(face, tex, ScaleMode.ScaleAndCrop, true);
+
+            float tx = r.x + 178f, tw = r.width - 192f;
+            GUI.Label(new Rect(tx, r.y + 14f, tw, 36f), def.displayName, UIStyles.Sized(UIStyles.H2, 26));
+            UIStyles.Outlined(new Rect(tx, r.y + 48f, tw, 22f), RarityInfo.Name(c.stars), UIStyles.Sized(UIStyles.Small, 15), rc, 1.2f);
+            string lvText = "Lv. " + lv + (atMax ? "  MAX" : "");
+            Color lvCol = atMax ? new Color(1f, 0.28f + 0.15f * Mathf.Sin(Time.unscaledTime * 5f), 0.2f) : Color.white;
+            UIStyles.Outlined(new Rect(tx, r.y + 74f, tw, 40f), lvText, UIStyles.Sized(UIStyles.Body, 30), lvCol, 2f);
+            if (leveled)
+            {
+                float pulse = 1f + Mathf.Sin(Time.unscaledTime * 7f) * 0.06f;
+                UIStyles.Outlined(new Rect(tx + 120f, r.y + 76f, tw - 120f, 36f), "LEVEL UP!", UIStyles.Sized(UIStyles.Right, Mathf.RoundToInt(24 * pulse)), UIStyles.Good, 2f);
+            }
+            var bar = new Rect(tx, r.y + 124f, tw, 20f);
+            Round(bar, new Color(0f, 0f, 0f, 0.5f), 10f);
+            if (fill > 0.01f) Round(new Rect(bar.x + 2f, bar.y + 2f, (bar.width - 4f) * Mathf.Clamp01(fill), bar.height - 4f), atMax ? new Color(0.95f, 0.22f, 0.18f) : new Color(0.62f, 0.42f, 1f), 8f);
+            GUI.Label(new Rect(tx, r.y + 150f, tw, 30f), atMax ? "<color=#FF7A6A>Max level — ascend to go higher</color>" : "<color=#C9A7FF>+" + Mathf.RoundToInt(m.expGained * t).ToString("N0") + " EXP</color>", UIStyles.Sized(UIStyles.Small, 18));
         }
 
         /// <summary>The mission this one unlocks on the main path (falls back to the next open story mission).</summary>

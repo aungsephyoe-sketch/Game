@@ -277,6 +277,17 @@ namespace HashiraChronicles
             Make("roar", b, 0.8f);
             b = Buffer(0.4f); AddTone(b, 0, 0.4f, 420f, 70f, 0.7f, 6f); AddNoise(b, 0, 0.35f, 0.6f, 8f, 0.5f); Make("enemyDeath", b, 0.55f);
             b = Buffer(0.05f); AddTone(b, 0, 0.05f, 1300f, 1300f, 0.6f, 60f); Make("click", b, 0.4f);
+            // Coin pickup: two bright pings.
+            b = Buffer(0.2f); AddTone(b, 0, 0.12f, 1975f, 1975f, 0.5f, 25f); AddTone(b, 0.05f, 0.15f, 2637f, 2637f, 0.45f, 22f); Make("coin", b, 0.5f);
+            // Element swing layers (played on top of the blade sound).
+            b = Buffer(0.45f); AddNoise(b, 0, 0.45f, 0.9f, 7f, 0.35f, 0.03f); for (int k = 0; k < 10; k++) AddNoise(b, Random.Range(0f, 0.35f), 0.02f, 0.5f, 90f, 1f); Make("el_flame", b, 0.7f);          // roar + crackle
+            b = Buffer(0.45f); AddNoise(b, 0, 0.06f, 1.2f, 50f, 1f); AddNoise(b, 0.04f, 0.4f, 0.6f, 9f, 0.25f); AddTone(b, 0, 0.3f, 3200f, 900f, 0.2f, 14f, 0.001f, true); Make("el_thunder", b, 0.8f); // crack + rumble
+            b = Buffer(0.4f); AddNoise(b, 0, 0.35f, 0.7f, 10f, 0.45f, 0.05f); for (int k = 0; k < 6; k++) AddTone(b, Random.Range(0f, 0.25f), 0.08f, Random.Range(500f, 900f), Random.Range(900f, 1500f), 0.25f, 30f); Make("el_water", b, 0.7f); // splash + bubbles
+            b = Buffer(0.5f); AddNoise(b, 0, 0.5f, 0.8f, 5f, 0.55f, 0.12f); AddTone(b, 0, 0.5f, 300f, 700f, 0.12f, 5f, 0.1f); Make("el_wind", b, 0.6f);          // rising gust
+            b = Buffer(0.6f); AddTone(b, 0, 0.6f, 1318f, 1318f, 0.35f, 6f); AddTone(b, 0.03f, 0.55f, 1976f, 1976f, 0.25f, 7f); AddTone(b, 0.06f, 0.5f, 2637f, 2637f, 0.18f, 8f); AddNoise(b, 0, 0.1f, 0.3f, 30f, 1f); Make("el_light", b, 0.6f); // chime
+            b = Buffer(0.5f); AddTone(b, 0, 0.5f, 110f, 70f, 0.6f, 5f, 0.04f); AddTone(b, 0, 0.5f, 116f, 72f, 0.5f, 5f, 0.04f); AddNoise(b, 0, 0.4f, 0.4f, 7f, 0.2f, 0.06f); Make("el_dark", b, 0.7f); // low hum
+            // Strong attack: a thunderous smash.
+            b = Buffer(0.8f); AddTaiko(b, 0f, 1f); AddNoise(b, 0, 0.5f, 0.9f, 6f, 0.5f); AddTone(b, 0.02f, 0.6f, 90f, 30f, 0.9f, 5f); Make("smash", b, 0.95f);
 
             // Pentatonic "in" scale on D: D Eb G A Bb.
             float[] scale = { 293.66f, 311.13f, 392f, 440f, 466.16f, 587.33f, 622.25f, 783.99f };

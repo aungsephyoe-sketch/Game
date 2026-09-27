@@ -81,7 +81,8 @@ namespace HashiraChronicles
                 // Bosses grow with the story: each chapter's boss is noticeably tougher than the last.
                 var battle = BattleController.Current;
                 int ch = battle != null && battle.Def != null ? Mathf.Max(1, battle.Def.chapter) : 1;
-                hpMul *= 1f + 0.35f * (ch - 1);
+                // Main bosses were too tanky: 45% of their table HP, growing gently with each chapter.
+                hpMul *= 0.45f * (1f + 0.12f * (ch - 1));
                 atkMul *= 1f + 0.15f * (ch - 1);
                 defMul *= 1f + 0.08f * (ch - 1);
             }
@@ -546,6 +547,12 @@ namespace HashiraChronicles
             VFX.Smoke(Position, new Color(0.15f, 0.1f, 0.12f, 0.7f), IsBoss ? 60 : 20);
             VFX.Breath(Position, new Color(1f, 0.5f, 0.3f), IsBoss ? 80 : 15);
             if (GameManager.Instance != null) GameManager.Instance.Audio.Play("enemyDeath", 0.6f);
+            // Demons drop gold that flies into the active slayer.
+            if (Def.form != "dummy")
+            {
+                int each = 4 + Level * 2;
+                GoldCoin.Burst(Position, IsBoss ? 24 : (Def.archetype == EnemyArchetype.Elite || Def.archetype == EnemyArchetype.Tank ? 6 : 3), IsBoss ? each * 5 : each);
+            }
             if (Killed != null) Killed(this);
             GameEvents.RaiseEnemyKilled(this);
             // Leave the registry immediately so nothing targets the corpse.

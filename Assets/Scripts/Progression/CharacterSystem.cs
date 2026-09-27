@@ -9,7 +9,7 @@ namespace HashiraChronicles
     public static class CharacterSystem
     {
         public const int MaxSkillLevel = 10;
-        public const int MaxStars = 7;
+        public const int MaxStars = 6;
 
         public static float LevelMultiplier(int level) { return 1f + 0.045f * (level - 1); }
 
@@ -67,50 +67,76 @@ namespace HashiraChronicles
         // --------------------------------------------------------------- Upgrades
 
         public static int SkillUpgradeCoinCost(int level) { return 1500 * level; }
-        public static int SkillUpgradeScrollCost(int level) { return 1 + level / 3; }
+        public static int SkillUpgradeXpCost(int level) { return 600 * level; }
 
         public static bool TryUpgradeSkill(PlayerData data, OwnedCharacter c, int index)
         {
             int lvl = c.skillLevels[index];
             if (lvl >= MaxSkillLevel) return false;
-            int coins = SkillUpgradeCoinCost(lvl), scrolls = SkillUpgradeScrollCost(lvl);
-            if (data.coins < coins || data.skillScrolls < scrolls) return false;
+            int coins = SkillUpgradeCoinCost(lvl), xp = SkillUpgradeXpCost(lvl);
+            if (data.coins < coins || data.xp < xp) return false;
             data.coins -= coins;
-            data.skillScrolls -= scrolls;
+            data.xp -= xp;
             c.skillLevels[index]++;
             GameEvents.RaiseCharacterUpgraded(c);
             return true;
         }
 
-        /// <summary>Consumes EXP scrolls. Returns levels gained, or -1 if nothing happened.</summary>
-        public static int UseExpScrolls(PlayerData data, OwnedCharacter c, int count)
+        /// <summary>Feeds XP from the pool straight into a slayer's experience bar. Returns levels gained.</summary>
+        public static int UseXp(PlayerData data, OwnedCharacter c, int amount)
         {
-            if (c.level >= ExperienceSystem.LevelCap(c.stars)) return -1;
-            count = Mathf.Min(count, data.expScrolls);
-            if (count <= 0) return -1;
-            int coinCost = count * 200;
-            if (data.coins < coinCost) return -1;
-            data.expScrolls -= count;
-            data.coins -= coinCost;
-            int gained = ExperienceSystem.AddExp(c, count * ExperienceSystem.ExpPerScroll);
+            amount = Mathf.Min(amount, data.xp);
+            if (amount <= 0 || ExperienceSystem.IsMaxed(c)) return 0;
+            data.xp -= amount;
+            int gained = ExperienceSystem.AddExp(c, amount);
             GameEvents.RaiseCharacterUpgraded(c);
             return gained;
         }
 
-        /// <summary>Level needed before the next star: 30, 45, 60, 75.</summary>
-        public static int AscendLevel(int stars) { return Mathf.Clamp(30 + (stars - 3) * 15, 30, ExperienceSystem.MaxLevel); }
+        /// <summary>Kept for older callers: one "scroll" is 1000 XP from the pool.</summary>
+        public static int UseExpScrolls(PlayerData data, OwnedCharacter c, int count) { return UseXp(data, c, count * ExperienceSystem.ExpPerScroll); }
 
-        public static int AscendOreCost(int stars) { return 2 + (stars - 3) * 3; }
-        public static int AscendCoinCost(int stars) { return 10000 * (stars - 2); }
+        /// <summary>Feeds one duplicate copy (any slayer) to a slayer as EXP. Returns levels gained, or -1 if nothing was fed.</summary>
+        public static int FeedCopy(PlayerData data, OwnedCharacter target, string copyId)
+        {
+            if (data.copies == null || ExperienceSystem.IsMaxed(target)) return -1;
+            var stack = data.copies.Find(x => x.id == copyId);
+            var def = GameDatabase.GetCharacter(copyId);
+            if (stack == null || stack.count <= 0 || def == null) return -1;
+            stack.count--;
+            if (stack.count <= 0) data.copies.Remove(stack);
+            int gained = ExperienceSystem.AddExp(target, ExperienceSystem.CopyXp(def.rarity));
+            GameEvents.RaiseCharacterUpgraded(target);
+            return gained;
+        }
 
+        /// <summary>Sells one duplicate copy for gold. Returns the gold earned.</summary>
+        public static int SellCopy(PlayerData data, string copyId)
+        {
+            if (data.copies == null) return 0;
+            var stack = data.copies.Find(x => x.id == copyId);
+            var def = GameDatabase.GetCharacter(copyId);
+            if (stack == null || stack.count <= 0 || def == null) return 0;
+            stack.count--;
+            if (stack.count <= 0) data.copies.Remove(stack);
+            int gold = ExperienceSystem.CopyGold(def.rarity);
+            data.coins += gold;
+            return gold;
+        }
+
+        public static int AscendXpCost(int stars) { return 4000 * (stars - 1) * (stars - 1); }
+        public static int AscendCoinCost(int stars) { return 8000 * (stars - 1); }
+        public static int AscendOreCost(int stars) { return AscendXpCost(stars); }
+
+        /// <summary>A slayer at their level cap can ascend one star, which raises the cap and all stats.</summary>
         public static bool CanAscend(PlayerData data, OwnedCharacter c, out string reason)
         {
             reason = "";
             if (c.stars >= MaxStars) { reason = "Max stars"; return false; }
-            int need = AscendLevel(c.stars);
-            if (c.level < need) { reason = "Reach Lv." + need; return false; }
-            if (data.ascensionOre < AscendOreCost(c.stars)) { reason = "Need " + AscendOreCost(c.stars) + " ore"; return false; }
-            if (data.coins < AscendCoinCost(c.stars)) { reason = "Need " + AscendCoinCost(c.stars) + " coins"; return false; }
+            int cap = ExperienceSystem.LevelCap(c.stars);
+            if (c.level < cap) { reason = "Reach Lv." + cap; return false; }
+            if (data.xp < AscendXpCost(c.stars)) { reason = "Need " + AscendXpCost(c.stars).ToString("N0") + " XP"; return false; }
+            if (data.coins < AscendCoinCost(c.stars)) { reason = "Need " + AscendCoinCost(c.stars).ToString("N0") + " gold"; return false; }
             return true;
         }
 
@@ -118,7 +144,7 @@ namespace HashiraChronicles
         {
             string reason;
             if (!CanAscend(data, c, out reason)) return false;
-            data.ascensionOre -= AscendOreCost(c.stars);
+            data.xp -= AscendXpCost(c.stars);
             data.coins -= AscendCoinCost(c.stars);
             c.stars++;
             GameEvents.RaiseCharacterUpgraded(c);

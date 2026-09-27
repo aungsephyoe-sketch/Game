@@ -255,9 +255,13 @@ namespace HashiraChronicles
             float x = r.xMax;
             var st = UIStyles.Sized(UIStyles.Body, 30);
             // Right to left: ORE, SKILL, EXP, crystals, coins.
-            x = TextRes(x, r.y, h, "ORE", "×" + d.ascensionOre, new Color(1f, 0.62f, 0.3f), st);
-            x = TextRes(x, r.y, h, "SKILL", "×" + d.skillScrolls, new Color(0.45f, 0.95f, 0.4f), st);
-            x = TextRes(x, r.y, h, "EXP", "×" + d.expScrolls, new Color(0.75f, 0.5f, 1f), st);
+            // Three currencies: XP, diamonds, gold.
+            string xpS = d.xp.ToString("N0");
+            float xw = st.CalcSize(new GUIContent(xpS)).x;
+            x -= xw + 12f;
+            GUI.Label(new Rect(x, r.y, xw + 4f, h), xpS, st);
+            XpIcon(new Vector2(x - 26f, r.y + h * 0.5f), 38f);
+            x -= 80f;
             string cr = d.crystals.ToString("N0");
             float cw = st.CalcSize(new GUIContent(cr)).x;
             x -= cw + 12f;
@@ -293,7 +297,7 @@ namespace HashiraChronicles
             if (r.exp > 0) sb.Append("EXP +" + r.exp.ToString("N0") + "    ");
             if (r.coins > 0) sb.Append("<color=#FFD36B>Coins +" + r.coins.ToString("N0") + "</color>    ");
             if (r.crystals > 0) sb.Append("<color=#7FD8FF>Crystals +" + r.crystals + "</color>    ");
-            if (r.expScrolls > 0) sb.Append("EXP Scroll ×" + r.expScrolls + "    ");
+            if (r.XpValue > 0) sb.Append("XP +" + r.XpValue.ToString("N0") + "    ");
             if (r.skillScrolls > 0) sb.Append("Skill Scroll ×" + r.skillScrolls + "    ");
             if (r.ascensionOre > 0) sb.Append("Ore ×" + r.ascensionOre + "    ");
             foreach (var e in r.equipmentIds)
@@ -314,8 +318,9 @@ namespace HashiraChronicles
         int teamSlot;
         GameScreen teamReturn = GameScreen.MainMenu;
 
-        const int TeamSize = 4;
-        static readonly Role[] SlotRoles = { Role.DPS, Role.Tank, Role.DPS, Role.Support };
+        /// <summary>Teams are three slayers: a leader, a vanguard and a support.</summary>
+        const int TeamSize = 3;
+        static readonly Role[] SlotRoles = { Role.DPS, Role.Tank, Role.Support };
 
         void AssignToSlot(string id, int inTeam)
         {

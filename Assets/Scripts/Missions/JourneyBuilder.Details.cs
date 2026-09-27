@@ -11,7 +11,7 @@ namespace HashiraChronicles
     {
         class PropKit
         {
-            public Material rock, rockDark, wood, woodDark, leaf, grass, accent, glow, bone, snow, metal, cloth;
+            public Material rock, rockDark, wood, woodDark, leaf, grass, accent, glow, bone, snow, metal, cloth, petalA, petalB, petalC, stem;
         }
 
         static PropKit Kit(ArenaTheme t)
@@ -29,6 +29,10 @@ namespace HashiraChronicles
             k.snow = MaterialFactory.Toon(new Color(0.95f, 0.96f, 1f), 0f);
             k.metal = MaterialFactory.Toon(new Color(0.3f, 0.3f, 0.34f));
             k.cloth = MaterialFactory.Toon(new Color(0.6f, 0.2f, 0.18f));
+            k.petalA = MaterialFactory.Toon(new Color(1f, 0.72f, 0.82f), 0f);
+            k.petalB = MaterialFactory.Toon(new Color(1f, 0.9f, 0.45f), 0f);
+            k.petalC = MaterialFactory.Toon(new Color(0.72f, 0.7f, 1f), 0f);
+            k.stem = MaterialFactory.Toon(Color.Lerp(t.foliage, new Color(0.2f, 0.45f, 0.2f), 0.5f), 0f);
             return k;
         }
 
@@ -51,7 +55,7 @@ namespace HashiraChronicles
         {
             var k = Kit(theme);
             int n = 0;
-            for (float d = 3f; d < j.Length - 3f; d += R(2.6f, 4.2f), n++)
+            for (float d = 3f; d < j.Length - 3f; d += R(2.2f, 3.6f), n++)
             {
                 Vector3 p = j.PointAt(d);
                 Vector3 ahead = j.PointAt(d + 1f) - p;
@@ -61,12 +65,14 @@ namespace HashiraChronicles
                 Vector3 side = Vector3.Cross(Vector3.up, ahead);
                 for (int s = -1; s <= 1; s += 2)
                 {
-                    if (rng.NextDouble() < 0.3) continue;
+                    if (rng.NextDouble() < 0.15) continue;
                     Vector3 at = p + side * s * (j.halfWidth + R(1.2f, 7f)) + ahead * R(-1f, 1f);
                     at.y = 0f;
                     if (InPlace(j, at, 0.5f)) continue;
                     Prop(theme, k, stat, dyn, at, R(0f, 360f));
                 }
+                // Verge detail right along the road edge: grass, flowers in the living regions, pebbles everywhere.
+                VergeDetail(theme, k, stat, dyn, p, side, j);
                 // Cracks and debris on the road itself in ruined regions.
                 if ((theme.kind == EnvironmentKind.FallenCity || theme.kind == EnvironmentKind.DemonLand || theme.kind == EnvironmentKind.Castle || theme.burning) && rng.NextDouble() < 0.35)
                 {
@@ -83,6 +89,54 @@ namespace HashiraChronicles
                         m.startColor = theme.kind == EnvironmentKind.DemonLand ? new Color(0.3f, 0.1f, 0.12f, 0.25f) : new Color(0.85f, 0.88f, 0.92f, 0.22f);
                     }
                 }
+            }
+        }
+
+        static bool Lush(ArenaTheme t)
+        {
+            return !t.burning && (t.kind == EnvironmentKind.Village || t.kind == EnvironmentKind.Forest || t.kind == EnvironmentKind.Kingdom || t.kind == EnvironmentKind.Temple || t.kind == EnvironmentKind.Mountain);
+        }
+
+        static void VergeDetail(ArenaTheme theme, PropKit k, Transform stat, Transform dyn, Vector3 p, Vector3 side, Journey j)
+        {
+            for (int s = -1; s <= 1; s += 2)
+            {
+                Vector3 edge = p + side * s * (j.halfWidth + R(0.2f, 1.1f));
+                edge.y = 0f;
+                if (InPlace(j, edge, 0.2f)) continue;
+                double roll = rng.NextDouble();
+                if (Lush(theme))
+                {
+                    if (roll < 0.45) GrassTuft(k, dyn, edge);
+                    else if (roll < 0.75) Flowers(k, stat, edge);
+                    else Pebbles(k, stat, edge);
+                }
+                else if (roll < 0.5) Pebbles(k, stat, edge);
+            }
+        }
+
+        /// <summary>A little cluster of three-petal flowers on thin stems.</summary>
+        static void Flowers(PropKit k, Transform p, Vector3 at)
+        {
+            var petal = rng.Next(3) == 0 ? k.petalA : rng.Next(2) == 0 ? k.petalB : k.petalC;
+            int c = 3 + rng.Next(3);
+            for (int i = 0; i < c; i++)
+            {
+                Vector3 o = at + new Vector3(R(-0.35f, 0.35f), 0f, R(-0.35f, 0.35f));
+                float h = R(0.18f, 0.34f);
+                Prim(PrimitiveType.Cylinder, p, o + Vector3.up * h * 0.5f, new Vector3(0.025f, h * 0.5f, 0.025f), k.stem, Vector3.zero);
+                Prim(PrimitiveType.Sphere, p, o + Vector3.up * h, new Vector3(0.14f, 0.06f, 0.14f), petal, Vector3.zero);
+                Prim(PrimitiveType.Sphere, p, o + Vector3.up * (h + 0.02f), new Vector3(0.05f, 0.05f, 0.05f), k.petalB, Vector3.zero);
+            }
+        }
+
+        static void Pebbles(PropKit k, Transform p, Vector3 at)
+        {
+            int c = 2 + rng.Next(3);
+            for (int i = 0; i < c; i++)
+            {
+                float sz = R(0.08f, 0.2f);
+                Prim(PrimitiveType.Sphere, p, at + new Vector3(R(-0.4f, 0.4f), sz * 0.25f, R(-0.4f, 0.4f)), new Vector3(sz, sz * 0.55f, sz * R(0.8f, 1.2f)), i % 2 == 0 ? k.rock : k.rockDark, new Vector3(0f, R(0f, 360f), 0f));
             }
         }
 

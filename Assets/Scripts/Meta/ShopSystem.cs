@@ -19,13 +19,35 @@ namespace HashiraChronicles
         public static readonly List<Item> Items = new List<Item>
         {
             new Item { id = "free_crystals", name = "Daily Gift", description = "20 crystals, free once a day.", grant = new RewardBundle { crystals = 20 }, dailyFree = true },
-            new Item { id = "exp5", name = "EXP Scroll ×5", description = "Level up slayers faster.", coinCost = 2000, grant = new RewardBundle { expScrolls = 5 } },
-            new Item { id = "skill3", name = "Skill Scroll ×3", description = "Upgrade breathing forms and the ability tree.", coinCost = 3500, grant = new RewardBundle { skillScrolls = 3 } },
-            new Item { id = "ore2", name = "Ascension Ore ×2", description = "Raise a slayer's star rank.", coinCost = 6000, grant = new RewardBundle { ascensionOre = 2 } },
-            new Item { id = "chest4", name = "Forge Chest", description = "A random RARE+ weapon, haori or accessory.", coinCost = 12000, chestRarity = 4 },
-            new Item { id = "chest5", name = "Pillar's Chest", description = "A random EPIC+ weapon, haori or accessory.", crystalCost = 150, chestRarity = 5 },
-            new Item { id = "coins", name = "Coin Pouch", description = "25,000 coins.", crystalCost = 60, grant = new RewardBundle { coins = 25000 } },
+            new Item { id = "exp5", name = "XP Pack", description = "+5,000 XP for levelling slayers.", coinCost = 2000, grant = new RewardBundle { expScrolls = 5 } },
+            new Item { id = "skill3", name = "Big XP Pack", description = "+15,000 XP for levels, skills and ascension.", coinCost = 5500, grant = new RewardBundle { expScrolls = 15 } },
+            new Item { id = "chest4", name = "Forge Chest", description = "A random RARE+ weapon, haori or accessory.", coinCost = 12000, chestRarity = 3 },
+            new Item { id = "chest5", name = "Pillar's Chest", description = "A random EPIC+ weapon, haori or accessory.", crystalCost = 150, chestRarity = 4 },
+            new Item { id = "coins", name = "Gold Pouch", description = "25,000 gold.", crystalCost = 60, grant = new RewardBundle { coins = 25000 } },
         };
+
+        /// <summary>Gold price of an accessory by rarity (Common .. Mythic).</summary>
+        public static int AccessoryPrice(EquipmentDefinition e)
+        {
+            switch (Mathf.Clamp(e.rarity, 2, 6)) { case 2: return 3000; case 3: return 8000; case 4: return 20000; case 5: return 45000; default: return 90000; }
+        }
+
+        public static List<EquipmentDefinition> Accessories()
+        {
+            var list = GameDatabase.Equipment.FindAll(e => e.slot == EquipSlot.Accessory);
+            list.Sort((a, b) => a.rarity.CompareTo(b.rarity));
+            return list;
+        }
+
+        /// <summary>Buys an accessory for gold; equip it from the slayer's Gear tab.</summary>
+        public static bool BuyAccessory(PlayerData d, EquipmentDefinition e)
+        {
+            int price = AccessoryPrice(e);
+            if (d.coins < price) return false;
+            d.coins -= price;
+            InventorySystem.AddEquipment(d, e.id);
+            return true;
+        }
 
         public static bool FreeClaimedToday(PlayerData d)
         {

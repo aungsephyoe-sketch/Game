@@ -154,6 +154,7 @@ namespace HashiraChronicles
             Ball(head, new Vector3(-0.39f, -0.04f, 0f), new Vector3(0.1f, 0.14f, 0.1f), skin);
             BuildFace(def, ink);
             BuildHair(def.hair, hair, accent);
+            HairDetail(def);
 
             // Accessories.
             if (def.scarf)
@@ -182,36 +183,128 @@ namespace HashiraChronicles
             BuildWeapon(def.weapon, def.bladeColor, h, w);
         }
 
-        /// <summary>Eyes with a shine, brows that show personality, a small smile and rosy cheeks.</summary>
+        /// <summary>
+        /// A face with its own expression: eyes (open with a shine, happy closed arcs, or narrowed), brows that
+        /// show personality, a mouth to match (smile, grin, gritted teeth, "o", smirk or flat line) and rosy cheeks.
+        /// </summary>
         void BuildFace(CharacterDefinition def, Material ink)
         {
             var shine = MaterialFactory.Toon(Color.white, 0f, new Color(0.6f, 0.6f, 0.6f));
             Color browC = Color.Lerp(def.hairColor, Color.black, 0.45f);
             var brow = MaterialFactory.Toon(browC, 0f);
-            float browTilt;
+            var mouthM = MaterialFactory.Toon(new Color(0.32f, 0.12f, 0.12f), 0f);
+            var teeth = MaterialFactory.Toon(new Color(0.98f, 0.97f, 0.95f), 0f);
+            var tongue = MaterialFactory.Toon(new Color(0.9f, 0.45f, 0.45f), 0f);
+            float browTilt, browLift = 0f;
             switch (def.motion)
             {
-                case MotionStyle.Aggressive: browTilt = 22f; break;
-                case MotionStyle.Nervous: browTilt = -18f; break;
-                case MotionStyle.Stoic: browTilt = 8f; break;
-                case MotionStyle.Sly: browTilt = 14f; break;
-                case MotionStyle.Graceful: case MotionStyle.Light: browTilt = -6f; break;
+                case MotionStyle.Aggressive: browTilt = 26f; break;
+                case MotionStyle.Nervous: browTilt = -22f; browLift = 0.02f; break;
+                case MotionStyle.Stoic: browTilt = 6f; break;
+                case MotionStyle.Sly: browTilt = 16f; break;
+                case MotionStyle.Graceful: browTilt = -8f; browLift = 0.015f; break;
+                case MotionStyle.Light: browTilt = -10f; browLift = 0.02f; break;
+                case MotionStyle.Confident: browTilt = 10f; break;
                 default: browTilt = 4f; break;
             }
             for (int sgn = -1; sgn <= 1; sgn += 2)
             {
-                Ball(head, new Vector3(0.13f * sgn, -0.03f, 0.365f), new Vector3(0.09f, 0.15f, 0.05f), ink);
-                Ball(head, new Vector3(0.13f * sgn + 0.022f, 0.02f, 0.385f), new Vector3(0.035f, 0.045f, 0.02f), shine);
-                Ball(head, new Vector3(0.13f * sgn - 0.015f, -0.07f, 0.385f), new Vector3(0.015f, 0.02f, 0.01f), shine);
-                Part(PrimitiveType.Capsule, head, new Vector3(0.14f * sgn, 0.11f, 0.35f), new Vector3(0.03f, 0.055f, 0.02f), brow, new Vector3(0f, 0f, 90f + browTilt * sgn));
-                var blush = MaterialFactory.Transparent(new Color(1f, 0.45f, 0.45f, 0.35f));
-                var b = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), head, new Vector3(0.23f * sgn, -0.12f, 0.315f), new Vector3(0.1f, 0.05f, 0.02f), blush, false);
-                b.transform.localRotation = Quaternion.Euler(0f, 30f * sgn, 0f);
+                Vector3 eyeP = new Vector3(0.13f * sgn, -0.03f, 0.365f);
+                switch (def.motion)
+                {
+                    case MotionStyle.Graceful:
+                        // Happy closed eyes: little upside-down arcs.
+                        Part(PrimitiveType.Capsule, head, eyeP + new Vector3(-0.025f, 0f, 0.005f), new Vector3(0.022f, 0.045f, 0.02f), ink, new Vector3(0f, 0f, 55f));
+                        Part(PrimitiveType.Capsule, head, eyeP + new Vector3(0.025f, 0f, 0.005f), new Vector3(0.022f, 0.045f, 0.02f), ink, new Vector3(0f, 0f, -55f));
+                        break;
+                    case MotionStyle.Stoic:
+                        // Calm, half-lidded.
+                        Ball(head, eyeP, new Vector3(0.095f, 0.09f, 0.05f), ink);
+                        Ball(head, eyeP + new Vector3(0.02f, 0.01f, 0.02f), new Vector3(0.028f, 0.03f, 0.02f), shine);
+                        break;
+                    case MotionStyle.Sly:
+                        // One eye narrowed in a knowing look.
+                        Ball(head, eyeP, sgn < 0 ? new Vector3(0.095f, 0.07f, 0.05f) : new Vector3(0.09f, 0.15f, 0.05f), ink);
+                        Ball(head, eyeP + new Vector3(0.02f, 0.02f, 0.02f), new Vector3(0.03f, 0.035f, 0.02f), shine);
+                        break;
+                    default:
+                        float tall = def.motion == MotionStyle.Nervous ? 0.17f : def.motion == MotionStyle.Aggressive ? 0.12f : 0.15f;
+                        Ball(head, eyeP, new Vector3(0.09f, tall, 0.05f), ink);
+                        Ball(head, eyeP + new Vector3(0.022f, 0.05f, 0.02f), new Vector3(0.035f, 0.045f, 0.02f), shine);
+                        Ball(head, eyeP + new Vector3(-0.015f, -0.04f, 0.02f), new Vector3(0.015f, 0.02f, 0.01f), shine);
+                        if (def.motion == MotionStyle.Light) Ball(head, eyeP + new Vector3(0.03f, 0.055f, 0.022f), Vector3.one * 0.012f, shine); // extra sparkle
+                        break;
+                }
+                Part(PrimitiveType.Capsule, head, new Vector3(0.14f * sgn, 0.11f + browLift, 0.35f), new Vector3(0.03f, 0.055f, 0.02f), brow, new Vector3(0f, 0f, 90f + browTilt * sgn));
+                var blush = MaterialFactory.Transparent(new Color(1f, 0.45f, 0.45f, def.motion == MotionStyle.Nervous ? 0.5f : 0.35f));
+                var bl = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), head, new Vector3(0.23f * sgn, -0.12f, 0.315f), new Vector3(0.1f, 0.05f, 0.02f), blush, false);
+                bl.transform.localRotation = Quaternion.Euler(0f, 30f * sgn, 0f);
             }
-            // A small smile.
-            var mouth = MaterialFactory.Toon(new Color(0.35f, 0.14f, 0.14f), 0f);
-            Part(PrimitiveType.Capsule, head, new Vector3(-0.025f, -0.17f, 0.37f), new Vector3(0.018f, 0.035f, 0.015f), mouth, new Vector3(0f, 0f, 65f));
-            Part(PrimitiveType.Capsule, head, new Vector3(0.025f, -0.17f, 0.37f), new Vector3(0.018f, 0.035f, 0.015f), mouth, new Vector3(0f, 0f, -65f));
+            Vector3 m = new Vector3(0f, -0.17f, 0.37f);
+            switch (def.motion)
+            {
+                case MotionStyle.Confident:
+                    // A wide grin with teeth.
+                    Ball(head, m + new Vector3(0f, -0.005f, 0f), new Vector3(0.12f, 0.05f, 0.03f), mouthM);
+                    Ball(head, m + new Vector3(0f, 0.008f, 0.006f), new Vector3(0.1f, 0.018f, 0.02f), teeth);
+                    break;
+                case MotionStyle.Aggressive:
+                    // Gritted teeth.
+                    Ball(head, m, new Vector3(0.12f, 0.045f, 0.03f), mouthM);
+                    Part(PrimitiveType.Cube, head, m + new Vector3(0f, 0f, 0.012f), new Vector3(0.09f, 0.022f, 0.01f), teeth);
+                    break;
+                case MotionStyle.Nervous:
+                    // A worried little "o", and a sweat drop.
+                    Ball(head, m, new Vector3(0.045f, 0.055f, 0.03f), mouthM);
+                    Ball(head, new Vector3(0.3f, 0.1f, 0.24f), new Vector3(0.05f, 0.08f, 0.04f), MaterialFactory.Toon(new Color(0.7f, 0.88f, 1f), 0f, new Color(0.2f, 0.3f, 0.4f)));
+                    break;
+                case MotionStyle.Stoic:
+                    Part(PrimitiveType.Capsule, head, m, new Vector3(0.016f, 0.05f, 0.015f), mouthM, new Vector3(0f, 0f, 90f));
+                    break;
+                case MotionStyle.Sly:
+                    // A one-sided smirk.
+                    Part(PrimitiveType.Capsule, head, m + new Vector3(-0.01f, 0f, 0f), new Vector3(0.016f, 0.04f, 0.015f), mouthM, new Vector3(0f, 0f, 90f));
+                    Part(PrimitiveType.Capsule, head, m + new Vector3(0.045f, 0.012f, 0f), new Vector3(0.016f, 0.025f, 0.015f), mouthM, new Vector3(0f, 0f, 40f));
+                    break;
+                case MotionStyle.Light:
+                    // An open, laughing mouth.
+                    Ball(head, m + new Vector3(0f, -0.01f, 0f), new Vector3(0.085f, 0.07f, 0.03f), mouthM);
+                    Ball(head, m + new Vector3(0f, -0.03f, 0.006f), new Vector3(0.05f, 0.025f, 0.02f), tongue);
+                    break;
+                default:
+                    // A gentle smile.
+                    Part(PrimitiveType.Capsule, head, m + new Vector3(-0.025f, 0f, 0f), new Vector3(0.018f, 0.035f, 0.015f), mouthM, new Vector3(0f, 0f, 65f));
+                    Part(PrimitiveType.Capsule, head, m + new Vector3(0.025f, 0f, 0f), new Vector3(0.018f, 0.035f, 0.015f), mouthM, new Vector3(0f, 0f, -65f));
+                    break;
+            }
+        }
+
+        /// <summary>Finer hair detail on top of each style: a glossy highlight, strands at the nape and locks by the ears.</summary>
+        void HairDetail(CharacterDefinition def)
+        {
+            if (def.hair == HairStyle.Cap || def.hair == HairStyle.StrawHat || def.hair == HairStyle.Hood) return;
+            var hairM = MaterialFactory.Toon(def.hairColor, 0.015f);
+            var gloss = MaterialFactory.Toon(Color.Lerp(def.hairColor, Color.white, 0.4f), 0f);
+            var dark = MaterialFactory.Toon(Color.Lerp(def.hairColor, Color.black, 0.25f), 0.015f);
+            // A glossy highlight band across the crown.
+            Ball(head, new Vector3(0.1f, 0.33f, 0.1f), new Vector3(0.26f, 0.05f, 0.12f), gloss, new Vector3(20f, 30f, -18f));
+            Ball(head, new Vector3(-0.06f, 0.36f, 0.05f), new Vector3(0.12f, 0.035f, 0.06f), gloss, new Vector3(15f, -20f, 12f));
+            // Nape strands.
+            if (def.hair != HairStyle.Long && def.hair != HairStyle.Bob && def.hair != HairStyle.Curly)
+                for (int i = 0; i < 5; i++)
+                {
+                    float x = (i - 2) * 0.09f;
+                    var c = MeshFactory.MeshObject(MeshFactory.Cone(), head, new Vector3(x, -0.1f, -0.36f), new Vector3(0.08f, 0.18f + (i % 2) * 0.05f, 0.06f), i % 2 == 0 ? hairM : dark);
+                    c.transform.localRotation = Quaternion.Euler(160f, 0f, x * 60f);
+                    Add(c);
+                }
+            // Locks in front of the ears.
+            for (int sgn = -1; sgn <= 1; sgn += 2)
+            {
+                var lk = MeshFactory.MeshObject(MeshFactory.Cone(), head, new Vector3(0.36f * sgn, 0.02f, 0.14f), new Vector3(0.07f, 0.2f, 0.07f), hairM);
+                lk.transform.localRotation = Quaternion.Euler(170f, 0f, -12f * sgn);
+                Add(lk);
+            }
         }
 
         void BuildHair(HairStyle style, Material hair, Material accent)

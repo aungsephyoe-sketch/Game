@@ -60,10 +60,105 @@ namespace HashiraChronicles
             }
         }
 
+        /// <summary>The element's own sound layered on an attack: fire roar, thunder crack, splash, gust, chime, hum.</summary>
+        void PlayElementSound(float volume)
+        {
+            if (Audio == null) return;
+            string id;
+            switch (Def.element)
+            {
+                case Element.Flame: id = "el_flame"; break;
+                case Element.Thunder: id = "el_thunder"; break;
+                case Element.Water: id = "el_water"; break;
+                case Element.Beast: id = "el_wind"; break;
+                case Element.Light: id = "el_light"; break;
+                default: id = "el_dark"; break;
+            }
+            Audio.PlayVaried(id, volume, 0.12f);
+        }
+
+        /// <summary>
+        /// The strong (charged) attack, staged: crouch and gather the element, a spinning leap forward, then a
+        /// ground-splitting blow with a double shockwave, element eruption, camera punch and a beat of slow motion.
+        /// </summary>
+        IEnumerator StrongAttack()
+        {
+            var target = AutoAim(7f);
+            Visual.SetCharge(0f, ElementColor);
+            // 1. Wind-up: crouch while the element swirls in.
+            Visual.Punch(0.8f);
+            for (int i = 0; i < 6; i++)
+            {
+                Vector3 o = Quaternion.Euler(0f, i * 60f, 0f) * Vector3.forward * 1.6f;
+                VFX.Breath(Position + o, ElementColor, 4);
+            }
+            PlayElementSound(0.7f);
+            if (Audio != null) Audio.PlayPitched("charge", 0.35f, 1.8f);
+            yield return new WaitForSeconds(0.12f);
+            // 2. Spinning leap toward the target.
+            Vector3 start = Position;
+            Vector3 dir = transform.forward;
+            float dist = 2.6f;
+            if (target != null)
+            {
+                Vector3 to = target.Position - Position;
+                to.y = 0f;
+                if (to.sqrMagnitude > 0.01f) { dir = to.normalized; Face(dir, 1f); }
+                dist = Mathf.Clamp(to.magnitude - target.Radius - 0.8f, 0.5f, 4f);
+            }
+            Visual.Spin(0.2f, 1);
+            float t = 0f;
+            while (t < 0.2f)
+            {
+                t += Time.deltaTime;
+                float k = t / 0.2f;
+                transform.position = BattleController.ClampToArena(start + dir * dist * k);
+                Visual.transform.localPosition = Vector3.up * Mathf.Sin(k * Mathf.PI) * 1.1f;
+                yield return null;
+            }
+            Visual.transform.localPosition = Vector3.zero;
+            // 3. The blow.
+            Visual.HeavyAttack(0.12f);
+            var tag = AttackTag.Basic(StrongMultiplier, ElementColor);
+            tag.knockback = 9f;
+            tag.stagger = 8f;
+            tag.hitStop = 0.14f;
+            tag.shake = 0.55f;
+            tag.heavy = true;
+            tag.launch = true;
+            float hitDmg = CombatSystem.HitArc(this, Position, transform.forward, 4.6f, 220f, tag);
+            ElementFx.Slash(Position, transform.forward, 4.6f, 220f, 0f, Def.element, 2.6f);
+            ElementFx.Slash(Position, transform.forward, 3.8f, 200f, 35f, Def.element, 2f);
+            Vector3 impact = Position + transform.forward * 2f;
+            ElementFx.Finisher(impact, transform.forward, Def.element, 4f);
+            VFX.Shockwave(impact, 3f, Color.white, 0.25f);
+            VFX.Shockwave(impact, 5f, ElementColor, 0.5f);
+            VFX.Dust(impact, 16);
+            // Cracks in the ground.
+            for (int i = 0; i < 5; i++)
+            {
+                Vector3 d = Quaternion.Euler(0f, -60f + i * 30f, 0f) * transform.forward;
+                VFX.Flash(MeshFactory.Line(), impact + Vector3.up * 0.05f, Quaternion.LookRotation(d), new Vector3(0.3f, 1f, 0.5f), new Vector3(0.05f, 1f, 3f), Color.Lerp(ElementColor, Color.black, 0.3f), 0.5f);
+            }
+            GameEvents.RaiseImpact(0.7f);
+            if (CameraController.Instance != null) CameraController.Instance.Punch(0.7f, 0.2f);
+            if (hitDmg > 0f)
+            {
+                TimeController.SlowMotion(0.35f, 0.25f);
+                DamageNumbers.SpawnText(impact + Vector3.up * 2.6f, "SMASH!", Color.Lerp(ElementColor, Color.white, 0.4f), 60f);
+            }
+            if (Audio != null) Audio.PlayPitched("smash", 1f, Random.Range(0.95f, 1.05f));
+            PlayElementSound(0.9f);
+            UltGauge = Mathf.Min(UltMax, UltGauge + 4f);
+            yield return new WaitForSeconds(0.34f);
+            comboIndex = 0;
+        }
+
         void PlayStyleSwing(bool finisher)
         {
             var a = Audio;
             if (a == null) return;
+            PlayElementSound(finisher ? 0.6f : 0.35f);
             switch (Def.style)
             {
                 case CombatStyle.Swift: a.PlayPitched(finisher ? "heavy" : "slash", finisher ? 0.6f : 0.45f, Random.Range(1.25f, 1.45f)); break;
@@ -196,6 +291,7 @@ namespace HashiraChronicles
                     for (int i = 0; i < shots; i++)
                         EnemyProjectile.Fire(this, muzzle, Quaternion.Euler(0f, shots > 1 ? (i == 0 ? -5f : 5f) : 0f, 0f) * dir, 26f, 16f, tag, ElementColor, 0.34f);
                     if (Audio != null) Audio.PlayPitched("shoot", 0.55f, Random.Range(1.2f, 1.4f));
+                    PlayElementSound(0.3f);
                 }
                 VFX.HitSpark(muzzle + Vector3.up, ElementColor, 6);
                 comboIndex = finisher ? 0 : step + 1;
@@ -233,7 +329,8 @@ namespace HashiraChronicles
             VFX.Pillar(at, ElementColor, 7f, 0.5f);
             VFX.Shockwave(at, 3.6f, ElementColor, 0.4f);
             VFX.Breath(at, ElementColor, 30);
-            if (Audio != null) Audio.PlayPitched("impact", 0.9f, 1.1f);
+            if (Audio != null) { Audio.PlayPitched("impact", 0.9f, 1.1f); Audio.Play("smash", 0.7f); }
+            PlayElementSound(0.9f);
             UltGauge = Mathf.Min(UltMax, UltGauge + 3f);
             yield return new WaitForSeconds(0.3f);
             comboIndex = 0;

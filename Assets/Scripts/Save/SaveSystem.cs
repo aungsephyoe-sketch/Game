@@ -18,7 +18,8 @@ namespace HashiraChronicles
         {
             var data = TryRead(PathMain) ?? TryRead(PathBackup);
             // Saves from before the story overhaul don't match the new world; start the new story fresh.
-            if (data != null && data.saveVersion < PlayerData.CurrentVersion) data = null;
+            if (data != null && data.saveVersion < 2) data = null;
+            if (data != null && data.saveVersion == 2) MigrateToV3(data);
             if (data == null)
             {
                 data = CreateNew();
@@ -26,6 +27,25 @@ namespace HashiraChronicles
             }
             Validate(data);
             return data;
+        }
+
+        /// <summary>
+        /// v3: rarity tiers moved down one step (2★ Common .. 6★ Mythic), levels are capped by rarity,
+        /// scrolls and ore became XP, teams hold three slayers.
+        /// </summary>
+        static void MigrateToV3(PlayerData d)
+        {
+            d.xp += d.expScrolls * ExperienceSystem.ExpPerScroll + d.skillScrolls * 500 + d.ascensionOre * 800;
+            d.expScrolls = d.skillScrolls = d.ascensionOre = 0;
+            foreach (var c in d.characters)
+            {
+                c.stars = Mathf.Clamp(c.stars - 1, 2, CharacterSystem.MaxStars);
+                c.level = Mathf.Clamp(c.level, 1, ExperienceSystem.LevelCap(c.stars));
+            }
+            if (d.team.Count > 3) d.team.RemoveRange(3, d.team.Count - 3);
+            if (d.teamPresets != null) foreach (var p in d.teamPresets) if (p.ids.Count > 3) p.ids.RemoveRange(3, p.ids.Count - 3);
+            if (d.copies == null) d.copies = new System.Collections.Generic.List<CopyStack>();
+            d.saveVersion = PlayerData.CurrentVersion;
         }
 
         public static void Save(PlayerData data)
@@ -101,6 +121,9 @@ namespace HashiraChronicles
         /// <summary>Repairs saves from older versions or with removed content.</summary>
         static void Validate(PlayerData data)
         {
+            // Teams hold three slayers.
+            if (data.team.Count > 3) data.team.RemoveRange(3, data.team.Count - 3);
+            if (data.copies == null) data.copies = new System.Collections.Generic.List<CopyStack>();
             GameDatabase.EnsureBuilt();
             data.characters.RemoveAll(c => GameDatabase.GetCharacter(c.id) == null);
             data.equipment.RemoveAll(e => GameDatabase.GetEquipment(e.defId) == null);

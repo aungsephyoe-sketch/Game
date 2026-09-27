@@ -9,13 +9,15 @@ namespace HashiraChronicles
             return item;
         }
 
-        /// <summary>Adds a character, or converts a duplicate into ascension ore + crystals.</summary>
+        /// <summary>Adds a character, or keeps a duplicate as a copy (feed for XP or sell for gold).</summary>
         public static bool AddCharacter(PlayerData data, string id)
         {
             if (data.GetCharacter(id) != null)
             {
-                data.ascensionOre += 3;
-                data.crystals += 20;
+                if (data.copies == null) data.copies = new System.Collections.Generic.List<CopyStack>();
+                var stack = data.copies.Find(x => x.id == id);
+                if (stack == null) data.copies.Add(new CopyStack { id = id, count = 1 });
+                else stack.count++;
                 return false;
             }
             var def = GameDatabase.GetCharacter(id);
@@ -28,9 +30,8 @@ namespace HashiraChronicles
         {
             data.coins += r.coins;
             data.crystals += r.crystals;
-            data.expScrolls += r.expScrolls;
-            data.skillScrolls += r.skillScrolls;
-            data.ascensionOre += r.ascensionOre;
+            // Scrolls and ore from older reward tables all arrive as XP now.
+            data.xp += r.expScrolls * ExperienceSystem.ExpPerScroll + r.skillScrolls * 500 + r.ascensionOre * 800;
         }
     }
 

@@ -153,7 +153,7 @@ namespace HashiraChronicles
         public bool LineupActive { get { return lineupRoot != null; } }
 
         /// <summary>Where slot i stands (feet), for the UI to place names and stats under each slayer.</summary>
-        public Vector3 LineupSlot(int i) { return new Vector3(-2.35f + i * 1.75f, PodiumHeight, 0.4f); }
+        public Vector3 LineupSlot(int i) { return new Vector3(-1.85f + i * 2.15f, PodiumHeight, 0.4f); }
 
         const float PodiumHeight = 0.28f;
 
@@ -168,7 +168,7 @@ namespace HashiraChronicles
             lineupRoot = new GameObject("Lineup");
             lineupRoot.transform.SetParent(transform, false);
             if (heroHolder != null) heroHolder.gameObject.SetActive(false);
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 3; i++)
             {
                 var slot = new GameObject("Slot" + i).transform;
                 slot.SetParent(lineupRoot.transform, false);
@@ -204,6 +204,23 @@ namespace HashiraChronicles
                         v = CharacterVisual.BuildHero(def, slot);
                         v.HoldSignaturePose();
                         VFX.Breath(slot.position, ElementChart.ColorOf(def.element), 12);
+                        // Aura: a soft glowing column in the element colour, red and brighter at max level.
+                        var owned = GameManager.Instance != null ? GameManager.Instance.Data.GetCharacter(def.id) : null;
+                        bool maxed = owned != null && ExperienceSystem.IsMaxed(owned);
+                        Color ac = maxed ? new Color(1f, 0.12f, 0.08f) : ElementChart.ColorOf(def.element);
+                        float aa = maxed ? 0.16f : 0.08f;
+                        for (int layer = 0; layer < 2; layer++)
+                        {
+                            float rad = 1.1f + layer * 0.35f;
+                            var col = MeshFactory.MeshObject(MeshFactory.FacetCylinder(16), lineupRoot.transform, Vector3.zero, new Vector3(rad, 2.1f - layer * 0.4f, rad), MaterialFactory.Additive(new Color(ac.r, ac.g, ac.b, aa - layer * 0.03f)), false);
+                            col.transform.position = slot.position;
+                            var pu = col.AddComponent<Pulse>();
+                            pu.Speed = (maxed ? 4f : 2f) + layer;
+                            pu.Amount = 0.06f;
+                        }
+                        var aring = MeshFactory.MeshObject(MeshFactory.Ring(0.9f), lineupRoot.transform, Vector3.zero, new Vector3(0.75f, 1f, 0.75f), MaterialFactory.Additive(new Color(ac.r, ac.g, ac.b, maxed ? 0.9f : 0.5f)), false);
+                        aring.transform.position = slot.position + Vector3.up * 0.03f;
+                        aring.AddComponent<Pulse>().Speed = maxed ? 6f : 3f;
                     }
                 }
                 lineupVisuals.Add(v);

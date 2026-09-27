@@ -37,17 +37,17 @@ namespace HashiraChronicles
                 d.summonPity++;
                 d.totalSummons++;
                 int rarity = RollRarity();
-                if (count >= 10 && i == count - 1 && !gotEpic) rarity = Mathf.Max(rarity, 5);
+                if (count >= 10 && i == count - 1 && !gotEpic) rarity = Mathf.Max(rarity, 4);
                 CharacterDefinition def;
-                if (d.summonPity >= PityLimit || rarity == 7)
+                if (d.summonPity >= PityLimit || rarity == 6)
                 {
                     def = GameDatabase.GetCharacter(FeaturedId);
                     rarity = def.rarity;
                 }
                 else def = Pick(rarity);
-                if (def == null) { def = Pick(4); rarity = def.rarity; }
+                if (def == null) { def = Pick(3); rarity = def.rarity; }
                 if (def.id == FeaturedId) d.summonPity = 0;
-                if (rarity >= 5) gotEpic = true;
+                if (rarity >= 4) gotEpic = true;
                 bool isNew = InventorySystem.AddCharacter(d, def.id);
                 results.Add(new Result { def = def, rarity = rarity, isNew = isNew });
             }
@@ -61,9 +61,9 @@ namespace HashiraChronicles
             for (int i = 0; i < Rates.Length; i++)
             {
                 acc += Rates[i];
-                if (r <= acc) return 3 + i;
+                if (r <= acc) return 2 + i;
             }
-            return 3;
+            return 2;
         }
 
         static CharacterDefinition Pick(int rarity)

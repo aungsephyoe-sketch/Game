@@ -125,12 +125,14 @@ namespace HashiraChronicles
                 SetLeader(d, teamSlot);
         }
 
+        /// <summary>Rarity stars: 2★ Common up to 6★ Mythic, coloured by rarity.</summary>
         void StarStrip(Vector2 at, int stars, float size)
         {
-            for (int i = 0; i < 5; i++)
+            Color col = RarityInfo.Color(stars);
+            for (int i = 0; i < CharacterSystem.MaxStars; i++)
             {
-                bool on = i < Mathf.Min(stars, 5);
-                UIStyles.Outlined(new Rect(at.x + i * size, at.y, size + 4f, size + 4f), "★", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(size)), on ? new Color(1f, 0.8f, 0.2f) : new Color(0.4f, 0.4f, 0.45f), 1.5f);
+                bool on = i < stars;
+                UIStyles.Outlined(new Rect(at.x + i * size, at.y, size + 4f, size + 4f), "★", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(size)), on ? Color.Lerp(col, new Color(1f, 0.85f, 0.3f), 0.5f) : new Color(0.35f, 0.35f, 0.4f), 1.5f);
             }
         }
 
@@ -207,34 +209,47 @@ namespace HashiraChronicles
             return c;
         }
 
-        /// <summary>Roster card: the slayer's upper body on an element-tinted card, level, stars, element badge.</summary>
+        /// <summary>A soft pulsing glow behind a portrait: the element's colour, or red once the slayer is maxed.</summary>
+        void Aura(Vector2 c, float radius, Color col, bool maxed)
+        {
+            float p = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * (maxed ? 5f : 2.5f) + c.x * 0.01f);
+            if (maxed) col = new Color(1f, 0.15f, 0.12f);
+            for (int i = 4; i >= 1; i--)
+                UIStyles.CircleTex(c, radius * (0.55f + i * 0.14f + p * 0.05f), new Color(col.r, col.g, col.b, (maxed ? 0.1f : 0.07f) + 0.02f * p));
+        }
+
+        /// <summary>Roster card: the slayer's face over an aura, level (red and MAX at the cap), rarity stars, element badge.</summary>
         void SlayerCard(Rect r, CharacterDefinition def, OwnedCharacter c, bool selected, int teamIndex)
         {
             Color ec = ElementChart.ColorOf(def.element);
             Color rc = RarityInfo.Color(c.stars);
+            bool maxed = ExperienceSystem.IsMaxed(c);
             Round(Offset(r, 0f, 4f), new Color(0f, 0f, 0f, 0.4f), 12f);
-            Round(r, Color.Lerp(new Color(0.1f, 0.1f, 0.16f), ec, 0.35f), 12f);
-            Round(new Rect(r.x, r.y, r.width, r.height * 0.55f), new Color(1f, 1f, 1f, 0.07f), 12f);
-            var tex = ArtLibrary.CharacterFull(def);
-            if (tex != null)
-            {
-                // Upper body only, like the reference cards.
-                GUI.BeginGroup(new Rect(r.x + 4f, r.y + 4f, r.width - 8f, r.height - 66f));
-                float w = r.width * 1.2f, h = w * 1.5f;
-                GUI.DrawTexture(new Rect((r.width - 8f - w) * 0.5f, -h * 0.02f, w, h), tex, ScaleMode.ScaleToFit, true);
-                GUI.EndGroup();
-            }
+            Round(r, Color.Lerp(new Color(0.08f, 0.08f, 0.13f), rc, 0.22f), 12f);
+            Round(new Rect(r.x, r.y, r.width, r.height * 0.55f), new Color(1f, 1f, 1f, 0.06f), 12f);
+            // Face with aura.
+            var face = new Rect(r.x + 8f, r.y + 8f, r.width - 16f, r.width - 16f);
+            Aura(face.center, face.width * 0.5f, ec, maxed);
+            var tex = ArtLibrary.Character(def);
+            if (tex != null) GUI.DrawTexture(face, tex, ScaleMode.ScaleAndCrop, true);
             Round(new Rect(r.x + 2f, r.yMax - 64f, r.width - 4f, 62f), new Color(0f, 0f, 0f, 0.55f), 10f);
             UIStyles.CircleTex(new Vector2(r.x + 22f, r.yMax - 82f), 17f, Color.Lerp(ec, Color.black, 0.2f));
             GUI.DrawTexture(new Rect(r.x + 10f, r.yMax - 94f, 24f, 24f), IconFactory.Get(IconFactory.ForElement(def.element)), ScaleMode.ScaleToFit, true);
-            GUI.Label(new Rect(r.x + 12f, r.yMax - 64f, r.width - 20f, 32f), "Lv. " + c.level, UIStyles.Sized(UIStyles.Body, 22));
-            StarStrip(new Vector2(r.x + 10f, r.yMax - 32f), c.stars, 20f);
-            RoundFrame(r, selected ? new Color(0.45f, 0.85f, 1f) : Color.Lerp(rc, Color.black, 0.2f), selected ? 4f : 2f, 12f);
+            if (maxed)
+            {
+                float p = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 5f);
+                UIStyles.Outlined(new Rect(r.x + 12f, r.yMax - 64f, r.width - 20f, 32f), "Lv. " + c.level + "  <size=16>MAX</size>", UIStyles.Sized(UIStyles.Body, 22), new Color(1f, 0.25f + 0.15f * p, 0.2f), 2f);
+            }
+            else GUI.Label(new Rect(r.x + 12f, r.yMax - 64f, r.width - 20f, 32f), "Lv. " + c.level, UIStyles.Sized(UIStyles.Body, 22));
+            StarStrip(new Vector2(r.x + 8f, r.yMax - 32f), c.stars, Mathf.Min(20f, (r.width - 16f) / 6.2f));
+            RoundFrame(r, maxed ? new Color(1f, 0.2f, 0.15f) : selected ? new Color(0.45f, 0.85f, 1f) : Color.Lerp(rc, Color.black, 0.2f), selected || maxed ? 4f : 2f, 12f);
             if (teamIndex >= 0)
             {
                 UIStyles.CircleTex(new Vector2(r.xMax - 20f, r.y + 20f), 16f, TileGreen);
                 GUI.Label(new Rect(r.xMax - 36f, r.y + 4f, 32f, 32f), (teamIndex + 1).ToString(), UIStyles.Sized(UIStyles.Center, 20));
             }
+            // Rarity name.
+            UIStyles.Outlined(new Rect(r.x + 36f, r.yMax - 98f, r.width - 44f, 26f), RarityInfo.Name(c.stars), UIStyles.Sized(UIStyles.Right, 14), rc, 1.5f);
         }
 
         void DrawRosterDetail(Rect card, PlayerData d, bool manage = false)
@@ -266,6 +281,17 @@ namespace HashiraChronicles
             string[] names = { "HP", "ATK", "DEF" };
             string[] icons = { "heart", "swords", "shield" };
             float[] vals = { st.hp, st.atk, st.def };
+            // Upgrade page: preview what the next level adds, so every upgrade visibly makes the slayer stronger.
+            bool hasNext = false;
+            float[] nvals = null;
+            if (manage && upgradeMode && !ExperienceSystem.IsMaxed(c))
+            {
+                c.level++;
+                var next = CharacterSystem.ComputeStats(d, c);
+                c.level--;
+                hasNext = true;
+                nvals = new float[] { next.hp, next.atk, next.def };
+            }
             for (int i = 0; i < 3; i++)
             {
                 float ry = y + 240f + i * 58f;
@@ -274,7 +300,9 @@ namespace HashiraChronicles
                 GUI.DrawTexture(new Rect(x + 4f, ry + 10f, 32f, 32f), IconFactory.Get(icons[i]), ScaleMode.ScaleToFit, true);
                 GUI.color = o;
                 GUI.Label(new Rect(x + 50f, ry, 150f, 52f), names[i], UIStyles.Sized(UIStyles.Body, 24));
-                GUI.Label(new Rect(x + 150f, ry, card.width - 198f, 52f), Mathf.RoundToInt(vals[i]).ToString("N0"), UIStyles.Sized(UIStyles.Right, 26));
+                string val = Mathf.RoundToInt(vals[i]).ToString("N0");
+                if (hasNext) val += "  <color=#6BFF8A>+" + Mathf.Max(0, Mathf.RoundToInt(nvals[i] - vals[i])).ToString("N0") + "</color>";
+                GUI.Label(new Rect(x + 150f, ry, card.width - 198f, 52f), val, UIStyles.Sized(UIStyles.Right, 26));
             }
 
             int inTeam = d.team.IndexOf(c.id);
@@ -346,40 +374,95 @@ namespace HashiraChronicles
             upgradeMode = false;
         }
 
-        /// <summary>Level up with coins (1 or 10 levels), feed an EXP scroll, or ascend for the next star.</summary>
+        int dupIndex;
+
+        /// <summary>
+        /// Level up with gold + XP (1 or 10 levels), feed XP from the pool, feed or sell duplicate slayers, and
+        /// ascend at the rarity cap. The stat rows above show the next level's gains in green.
+        /// </summary>
         void DrawUpgradeButtons(Rect card, float x, PlayerData d, OwnedCharacter c, CharacterDefinition def)
         {
             float w = card.width - 48f;
-            float y = card.yMax - 330f;
-            bool maxed = c.level >= ExperienceSystem.MaxLevel;
-            // Progress to 100.
-            GUI.Label(new Rect(x, y, w, 30f), "<color=#AAAAAA>Level</color>  <b>" + c.level + "</b> / " + ExperienceSystem.MaxLevel, UIStyles.Sized(UIStyles.Body, 22));
-            UIStyles.Bar(new Rect(x, y + 34f, w, 16f), c.level / (float)ExperienceSystem.MaxLevel, new Color(0.35f, 0.85f, 0.45f));
-            y += 62f;
-            int cost1 = ExperienceSystem.LevelUpCost(c.level);
-            int cost10 = 0;
-            for (int i = 0; i < 10 && c.level + i < ExperienceSystem.MaxLevel; i++) cost10 += ExperienceSystem.LevelUpCost(c.level + i);
+            float y = card.yMax - 340f;
+            int cap = ExperienceSystem.LevelCap(c.stars);
+            bool maxed = c.level >= cap;
             float hw = (w - 10f) / 2f;
-            if (FlatBtn(new Rect(x, y, hw, 70f), maxed ? "MAX LEVEL" : "LEVEL UP\n<size=16>" + cost1.ToString("N0") + " coins</size>", TileGreen, !maxed && d.coins >= cost1, 22))
+
+            // Level bar to this rarity's cap, with the EXP fill toward the next level.
+            GUI.Label(new Rect(x, y, hw, 30f), "<color=#AAAAAA>Level</color>  <b>" + (maxed ? "<color=#FF5A4A>" + c.level + " MAX</color>" : c.level.ToString()) + "</b> / " + cap, UIStyles.Sized(UIStyles.Body, 22));
+            GUI.Label(new Rect(x + hw, y, hw + 10f, 30f), "<color=#C9A6FF>" + d.xp.ToString("N0") + " XP</color>   <color=#FFD36B>" + d.coins.ToString("N0") + "</color>", UIStyles.Sized(UIStyles.Right, 18));
+            float fill = maxed ? 1f : (c.level - 1 + c.exp / (float)Mathf.Max(1, ExperienceSystem.ExpToNext(c.level))) / Mathf.Max(1f, cap - 1f);
+            UIStyles.Bar(new Rect(x, y + 32f, w, 14f), fill, maxed ? new Color(0.95f, 0.25f, 0.2f) : new Color(0.35f, 0.85f, 0.45f));
+            y += 56f;
+
+            int gold1 = ExperienceSystem.LevelUpCost(c.level), xp1 = ExperienceSystem.LevelUpXp(c.level);
+            int gold10 = 0, xp10 = 0;
+            for (int i = 0; i < 10 && c.level + i < cap; i++) { gold10 += ExperienceSystem.LevelUpCost(c.level + i); xp10 += ExperienceSystem.LevelUpXp(c.level + i); }
+            bool can1 = !maxed && d.coins >= gold1 && d.xp >= xp1;
+            if (FlatBtn(new Rect(x, y, hw, 66f), maxed ? "MAX LEVEL" : "LEVEL UP\n<size=15>" + gold1.ToString("N0") + " gold · " + xp1.ToString("N0") + " XP</size>", TileGreen, can1, 21))
                 AfterLevel(c, ExperienceSystem.BuyLevels(d, c, 1));
-            if (FlatBtn(new Rect(x + hw + 10f, y, hw, 70f), maxed ? "MAX LEVEL" : "LEVEL UP ×10\n<size=16>" + cost10.ToString("N0") + " coins</size>", new Color(0.16f, 0.52f, 0.3f), !maxed && d.coins >= cost1, 22))
+            if (FlatBtn(new Rect(x + hw + 10f, y, hw, 66f), maxed ? "MAX LEVEL" : "LEVEL UP ×10\n<size=15>" + gold10.ToString("N0") + " · " + xp10.ToString("N0") + " XP</size>", new Color(0.16f, 0.52f, 0.3f), can1, 21))
                 AfterLevel(c, ExperienceSystem.BuyLevels(d, c, 10));
-            y += 80f;
-            if (FlatBtn(new Rect(x, y, hw, 64f), "EXP SCROLL ×1\n<size=16>have " + d.expScrolls + "</size>", new Color(0.45f, 0.3f, 0.75f), !maxed && d.expScrolls > 0, 20))
-                AfterLevel(c, CharacterSystem.UseExpScrolls(d, c, 1));
+            y += 74f;
+
+            int feed = Mathf.Min(d.xp, 5000);
+            if (FlatBtn(new Rect(x, y, hw, 60f), maxed ? "FEED XP" : "FEED XP\n<size=15>+" + feed.ToString("N0") + " EXP</size>", new Color(0.45f, 0.3f, 0.75f), !maxed && feed > 0, 20))
+                AfterLevel(c, CharacterSystem.UseXp(d, c, feed));
             string reason;
             bool canAscend = CharacterSystem.CanAscend(d, c, out reason);
-            if (FlatBtn(new Rect(x + hw + 10f, y, hw, 64f), canAscend ? "ASCEND ★\n<size=16>" + CharacterSystem.AscendOreCost(c.stars) + " ore</size>" : "ASCEND\n<size=16>" + reason + "</size>", new Color(0.8f, 0.55f, 0.15f), canAscend, 20))
+            string ascText = canAscend
+                ? "ASCEND ★\n<size=15>" + CharacterSystem.AscendXpCost(c.stars).ToString("N0") + " XP · " + CharacterSystem.AscendCoinCost(c.stars).ToString("N0") + " gold</size>"
+                : "ASCEND\n<size=15>" + reason + "</size>";
+            if (FlatBtn(new Rect(x + hw + 10f, y, hw, 60f), ascText, new Color(0.8f, 0.55f, 0.15f), canAscend, 20))
             {
                 if (CharacterSystem.TryAscend(d, c))
                 {
                     gm.Save();
                     gm.Audio.Play("perfect", 0.8f);
-                    Toast(def.displayName + " ascended to " + c.stars + "★");
+                    Toast(def.displayName + " is now " + RarityInfo.Name(c.stars) + " · max Lv." + ExperienceSystem.LevelCap(c.stars));
+                    if (gm.Home != null) gm.Home.Celebrate(RarityInfo.Color(c.stars));
                 }
             }
-            y += 74f;
-            GUI.Label(new Rect(x, y, w, 30f), "<color=#AAAAAA><size=18>Coins: " + d.coins.ToString("N0") + "   Ore: " + d.ascensionOre + "</size></color>", UIStyles.Small);
+            y += 70f;
+
+            // Duplicates: feed one to this slayer as EXP, or sell it for gold.
+            var r = new Rect(x, y, w, 118f);
+            Round(r, new Color(1f, 1f, 1f, 0.05f), 12f);
+            int dupCount = d.copies != null ? d.copies.Count : 0;
+            if (dupCount == 0)
+            {
+                GUI.Label(r, "<color=#888888><size=18>No duplicates yet.\nExtra summons of a slayer you own land here.</size></color>", UIStyles.CenterSmall);
+                return;
+            }
+            dupIndex = ((dupIndex % dupCount) + dupCount) % dupCount;
+            var stack = d.copies[dupIndex];
+            var ddef = GameDatabase.GetCharacter(stack.id);
+            if (ddef == null) { d.copies.RemoveAt(dupIndex); return; }
+            var face = new Rect(r.x + 44f, r.y + 10f, 60f, 60f);
+            Round(face, Color.Lerp(new Color(0.1f, 0.1f, 0.16f), RarityInfo.Color(ddef.rarity), 0.45f), 10f);
+            var tex = ArtLibrary.Character(ddef);
+            if (tex != null) GUI.DrawTexture(face, tex, ScaleMode.ScaleAndCrop, true);
+            if (dupCount > 1)
+            {
+                if (FlatBtn(new Rect(r.x + 6f, r.y + 22f, 32f, 36f), "<", new Color(0.2f, 0.22f, 0.3f), true, 20)) dupIndex--;
+                if (FlatBtn(new Rect(r.x + 110f, r.y + 22f, 32f, 36f), ">", new Color(0.2f, 0.22f, 0.3f), true, 20)) dupIndex++;
+            }
+            GUI.Label(new Rect(r.x + 150f, r.y + 8f, w - 160f, 30f), "DUPLICATE  " + (dupIndex + 1) + "/" + dupCount, UIStyles.Sized(UIStyles.Small, 15));
+            GUI.Label(new Rect(r.x + 150f, r.y + 32f, w - 160f, 36f), ddef.displayName + "  <color=#FFD36B>×" + stack.count + "</color>", UIStyles.Sized(UIStyles.Body, 20));
+            UIStyles.Outlined(new Rect(r.x + 8f, r.y + 72f, 136f, 20f), RarityInfo.Name(ddef.rarity), UIStyles.Sized(UIStyles.CenterSmall, 13), RarityInfo.Color(ddef.rarity), 1.2f);
+            float bw = (w - 160f - 10f) / 2f;
+            int fx = ExperienceSystem.CopyXp(ddef.rarity), fg = ExperienceSystem.CopyGold(ddef.rarity);
+            if (FlatBtn(new Rect(r.x + 150f, r.y + 68f, bw, 42f), "FEED <size=14>+" + fx.ToString("N0") + " EXP</size>", new Color(0.45f, 0.3f, 0.75f), !maxed, 17))
+            {
+                int gained = CharacterSystem.FeedCopy(d, c, stack.id);
+                if (gained > 0) AfterLevel(c, gained);
+                else if (gained == 0) { gm.Save(); gm.Audio.Play("perfect", 0.4f); Toast(def.displayName + " absorbed " + ddef.displayName); }
+            }
+            if (FlatBtn(new Rect(r.x + 160f + bw, r.y + 68f, bw, 42f), "SELL <size=14>+" + fg.ToString("N0") + " gold</size>", new Color(0.75f, 0.55f, 0.12f), true, 17))
+            {
+                int gold = CharacterSystem.SellCopy(d, stack.id);
+                if (gold > 0) { gm.Save(); gm.Audio.Play("coin", 0.8f); Toast("Sold " + ddef.displayName + " for " + gold.ToString("N0") + " gold"); }
+            }
         }
 
         void AfterLevel(OwnedCharacter c, int gained)

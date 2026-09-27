@@ -58,6 +58,13 @@ namespace HashiraChronicles
     }
 
     [System.Serializable]
+    public class CopyStack
+    {
+        public string id;
+        public int count;
+    }
+
+    [System.Serializable]
     public class TeamPreset
     {
         public List<string> ids = new List<string>();
@@ -75,12 +82,16 @@ namespace HashiraChronicles
     [System.Serializable]
     public class PlayerData
     {
-        public const int CurrentVersion = 2;
+        public const int CurrentVersion = 3;
         public int saveVersion = CurrentVersion;
         public int coins = 5000;
         public int crystals = 100;
-        public int expScrolls = 5;
-        public int skillScrolls = 3;
+        /// <summary>XP, the third currency (with gold and diamonds): trains slayers' levels, skills and stars.</summary>
+        public int xp = 5000;
+        /// <summary>Duplicate slayers from summons: feed them to others for XP or sell them for gold.</summary>
+        public List<CopyStack> copies = new List<CopyStack>();
+        public int expScrolls = 0;
+        public int skillScrolls = 0;
         public int ascensionOre = 0;
         public int nextEquipmentUid = 1;
         public int totalKills;

@@ -120,7 +120,8 @@ namespace HashiraChronicles
         {
             return new CharacterDefinition
             {
-                id = id, baseId = baseId, displayName = name, versionTitle = title, breathingStyle = style, rarity = rarity,
+                // Rarity tiers are 2★ Common .. 6★ Mythic (the data table lists them one step higher).
+                id = id, baseId = baseId, displayName = name, versionTitle = title, breathingStyle = style, rarity = rarity - 1,
                 element = el, role = role, description = desc, story = story, baseStats = BaseStats(rarity, role),
                 bodyColor = body, haoriColor = haori, hairColor = hair, bladeColor = blade
             };
@@ -582,7 +583,7 @@ namespace HashiraChronicles
 
         static void Eq(string id, string name, EquipSlot slot, int rarity, StatBlock b, StatBlock per, string desc)
         {
-            Equipment.Add(new EquipmentDefinition { id = id, displayName = name, slot = slot, rarity = rarity, baseBonus = b, perLevel = per, description = desc });
+            Equipment.Add(new EquipmentDefinition { id = id, displayName = name, slot = slot, rarity = rarity - 1, baseBonus = b, perLevel = per, description = desc });
         }
 
         static void BuildEquipment()
@@ -598,6 +599,11 @@ namespace HashiraChronicles
             Eq("acc_charm", "Protective Charm", EquipSlot.Accessory, 3, new StatBlock(200, 40, 40), new StatBlock(25, 5, 5), "A charm from home.");
             Eq("acc_mask", "Fox Mask", EquipSlot.Accessory, 4, new StatBlock(0, 80, 0, 0.05f, 0.15f, 0.3f), new StatBlock(0, 10, 0, 0.002f, 0.01f), "CRIT +5%, CRIT DMG +15%, SPD +0.3.");
             Eq("acc_earrings", "Hanafuda Earrings", EquipSlot.Accessory, 5, new StatBlock(300, 120, 60, 0.03f, 0f, 0f, 0.15f), new StatBlock(30, 12, 6, 0f, 0f, 0f, 0.01f), "Special damage +15%.");
+            Eq("acc_bell", "Spirit Bell", EquipSlot.Accessory, 3, new StatBlock(350, 20, 30), new StatBlock(30, 3, 4), "HP +350. Rings softly near danger.");
+            Eq("acc_beads", "Jade Bead Bracelet", EquipSlot.Accessory, 4, new StatBlock(500, 60, 120), new StatBlock(50, 6, 12), "A sturdy guard charm.");
+            Eq("acc_ribbon", "Swift Ribbon", EquipSlot.Accessory, 4, new StatBlock(0, 110, 0, 0.03f, 0f, 0.5f), new StatBlock(0, 12, 0, 0.001f, 0f, 0.02f), "SPD +0.5, CRIT +3%.");
+            Eq("acc_suncrest", "Sun Crest Pin", EquipSlot.Accessory, 6, new StatBlock(600, 260, 120, 0.06f, 0.25f, 0f, 0.2f), new StatBlock(55, 22, 10, 0.002f, 0.01f, 0f, 0.01f), "Special damage +20%, CRIT DMG +25%.");
+            Eq("acc_dragonscale", "Dragon Scale Amulet", EquipSlot.Accessory, 7, new StatBlock(1200, 420, 240, 0.08f, 0.35f, 0.3f, 0.25f), new StatBlock(90, 34, 18, 0.003f, 0.015f, 0.01f, 0.012f), "Mythic. Every stat, all at once.");
         }
 
         // ------------------------------------------------------------------ World regions

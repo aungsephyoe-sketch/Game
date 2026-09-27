@@ -74,26 +74,27 @@ namespace HashiraChronicles
 
     public static class RarityInfo
     {
+        /// <summary>2★ Common, 3★ Rare, 4★ Epic, 5★ Legendary, 6★ Mythic.</summary>
         public static string Name(int rarity)
         {
-            switch (Mathf.Clamp(rarity, 3, 7))
+            switch (Mathf.Clamp(rarity, 2, 6))
             {
-                case 3: return "COMMON";
-                case 4: return "RARE";
-                case 5: return "EPIC";
-                case 6: return "LEGENDARY";
+                case 2: return "COMMON";
+                case 3: return "RARE";
+                case 4: return "EPIC";
+                case 5: return "LEGENDARY";
                 default: return "MYTHIC";
             }
         }
 
         public static Color Color(int rarity)
         {
-            switch (Mathf.Clamp(rarity, 3, 7))
+            switch (Mathf.Clamp(rarity, 2, 6))
             {
-                case 3: return new Color(0.75f, 0.78f, 0.8f);
-                case 4: return new Color(0.35f, 0.65f, 1f);
-                case 5: return new Color(0.75f, 0.4f, 1f);
-                case 6: return new Color(1f, 0.78f, 0.25f);
+                case 2: return new Color(0.75f, 0.78f, 0.8f);
+                case 3: return new Color(0.35f, 0.65f, 1f);
+                case 4: return new Color(0.75f, 0.4f, 1f);
+                case 5: return new Color(1f, 0.78f, 0.25f);
                 default: return new Color(1f, 0.3f, 0.45f);
             }
         }
@@ -178,6 +179,9 @@ namespace HashiraChronicles
         public int ascensionOre;
         public List<string> equipmentIds = new List<string>();
         public string characterId;
+
+        /// <summary>Scrolls and ore from older reward tables, counted as XP.</summary>
+        public int XpValue { get { return expScrolls * 1000 + skillScrolls * 500 + ascensionOre * 800; } }
 
         public bool IsEmpty
         {

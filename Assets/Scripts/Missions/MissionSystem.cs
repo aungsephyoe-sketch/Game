@@ -652,6 +652,11 @@ namespace HashiraChronicles
             return e;
         }
 
+        /// <summary>Gold picked up from defeated demons this mission.</summary>
+        public int GoldCollected { get; private set; }
+
+        public void CollectGold(int amount) { GoldCollected += amount; }
+
         void OnEnemyKilled(EnemyController e)
         {
             if (!alive.Remove(e)) return;
@@ -717,7 +722,8 @@ namespace HashiraChronicles
                 time = Elapsed,
                 kills = Kills,
                 maxCombo = battle.MaxCombo,
-                totalDamage = battle.TotalDamage
+                totalDamage = battle.TotalDamage,
+                goldCollected = GoldCollected
             };
             for (int i = 0; i < 3; i++)
             {

@@ -88,6 +88,14 @@ namespace HashiraChronicles
             UIStyles.Colored(new Rect(c.x - size * 0.5f, c.y - size * 0.5f, size, size), "$", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(size * 0.55f)), new Color(0.7f, 0.42f, 0.05f));
         }
 
+        /// <summary>XP: a purple orb with "XP" on it.</summary>
+        public static void XpIcon(Vector2 c, float size)
+        {
+            UIStyles.CircleTex(c, size * 0.5f, new Color(0.42f, 0.22f, 0.7f));
+            UIStyles.CircleTex(c, size * 0.42f, new Color(0.66f, 0.45f, 1f));
+            UIStyles.Colored(new Rect(c.x - size * 0.5f, c.y - size * 0.5f, size, size), "<b>XP</b>", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(size * 0.36f)), Color.white);
+        }
+
         /// <summary>Blue faceted crystal.</summary>
         public static void DiamondIcon(Vector2 c, float size)
         {
@@ -184,12 +192,15 @@ namespace HashiraChronicles
         }
 
         /// <summary>Reference-style resource pill: icon, amount, and a + button.</summary>
-        void PlusPill(Rect r, bool coins, string value, System.Action onPlus)
+        void PlusPill(Rect r, bool coins, string value, System.Action onPlus) { PlusPill(r, coins ? 0 : 1, value, onPlus); }
+
+        /// <summary>kind: 0 gold, 1 diamonds, 2 XP.</summary>
+        void PlusPill(Rect r, int kind, string value, System.Action onPlus)
         {
             Round(r, new Color(0.05f, 0.06f, 0.1f, 0.75f), 12f);
             RoundFrame(r, new Color(1f, 1f, 1f, 0.1f), 2f, 12f);
             Vector2 ic = new Vector2(r.x + r.height * 0.55f, r.center.y);
-            if (coins) CoinIcon(ic, r.height * 0.62f); else DiamondIcon(ic, r.height * 0.7f);
+            if (kind == 0) CoinIcon(ic, r.height * 0.62f); else if (kind == 1) DiamondIcon(ic, r.height * 0.7f); else XpIcon(ic, r.height * 0.66f);
             GUI.Label(new Rect(r.x + r.height, r.y, r.width - r.height * 2f, r.height), value, UIStyles.Sized(UIStyles.Body, 30));
             var pr = new Rect(r.xMax - r.height, r.y, r.height, r.height);
             GUI.Label(pr, "+", UIStyles.Sized(UIStyles.Center, 34));

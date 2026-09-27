@@ -130,7 +130,7 @@ namespace HashiraChronicles
             {
                 case "merchant":
                     if (d.coins < 1500) return "\"Come back with more coin, friend.\"";
-                    d.coins -= 1500; d.expScrolls += 3;
+                    d.coins -= 1500; d.xp += 3000;
                     return "Bought 3 EXP Scrolls.";
                 case "traveler":
                     d.crystals += 20;
@@ -150,10 +150,10 @@ namespace HashiraChronicles
                     return "Found " + coins.ToString("N0") + " coins" + eq + "!";
                 }
                 case "cave":
-                    d.ascensionOre += 1; d.skillScrolls += 1;
+                    d.xp += 1300;
                     return "Mined Ascension Ore ×1 and found a Skill Scroll.";
                 case "cart":
-                    d.coins += 1500; d.expScrolls += 1;
+                    d.coins += 1500; d.xp += 1000;
                     return "The farmer insists you take something. +1,500 coins, +1 EXP Scroll";
                 default:
                     d.crystals += 10;

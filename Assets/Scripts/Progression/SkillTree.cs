@@ -52,8 +52,8 @@ namespace HashiraChronicles
         {
             if (!CanUnlock(c, node)) return false;
             var n = Nodes[node];
-            if (data.skillScrolls < n.scrollCost || data.coins < n.coinCost) return false;
-            data.skillScrolls -= n.scrollCost;
+            if (data.xp < n.scrollCost * 500 || data.coins < n.coinCost) return false;
+            data.xp -= n.scrollCost * 500;
             data.coins -= n.coinCost;
             c.treeNodes |= 1 << node;
             return true;

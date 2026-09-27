@@ -99,7 +99,7 @@ namespace HashiraChronicles
             bool full = parts.Length > 2 && parts[2] == "f";
             var holder = new GameObject("Subject").transform;
             holder.SetParent(stage, false);
-            holder.localRotation = Quaternion.Euler(0f, 160f, 0f);
+            holder.localRotation = Quaternion.Euler(0f, 18f, 0f); // face the camera (which looks back along -Z), turned a little
             CharacterVisual v = null;
             float height = 2f;
             float headY = 1.6f;

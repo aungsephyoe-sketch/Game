@@ -73,6 +73,7 @@ namespace HashiraChronicles
                         VFX.Flash(MeshFactory.Ring(0.7f), fist, Quaternion.LookRotation(Vector3.up, transform.forward), new Vector3(0.2f, 1f, 0.2f), new Vector3(0.7f, 1f, 0.7f), ElementColor, 0.12f);
                         ElementFx.Impact(fist, Def.element, false);
                         if (Audio != null) Audio.PlayPitched("hit", 0.45f, Random.Range(1.3f, 1.5f));
+                        if (k == 1) PlayElementSound(0.3f);
                         Visual.Swing(k == 0 ? -30f : 30f, 0f, 0.05f, 10f);
                         if (k == 0) yield return new WaitForSeconds(0.06f / spd);
                     }
@@ -121,7 +122,9 @@ namespace HashiraChronicles
             ElementFx.Finisher(Position, transform.forward, Def.element, 4f);
             VFX.Dust(Position, 20);
             GameEvents.RaiseImpact(0.6f);
-            if (Audio != null) Audio.PlayPitched("bossSlam", 0.9f, 1.2f);
+            if (Audio != null) { Audio.PlayPitched("bossSlam", 0.9f, 1.2f); Audio.Play("smash", 0.8f); }
+            PlayElementSound(0.9f);
+            DamageNumbers.SpawnText(Position + Vector3.up * 2.6f, "SMASH!", Color.Lerp(ElementColor, Color.white, 0.4f), 60f);
             UltGauge = Mathf.Min(UltMax, UltGauge + 3f);
             yield return new WaitForSeconds(0.3f);
             comboIndex = 0;

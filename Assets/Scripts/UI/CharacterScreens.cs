@@ -131,11 +131,11 @@ namespace HashiraChronicles
             float rx = body.x + body.width * 0.5f, ry = body.y + 30f, rw = body.width * 0.47f;
             GUI.Label(new Rect(rx, ry, rw, 50f), "LEVEL UP", UIStyles.H2);
             ry += 56f;
-            GUI.Label(new Rect(rx, ry, rw, 80f), "EXP Scroll = " + ExperienceSystem.ExpPerScroll + " EXP (200 coins each).  You have ×" + d.expScrolls, UIStyles.Small);
+            GUI.Label(new Rect(rx, ry, rw, 80f), "Feed XP from your pool.  You have " + d.xp.ToString("N0") + " XP", UIStyles.Small);
             ry += 60f;
-            bool canLevel = c.level < cap && d.expScrolls > 0;
-            if (Btn(new Rect(rx, ry, rw * 0.48f, 90f), "Use ×1", UIStyles.Button, canLevel)) UseScrolls(c, 1);
-            if (Btn(new Rect(rx + rw * 0.52f, ry, rw * 0.48f, 90f), "Use ×10", UIStyles.Button, canLevel)) UseScrolls(c, 10);
+            bool canLevel = c.level < cap && d.xp > 0;
+            if (Btn(new Rect(rx, ry, rw * 0.48f, 90f), "+1,000 XP", UIStyles.Button, canLevel)) UseScrolls(c, 1);
+            if (Btn(new Rect(rx + rw * 0.52f, ry, rw * 0.48f, 90f), "+10,000 XP", UIStyles.Button, canLevel)) UseScrolls(c, 10);
             ry += 140f;
 
             GUI.Label(new Rect(rx, ry, rw, 50f), "ASCENSION  " + Stars(c.stars) + (c.stars < CharacterSystem.MaxStars ? " → " + Stars(c.stars + 1) : ""), UIStyles.H2);
@@ -144,8 +144,8 @@ namespace HashiraChronicles
             bool canAscend = CharacterSystem.CanAscend(d, c, out reason);
             if (c.stars < CharacterSystem.MaxStars)
             {
-                GUI.Label(new Rect(rx, ry, rw, 100f), "+12% HP/ATK/DEF and +20 level cap.  Cost: " + CharacterSystem.AscendOreCost(c.stars) + " ore, " +
-                    CharacterSystem.AscendCoinCost(c.stars).ToString("N0") + " coins." + (canAscend ? "" : "  <color=#FF7070>" + reason + "</color>"), UIStyles.Small);
+                GUI.Label(new Rect(rx, ry, rw, 100f), "Next rarity: +12% HP/ATK/DEF and a higher level cap.  Cost: " + CharacterSystem.AscendXpCost(c.stars).ToString("N0") + " XP, " +
+                    CharacterSystem.AscendCoinCost(c.stars).ToString("N0") + " gold." + (canAscend ? "" : "  <color=#FF7070>" + reason + "</color>"), UIStyles.Small);
                 ry += 100f;
                 if (Btn(new Rect(rx, ry, rw, 90f), "ASCEND", UIStyles.ButtonBig, canAscend))
                 {
@@ -189,10 +189,10 @@ namespace HashiraChronicles
                 GUI.Label(new Rect(row.x + 20f, row.y + 50f, row.width - 330f, row.height - 54f), detail, UIStyles.Sized(UIStyles.Small, 19));
                 if (lvl < CharacterSystem.MaxSkillLevel)
                 {
-                    int coins = CharacterSystem.SkillUpgradeCoinCost(lvl), scrolls = CharacterSystem.SkillUpgradeScrollCost(lvl);
-                    bool can = d.coins >= coins && d.skillScrolls >= scrolls;
+                    int coins = CharacterSystem.SkillUpgradeCoinCost(lvl), xpCost = CharacterSystem.SkillUpgradeXpCost(lvl);
+                    bool can = d.coins >= coins && d.xp >= xpCost;
                     if (Btn(new Rect(row.xMax - 300f, row.y + (row.height - 100f) * 0.5f, 285f, 100f),
-                        "UPGRADE\n<size=20>" + coins.ToString("N0") + " coins · " + scrolls + " scroll" + (scrolls > 1 ? "s" : "") + "</size>", UIStyles.Button, can))
+                        "UPGRADE\n<size=20>" + coins.ToString("N0") + " gold · " + xpCost.ToString("N0") + " XP</size>", UIStyles.Button, can))
                     {
                         CharacterSystem.TryUpgradeSkill(d, c, i);
                         gm.Save();
@@ -236,7 +236,7 @@ namespace HashiraChronicles
                 }
             }
             GUI.Label(new Rect(body.x + body.width * 0.7f, body.y + 40f, body.width * 0.28f, 400f),
-                "Ability tree nodes are permanent bonuses for this slayer.\n\nSkill scrolls: ×" + d.skillScrolls + "\nCoins: " + d.coins.ToString("N0"), UIStyles.Body);
+                "Ability tree nodes are permanent bonuses for this slayer (each scroll of cost = 500 XP).\n\nXP: " + d.xp.ToString("N0") + "\nGold: " + d.coins.ToString("N0"), UIStyles.Body);
         }
 
         void DrawLink(Vector2 a, Vector2 b, float w, float h)

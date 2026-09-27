@@ -69,6 +69,7 @@ namespace HashiraChronicles
             EnemyController.Frozen = false;
             if (cam != null) { cam.Follow(transform, false); cam.PlayUltimateCinematic(transform, 1.4f); cam.Shake(0.6f); }
             if (audio != null) audio.Play("specialRelease", 1f);
+            PlayElementSound(1f);
             GameEvents.RaiseImpact(1f);
             var tally = new DamageTally();
             yield return SpecialFlourish(color);

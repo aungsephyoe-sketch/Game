@@ -1,7 +1,7 @@
 # Hashira Chronicles — Blades of Dawn
 
 A mobile 2.5D **story-driven** anime action RPG in **Unity (C#)**: real-time hack-and-slash with a
-four-slayer team, breathing-style skills, cinematic ultimates, boss events, an in-engine story told
+three-slayer team, breathing-style skills, cinematic ultimates, boss events, an in-engine story told
 through cutscenes, a walkable world map, summoning, and a connected progression loop:
 
 **Story → Travel → Cutscene → Fight → Rewards → Upgrade / Summon / Build Team → Next Mission**
@@ -77,7 +77,7 @@ Bosses keep their camera reveal and phases and now fall in a slow-motion **defea
 - **Animated home screen**: the team leader breathes, looks around and practises forms in a living
   village (villagers who walk and chat in speech bubbles, birds, clouds, a campfire, falling leaves).
   Big colour tiles: PLAY · STORY · JOURNAL · SUMMON · CHARACTERS · TEAM · EQUIPMENT · MISSIONS · SHOP · SETTINGS,
-  currency pills top-right and a team power panel with the four slayers' faces.
+  currency pills top-right and a team power panel with the three slayers' faces.
 - **Team screen**: TEAM 1-4 presets, a full-body line-up, AUTO SET, EDIT TEAM, a roster grid with element
   filters and a detail card (HP / ATK / DEF) with SELECT.
 - **World map**: eight connected locations with paths, landmarks and markers (locked / you are here /
@@ -136,7 +136,7 @@ To test on a phone, switch the platform to Android/iOS in **File → Build Setti
 | Sprint | Keep moving ~0.5 s | Keep moving |
 | Breathing forms 1–3 | 1 / 2 / 3 | 1 2 3 or U I O |
 | Ultimate | ULT (when gauge is full) | R / L |
-| Switch slayer (team of up to 4) | Tap a portrait | Q / E / Tab |
+| Switch slayer (team of up to 3) | Tap a portrait | Q / E / Tab |
 | Pause | II | Esc / P |
 
 ## What's in the slice
@@ -172,10 +172,16 @@ To test on a phone, switch the platform to Android/iOS in **File → Build Setti
     **BREAK** window (+50% damage taken).
 - **Story**: 7 chapters, ~30 story, boss, side and treasure missions plus an event boss rush and a
   training ground, each with three objectives (defeat N demons / nobody falls / par time).
-- **Progression**: EXP & levels (cap by stars), EXP scrolls, ascension ★→★★★★★★, skill levels 1–10,
-  an ability tree, equipment (Sword / Haori / Accessory) with upgrades, power rating.
-- **Rewards**: EXP, coins, crystals, scrolls, ascension ore, equipment drops, first-clear rewards,
-  +crystals for each newly completed objective, new slayers from boss clears.
+- **Currencies**: **Gold** (levels, ascension, skills, accessories), **Diamonds** (summons; earned from
+  mission stars: 1★ = 1, 2★ = 2, 3★ = 5) and **XP** (levels, skills, ascension, the ability tree).
+- **Rarity & level caps**: ★2 Common (Lv 30), ★3 Rare (60), ★4 Epic (80), ★5 Legendary (100),
+  ★6 Mythic (120). Ascending at the cap raises the rarity, the cap and all stats. Maxed slayers get a red aura.
+- **Progression**: level up with gold + XP, feed XP, feed duplicate slayers as EXP or sell them for gold,
+  skill levels 1–10, an ability tree, equipment (Sword / Haori / Accessory; accessories sold for gold), power rating.
+  Every upgrade raises in-battle stats (the upgrade page previews the gain).
+- **Rewards**: EXP, gold (plus coins dropped by demons, pulled into your slayer), diamonds for stars,
+  XP, equipment drops, first-clear rewards, new slayers from boss clears. The results screen shows each
+  team member's EXP bar filling and levelling up.
 - **Character versions**: e.g. *Ren Kagami — Initiate* (Water ★4) and *Ren Kagami — Dawn Dance* (Light ★5)
   with different stats, forms and ultimate.
 - **Save system**: JSON in `persistentDataPath` with backup and validation/migration.

@@ -282,9 +282,7 @@ namespace HashiraChronicles
             var parts = new List<string>();
             if (r.coins > 0) parts.Add("Coins +" + r.coins.ToString("N0"));
             if (r.crystals > 0) parts.Add("Crystals +" + r.crystals);
-            if (r.expScrolls > 0) parts.Add("EXP Scroll +" + r.expScrolls);
-            if (r.skillScrolls > 0) parts.Add("Skill Scroll +" + r.skillScrolls);
-            if (r.ascensionOre > 0) parts.Add("Ore +" + r.ascensionOre);
+            if (r.XpValue > 0) parts.Add("XP +" + r.XpValue.ToString("N0"));
             return string.Join("    ", parts.ToArray());
         }
 
@@ -295,9 +293,7 @@ namespace HashiraChronicles
             var st = UIStyles.Sized(UIStyles.Body, 28);
             if (rw.coins > 0) { CoinIcon(new Vector2(x + 20f, at.y), 40f); GUI.Label(new Rect(x + 48f, at.y - 22f, 120f, 44f), rw.coins.ToString("N0"), st); x += 170f; }
             if (rw.crystals > 0) { DiamondIcon(new Vector2(x + 20f, at.y), 42f); GUI.Label(new Rect(x + 48f, at.y - 22f, 80f, 44f), rw.crystals.ToString(), st); x += 120f; }
-            if (rw.expScrolls > 0) { ScrollIcon(new Vector2(x + 20f, at.y), new Color(0.65f, 0.45f, 1f)); GUI.Label(new Rect(x + 48f, at.y - 22f, 60f, 44f), rw.expScrolls.ToString(), st); x += 100f; }
-            if (rw.skillScrolls > 0) { ScrollIcon(new Vector2(x + 20f, at.y), new Color(0.35f, 0.9f, 0.45f)); GUI.Label(new Rect(x + 48f, at.y - 22f, 60f, 44f), rw.skillScrolls.ToString(), st); x += 100f; }
-            if (rw.ascensionOre > 0) { UIStyles.CircleTex(new Vector2(x + 20f, at.y), 18f, new Color(1f, 0.6f, 0.2f)); GUI.Label(new Rect(x + 48f, at.y - 22f, 60f, 44f), rw.ascensionOre.ToString(), st); }
+            if (rw.XpValue > 0) { XpIcon(new Vector2(x + 20f, at.y), 40f); GUI.Label(new Rect(x + 48f, at.y - 22f, 120f, 44f), rw.XpValue.ToString("N0"), st); }
         }
 
         static void ScrollIcon(Vector2 c, Color col)
@@ -339,9 +335,7 @@ namespace HashiraChronicles
             float h = Mathf.Min(r.height, 52f);
             if (rw.crystals > 0) { Pill(new Rect(x, r.y, 150f, h), "✦", new Color(0.3f, 0.65f, 1f), rw.crystals.ToString()); x += 160f; }
             if (rw.coins > 0) { Pill(new Rect(x, r.y, 170f, h), "◆", new Color(0.95f, 0.72f, 0.2f), rw.coins.ToString("N0")); x += 180f; }
-            if (rw.expScrolls > 0) { Pill(new Rect(x, r.y, 120f, h), "✎", new Color(0.6f, 0.4f, 0.9f), "×" + rw.expScrolls); x += 130f; }
-            if (rw.skillScrolls > 0) { Pill(new Rect(x, r.y, 120f, h), "✧", new Color(0.35f, 0.8f, 0.45f), "×" + rw.skillScrolls); x += 130f; }
-            if (rw.ascensionOre > 0) { Pill(new Rect(x, r.y, 120f, h), "▲", new Color(0.9f, 0.45f, 0.3f), "×" + rw.ascensionOre); x += 130f; }
+            if (rw.XpValue > 0) { Pill(new Rect(x, r.y, 160f, h), "XP", new Color(0.6f, 0.4f, 0.9f), rw.XpValue.ToString("N0")); x += 170f; }
             if (rw.exp > 0 && x < r.xMax - 150f) Pill(new Rect(x, r.y, 150f, h), "★", new Color(0.8f, 0.8f, 0.3f), rw.exp.ToString("N0"));
         }
 
@@ -351,9 +345,14 @@ namespace HashiraChronicles
         {
             var d = gm.Data;
             TopBar("SOLMERE MARKET", GameScreen.MainMenu);
-            float cw = 520f, ch = 250f, gap = 24f;
+            // Tabs: supplies (XP packs, chests, diamonds) and accessories for gold.
+            string[] tabs = { "SUPPLIES", "ACCESSORIES" };
+            for (int t = 0; t < 2; t++)
+                if (FlatBtn(new Rect(safe.x + 30f + t * 260f, safe.y + 120f, 240f, 60f), tabs[t], shopTab == t ? TileRed : TileNavy, true, 22)) shopTab = t;
+            if (shopTab == 1) { DrawAccessoryShop(d); return; }
+            float cw = 520f, ch = 230f, gap = 22f;
             int cols = Mathf.Max(1, Mathf.FloorToInt((safe.width - 60f + gap) / (cw + gap)));
-            float top = safe.y + 140f;
+            float top = safe.y + 200f;
             for (int i = 0; i < ShopSystem.Items.Count; i++)
             {
                 var it = ShopSystem.Items[i];
@@ -376,6 +375,61 @@ namespace HashiraChronicles
                     }
                 }
             }
+        }
+
+        int shopTab;
+        Vector2 accScroll;
+
+        /// <summary>Accessories bought with gold. Each shows its stats; equip it from a slayer's Gear tab.</summary>
+        void DrawAccessoryShop(PlayerData d)
+        {
+            var list = ShopSystem.Accessories();
+            float cw = 400f, ch = 300f, gap = 22f;
+            var view = new Rect(safe.x + 30f, safe.y + 200f, safe.width - 60f, H - safe.y - 230f);
+            int cols = Mathf.Max(1, Mathf.FloorToInt((view.width - 20f + gap) / (cw + gap)));
+            var content = new Rect(0f, 0f, view.width - 20f, Mathf.CeilToInt(list.Count / (float)cols) * (ch + gap));
+            accScroll = GUI.BeginScrollView(view, accScroll, content);
+            for (int i = 0; i < list.Count; i++)
+            {
+                var e = list[i];
+                var r = new Rect((i % cols) * (cw + gap), (i / cols) * (ch + gap), cw, ch);
+                Color rc = RarityInfo.Color(e.rarity);
+                Round(Offset(r, 0f, 5f), new Color(0f, 0f, 0f, 0.35f), 16f);
+                Round(r, Color.Lerp(new Color(0.07f, 0.08f, 0.13f), rc, 0.2f), 16f);
+                Round(new Rect(r.x, r.y, r.width, 8f), rc, 4f);
+                var ic = new Rect(r.x + 20f, r.y + 26f, 90f, 90f);
+                UIStyles.CircleTex(ic.center, 48f, new Color(rc.r, rc.g, rc.b, 0.25f));
+                var oc = GUI.color;
+                GUI.color = Color.Lerp(rc, Color.white, 0.35f);
+                GUI.DrawTexture(ic, IconFactory.Get("orb"), ScaleMode.ScaleToFit, true);
+                GUI.color = oc;
+                GUI.Label(new Rect(r.x + 124f, r.y + 22f, cw - 140f, 40f), e.displayName, UIStyles.Sized(UIStyles.H2, 24));
+                UIStyles.Outlined(new Rect(r.x + 124f, r.y + 60f, cw - 140f, 24f), RarityInfo.Name(e.rarity), UIStyles.Sized(UIStyles.Small, 16), rc, 1.2f);
+                int owned = d.equipment.FindAll(x => x.defId == e.id).Count;
+                GUI.Label(new Rect(r.x + 124f, r.y + 86f, cw - 140f, 26f), "<color=#AAAAAA>Owned: " + owned + "</color>", UIStyles.Sized(UIStyles.Small, 16));
+                var b = e.baseBonus;
+                string st = "";
+                if (b.hp > 0) st += "HP +" + Mathf.RoundToInt(b.hp) + "   ";
+                if (b.atk > 0) st += "ATK +" + Mathf.RoundToInt(b.atk) + "   ";
+                if (b.def > 0) st += "DEF +" + Mathf.RoundToInt(b.def);
+                GUI.Label(new Rect(r.x + 20f, r.y + 128f, cw - 40f, 30f), "<color=#8CFF9E>" + st + "</color>", UIStyles.Sized(UIStyles.Body, 18));
+                GUI.Label(new Rect(r.x + 20f, r.y + 158f, cw - 40f, 50f), "<color=#BBBBBB>" + e.description + "</color>", UIStyles.Sized(UIStyles.Small, 16));
+                int price = ShopSystem.AccessoryPrice(e);
+                bool can = d.coins >= price;
+                var br = new Rect(r.x + 20f, r.yMax - 80f, cw - 40f, 62f);
+                if (FlatBtn(br, "", TileGreen, can, 22))
+                {
+                    if (ShopSystem.BuyAccessory(d, e))
+                    {
+                        gm.Save();
+                        gm.Audio.Play("coin", 0.8f);
+                        Toast("Bought " + e.displayName + " · equip it from a slayer's Gear tab");
+                    }
+                }
+                CoinIcon(new Vector2(br.x + 90f, br.center.y), 32f);
+                GUI.Label(new Rect(br.x + 112f, br.y, br.width - 120f, br.height), "BUY  " + price.ToString("N0"), UIStyles.Sized(UIStyles.Body, 24));
+            }
+            GUI.EndScrollView();
         }
 
         // ------------------------------------------------------------------ Cutscene overlay

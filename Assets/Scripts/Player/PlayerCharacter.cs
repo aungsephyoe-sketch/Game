@@ -516,25 +516,7 @@ namespace HashiraChronicles
             if (Def.style == CombatStyle.Ranged) { yield return RangedCharged(); yield break; }
             if (Def.style == CombatStyle.Healer) { yield return HealerCharged(); yield break; }
             if (Def.style == CombatStyle.Brawler) { yield return BrawlerCharged(); yield break; }
-            AutoAim(6f);
-            Visual.SetCharge(0f, ElementColor);
-            Visual.HeavyAttack(0.16f);
-            yield return new WaitForSeconds(0.06f);
-            var tag = AttackTag.Basic(StrongMultiplier, ElementColor);
-            tag.knockback = 8f;
-            tag.stagger = 7f;
-            tag.hitStop = 0.1f;
-            tag.shake = 0.45f;
-            tag.heavy = true;
-            CombatSystem.HitArc(this, Position, transform.forward, 4.4f, 210f, tag);
-            ElementFx.Slash(Position, transform.forward, 4.4f, 210f, 0f, Def.element, 2.2f);
-            ElementFx.Finisher(Position + transform.forward * 2f, transform.forward, Def.element, 3.5f);
-            VFX.Breath(Position + transform.forward * 2f, ElementColor, 30);
-            VFX.Dust(Position + transform.forward * 1.5f, 10);
-            Play("heavy", 0.9f);
-            UltGauge = Mathf.Min(UltMax, UltGauge + 3f);
-            yield return new WaitForSeconds(0.32f);
-            comboIndex = 0;
+            yield return StrongAttack();
         }
 
         // ------------------------------------------------------------------ Dodge / guard / parry
