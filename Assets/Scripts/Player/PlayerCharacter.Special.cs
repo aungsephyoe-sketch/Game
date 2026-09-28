@@ -49,7 +49,7 @@ namespace HashiraChronicles
             if (cam != null)
             {
                 // Full-body framing for the build-up: close enough to feel it, never a face close-up.
-                cam.Cut(Position + fwd * 6f + right * 2.4f * side + Vector3.up * (camH + 1.4f), Position + Vector3.up * 1f);
+                cam.Cut(Position + fwd * 6f + right * 2.4f * side + Vector3.up * (camH + 1.4f), Position + Vector3.up * 1f, true);
                 cam.Dolly(Position + fwd * 5.2f - right * 2.6f * side + Vector3.up * (camH + 1.9f), Position + Vector3.up * 1.1f, 1.3f);
             }
 

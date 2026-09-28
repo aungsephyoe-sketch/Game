@@ -4,9 +4,11 @@ using UnityEngine;
 namespace HashiraChronicles
 {
     /// <summary>
-    /// The animated home screen: Kiriha at golden hour with the team leader in the foreground. The hero breathes,
-    /// looks around and occasionally practises a form; villagers stroll and chat, birds circle, leaves fall and a
-    /// campfire crackles. The same stage doubles as the 3D character viewer (drag to rotate, preview skills).
+    /// The animated home screen: Kiriha at night — moonlight, warm paper lanterns that flicker, cherry blossoms
+    /// drifting, light fog — with the team leader standing in the foreground in their natural idle (breathing,
+    /// weight shift, glances, blinking, hair and cloth moving), a soft contact shadow and a rim light that lifts
+    /// them off the background. Villagers stroll in the distance. The same stage doubles as the 3D character
+    /// viewer (drag to rotate, preview skills) and the team line-up.
     /// </summary>
     public class HomeStage : MonoBehaviour
     {
@@ -21,7 +23,6 @@ namespace HashiraChronicles
         string shownId = "";
         bool viewer;
         float viewerYaw = 180f;
-        float nextFlourish;
         float nextLook;
         float yawTarget = 180f;
         ArenaTheme theme;
@@ -70,7 +71,7 @@ namespace HashiraChronicles
             }
             else if ((anim == "attack" || anim == "heavy") && GameManager.Instance != null)
                 GameManager.Instance.Audio.PlayVaried(anim == "heavy" ? "slashHeavy" : "slash", 0.5f, 0.1f);
-            nextFlourish = Time.time + 8f;
+
         }
 
         /// <summary>Plays the selected skill's motion and elemental effects on the viewer model.</summary>
@@ -91,7 +92,7 @@ namespace HashiraChronicles
             VFX.Breath(p, c, index == 3 ? 80 : 35);
             if (index == 3) { VFX.Pillar(p, c, 7f, 0.8f); VFX.ImpactLight(p + Vector3.up, c, 8f, 0.6f); }
             if (GameManager.Instance != null) GameManager.Instance.Audio.Play(index == 3 ? "ultimate" : "skill", 0.6f);
-            nextFlourish = Time.time + 6f;
+
         }
 
         /// <summary>Celebration burst for level-ups and ascensions.</summary>
@@ -102,16 +103,17 @@ namespace HashiraChronicles
             VFX.Breath(heroHolder.position, color, 60);
             VFX.Shockwave(heroHolder.position, 3f, color, 0.6f);
             if (hero != null) hero.Victory();
-            nextFlourish = Time.time + 4f;
+
         }
 
         void EnsureWorld()
         {
             if (world != null) return;
-            theme = CutsceneDatabase.PeacefulVillage();
+            theme = NightVillage();
             world = new GameObject("HomeWorld");
             world.transform.SetParent(transform, false);
             ArenaBuilder.Build(theme, world.transform, false, 3);
+            LanternStrings(world.transform);
             // Campfire, training posts and villagers.
             EnvFx.Fire(world.transform, new Vector3(-2.5f, 0f, 3.5f), 1f);
             var wood = MaterialFactory.Toon(new Color(0.35f, 0.24f, 0.15f));
@@ -133,7 +135,81 @@ namespace HashiraChronicles
             heroHolder = new GameObject("HeroHolder").transform;
             heroHolder.SetParent(transform, false);
             heroHolder.position = HeroPos;
-            heroHolder.rotation = Quaternion.Euler(0f, 180f, 0f);
+            heroHolder.rotation = Quaternion.Euler(0f, HomeYaw, 0f);
+            // A soft contact shadow under the feet and a cool rim light behind, so the hero sits in the scene.
+            var blob = MeshFactory.MeshObject(MeshFactory.PlanarDisc(), transform, HeroPos + Vector3.up * 0.015f, new Vector3(0.75f, 1f, 0.6f), MaterialFactory.Transparent(new Color(0f, 0f, 0.03f, 0.42f)), false);
+            blob.name = "HeroShadow";
+            heroShadow = blob.transform;
+            var rim = new GameObject("HeroRim").AddComponent<Light>();
+            rim.transform.SetParent(transform, false);
+            rim.transform.position = HeroPos + new Vector3(0.9f, 2.3f, 1.6f);
+            rim.type = LightType.Point;
+            rim.color = new Color(0.6f, 0.75f, 1f);
+            rim.range = 4.5f;
+            rim.intensity = 1.6f;
+            rim.shadows = LightShadows.None;
+            heroRim = rim;
+        }
+
+        Transform heroShadow;
+        Light heroRim;
+
+        /// <summary>The leader stands turned a little toward the player (three-quarter view).</summary>
+        const float HomeYaw = 196f;
+
+        /// <summary>Kiriha by night: moonlight, warm lanterns, cherry blossoms, a little fog.</summary>
+        static ArenaTheme NightVillage()
+        {
+            return new ArenaTheme
+            {
+                kind = EnvironmentKind.Village, night = true, burning = false, petals = true,
+                ground = new Color(0.22f, 0.24f, 0.3f), groundAccent = new Color(0.36f, 0.32f, 0.38f),
+                sky = new Color(0.1f, 0.12f, 0.26f), fog = new Color(0.2f, 0.18f, 0.34f), fogStart = 16f, fogEnd = 70f,
+                lantern = new Color(1f, 0.66f, 0.32f), foliage = new Color(1f, 0.68f, 0.82f),
+                sun = new Color(0.66f, 0.74f, 1f), sunIntensity = 0.95f
+            };
+        }
+
+        /// <summary>Strings of paper lanterns across the lane behind the hero, each gently swinging and flickering.</summary>
+        void LanternStrings(Transform root)
+        {
+            var paper = MaterialFactory.Toon(new Color(1f, 0.55f, 0.3f), 0.01f, new Color(0.9f, 0.4f, 0.15f));
+            var paperB = MaterialFactory.Toon(new Color(1f, 0.82f, 0.45f), 0.01f, new Color(0.85f, 0.6f, 0.25f));
+            var cord = MaterialFactory.Toon(new Color(0.15f, 0.1f, 0.08f), 0f);
+            int lightsLeft = Mathf.Min(4, GameSettings.MaxDynamicLights);
+            for (int row = 0; row < 2; row++)
+            {
+                float z = 6f + row * 5f, y = 3.4f + row * 0.4f;
+                var line = MeshFactory.MeshObject(MeshFactory.SmoothCylinder(), root, new Vector3(0.5f, y + 0.25f, z), new Vector3(0.02f, 6.5f, 0.02f), cord, false);
+                line.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                for (int i = 0; i < 7; i++)
+                {
+                    float x = -5.5f + i * 2f + row;
+                    var l = new GameObject("PaperLantern").transform;
+                    l.SetParent(root, false);
+                    l.position = new Vector3(x, y + 0.2f, z);
+                    var sw = l.gameObject.AddComponent<Sway>();
+                    sw.Amount = 4f;
+                    sw.Speed = 0.6f + i * 0.07f;
+                    var body = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), l, new Vector3(0f, -0.35f, 0f), new Vector3(0.42f, 0.52f, 0.42f), (i + row) % 2 == 0 ? paper : paperB, false);
+                    body.name = "Glow";
+                    MeshFactory.MeshObject(MeshFactory.SmoothCylinder(), l, new Vector3(0f, -0.08f, 0f), new Vector3(0.22f, 0.03f, 0.22f), cord, false);
+                    MeshFactory.MeshObject(MeshFactory.SmoothCylinder(), l, new Vector3(0f, -0.62f, 0f), new Vector3(0.22f, 0.03f, 0.22f), cord, false);
+                    if (i % 3 == 1 && lightsLeft-- > 0)
+                    {
+                        var lg = new GameObject("Light");
+                        lg.transform.SetParent(l, false);
+                        lg.transform.localPosition = new Vector3(0f, -0.35f, 0f);
+                        var light = lg.AddComponent<Light>();
+                        light.type = LightType.Point;
+                        light.color = new Color(1f, 0.62f, 0.3f);
+                        light.range = 6f;
+                        light.intensity = 1.1f;
+                        light.shadows = LightShadows.None;
+                        lg.AddComponent<LanternFlicker>();
+                    }
+                }
+            }
         }
 
         void SetHero(string id)
@@ -144,7 +220,7 @@ namespace HashiraChronicles
             if (heroDef == null) return;
             hero = CharacterVisual.BuildHero(heroDef, heroHolder);
             shownId = id;
-            nextFlourish = Time.time + 3f;
+
             VFX.Breath(heroHolder.position, ElementChart.ColorOf(heroDef.element), 25);
         }
 
@@ -365,30 +441,23 @@ namespace HashiraChronicles
             }
             else
             {
-                // Idle life: glance around, and every so often practise a form.
+                // The featured slayer simply stands in their natural idle (breathing, weight shift, glances, blinks);
+                // hair and cloth move on their own. They turn a little toward the player now and then.
                 if (Time.time > nextLook)
                 {
-                    nextLook = Time.time + Random.Range(2.5f, 5f);
-                    yawTarget = 180f + Random.Range(-35f, 35f);
+                    nextLook = Time.time + Random.Range(5f, 9f);
+                    yawTarget = HomeYaw + Random.Range(-6f, 6f);
                 }
-                heroHolder.rotation = Quaternion.Slerp(heroHolder.rotation, Quaternion.Euler(0f, yawTarget, 0f), Time.deltaTime * 2f);
-                if (hero != null && heroDef != null && Time.time > nextFlourish)
-                {
-                    nextFlourish = Time.time + Random.Range(7f, 13f);
-                    Color c = ElementChart.ColorOf(heroDef.element);
-                    int pick = Random.Range(0, 4);
-                    if (pick == 0) { hero.Attack(Random.Range(0, 4), 0.14f); VFX.Slash(heroHolder.position, heroHolder.forward, 2.2f, 150f, 10f, c, 0.3f); }
-                    else if (pick == 1) { hero.Spin(0.35f); VFX.Shockwave(heroHolder.position, 2.4f, c, 0.4f); }
-                    else if (pick == 2) { hero.HeavyAttack(0.2f); VFX.Breath(heroHolder.position, c, 25); }
-                    else { hero.Victory(); Invoke("ResetHeroPose", 2.2f); }
-                    if (GameManager.Instance != null) GameManager.Instance.Audio.Play("slash", 0.25f);
-                }
+                heroHolder.rotation = Quaternion.Slerp(heroHolder.rotation, Quaternion.Euler(0f, yawTarget, 0f), 1f - Mathf.Exp(-Time.deltaTime * 1.5f));
+                if (hero != null && !hero.Posing) hero.HoldTeamIdle();
                 if (CameraController.Instance != null)
                 {
-                    Vector3 drift = new Vector3(Mathf.Sin(t * 0.13f) * 0.4f, Mathf.Sin(t * 0.21f) * 0.12f, 0f);
-                    CameraController.Instance.SetFixed(new Vector3(-0.2f, 2.1f, -6.2f) + drift, new Vector3(0.2f, 1.35f, 0f));
+                    Vector3 drift = new Vector3(Mathf.Sin(t * 0.11f) * 0.12f, Mathf.Sin(t * 0.17f) * 0.05f, 0f);
+                    CameraController.Instance.SetFixed(new Vector3(0.35f, 1.6f, -5.3f) + drift, new Vector3(0.35f, 1.12f, 0f));
                 }
             }
+            if (heroShadow != null) heroShadow.gameObject.SetActive(heroHolder.gameObject.activeInHierarchy);
+            if (heroRim != null) heroRim.enabled = heroHolder.gameObject.activeInHierarchy;
         }
 
         void ResetHeroPose()

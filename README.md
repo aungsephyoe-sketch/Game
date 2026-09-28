@@ -78,6 +78,24 @@ separate from combat idle, attacks, specials, victory and defeat. Each slayer:
 Personality shows only in the head angle and which leg takes the weight. Everyone faces the camera with the same
 slight three-quarter turn toward the group.
 
+**Home screen.** The lobby is laid out like a premium anime action RPG (`HomeScreen.cs`):
+- **Top-left:** profile (portrait, level, name, EXP bar) and a compact shortcut column (Event, Notice, Ranking, Friends).
+- **Upper-left:** the logo, and under it a large banner carousel that slides every few seconds, with dots (limited event, featured summon, explore Kiriha, forge).
+- **Top-right:** gold, diamond and XP counters, plus mail, gift and settings.
+- **Right:** the TEAM POWER panel with portraits and a member list.
+- **Bottom:** navigation with a large glowing PLAY button, then SUMMON, CHARACTERS, TEAM, MISSIONS, SHOP and INVENTORY.
+
+Behind it, Kiriha at night: moonlight, strings of flickering paper lanterns, cherry blossoms, fog and villagers
+walking. The team leader stands right of centre in their natural idle, with a soft contact shadow and a rim light.
+
+**Smoothness pass.**
+- **Shapes:** every character part is built from smooth shapes: rounded boxes (`MeshFactory.RoundedCube`), soft-edged cylinders, capsules and spheres. Lathe meshes (limbs, sleeves, robes, bands) have analytic normals with no seams.
+- **Shading:** the toon shader uses a wide, eased light ramp, a soft form gradient and a faint broad sheen; cast shadows are soft and lighter.
+- **Rig blending:** the rig blends between animation states. The body root, hips, chest and hands ease toward their targets: fast during swings, softer otherwise.
+- **Attacks:** swings have anticipation, an eased strike with follow-through, and a smooth settle.
+- **Cloth and hair:** they lag behind movement and turns and spring back.
+- **Camera:** it eases between modes (into specials and boss entrances, and out of cutscenes) instead of snapping, and follows with a damped spring.
+
 **Roster design system.** `docs/CHARACTER_DESIGN_BIBLE.md` is the visual standard for every slayer. It covers:
 - silhouette drivers
 - proportions by type

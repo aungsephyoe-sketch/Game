@@ -19,7 +19,9 @@ namespace HashiraChronicles
 
         GameObject Part(PrimitiveType t, Transform parent, Vector3 pos, Vector3 scale, Material m, Vector3? euler = null)
         {
-            var go = MeshFactory.Primitive(t, parent, pos, scale, m);
+            // Characters are built from smooth shapes: rounded boxes, soft-edged cylinders and capsules.
+            var mesh = MeshFactory.SmoothPrimitive(t);
+            var go = mesh != null ? MeshFactory.MeshObject(mesh, parent, pos, scale, m) : MeshFactory.Primitive(t, parent, pos, scale, m);
             if (euler.HasValue) go.transform.localRotation = Quaternion.Euler(euler.Value);
             Add(go);
             return go;
@@ -102,7 +104,7 @@ namespace HashiraChronicles
         {
             // Resolution by size: tiny parts (fingers, eye highlights) don't need thousands of vertices.
             float size = Mathf.Max(scale.x, Mathf.Max(scale.y, scale.z));
-            Mesh mesh = size < 0.07f ? MeshFactory.Sphere(10, 14) : size < 0.2f ? MeshFactory.Sphere(16, 24) : size < 0.5f ? MeshFactory.Sphere(24, 36) : MeshFactory.SmoothSphere();
+            Mesh mesh = size < 0.07f ? MeshFactory.Sphere(14, 20) : size < 0.2f ? MeshFactory.Sphere(20, 30) : size < 0.5f ? MeshFactory.Sphere(24, 36) : MeshFactory.SmoothSphere();
             var go = MeshFactory.MeshObject(mesh, parent, pos, scale, m);
             if (euler.HasValue) go.transform.localRotation = Quaternion.Euler(euler.Value);
             Add(go);

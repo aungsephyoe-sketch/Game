@@ -233,7 +233,7 @@ namespace HashiraChronicles
         {
             int n = pts.Count;
             if (n < 3) return;
-            const int K = 6;
+            const int K = 8;
             var part = Get(group, mat);
             int start = part.v.Count;
             for (int i = 0; i < n; i++)

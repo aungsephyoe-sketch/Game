@@ -219,13 +219,24 @@ namespace HashiraChronicles
             Mesh m;
             if (lathes.TryGetValue(key, out m) && m != null) return m;
             var v = new List<Vector3>();
+            var nr = new List<Vector3>();
             var t = new List<int>();
             int rows = profile.Length;
+            // Smooth normals straight from the profile curve (no seam where the lathe closes, no bleed from the caps).
+            var n2 = new Vector2[rows];
+            for (int r = 0; r < rows; r++)
+            {
+                Vector2 d = profile[Mathf.Min(rows - 1, r + 1)] - profile[Mathf.Max(0, r - 1)];
+                Vector2 n = new Vector2(d.y, -d.x);
+                n2[r] = n.sqrMagnitude > 1e-12f ? n.normalized : Vector2.right;
+            }
             for (int r = 0; r < rows; r++)
                 for (int s = 0; s <= segments; s++)
                 {
                     float a = s * Mathf.PI * 2f / segments;
-                    v.Add(new Vector3(Mathf.Cos(a) * profile[r].x, profile[r].y, Mathf.Sin(a) * profile[r].x));
+                    float c = Mathf.Cos(a), sn = Mathf.Sin(a);
+                    v.Add(new Vector3(c * profile[r].x, profile[r].y, sn * profile[r].x));
+                    nr.Add(new Vector3(c * n2[r].x, n2[r].y, sn * n2[r].x));
                 }
             int stride = segments + 1;
             for (int r = 0; r < rows - 1; r++)
@@ -235,19 +246,34 @@ namespace HashiraChronicles
                     t.Add(a); t.Add(c); t.Add(b);
                     t.Add(b); t.Add(c); t.Add(d);
                 }
-            // Caps.
-            int bottom = v.Count; v.Add(new Vector3(0f, profile[0].y, 0f));
-            int top = v.Count; v.Add(new Vector3(0f, profile[rows - 1].y, 0f));
-            for (int s = 0; s < segments; s++)
+            // Flat caps with their own vertices (only where the profile is open).
+            for (int end = 0; end < 2; end++)
             {
-                t.Add(bottom); t.Add(s); t.Add(s + 1);
-                int o = (rows - 1) * stride;
-                t.Add(top); t.Add(o + s + 1); t.Add(o + s);
+                int r = end == 0 ? 0 : rows - 1;
+                if (profile[r].x < 0.0005f) continue;
+                bool up = end == 1 ? profile[rows - 1].y >= profile[0].y : profile[0].y > profile[rows - 1].y;
+                Vector3 cn = up ? Vector3.up : Vector3.down;
+                int centre = v.Count;
+                v.Add(new Vector3(0f, profile[r].y, 0f));
+                nr.Add(cn);
+                int ring = v.Count;
+                for (int s = 0; s <= segments; s++)
+                {
+                    float a = s * Mathf.PI * 2f / segments;
+                    v.Add(new Vector3(Mathf.Cos(a) * profile[r].x, profile[r].y, Mathf.Sin(a) * profile[r].x));
+                    nr.Add(cn);
+                }
+                for (int s = 0; s < segments; s++)
+                {
+                    if (end == 0) { t.Add(centre); t.Add(ring + s); t.Add(ring + s + 1); }
+                    else { t.Add(centre); t.Add(ring + s + 1); t.Add(ring + s); }
+                }
             }
             m = new Mesh { name = "Lathe_" + key };
+            if (v.Count > 65000) m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
             m.SetVertices(v);
+            m.SetNormals(nr);
             m.SetTriangles(t, 0);
-            m.RecalculateNormals();
             m.RecalculateBounds();
             lathes[key] = m;
             return m;
@@ -343,7 +369,70 @@ namespace HashiraChronicles
             return go;
         }
 
-        static Mesh smoothCapsule, smoothCylinder;
+        static Mesh smoothCapsule, smoothCylinder, roundedCube;
+
+        /// <summary>
+        /// A unit cube (like Unity's primitive) with softly rounded edges and corners and smooth normals, so
+        /// character parts read as polished shapes instead of hard blocks. Each face is a grid packed densely
+        /// toward its edges; every vertex is pushed onto a rounded box (inner box + radius), and its normal points
+        /// from the inner box, so the bevels shade smoothly and the outline hull has no cracks at the corners.
+        /// </summary>
+        public static Mesh RoundedCube()
+        {
+            if (roundedCube != null) return roundedCube;
+            const float r = 0.14f;
+            float[] g = { 0f, r * 0.25f, r * 0.62f, r, 0.5f, 1f - r, 1f - r * 0.62f, 1f - r * 0.25f, 1f };
+            int n = g.Length;
+            var v = new List<Vector3>();
+            var nr = new List<Vector3>();
+            var uv = new List<Vector2>();
+            var t = new List<int>();
+            Vector3[] fn = { Vector3.right, Vector3.left, Vector3.up, Vector3.down, Vector3.forward, Vector3.back };
+            Vector3[] fu = { Vector3.up, Vector3.forward, Vector3.forward, Vector3.right, Vector3.right, Vector3.up };
+            Vector3[] fv = { Vector3.forward, Vector3.up, Vector3.right, Vector3.forward, Vector3.up, Vector3.right };
+            for (int f = 0; f < 6; f++)
+            {
+                int start = v.Count;
+                for (int j = 0; j < n; j++)
+                    for (int i = 0; i < n; i++)
+                    {
+                        Vector3 p = fn[f] * 0.5f + fu[f] * (g[i] - 0.5f) + fv[f] * (g[j] - 0.5f);
+                        Vector3 inner = new Vector3(Mathf.Clamp(p.x, -0.5f + r, 0.5f - r), Mathf.Clamp(p.y, -0.5f + r, 0.5f - r), Mathf.Clamp(p.z, -0.5f + r, 0.5f - r));
+                        Vector3 d = p - inner;
+                        Vector3 nn = d.sqrMagnitude > 1e-8f ? d.normalized : fn[f];
+                        v.Add(inner + nn * r);
+                        nr.Add(nn);
+                        uv.Add(new Vector2(g[i], g[j]));
+                    }
+                for (int j = 0; j < n - 1; j++)
+                    for (int i = 0; i < n - 1; i++)
+                    {
+                        int a0 = start + j * n + i;
+                        t.Add(a0); t.Add(a0 + 1); t.Add(a0 + n);
+                        t.Add(a0 + 1); t.Add(a0 + n + 1); t.Add(a0 + n);
+                    }
+            }
+            roundedCube = new Mesh { name = "RoundedCube" };
+            roundedCube.SetVertices(v);
+            roundedCube.SetNormals(nr);
+            roundedCube.SetUVs(0, uv);
+            roundedCube.SetTriangles(t, 0);
+            roundedCube.RecalculateBounds();
+            return roundedCube;
+        }
+
+        /// <summary>The smooth version of a primitive shape (for characters): rounded cube, smooth cylinder, capsule and sphere.</summary>
+        public static Mesh SmoothPrimitive(PrimitiveType type)
+        {
+            switch (type)
+            {
+                case PrimitiveType.Cube: return RoundedCube();
+                case PrimitiveType.Cylinder: return SmoothCylinder();
+                case PrimitiveType.Capsule: return SmoothCapsule();
+                case PrimitiveType.Sphere: return SmoothSphere();
+                default: return null;
+            }
+        }
 
         /// <summary>High-resolution capsule with the same size as Unity's primitive (height 2, radius 0.5).</summary>
         public static Mesh SmoothCapsule()

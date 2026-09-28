@@ -74,6 +74,10 @@ namespace HashiraChronicles
                 sun.color = theme.sun;
                 sun.intensity = theme.sunIntensity * 0.8f;
                 sun.transform.rotation = theme.night ? Quaternion.Euler(55f, -35f, 0f) : Quaternion.Euler(50f, 30f, 0f);
+                // Soft, not-quite-black shadows: smooth edges and no harsh blocks on characters or ground.
+                sun.shadows = LightShadows.Soft;
+                sun.shadowStrength = 0.72f;
+                sun.shadowNormalBias = 0.6f;
             }
         }
 

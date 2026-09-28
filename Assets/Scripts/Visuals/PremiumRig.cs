@@ -58,6 +58,7 @@ namespace HashiraChronicles
             phase += dt * tempo * (1f + 0.4f * sprint) * m;
             float sw = cv.SwingWeight;
             bool guard = cv.IsGuarding;
+            BlendModel(dt, cv.Posing);
             // Showcase poses (line-up, portraits, victory) keep the elbows bent and the hands near the body,
             // so a held weapon reads as a relaxed stance rather than an arm stretched out mid-swing.
             bool posing = cv.Posing && !dead;
@@ -84,7 +85,10 @@ namespace HashiraChronicles
                 shift = ShowHip() + Mathf.Sin(time * 0.45f) * 0.01f;
                 pelvisY = ankle + 0.02f + (legA + legB) * 0.975f + Mathf.Sin(time * 1.6f) * 0.003f;
             }
-            pelvis.localPosition = new Vector3(shift, pelvisY, 0f);
+            // Blend the hips between states (crouch, guard, showcase, dead) instead of jumping.
+            Vector3 pelvisTarget = new Vector3(shift, pelvisY, 0f);
+            sPelvis = Ease(sPelvis, pelvisTarget, dt, 14f);
+            pelvis.localPosition = sPelvis;
             pelvis.localRotation = Quaternion.Euler(0f, -Mathf.Sin(phase) * 10f * m, Mathf.Sin(phase) * 3f * m + shift * 60f);
 
             // Chest: twist into the swing, lean into the run, breathe.
@@ -100,7 +104,9 @@ namespace HashiraChronicles
                 twist = Mathf.Sin(time * 0.37f) * 2f;
             }
             torso.localPosition = pelvis.localPosition + Vector3.up * 0.02f;
-            torso.localRotation = Quaternion.Euler(pitch, twist, -shift * 40f);
+            // Chest follows its target with a little lag: the swing starts in the hips and the chest follows through.
+            sTorso = EaseRot(sTorso, Quaternion.Euler(pitch, twist, -shift * 40f), dt, sw > 0.2f ? 26f : 14f);
+            torso.localRotation = sTorso;
             if (head != null) head.localPosition = torso.localPosition + torso.localRotation * neck;
 
             // ---- Arms
@@ -121,6 +127,11 @@ namespace HashiraChronicles
             float upR = Mathf.Clamp01(sd.y) * sw;
             tR.x = Mathf.Max(tR.x, shoulder.x + 0.22f * upR);
             tR.z += 0.12f * upR;
+            // Hands ease toward their targets: fast while swinging (the blade must stay crisp), softer otherwise,
+            // so every pose change and return to rest has a little follow-through.
+            float handRate = sw > 0.2f ? 45f : 20f;
+            sHandR = Ease(sHandR, tR, dt, handRate);
+            tR = sHandR;
             Vector3 hR = TwoBone(upper[0], lower[0], sR, tR, armA, armB, new Vector3(0.7f, -0.2f, -1f), Vector3.forward);
             if (hand[0] != null) { hand[0].localPosition = hR; hand[0].localRotation = lower[0].localRotation; }
             if (cv.SwordPivot != null) cv.SwordPivot.localPosition = hR + lower[0].localRotation * new Vector3(0f, -0.055f, 0.01f);
@@ -155,6 +166,8 @@ namespace HashiraChronicles
                     break;
             }
             if (tuck > 0.01f && grip != Grip.TwoHand) tL = Vector3.Lerp(tL, sL + new Vector3(-0.12f, 0.2f, 0.1f), tuck * 0.7f);
+            sHandL = Ease(sHandL, tL, dt, grip == Grip.TwoHand && sw > 0.2f ? 60f : handRate);
+            tL = sHandL;
             Vector3 hL = TwoBone(upper[1], lower[1], sL, tL, armA, armB, new Vector3(-0.7f, -0.2f, -1f), Vector3.forward);
             if (hand[1] != null) { hand[1].localPosition = hL; hand[1].localRotation = lower[1].localRotation; }
             if (castGlow != null) castGlow.localScale = Vector3.one * (0.1f + 0.05f * Mathf.Sin(time * 5f) + 0.12f * sw);
@@ -198,6 +211,56 @@ namespace HashiraChronicles
                 }
                 else foot[i].localRotation = shin[i].localRotation * Quaternion.Euler(hov > 0f ? 45f : 10f + tuck * 30f, 0f, 0f);
             }
+        }
+
+        // ------------------------------------------------------------------ Blending
+
+        Vector3 sPelvis, sHandR, sHandL, sModelPos, sModelScale;
+        Quaternion sTorso = Quaternion.identity, sModelRot = Quaternion.identity;
+        bool blendReady;
+        float lastDt;
+
+        /// <summary>Frame-rate independent ease toward a target (critically damped feel).</summary>
+        static Vector3 Ease(Vector3 cur, Vector3 target, float dt, float rate)
+        {
+            if (dt <= 0f) return target;
+            return Vector3.Lerp(cur, target, 1f - Mathf.Exp(-dt * rate));
+        }
+
+        static Quaternion EaseRot(Quaternion cur, Quaternion target, float dt, float rate)
+        {
+            if (dt <= 0f) return target;
+            return Quaternion.Slerp(cur, target, 1f - Mathf.Exp(-dt * rate));
+        }
+
+        /// <summary>
+        /// Blends the whole body's pose (the character root the animation routines drive) so switching between
+        /// animation states — idle, hit, dodge, victory, the team-screen stance — eases in and out instead of
+        /// snapping, while fast actions stay responsive.
+        /// </summary>
+        void BlendModel(float dt, bool posing)
+        {
+            var M = cv.Model;
+            lastDt = dt;
+            if (!blendReady || dt <= 0f)
+            {
+                sModelRot = M.localRotation; sModelPos = M.localPosition; sModelScale = M.localScale;
+                if (!blendReady)
+                {
+                    sPelvis = pelvis.localPosition; sTorso = torso.localRotation;
+                    sHandR = hand[0] != null ? hand[0].localPosition : Vector3.zero;
+                    sHandL = hand[1] != null ? hand[1].localPosition : Vector3.zero;
+                }
+                blendReady = dt > 0f;
+                return;
+            }
+            float rate = posing ? 12f : 26f;
+            sModelRot = EaseRot(sModelRot, M.localRotation, dt, rate);
+            sModelPos = Ease(sModelPos, M.localPosition, dt, rate);
+            sModelScale = Ease(sModelScale, M.localScale, dt, rate);
+            M.localRotation = sModelRot;
+            M.localPosition = sModelPos;
+            M.localScale = sModelScale;
         }
 
         // ------------------------------------------------------------------ Team screen
@@ -322,6 +385,11 @@ namespace HashiraChronicles
                     break;
             }
             tR.y = Mathf.Max(tR.y, ankle + 0.3f);
+            // Ease into the showcase stance (and back out of a cheer) rather than snapping.
+            sHandR = Ease(sHandR, tR, lastDt, 8f);
+            sHandL = Ease(sHandL, tL, lastDt, 8f);
+            tR = sHandR;
+            tL = sHandL;
             Vector3 hL = TwoBone(upper[1], lower[1], sL, tL, armA, armB, new Vector3(-0.7f, -0.2f, -1f), Vector3.forward);
             if (hand[1] != null) { hand[1].localPosition = hL; hand[1].localRotation = lower[1].localRotation; }
             Vector3 hR = TwoBone(upper[0], lower[0], sR, tR, armA, armB, new Vector3(0.7f, -0.2f, -1f), Vector3.forward);
@@ -339,7 +407,7 @@ namespace HashiraChronicles
             }
             else rot = Quaternion.LookRotation(dir.normalized, upHint);
             float wob = Mathf.Sin(time * 0.9f + 1.3f) * 1.2f;
-            sp.localRotation = Quaternion.AngleAxis(wob, Vector3.right) * rot;
+            sp.localRotation = EaseRot(sp.localRotation, Quaternion.AngleAxis(wob, Vector3.right) * rot, lastDt, 8f);
         }
 
         /// <summary>

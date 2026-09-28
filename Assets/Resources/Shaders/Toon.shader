@@ -73,16 +73,27 @@ Shader "Hashira/Toon"
                 float shadow = SHADOW_ATTENUATION(i);
                 // Soft cel shading: a smooth light-to-shadow ramp instead of a hard edge, and the light is
                 // clamped so bright surfaces (faces, white hair) keep their detail instead of blowing out.
-                float lit = smoothstep(-0.05, 0.35, ndl) * smoothstep(0.2, 0.6, shadow);
+                // Smooth stylised shading: a wide, eased ramp (no hard terminator line), cast shadows softened
+                // and only partly darkening, and a gentle half-lambert gradient inside the lit and shadow areas
+                // so rounded shapes read as soft volumes rather than flat plastic.
+                float ramp = smoothstep(-0.3, 0.55, ndl);
+                ramp = ramp * ramp * (3.0 - 2.0 * ramp);
+                float lit = ramp * lerp(0.35, 1.0, smoothstep(0.1, 0.8, shadow));
+                float hl = ndl * 0.5 + 0.5;
 
                 fixed3 baseCol = tex2D(_MainTex, i.uv).rgb * _Color.rgb;
                 fixed3 ambient = ShadeSH9(float4(n, 1.0));
                 fixed3 light = min(_LightColor0.rgb, 1.0) * 0.9;
                 fixed3 col = lerp(baseCol * _ShadowColor.rgb * 0.95, baseCol * light, lit);
+                col *= lerp(0.9, 1.04, hl);
                 col += baseCol * ambient * 0.22;
 
+                // A broad, faint sheen (not a plastic hotspot) where the light glances toward the camera.
+                float3 h = normalize(l + v);
+                col += light * pow(saturate(dot(n, h)), 18.0) * 0.045 * ramp;
+
                 float rim = pow(1.0 - saturate(dot(n, v)), _RimPower) * saturate(ndl + 0.4);
-                col += _RimColor.rgb * smoothstep(0.35, 0.6, rim) * 0.12;
+                col += _RimColor.rgb * smoothstep(0.25, 0.7, rim) * 0.12;
                 col = min(col, 0.96);
                 col += _Emission.rgb;
                 col = lerp(col, _FlashColor.rgb, saturate(_Flash) * 0.75);

@@ -410,7 +410,7 @@ namespace HashiraChronicles
             if (index == 0 && cam != null)
             {
                 // 1. Wide establishing shot, a slow push across the silent arena.
-                cam.Cut(from - dirIn * 7f + side * 5f + Vector3.up * 9f, c + Vector3.up * 2f);
+                cam.Cut(from - dirIn * 7f + side * 5f + Vector3.up * 9f, c + Vector3.up * 2f, true);
                 cam.Dolly(from + dirIn * 3f + side * 3f + Vector3.up * 6f, bossPos + Vector3.up * 2f, 2.4f);
                 yield return new WaitForSeconds(1.6f);
             }
@@ -438,7 +438,7 @@ namespace HashiraChronicles
             if (cam != null)
             {
                 // 4. Push in toward its face.
-                cam.Cut(bossPos - dirIn * (9f + h * 2f) + side * 2f + Vector3.up * (h * 0.6f), bossPos + Vector3.up * h * 0.7f);
+                cam.Cut(bossPos - dirIn * (9f + h * 2f) + side * 2f + Vector3.up * (h * 0.6f), bossPos + Vector3.up * h * 0.7f, true);
                 cam.Dolly(bossPos - dirIn * (2.5f + h * 0.9f) + side * 0.8f + Vector3.up * (h * 0.85f), bossPos + Vector3.up * h * 0.9f, 1.6f);
             }
             yield return new WaitForSeconds(1.5f);
@@ -471,7 +471,7 @@ namespace HashiraChronicles
             if (cam != null)
             {
                 Vector3 side = Quaternion.Euler(0f, Random.value < 0.5f ? 50f : -50f, 0f) * Vector3.forward;
-                cam.Cut(pos + side * (6f + h * 1.5f) + Vector3.up * h, pos + Vector3.up * h * 0.6f);
+                cam.Cut(pos + side * (6f + h * 1.5f) + Vector3.up * h, pos + Vector3.up * h * 0.6f, true);
                 cam.Dolly(pos + Quaternion.Euler(0f, 40f, 0f) * side * (4.5f + h) + Vector3.up * h * 0.8f, pos + Vector3.up * h * 0.6f, 2.6f);
             }
             // The body cracks: bursts of its own colour tear out of it.

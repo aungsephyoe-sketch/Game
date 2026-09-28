@@ -61,7 +61,7 @@ namespace HashiraChronicles
             if (fwd.sqrMagnitude < 0.01f) fwd = transform.forward;
             fwd.Normalize();
             Vector3 side = Vector3.Cross(Vector3.up, fwd);
-            cam.Cut(Position - fwd * 8f + side * 4f + Vector3.up * 5f, (Position + focus) * 0.5f + Vector3.up * 2.5f);
+            cam.Cut(Position - fwd * 8f + side * 4f + Vector3.up * 5f, (Position + focus) * 0.5f + Vector3.up * 2.5f, true);
             cam.Dolly(Position - fwd * 10f - side * 3f + Vector3.up * 7f, focus + Vector3.up * 2f, duration);
         }
 
@@ -223,7 +223,7 @@ namespace HashiraChronicles
                 Visual.transform.localPosition = Vector3.up * Mathf.SmoothStep(0f, 8f, t / 0.35f);
                 yield return null;
             }
-            if (cam != null) { cam.Cut(focus - transform.forward * 7f + Vector3.up * 3f, focus + Vector3.up * 5f); }
+            if (cam != null) { cam.Cut(focus - transform.forward * 7f + Vector3.up * 3f, focus + Vector3.up * 5f, true); }
             for (int i = 0; i < 6; i++)
             {
                 Vector3 top = Position + Vector3.up * 8.5f;

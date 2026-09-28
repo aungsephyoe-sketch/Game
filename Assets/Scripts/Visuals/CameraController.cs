@@ -41,9 +41,36 @@ namespace HashiraChronicles
 
         public Camera Cam { get; private set; }
 
-        /// <summary>Instant camera cut (cutscenes).</summary>
-        public void Cut(Vector3 pos, Vector3 look)
+        // Transition blending: whenever the camera changes mode (cut into a special, back to gameplay, out of a
+        // cutscene), the new shot eases in from wherever the camera was instead of jumping there in one frame.
+        Vector3 blendPos;
+        Quaternion blendRot = Quaternion.identity;
+        float blendStart = -10f, blendDuration = 0.5f;
+
+        void BeginBlend(float duration)
         {
+            blendPos = transform.position;
+            blendRot = transform.rotation;
+            blendStart = Time.unscaledTime;
+            blendDuration = Mathf.Max(0.05f, duration);
+        }
+
+        void ApplyBlend()
+        {
+            float k = (Time.unscaledTime - blendStart) / blendDuration;
+            if (k >= 1f || k < 0f) return;
+            k = k * k * (3f - 2f * k);
+            transform.position = Vector3.Lerp(blendPos, transform.position, k);
+            transform.rotation = Quaternion.Slerp(blendRot, transform.rotation, k);
+        }
+
+        /// <summary>
+        /// Camera cut. Cutscenes use hard cuts; gameplay moments (specials, boss entrances) pass
+        /// <paramref name="smooth"/> so the camera glides into the new shot instead of snapping.
+        /// </summary>
+        public void Cut(Vector3 pos, Vector3 look, bool smooth = false)
+        {
+            if (smooth) BeginBlend(0.45f);
             scripted = true;
             fixedMode = false;
             cineTarget = null;
@@ -71,7 +98,11 @@ namespace HashiraChronicles
             shotStart = Time.unscaledTime;
         }
 
-        public void EndScripted() { scripted = false; }
+        public void EndScripted()
+        {
+            if (scripted) BeginBlend(0.6f);
+            scripted = false;
+        }
 
 
         void Awake()
@@ -122,12 +153,14 @@ namespace HashiraChronicles
 
         public void Follow(Transform target, bool snap)
         {
+            if (!snap && (fixedMode || scripted)) BeginBlend(0.6f);
             fixedMode = false;
             scripted = false;
             Target = target;
             if (snap && target != null)
             {
                 focus = target.position;
+                focusVel = Vector3.zero;
                 framingOffset = Vector3.zero;
                 zoom = zoomTarget = 1f;
                 cineBlend = 0f;
@@ -164,6 +197,7 @@ namespace HashiraChronicles
                 }
                 transform.position = p;
                 transform.rotation = Quaternion.LookRotation(currentLook - p);
+                ApplyBlend();
                 return;
             }
             if (fixedMode)
@@ -174,7 +208,9 @@ namespace HashiraChronicles
             }
             if (Target != null)
             {
-                focus = Vector3.Lerp(focus, Target.position, 1f - Mathf.Exp(-dt * 10f));
+                // Follow with a critically damped feel: soft start and stop, and a smooth hand-over when the
+                // followed slayer changes (team switch).
+                focus = Vector3.SmoothDamp(focus, Target.position, ref focusVel, 0.12f, Mathf.Infinity, dt);
                 framingOffset = Vector3.Lerp(framingOffset, ComputeFraming(), 1f - Mathf.Exp(-dt * 2.5f));
             }
             zoom = Mathf.Lerp(zoom, zoomTarget, 1f - Mathf.Exp(-dt * zoomSpeed));
@@ -182,7 +218,10 @@ namespace HashiraChronicles
             bool cineActive = cineTarget != null && Time.unscaledTime - cineStart < cineDuration + 0.6f;
             cineBlend = Mathf.MoveTowards(cineBlend, cineActive ? 1f : 0f, dt * (cineActive ? 5f : 2.2f));
             Place(dt);
+            ApplyBlend();
         }
+
+        Vector3 focusVel;
 
         /// <summary>Leans the view toward the centre of nearby enemies (weighted) so fights are framed.</summary>
         Vector3 ComputeFraming()

@@ -626,24 +626,41 @@ namespace HashiraChronicles
 
         IEnumerator SwingRoutine(float fromYaw, float toYaw, float duration, float pitch, float roll)
         {
-            if (Trail != null) { Trail.Clear(); Trail.emitting = true; }
+            // Anticipation → strike → follow-through → settle, inside the same total time so hit timing is unchanged.
+            float dir = Mathf.Sign(toYaw - fromYaw);
+            if (dir == 0f) dir = 1f;
+            float windUp = duration * 0.22f;
+            var from = SwordPivot.localRotation;
+            var cocked = Quaternion.Euler(pitch - 4f, fromYaw - dir * 10f, roll);
             float t = 0f;
-            while (t < duration)
+            while (t < windUp)
             {
                 t += Time.deltaTime;
-                float k = Mathf.Clamp01(t / duration);
-                k = 1f - Mathf.Pow(1f - k, 3f);
-                SwordPivot.localRotation = Quaternion.Euler(pitch, Mathf.Lerp(fromYaw, toYaw, k), roll);
+                float w = Mathf.Clamp01(t / windUp);
+                SwordPivot.localRotation = Quaternion.Slerp(from, cocked, w * w * (3f - 2f * w));
+                yield return null;
+            }
+            if (Trail != null) { Trail.Clear(); Trail.emitting = true; }
+            float strike = Mathf.Max(0.01f, duration - windUp);
+            float s = 0f;
+            while (s < strike)
+            {
+                s += Time.deltaTime;
+                float k = Mathf.Clamp01(s / strike);
+                // Ease in-out: gathers speed, whips through the middle, decelerates past the target.
+                k = k < 0.5f ? 4f * k * k * k : 1f - Mathf.Pow(-2f * k + 2f, 3f) * 0.5f;
+                float yaw = Mathf.LerpUnclamped(fromYaw - dir * 10f, toYaw + dir * 8f, k);
+                SwordPivot.localRotation = Quaternion.Euler(Mathf.Lerp(pitch - 4f, pitch, k), yaw, roll);
                 yield return null;
             }
             if (Trail != null) Trail.emitting = false;
-            yield return new WaitForSeconds(0.12f);
+            yield return new WaitForSeconds(0.1f);
             float r = 0f;
             var start = SwordPivot.localRotation;
             while (r < 1f)
             {
-                r += Time.deltaTime * 6f;
-                SwordPivot.localRotation = Quaternion.Slerp(start, swordRest, r);
+                r = Mathf.Min(1f, r + Time.deltaTime * 4.5f);
+                SwordPivot.localRotation = Quaternion.Slerp(start, swordRest, r * r * (3f - 2f * r));
                 yield return null;
             }
             swingRoutine = null;
