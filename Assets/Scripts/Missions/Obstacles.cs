@@ -34,7 +34,7 @@ namespace HashiraChronicles
         /// <summary>How tall the generated colliders are: well above any slayer, so nothing can hop over a wall.</summary>
         const float ColliderHeight = 4f;
         static Transform colliderRoot;
-        static readonly HashSet<int> scanned = new HashSet<int>();
+        static readonly HashSet<MeshRenderer> scanned = new HashSet<MeshRenderer>();
 
         /// <summary>True while the game runs: real colliders are generated and CharacterControllers can sweep.</summary>
         public static bool PhysicsReady { get { return Application.isPlaying; } }
@@ -202,7 +202,7 @@ namespace HashiraChronicles
             if (root == null) return;
             foreach (var mr in root.GetComponentsInChildren<MeshRenderer>(true))
             {
-                if (!scanned.Add(mr.GetInstanceID())) continue;
+                if (!scanned.Add(mr)) continue;
                 if (mr.isPartOfStaticBatch) continue;
                 if (mr.GetComponentInParent<NoCollision>() != null || mr.GetComponentInParent<Breakable>() != null || mr.GetComponentInParent<NpcWalker>() != null) continue;
                 var mf = mr.GetComponent<MeshFilter>();
