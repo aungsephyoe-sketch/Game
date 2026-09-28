@@ -207,7 +207,7 @@ namespace HashiraChronicles
             else if (screen == GameScreen.Results && Battle == null) Map.Show(Data); // after a story scene, results sit over the world map
             if (st != 0 && Battle != null) { Destroy(Battle.gameObject); Battle = null; }
             // Background sound for the calm screens; battles set their own region ambience.
-            if (st == 1 || st == 2) Audio.SetAmbience("village");
+            if (st == 1 || st == 2) Audio.SetAmbience("home");
             else if (st == 3) Audio.SetAmbience("wind");
             else if (st == 4) Audio.SetAmbience(null);
         }

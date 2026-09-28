@@ -61,6 +61,19 @@ namespace HashiraChronicles
         }
 
         /// <summary>The element's own sound layered on an attack: fire roar, thunder crack, splash, gust, chime, hum.</summary>
+        string BuildSound()
+        {
+            switch (Def.element)
+            {
+                case Element.Water: return "build_water";
+                case Element.Flame: return "build_flame";
+                case Element.Thunder: return "build_thunder";
+                case Element.Beast: return "build_wind";
+                case Element.Light: return "build_light";
+                default: return "build_dark";
+            }
+        }
+
         void PlayElementSound(float volume)
         {
             if (Audio == null) return;
@@ -158,18 +171,42 @@ namespace HashiraChronicles
             comboIndex = 0;
         }
 
+        /// <summary>The swing sound of this slayer's weapon: sharp for blades, deep for heavy weapons, airy for staves.</summary>
+        public string SwingSound()
+        {
+            switch (Def.weapon)
+            {
+                case WeaponKind.TwinBlades: case WeaponKind.Cleavers: return "sw_quick";
+                case WeaponKind.Greatsword: return "sw_heavy";
+                case WeaponKind.Spear: case WeaponKind.Staff: case WeaponKind.Cane: return "sw_staff";
+                case WeaponKind.Fists: return "sw_fist";
+                case WeaponKind.Fans: return "sw_fan";
+                case WeaponKind.Bow: return "sw_bow";
+                default: return "sw_blade";
+            }
+        }
+
+        /// <summary>The impact sound when this slayer's weapon connects.</summary>
+        public string HitSound()
+        {
+            switch (Def.weapon)
+            {
+                case WeaponKind.Greatsword: return "hit_heavy";
+                case WeaponKind.Fists: case WeaponKind.Cane: return "hit_blunt";
+                case WeaponKind.Staff: case WeaponKind.Fans: case WeaponKind.Bow: return "hit_magic";
+                default: return Def.style == CombatStyle.Heavy ? "hit_heavy" : "hit_blade";
+            }
+        }
+
         void PlayStyleSwing(bool finisher)
         {
             var a = Audio;
             if (a == null) return;
-            PlayElementSound(finisher ? 0.6f : 0.35f);
-            switch (Def.style)
-            {
-                case CombatStyle.Swift: a.PlayPitched(finisher ? "heavy" : "slash", finisher ? 0.6f : 0.45f, Random.Range(1.25f, 1.45f)); break;
-                case CombatStyle.Heavy: a.PlayPitched(finisher ? "impact" : "slashHeavy", finisher ? 1f : 0.8f, Random.Range(0.8f, 0.95f)); break;
-                case CombatStyle.Technical: a.PlayPitched(finisher ? "heavy" : "slash", finisher ? 0.7f : 0.5f, Random.Range(1.05f, 1.15f)); break;
-                default: a.PlayPitched(finisher ? "heavy" : "slash", finisher ? 0.7f : 0.5f, Random.Range(0.95f, 1.05f)); break;
-            }
+            PlayElementSound(finisher ? 0.55f : 0.25f);
+            // Pitch follows the fighter: quick strikers a little higher, heavy hitters lower.
+            float pitch = Def.style == CombatStyle.Swift ? 1.12f : Def.style == CombatStyle.Heavy ? 0.88f : 1f;
+            a.PlayPitched(SwingSound(), finisher ? 0.8f : 0.55f, pitch * (finisher ? 0.9f : 1f) * Random.Range(0.94f, 1.06f));
+            if (finisher) a.PlayPitched(Def.style == CombatStyle.Heavy ? "hit_heavy" : "sw_heavy", 0.4f, pitch * 1.1f);
         }
 
         /// <summary>Style-specific extra beat after each melee swing.</summary>

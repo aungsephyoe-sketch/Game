@@ -91,7 +91,7 @@ namespace HashiraChronicles
             r.twistGain = Mathf.Max(r.twistGain, 0.35f);
             r.swingLunge = Mathf.Max(r.swingLunge, 10f);
             r.hasPose = true;
-            r.poseBody = new Vector3(r.lean * 0.5f + 6f, 0f, 0f); r.poseDrop = 0.04f; r.poseWeapon = new Vector3(-50f, 40f, 0f); r.poseHead = new Vector3(6f, 0f, 0f);
+            r.poseBody = new Vector3(r.lean * 0.3f, 0f, 0f); r.poseDrop = 0.02f; r.poseWeapon = new Vector3(-10f, 40f, 0f); r.poseHead = new Vector3(4f, 0f, 0f);
             Motion = MotionStyle.Aggressive;
             // No idle flourishes on demons: a random swing would read as an attack telegraph.
             FidgetsEnabled = false;

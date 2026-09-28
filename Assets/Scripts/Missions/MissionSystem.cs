@@ -801,7 +801,7 @@ namespace HashiraChronicles
             if (Victory && active != null && active.IsAlive)
             {
                 active.PlayVictory();
-                if (CameraController.Instance != null) CameraController.Instance.PlayUltimateCinematic(active.transform, 2.4f);
+                if (CameraController.Instance != null) CameraController.Instance.PlayUltimateCinematic(active.transform, 2.4f, 3f);
             }
             if (Victory)
             {

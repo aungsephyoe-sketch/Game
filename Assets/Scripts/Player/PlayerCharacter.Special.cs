@@ -30,7 +30,13 @@ namespace HashiraChronicles
             var audio = Audio;
 
             // 1-2. Stance, screen reaction.
-            if (audio != null) audio.Play("buildup", 1f);
+            // Audio: an activation gong with this slayer's weapon ringing out, then an element build-up.
+            if (audio != null)
+            {
+                audio.Play("sp_activate", 0.85f);
+                audio.PlayPitched(SwingSound(), 0.5f, 0.8f);
+                audio.Play(BuildSound(), 0.9f);
+            }
             Visual.SetCharge(1f, color);
             SceneLighting.UltimateMood(color, 3.2f);
             GameEvents.RaiseImpact(0.4f);
@@ -42,8 +48,9 @@ namespace HashiraChronicles
             float camH = Def.style == CombatStyle.Heavy ? 0.8f : Def.style == CombatStyle.Swift ? 1.6f : 1.3f;
             if (cam != null)
             {
-                cam.Cut(Position + fwd * 3.2f + right * 1.4f * side + Vector3.up * camH, Position + Vector3.up * 1.1f);
-                cam.Dolly(Position + fwd * 2.2f - right * 1.6f * side + Vector3.up * (camH + 0.4f), Position + Vector3.up * 1.2f, 1.3f);
+                // Full-body framing for the build-up: close enough to feel it, never a face close-up.
+                cam.Cut(Position + fwd * 6f + right * 2.4f * side + Vector3.up * (camH + 1.4f), Position + Vector3.up * 1f);
+                cam.Dolly(Position + fwd * 5.2f - right * 2.6f * side + Vector3.up * (camH + 1.9f), Position + Vector3.up * 1.1f, 1.3f);
             }
 
             // 4. Energy gathers.
@@ -67,8 +74,8 @@ namespace HashiraChronicles
 
             // 5. Release — unique to the fighting style.
             EnemyController.Frozen = false;
-            if (cam != null) { cam.Follow(transform, false); cam.PlayUltimateCinematic(transform, 1.4f); cam.Shake(0.6f); }
-            if (audio != null) audio.Play("specialRelease", 1f);
+            if (cam != null) { cam.Follow(transform, false); cam.PlayUltimateCinematic(transform, 1.4f, Mathf.Max(ab.radius, 6f) * RarityFx); cam.Shake(0.6f); }
+            if (audio != null) { audio.Play("sp_whoosh", 0.8f); audio.Play("specialRelease", 0.9f); }
             PlayElementSound(1f);
             GameEvents.RaiseImpact(1f);
             var tally = new DamageTally();
@@ -104,7 +111,7 @@ namespace HashiraChronicles
             if (Owned.stars >= 6)
                 for (int tier = 2; tier <= 6; tier++) VFX.Shockwave(Position, 4f + tier * 1.5f, RarityInfo.Color(tier), 0.5f + tier * 0.08f);
             if (cam != null) cam.Shake(0.7f);
-            if (audio != null) audio.PlayPitched("impact", 1f, 0.75f);
+            if (audio != null) audio.Play("sp_finish", 1f);
             GameEvents.RaiseImpact(1f);
             yield return new WaitForSeconds(0.35f);
             FinishUltimateEffects();

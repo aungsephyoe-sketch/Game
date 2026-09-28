@@ -129,7 +129,7 @@ namespace HashiraChronicles
                 "Grandma's making rice cakes tonight!", "They say the capital has an arena. Imagine!"
             };
             for (int i = 0; i < Mathf.RoundToInt(5 * GameSettings.SceneryDensity) + 1; i++)
-                NpcWalker.Spawn(world.transform, i % 2 == 0 ? "npc_villager" : "npc_villager2", Vector3.zero, 7f, 13f, lines);
+                walkers.Add(NpcWalker.Spawn(world.transform, i % 2 == 0 ? "npc_villager" : "npc_villager2", Vector3.zero, 7f, 13f, lines));
             heroHolder = new GameObject("HeroHolder").transform;
             heroHolder.SetParent(transform, false);
             heroHolder.position = HeroPos;
@@ -250,9 +250,25 @@ namespace HashiraChronicles
             VFX.Breath(lineupSlots[i].position, Color.white, 15);
         }
 
+        readonly List<NpcWalker> walkers = new List<NpcWalker>();
+
+        /// <summary>Villagers step out of shot while the team line-up or the character viewer is on screen.</summary>
+        void KeepWalkersOutOfShot()
+        {
+            bool framing = lineupRoot != null || viewer;
+            foreach (var w in walkers)
+            {
+                if (w == null) continue;
+                bool inFront = w.transform.position.z < 2.5f && Mathf.Abs(w.transform.position.x) < 9f;
+                bool show = !(framing && inFront);
+                if (w.gameObject.activeSelf != show) w.gameObject.SetActive(show);
+            }
+        }
+
         void Update()
         {
             if (heroHolder == null) return;
+            KeepWalkersOutOfShot();
             float t = Time.unscaledTime;
             if (lineupRoot != null)
             {

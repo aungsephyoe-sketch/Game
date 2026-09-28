@@ -58,6 +58,10 @@ namespace HashiraChronicles
             phase += dt * tempo * (1f + 0.4f * sprint) * m;
             float sw = cv.SwingWeight;
             bool guard = cv.IsGuarding;
+            // Showcase poses (line-up, portraits, victory) keep the elbows bent and the hands near the body,
+            // so a held weapon reads as a relaxed stance rather than an arm stretched out mid-swing.
+            bool posing = cv.Posing && !dead;
+            if (posing) sw = Mathf.Min(sw, 0.65f);
 
             // Airborne (dodges, leaps, victory hops): tuck the legs.
             bool airborne = cv.Model.localPosition.y > 0.18f || cv.transform.localPosition.y > 0.3f;
@@ -85,7 +89,7 @@ namespace HashiraChronicles
             // ---- Arms
             Vector3 sR = torso.localPosition + torso.localRotation * shoulder;
             Vector3 sL = torso.localPosition + torso.localRotation * new Vector3(-shoulder.x, shoulder.y, shoulder.z);
-            float reach = (armA + armB) * 0.92f;
+            float reach = (armA + armB) * (posing ? 0.62f : 0.92f);
             Vector3 sd = d;
             if (sd.z < 0f) sd += Vector3.forward * (-sd.z) * 0.9f; // keep the hand in front when the blade points back
             sd = sd.sqrMagnitude > 0.0001f ? sd.normalized : Vector3.forward;
@@ -117,7 +121,7 @@ namespace HashiraChronicles
                 case Grip.TwoHand:
                 {
                     Vector3 onHandle = (cv.SwordPivot != null ? cv.SwordPivot.localPosition : hR) + d * handleOffset;
-                    tL = Vector3.Lerp(restL + walk, onHandle, Mathf.Max(sw, guard ? 1f : 0f));
+                    tL = Vector3.Lerp(restL + walk, onHandle, Mathf.Max(posing ? 0f : sw, guard ? 1f : 0f));
                     break;
                 }
                 case Grip.Caster:
@@ -138,7 +142,7 @@ namespace HashiraChronicles
             if (castGlow != null) castGlow.localScale = Vector3.one * (0.1f + 0.05f * Mathf.Sin(time * 5f) + 0.12f * sw);
 
             // ---- Legs
-            bool plant = !dead && !cv.Posing && hover <= 0f && tuck < 0.5f && Vector3.Angle(cv.Model.up, cv.transform.up) < 30f;
+            bool plant = !dead && hover <= 0f && tuck < 0.5f && Vector3.Angle(cv.Model.up, cv.transform.up) < 30f;
             Vector3 fwdB = body.InverseTransformDirection(cv.transform.forward);
             Vector3 upB = body.InverseTransformDirection(cv.transform.up);
             float scale = cv.Model.lossyScale.y / Mathf.Max(0.0001f, cv.transform.lossyScale.y);

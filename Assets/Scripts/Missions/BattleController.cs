@@ -42,14 +42,15 @@ namespace HashiraChronicles
                     Vector3 o = p - b.LockCenter;
                     o.y = 0f;
                     if (o.magnitude > b.LockRadius) p = b.LockCenter + o.normalized * b.LockRadius;
+                    p = Obstacles.Resolve(p);
                     p.y = 0f;
                     return p;
                 }
-                p = b.Journey.Clamp(p);
+                p = Obstacles.Resolve(b.Journey.Clamp(p));
                 p.y = 0f;
                 return p;
             }
-            if (b != null && b.Def != null && b.Def.openWorld) return OpenWorldBuilder.Clamp(p);
+            if (b != null && b.Def != null && b.Def.openWorld) return Obstacles.Resolve(OpenWorldBuilder.Clamp(p));
             float m = new Vector2(p.x, p.z).magnitude;
             if (m > ArenaRadius) p *= ArenaRadius / m;
             return p;
@@ -124,6 +125,7 @@ namespace HashiraChronicles
             PlayerCharacter.LockTarget = null;
 
             Vector3 spawn = new Vector3(0f, 0f, -6f);
+            Obstacles.Clear();
             if (def.openWorld)
             {
                 OpenWorldBuilder.Build(transform);
@@ -152,6 +154,8 @@ namespace HashiraChronicles
                 }
             }
 
+            // Solid scenery blocks movement (the prototype worlds register their own obstacles).
+            if (string.IsNullOrEmpty(def.prototypeEnv)) Obstacles.Scan(transform);
             // Scenery never hides the fighting slayer.
             CameraOcclusion.Attach(this);
             // Tall set pieces (towers, spires, far hills) threw long jagged shadow streaks across the road.
@@ -219,7 +223,7 @@ namespace HashiraChronicles
         void OnDestroy()
         {
             if (Team != null) Team.ActiveChanged -= OnActiveChanged;
-            if (Current == this) Current = null;
+            if (Current == this) { Current = null; Obstacles.Clear(); }
             TimeController.ResetAll();
             DamageNumbers.Clear();
             RenderSettings.fog = false;

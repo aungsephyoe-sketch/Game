@@ -138,9 +138,16 @@ namespace HashiraChronicles
             if (GameManager.Instance != null && GameManager.Instance.Audio != null)
             {
                 // Bigger targets sound heavier; every hit is slightly different.
-                float pitch = playerHit ? 0.85f : Mathf.Clamp(1.25f - target.Radius * 0.45f, 0.7f, 1.25f);
-                GameManager.Instance.Audio.PlayPitched(info.crit ? "crit" : "hit", playerHit ? 0.8f : 0.6f, pitch * Random.Range(0.93f, 1.07f));
-                if (tag.heavy && !playerHit) GameManager.Instance.Audio.PlayVaried("impact", 0.45f, 0.1f);
+                float pitch = playerHit ? 0.95f : Mathf.Clamp(1.2f - target.Radius * 0.4f, 0.75f, 1.2f);
+                var au = GameManager.Instance.Audio;
+                var pc = attacker as PlayerCharacter;
+                if (playerHit) au.PlayPitched("hurt", 0.75f, pitch * Random.Range(0.94f, 1.06f));
+                else
+                {
+                    au.PlayPitched(pc != null ? pc.HitSound() : "hit_blunt", 0.6f, pitch * Random.Range(0.93f, 1.07f));
+                    if (info.crit) au.PlayPitched("crit", 0.55f, Random.Range(0.96f, 1.04f));
+                }
+                if (tag.heavy && !playerHit) au.PlayVaried("hit_heavy", 0.45f, 0.1f);
             }
             TimeController.HitStop(info.crit ? tag.hitStop * 1.6f : tag.hitStop);
             if (CameraController.Instance != null)

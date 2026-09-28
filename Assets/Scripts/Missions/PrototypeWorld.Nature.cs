@@ -197,6 +197,7 @@ namespace HashiraChronicles
         /// <summary>A tree near the road as its own object (so the camera can fade it when it gets in the way).</summary>
         static void NearTree(Vector3 p, float h, int type)
         {
+            Obstacles.AddCircle(p, K == Kind.Volcano ? h * 0.05f + 0.15f : h * 0.07f + 0.2f);
             var b = new WorldMeshBuilder(treeRoot, K == Kind.Volcano ? solidMat : folMat, "Tree", true);
             switch (K)
             {
@@ -234,6 +235,7 @@ namespace HashiraChronicles
         static void Rock(Vector3 p, float size, Color c, bool cap)
         {
             var q = Quaternion.Euler(R(-8f, 8f), R(0f, 360f), R(-8f, 8f));
+            if (size > 0.5f) Obstacles.AddCircle(p, size * 0.5f);
             solid.Add(MeshFactory.Rock(rng.Next(8)), p + Vector3.down * size * 0.15f, q, new Vector3(size * R(0.9f, 1.3f), size * R(0.6f, 0.9f), size * R(0.9f, 1.2f)), Jitter(c, 0.06f));
             if (cap)
             {
@@ -260,6 +262,7 @@ namespace HashiraChronicles
 
         static void Crystal(Vector3 p, float size, Color c)
         {
+            if (size > 0.7f) Obstacles.AddCircle(p, size * 0.3f);
             for (int k = 0; k < 4; k++)
             {
                 var q = Quaternion.Euler(R(-25f, 25f), R(0f, 360f), R(-25f, 25f));
@@ -269,12 +272,14 @@ namespace HashiraChronicles
 
         static void Shard(Vector3 p, float size)
         {
+            if (size > 0.8f) Obstacles.AddCircle(p, size * 0.22f);
             var q = Quaternion.Euler(R(-20f, 20f), R(0f, 360f), R(-20f, 20f));
             solid.Add(MeshFactory.FacetCone(4), p + Vector3.down * 0.1f, q, new Vector3(size * 0.4f, size * R(1.2f, 2.4f), size * 0.4f), new Color(0.07f, 0.05f, 0.08f));
         }
 
         static void Basalt(Vector3 p, float size)
         {
+            Obstacles.AddCircle(p, size * 0.55f);
             int n = 3 + rng.Next(4);
             for (int k = 0; k < n; k++)
             {

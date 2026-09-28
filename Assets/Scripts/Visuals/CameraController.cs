@@ -32,6 +32,7 @@ namespace HashiraChronicles
         float cineStart, cineDuration;
         float cineBlend; // 0 = gameplay, 1 = cinematic
         float cineYaw;
+        float cineDistance = 9f, cineHeight = 3.2f;
 
         // Scripted (cutscene) shots.
         bool scripted;
@@ -99,9 +100,15 @@ namespace HashiraChronicles
             zoomSpeed = speed;
         }
 
-        public void PlayUltimateCinematic(Transform target, float duration)
+        /// <summary>
+        /// Cinematic angle for a special or ultimate. <paramref name="radius"/> is how far the attack reaches: the
+        /// camera pulls back and up far enough to keep the whole move, its effects and the enemies it hits in frame.
+        /// </summary>
+        public void PlayUltimateCinematic(Transform target, float duration, float radius = 6f)
         {
             cineTarget = target;
+            cineDistance = Mathf.Clamp(5.5f + radius * 0.95f, 8f, 17f);
+            cineHeight = Mathf.Clamp(2f + radius * 0.4f, 3f, 7.5f);
             cineStart = Time.unscaledTime;
             cineDuration = duration;
             // Pick the side that keeps the most enemies in frame behind the slayer.
@@ -217,10 +224,11 @@ namespace HashiraChronicles
             {
                 // Low three-quarter angle that slowly orbits the slayer.
                 float t = Time.unscaledTime - cineStart;
-                float yaw = cineTarget.eulerAngles.y + cineYaw + t * 25f;
-                Vector3 dir = Quaternion.Euler(12f, yaw, 0f) * Vector3.back;
-                Vector3 cinePos = cineTarget.position + Vector3.up * 1.4f + dir * 4.2f;
-                Vector3 cineLook = cineTarget.position + Vector3.up * 1.2f;
+                float yaw = cineTarget.eulerAngles.y + cineYaw + t * 12f;
+                Vector3 dir = Quaternion.Euler(0f, yaw, 0f) * Vector3.back;
+                Vector3 cinePos = cineTarget.position + Vector3.up * cineHeight + dir * cineDistance;
+                // Look a little ahead of the slayer, toward where the attack lands.
+                Vector3 cineLook = cineTarget.position + cineTarget.forward * Mathf.Min(3f, cineDistance * 0.2f) + Vector3.up * 1.2f;
                 float b = Mathf.SmoothStep(0f, 1f, cineBlend);
                 pos = Vector3.Lerp(pos, cinePos, b);
                 look = Vector3.Lerp(look, cineLook, b);

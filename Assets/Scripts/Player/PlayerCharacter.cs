@@ -480,7 +480,7 @@ namespace HashiraChronicles
             canMoveCancel = false;
             AutoAim(7f);
             Visual.DashAttack(0.14f);
-            Play("dash", 0.6f);
+            if (Audio != null) { Audio.PlayVaried(SwingSound(), 0.7f, 0.06f); Audio.PlayVaried("dodge", 0.4f, 0.1f); }
             var tag = AttackTag.Basic(1.3f, ElementColor);
             tag.stagger = 2.5f;
             tag.knockback = 3f;
@@ -530,7 +530,7 @@ namespace HashiraChronicles
             Health.GrantInvulnerability(0.3f);
             Visual.Dodge(dir, duration);
             VFX.Dust(Position, 6);
-            if (Audio != null) Audio.PlayVaried("whoosh", 0.6f, 0.1f);
+            if (Audio != null) Audio.PlayVaried("dodge", 0.7f, 0.1f);
             Vector3 start = Position;
             float t = 0f;
             while (t < duration)

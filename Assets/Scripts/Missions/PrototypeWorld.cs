@@ -41,7 +41,7 @@ namespace HashiraChronicles
         {
             public List<Vector3> pts = new List<Vector3>();
             public float half, depth, surface;
-            public bool lava, ice;
+            public bool lava, ice, causeway;
         }
 
         static Kind K;
@@ -115,6 +115,8 @@ namespace HashiraChronicles
             Nature();
             Landmarks();
             FlushNature();
+            // Everything solid that was built as a separate set piece blocks movement too.
+            Obstacles.Scan(stat);
             Atmosphere(res);
             Lighting();
 
@@ -258,6 +260,7 @@ namespace HashiraChronicles
             {
                 float cd = ChannelDist(c, x, z);
                 if (cd > c.half + 3f) continue;
+                if (c.causeway && PathDist(x, z) < J.halfWidth + 2f) continue;
                 float bottom = -c.depth;
                 h = Mathf.Min(h, Mathf.Lerp(bottom, h, SS(c.half * 0.6f, c.half + 3f, cd)));
             }
@@ -295,7 +298,7 @@ namespace HashiraChronicles
             if (K == Kind.Volcano)
             {
                 // A lava moat around the crater arena (the road crosses on a natural rock causeway).
-                var moat = new Channel { half = 2.2f, depth = 1.8f, lava = true, surface = -0.6f };
+                var moat = new Channel { half = 2.2f, depth = 1.8f, lava = true, surface = -0.6f, causeway = true };
                 for (int k = 0; k <= 40; k++)
                 {
                     float a = k * Mathf.PI * 2f / 40f;

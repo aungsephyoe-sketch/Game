@@ -401,37 +401,37 @@ namespace HashiraChronicles
             switch (def.motion)
             {
                 case MotionStyle.Nervous:
-                    r.crouch = 0.04f; r.lean = 8f; r.tempo = 14f; r.stride = 0.14f; r.idleBounce = 0.01f; r.idleBounceFreq = 3f; r.weightShift = 0.01f;
-                    r.poseBody = new Vector3(8f, 0f, -3f); r.poseDrop = 0.03f; r.poseWeapon = new Vector3(-10f, 20f, 0f); r.poseHead = new Vector3(0f, 10f, 5f);
+                    r.crouch = 0.04f; r.lean = 8f; r.tempo = 14f; r.stride = 0.14f; r.idleBounce = 0.005f; r.idleBounceFreq = 2.5f; r.weightShift = 0.01f;
+                    r.poseBody = new Vector3(4f, 0f, -2f); r.poseDrop = 0.02f; r.poseWeapon = new Vector3(20f, 25f, 0f); r.poseHead = new Vector3(0f, 8f, 3f);
                     break;
                 case MotionStyle.Aggressive:
                     r.crouch = 0.06f; r.lean = 12f; r.tempo = 10f; r.stride = 0.2f; r.twistGain = 0.4f; r.swingDip = 0.08f; r.swingLunge = 14f;
-                    r.poseBody = new Vector3(14f, 0f, 0f); r.poseDrop = 0.06f; r.poseWeapon = new Vector3(-60f, 40f, 0f); r.poseHead = new Vector3(8f, 0f, 0f);
+                    r.poseBody = new Vector3(6f, 0f, 0f); r.poseDrop = 0.03f; r.poseWeapon = new Vector3(-15f, 40f, 0f); r.poseHead = new Vector3(5f, 0f, 0f);
                     break;
                 case MotionStyle.Graceful:
                     r.crouch = 0f; r.lean = -2f; r.tempo = 8f; r.stride = 0.12f; r.weightShift = 0.015f; r.swingDip = 0f; r.swingLunge = 4f; r.twistGain = 0.15f;
-                    r.poseBody = new Vector3(-3f, 0f, 5f); r.poseDrop = 0f; r.poseWeapon = new Vector3(-95f, 0f, 0f); r.poseHead = new Vector3(0f, 0f, -8f);
+                    r.poseBody = new Vector3(-2f, 0f, 2f); r.poseDrop = 0f; r.poseWeapon = new Vector3(-80f, 10f, 0f); r.poseHead = new Vector3(0f, 0f, -5f);
                     if (def.weapon == WeaponKind.Staff && def.rarity >= 5) { r.hover = 0.14f; r.stride = 0.06f; r.lift = 0.03f; }
                     break;
                 case MotionStyle.Stoic:
                     r.crouch = 0.01f; r.lean = 0f; r.tempo = 8.5f; r.stride = 0.15f;
-                    r.poseBody = Vector3.zero; r.poseDrop = 0f; r.poseWeapon = new Vector3(88f, 0f, 0f); r.poseHead = Vector3.zero;
+                    r.poseBody = Vector3.zero; r.poseDrop = 0f; r.poseWeapon = new Vector3(70f, 20f, 0f); r.poseHead = Vector3.zero;
                     break;
                 case MotionStyle.Confident:
                     r.crouch = 0.02f; r.lean = -4f; r.tempo = 10f; r.stride = 0.18f; r.weightShift = 0.02f; r.twistGain = 0.35f;
-                    r.poseBody = new Vector3(-4f, 0f, 0f); r.poseDrop = 0f; r.poseWeapon = new Vector3(-125f, 25f, 0f); r.poseHead = new Vector3(-8f, 0f, 0f);
+                    r.poseBody = new Vector3(-2f, 0f, 0f); r.poseDrop = 0f; r.poseWeapon = new Vector3(-105f, 30f, 0f); r.poseHead = new Vector3(-5f, 0f, 0f);
                     break;
                 case MotionStyle.Sly:
                     r.crouch = 0.04f; r.lean = 8f; r.tempo = 11f; r.stride = 0.16f; r.weightShift = 0.02f;
-                    r.poseBody = new Vector3(-5f, 15f, 8f); r.poseDrop = 0f; r.poseWeapon = new Vector3(40f, 150f, 0f); r.poseHead = new Vector3(0f, -12f, 6f);
+                    r.poseBody = new Vector3(0f, 8f, 2f); r.poseDrop = 0f; r.poseWeapon = new Vector3(50f, 95f, 0f); r.poseHead = new Vector3(0f, -8f, 3f);
                     break;
                 case MotionStyle.Light:
-                    r.crouch = 0.035f; r.lean = 8f; r.tempo = 12.5f; r.stride = 0.19f; r.lift = 0.14f; r.idleBounce = 0.018f; r.idleBounceFreq = 2.4f;
-                    r.poseBody = new Vector3(10f, 0f, 0f); r.poseDrop = 0.04f; r.poseWeapon = new Vector3(30f, 115f, 0f); r.poseHead = new Vector3(4f, -8f, 0f);
+                    r.crouch = 0.035f; r.lean = 8f; r.tempo = 12.5f; r.stride = 0.19f; r.lift = 0.14f; r.idleBounce = 0.008f; r.idleBounceFreq = 2f;
+                    r.poseBody = new Vector3(4f, 0f, 0f); r.poseDrop = 0.02f; r.poseWeapon = new Vector3(40f, 95f, 0f); r.poseHead = new Vector3(2f, -6f, 0f);
                     break;
                 default:
                     r.crouch = 0.02f; r.lean = 4f; r.tempo = 11f; r.stride = 0.17f;
-                    r.poseBody = new Vector3(6f, 0f, 0f); r.poseDrop = 0.02f; r.poseWeapon = new Vector3(10f, 70f, 0f); r.poseHead = Vector3.zero;
+                    r.poseBody = new Vector3(2f, 0f, 0f); r.poseDrop = 0.01f; r.poseWeapon = new Vector3(38f, 50f, 0f); r.poseHead = Vector3.zero;
                     break;
             }
             if (def.style == CombatStyle.Heavy || def.role == Role.Tank) { r.swingDip = 0.1f; r.swingLunge = 16f; r.twistGain = 0.45f; r.tempo *= 0.85f; }
@@ -548,6 +548,7 @@ namespace HashiraChronicles
                     r.handleOffset = -0.15f;
                     swordRest = Quaternion.Euler(-108f, 32f, 0f);
                     sp.localRotation = swordRest;
+                    r.poseWeapon = swordRest.eulerAngles;
                     Part(PrimitiveType.Cube, sp, new Vector3(0f, 0f, -0.04f), new Vector3(0.05f, 0.05f, 0.4f), leather);
                     for (int i = 0; i < 5; i++) Part(PrimitiveType.Cube, sp, new Vector3(0f, 0f, -0.2f + i * 0.08f), new Vector3(0.056f, 0.056f, 0.02f), accent);
                     Ball(sp, new Vector3(0f, 0f, -0.26f), Vector3.one * 0.07f, trim);
@@ -589,6 +590,7 @@ namespace HashiraChronicles
                     r.handleOffset = -0.34f;
                     swordRest = Quaternion.Euler(-65f, 25f, 0f);
                     sp.localRotation = swordRest;
+                    r.poseWeapon = swordRest.eulerAngles;
                     Part(PrimitiveType.Cylinder, sp, new Vector3(0f, 0f, 0.25f), new Vector3(0.045f, 1.05f, 0.045f), wood, new Vector3(90f, 0f, 0f));
                     for (int i = 0; i < 4; i++) Part(PrimitiveType.Cylinder, sp, new Vector3(0f, 0f, -0.6f + i * 0.5f), new Vector3(0.052f, 0.012f, 0.052f), trim, new Vector3(90f, 0f, 0f));
                     Part(PrimitiveType.Cylinder, sp, new Vector3(0f, 0f, 1.3f), new Vector3(0.07f, 0.03f, 0.07f), trim, new Vector3(90f, 0f, 0f));
@@ -611,6 +613,7 @@ namespace HashiraChronicles
                     r.restHandL = new Vector3(-r.shoulder.x - 0.02f, 0.3f, 0.3f);
                     swordRest = Quaternion.Euler(-78f, 12f, 0f);
                     sp.localRotation = swordRest;
+                    r.poseWeapon = swordRest.eulerAngles;
                     Part(PrimitiveType.Cylinder, sp, new Vector3(0f, 0f, 0.35f), new Vector3(0.042f, 0.9f, 0.042f), wood, new Vector3(90f, 0f, 0f));
                     float[] bands = { -0.45f, 0.12f, 0.62f, 1.18f };
                     foreach (float z in bands) Part(PrimitiveType.Cylinder, sp, new Vector3(0f, 0f, z), new Vector3(0.05f, 0.012f, 0.05f), trim, new Vector3(90f, 0f, 0f));
@@ -701,6 +704,7 @@ namespace HashiraChronicles
                     r.grip = PremiumRig.Grip.OneHand;
                     swordRest = Quaternion.Euler(75f, 20f, 0f);
                     sp.localRotation = swordRest;
+                    r.poseWeapon = swordRest.eulerAngles;
                     Part(PrimitiveType.Cylinder, sp, new Vector3(0f, 0f, 0.4f), new Vector3(0.035f, 0.5f, 0.035f), wood, new Vector3(90f, 0f, 0f));
                     Ball(sp, new Vector3(0f, 0.02f, -0.08f), new Vector3(0.07f, 0.06f, 0.1f), trim);
                     PremiumTrail(0.8f, bc);

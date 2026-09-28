@@ -121,6 +121,10 @@ namespace HashiraChronicles
             var shine = MaterialFactory.Toon(Color.white, 0f, new Color(0.8f, 0.8f, 0.8f));
             var lowLash = PM(Color.Lerp(browC, new Color(0.6f, 0.3f, 0.3f), 0.5f), 0f);
             var mBrow = PM(browC, 0f);
+            // Calm or fierce looks come from a narrower eye and the lash line, not from lid geometry
+            // (a skin-coloured lid shape over the eye read as a strange hood).
+            h *= 1f - Mathf.Clamp01(lid) * 0.55f;
+            lid = 0f;
             for (int s = -1; s <= 1; s += 2)
             {
                 var e = OnFace(hc, hr, s * x, y);
@@ -132,7 +136,6 @@ namespace HashiraChronicles
                 Ball(e, new Vector3(-w * 0.16f, h * 0.18f, 0.006f), new Vector3(w * 0.26f, h * 0.24f, 0.02f), shine);
                 Ball(e, new Vector3(w * 0.14f, -h * 0.24f, 0.006f), new Vector3(w * 0.12f, h * 0.1f, 0.02f), shine);
                 float lidBottom = h * 0.5f - lid * h;
-                if (lid > 0f) Ball(e, new Vector3(0f, lidBottom + h * 0.35f, 0f), new Vector3(w * 1.15f, h * 0.7f, 0.036f), skin);
                 Part(PrimitiveType.Capsule, e, new Vector3(0f, lidBottom, 0.01f), new Vector3(0.026f, w * 0.58f, 0.022f), ink, new Vector3(0f, 0f, 90f));
                 if (flick)
                 {
@@ -252,11 +255,11 @@ namespace HashiraChronicles
 
             var r = NewRig(0.6f, 0.085f, 0.27f, 0.27f, 0.08f, new Vector3(0.215f, 0.29f, -0.01f), 0.2f, 0.19f, new Vector3(0f, 0.36f, 0f));
             r.stance = 0.1f; r.crouch = 0.035f; r.lean = 8f; r.tempo = 12.5f; r.stride = 0.19f; r.lift = 0.14f;
-            r.idleBounce = 0.018f; r.idleBounceFreq = 2.4f; r.twistGain = 0.3f; r.swingDip = 0.06f; r.swingLunge = 12f;
+            r.idleBounce = 0.008f; r.idleBounceFreq = 2.4f; r.twistGain = 0.3f; r.swingDip = 0.06f; r.swingLunge = 12f;
             r.grip = PremiumRig.Grip.Twin;
             r.restHandR = new Vector3(0.31f, 0.03f, 0.08f);
             r.restHandL = new Vector3(-0.31f, 0.03f, 0.06f);
-            r.hasPose = true; r.poseBody = new Vector3(10f, 0f, 0f); r.poseDrop = 0.04f; r.poseWeapon = new Vector3(30f, 115f, 0f); r.poseHead = new Vector3(4f, -8f, 0f);
+            r.hasPose = true; r.poseBody = new Vector3(4f, 0f, 0f); r.poseDrop = 0.02f; r.poseWeapon = new Vector3(40f, 95f, 0f); r.poseHead = new Vector3(2f, -6f, 0f);
             var T = r.torso;
             Vector3 ts = new Vector3(1.05f, 1f, 0.82f);
 

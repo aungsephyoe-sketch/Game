@@ -13,12 +13,31 @@ namespace HashiraChronicles
     public static partial class PrototypeWorld
     {
         static int lightBudget;
+        static Transform grp;
+        static readonly System.Collections.Generic.Stack<Transform> grpStack = new System.Collections.Generic.Stack<Transform>();
+
+        /// <summary>
+        /// Starts a set piece: its parts are built under one parent, so the camera fades the whole piece (never a
+        /// single beam or post out of the middle of it) when it gets between the camera and the slayer.
+        /// </summary>
+        static void BeginProp(string name, bool neverHide = false)
+        {
+            grpStack.Push(grp);
+            grp = new GameObject("Prop_" + name).transform;
+            grp.SetParent(stat, false);
+            var og = grp.gameObject.AddComponent<OcclusionGroup>();
+            og.neverHide = neverHide;
+        }
+
+        static void EndProp() { grp = grpStack.Count > 0 ? grpStack.Pop() : null; }
+
+        static Transform Par(Transform parent) { return parent == stat && grp != null ? grp : parent; }
 
         // ------------------------------------------------------------------ Primitive helpers
 
         static GameObject Box(Transform parent, Vector3 pos, Vector3 scale, Color c, Quaternion rot, float outline = 0.02f)
         {
-            var go = MeshFactory.Primitive(PrimitiveType.Cube, parent, Vector3.zero, scale, T(c, outline));
+            var go = MeshFactory.Primitive(PrimitiveType.Cube, Par(parent), Vector3.zero, scale, T(c, outline));
             go.transform.position = pos;
             go.transform.rotation = rot;
             return go;
@@ -26,7 +45,7 @@ namespace HashiraChronicles
 
         static GameObject Cyl(Transform parent, Vector3 pos, float radius, float height, Color c, Quaternion rot, int sides = 12)
         {
-            var go = MeshFactory.MeshObject(MeshFactory.FacetCylinder(sides), parent, Vector3.zero, new Vector3(radius * 2f, height, radius * 2f), T(c));
+            var go = MeshFactory.MeshObject(MeshFactory.FacetCylinder(sides), Par(parent), Vector3.zero, new Vector3(radius * 2f, height, radius * 2f), T(c));
             go.transform.position = pos;
             go.transform.rotation = rot;
             return go;
@@ -34,14 +53,14 @@ namespace HashiraChronicles
 
         static GameObject Sph(Transform parent, Vector3 pos, Vector3 scale, Color c)
         {
-            var go = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), parent, Vector3.zero, scale, T(c));
+            var go = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), Par(parent), Vector3.zero, scale, T(c));
             go.transform.position = pos;
             return go;
         }
 
         static GameObject ConeAt(Transform parent, Vector3 pos, Vector3 scale, Color c, Quaternion rot, int sides = 0)
         {
-            var go = MeshFactory.MeshObject(sides > 0 ? MeshFactory.FacetCone(sides) : MeshFactory.Cone(), parent, Vector3.zero, scale, T(c));
+            var go = MeshFactory.MeshObject(sides > 0 ? MeshFactory.FacetCone(sides) : MeshFactory.Cone(), Par(parent), Vector3.zero, scale, T(c));
             go.transform.position = pos;
             go.transform.rotation = rot;
             return go;
@@ -69,13 +88,20 @@ namespace HashiraChronicles
         /// <summary>A stone lantern with a glowing firebox (snow ones wear a snow cap).</summary>
         static void StoneLantern(Vector3 p, float s, bool light)
         {
+            BeginProp("Lantern");
+            StoneLanternParts(p, s, light);
+            EndProp();
+        }
+
+        static void StoneLanternParts(Vector3 p, float s, bool light)
+        {
             p = OnGround(p);
             Color stone = K == Kind.Volcano ? new Color(0.18f, 0.15f, 0.15f) : new Color(0.58f, 0.58f, 0.55f);
             var q = Quaternion.Euler(0f, R(0f, 90f), 0f);
             Cyl(stat, p, 0.32f * s, 0.18f * s, stone, q, 6);
             Cyl(stat, p + Vector3.up * 0.18f * s, 0.12f * s, 0.7f * s, stone, q, 8);
             Box(stat, p + Vector3.up * 0.95f * s, new Vector3(0.5f, 0.1f, 0.5f) * s, stone, q);
-            var fire = MeshFactory.Primitive(PrimitiveType.Cube, stat, Vector3.zero, new Vector3(0.34f, 0.32f, 0.34f) * s, TE(P.lantern));
+            var fire = MeshFactory.Primitive(PrimitiveType.Cube, Par(stat), Vector3.zero, new Vector3(0.34f, 0.32f, 0.34f) * s, TE(P.lantern));
             fire.transform.position = p + Vector3.up * 1.16f * s;
             fire.transform.rotation = q;
             for (int k = 0; k < 4; k++)
@@ -89,15 +115,18 @@ namespace HashiraChronicles
         /// <summary>A torii gate across the road (dir = the way through it).</summary>
         static void Torii(Vector3 c, Vector3 dir, float width, float height, Color col, bool broken = false)
         {
+            BeginProp("Torii");
             c = OnGround(c);
             var rot = Quaternion.LookRotation(dir);
+            var across = rot * Quaternion.Euler(0f, 90f, 0f);
             Vector3 side = Vector3.Cross(Vector3.up, dir);
             Color black = new Color(0.08f, 0.06f, 0.06f);
             for (int s = -1; s <= 1; s += 2)
             {
                 Vector3 b = c + side * s * width * 0.5f;
                 float ph = broken && s > 0 ? height * 0.45f : height;
-                Cyl(stat, b, 0.28f, ph, col, rot, 12);
+                // One solid pillar from the ground to the top beam, a black footing ring around its base.
+                Cyl(stat, b, 0.28f, ph + 0.05f, col, rot, 12);
                 Cyl(stat, b, 0.36f, 0.5f, black, rot, 12);
                 if (broken && s > 0)
                 {
@@ -106,24 +135,34 @@ namespace HashiraChronicles
                     fallen.name = "FallenPillar";
                 }
             }
-            // Lower tie beam, the upswept top beam (kasagi) and the name plaque.
             if (!broken)
             {
-                Box(stat, c + Vector3.up * height * 0.72f, new Vector3(width + 0.9f, 0.32f, 0.3f), col, rot * Quaternion.Euler(0f, 90f, 0f));
-                Box(stat, c + Vector3.up * height * 0.86f, new Vector3(0.28f, height * 0.26f, 0.2f), col, rot);
-                Box(stat, c + Vector3.up * height * 0.86f + dir * -0.12f, new Vector3(0.8f, 0.55f, 0.08f), black, rot);
+                // Tie beam, centre post and plaque: separate depths so no two faces ever share a plane.
+                Box(stat, c + Vector3.up * height * 0.72f, new Vector3(width + 0.9f, 0.32f, 0.3f), col, across);
+                Box(stat, c + Vector3.up * (height * 0.72f + 0.16f + height * 0.07f), new Vector3(0.26f, height * 0.14f, 0.22f), col, rot);
+                Box(stat, c + Vector3.up * (height * 0.86f) - dir * 0.14f, new Vector3(0.8f, 0.55f, 0.06f), black, rot);
+                // The top beam (kasagi) is one continuous piece; only its tips sweep upward.
+                float len = width + 1.6f;
+                Box(stat, c + Vector3.up * (height + 0.17f), new Vector3(len, 0.34f, 0.5f), col, across);
+                Box(stat, c + Vector3.up * (height + 0.42f), new Vector3(len + 0.3f, 0.16f, 0.62f), black, across);
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    var tip = rot * Quaternion.Euler(0f, 90f, 0f) * Quaternion.Euler(0f, 0f, s * 14f);
+                    Box(stat, c + Vector3.up * (height + 0.5f) + side * s * (len * 0.5f + 0.45f), new Vector3(1.1f, 0.2f, 0.66f), black, tip);
+                }
             }
-            for (int s = -1; s <= 1; s += 2)
+            else
             {
-                if (broken && s > 0) continue;
-                var q = rot * Quaternion.Euler(0f, 90f, 0f) * Quaternion.Euler(0f, 0f, s * 6f);
-                Box(stat, c + Vector3.up * (height + 0.12f) + side * s * (width * 0.3f + 0.5f), new Vector3(width * 0.62f + 1f, 0.34f, 0.5f), col, q);
-                Box(stat, c + Vector3.up * (height + 0.34f) + side * s * (width * 0.3f + 0.6f), new Vector3(width * 0.66f + 1.2f, 0.16f, 0.62f), black, q);
+                // Only the left half of the beam survives, snapped off and hanging.
+                float len = width * 0.55f;
+                Box(stat, c + Vector3.up * (height + 0.1f) - side * (width * 0.5f - len * 0.5f + 0.3f), new Vector3(len, 0.34f, 0.5f), col, across * Quaternion.Euler(0f, 0f, -8f));
             }
+            EndProp();
         }
 
         static void Signpost(Vector3 p, Vector3 facing)
         {
+            BeginProp("Sign");
             p = OnGround(p);
             Color wood = new Color(0.42f, 0.3f, 0.18f);
             Cyl(stat, p, 0.08f, 2f, wood, Quaternion.identity, 6);
@@ -131,6 +170,7 @@ namespace HashiraChronicles
             Box(stat, p + Vector3.up * 1.75f, new Vector3(1.2f, 0.28f, 0.06f), wood, rot);
             Box(stat, p + Vector3.up * 1.4f, new Vector3(1f, 0.24f, 0.06f), wood * 0.9f, rot * Quaternion.Euler(0f, 0f, 4f));
             if (K == Kind.Snow) Box(stat, p + Vector3.up * 1.92f, new Vector3(1.25f, 0.08f, 0.14f), new Color(0.95f, 0.97f, 1f), rot);
+            EndProp();
         }
 
         static void Crates(Vector3 p, int n)
@@ -175,6 +215,7 @@ namespace HashiraChronicles
 
         static void Tent(Vector3 p, Vector3 facing, Color cloth)
         {
+            BeginProp("Tent");
             p = OnGround(p);
             var rot = Quaternion.LookRotation(facing);
             for (int s = -1; s <= 1; s += 2)
@@ -183,6 +224,8 @@ namespace HashiraChronicles
             if (K == Kind.Snow)
                 for (int s = -1; s <= 1; s += 2)
                     Box(stat, p + Vector3.up * 1.2f + rot * new Vector3(s * 0.36f, 0f, 0f), new Vector3(0.08f, 0.9f, 2.44f), new Color(0.95f, 0.97f, 1f), rot * Quaternion.Euler(0f, 0f, s * 38f));
+            EndProp();
+            Obstacles.AddBox(p, new Vector2(1.2f, 1.2f), rot.eulerAngles.y);
         }
 
         static void Palisade(Vector3 center, float radius, float fromA, float toA)
@@ -201,6 +244,7 @@ namespace HashiraChronicles
 
         static void WeaponRack(Vector3 p, Vector3 facing)
         {
+            BeginProp("Rack");
             p = OnGround(p);
             var rot = Quaternion.LookRotation(facing);
             Color wood = new Color(0.32f, 0.22f, 0.14f), steel = new Color(0.62f, 0.64f, 0.68f);
@@ -208,6 +252,7 @@ namespace HashiraChronicles
             Box(stat, p + Vector3.up * 1.2f, new Vector3(1.8f, 0.1f, 0.1f), wood, rot);
             for (int k = 0; k < 4; k++)
                 Box(stat, p + rot * new Vector3(-0.55f + k * 0.37f, 0.7f, 0.08f), new Vector3(0.05f, 1.3f, 0.02f), k % 2 == 0 ? steel : wood, rot * Quaternion.Euler(0f, 0f, R(-8f, 8f)));
+            EndProp();
         }
 
         // ------------------------------------------------------------------ Places
@@ -296,11 +341,13 @@ namespace HashiraChronicles
 
         static void Brazier(Vector3 p)
         {
+            BeginProp("Brazier");
             p = OnGround(p);
             Color iron = new Color(0.12f, 0.1f, 0.1f);
             for (int k = 0; k < 3; k++) Cyl(stat, p, 0.05f, 1.1f, iron, Quaternion.Euler(0f, k * 120f, 12f), 6);
             Cyl(stat, p + Vector3.up * 1f, 0.42f, 0.25f, iron, Quaternion.identity, 10);
             EnvFx.Fire(dyn, p + Vector3.up * 1.25f, 0.5f, lightBudget-- > 0);
+            EndProp();
         }
 
         static void Trail(JourneyPlace pl, Vector3 c, Vector3 dir, Vector3 side)
@@ -512,6 +559,7 @@ namespace HashiraChronicles
 
         static void BridgeSet()
         {
+            BeginProp("Bridge", true);
             Vector3 c = bridgeCenter;
             Vector3 dir = bridgeDir;
             Vector3 side = Vector3.Cross(Vector3.up, dir);
@@ -519,6 +567,10 @@ namespace HashiraChronicles
             Reserve(c, 8f);
             float span = (channels.Count > 0 ? channels[0].half : 3f) * 2f + 5f;
             float w = J.halfWidth * 1.3f;
+            // Invisible banks beside the deck: the only way over the water is the bridge.
+            float chHalf = channels.Count > 0 ? channels[0].half + 0.6f : 3f;
+            for (int s = -1; s <= 1; s += 2)
+                Obstacles.AddBox(c + side * s * (w * 0.5f + 4.1f), new Vector2(4f, chHalf), rot.eulerAngles.y);
             switch (K)
             {
                 case Kind.Volcano:
@@ -602,6 +654,7 @@ namespace HashiraChronicles
                     break;
                 }
             }
+            EndProp();
         }
 
         /// <summary>Lanterns, flag poles or braziers along the road so the way forward is always readable.</summary>
@@ -760,6 +813,7 @@ namespace HashiraChronicles
         {
             p = OnGround(p);
             Reserve(p, 16f);
+            Obstacles.AddCircle(p, 4.2f);
             var b = new WorldMeshBuilder(treeRoot, folMat, "GreatTree", true);
             Color bark = new Color(0.36f, 0.26f, 0.18f);
             b.Add(trunkMesh, p + Vector3.down * 0.5f, Quaternion.identity, new Vector3(3.6f, 20f, 3.6f), bark);
@@ -810,6 +864,7 @@ namespace HashiraChronicles
         /// <summary>A three-tier pagoda with red pillars and snow-laden roofs.</summary>
         static void Pagoda(Vector3 p, Vector3 facing)
         {
+            BeginProp("Pagoda");
             Reserve(p, 8f);
             var rot = Quaternion.LookRotation(facing);
             Color red = new Color(0.72f, 0.14f, 0.12f), wall = new Color(0.92f, 0.88f, 0.8f), roof = new Color(0.2f, 0.22f, 0.3f), snow = new Color(0.96f, 0.98f, 1f);
@@ -833,6 +888,7 @@ namespace HashiraChronicles
             Cyl(stat, p + Vector3.up * y, 0.08f, 3f, new Color(0.85f, 0.7f, 0.3f), rot, 8);
             for (int k = 0; k < 4; k++) Cyl(stat, p + Vector3.up * (y + 0.5f + k * 0.55f), 0.3f - k * 0.05f, 0.08f, new Color(0.85f, 0.7f, 0.3f), rot, 10);
             PointLight(p + Vector3.up * 2f + facing * 4f, P.lantern, 10f, 1.1f);
+            EndProp();
         }
 
         /// <summary>A cliff face with a frozen waterfall pouring into a frozen pool.</summary>
@@ -842,6 +898,7 @@ namespace HashiraChronicles
             Reserve(p, 14f);
             var rot = Quaternion.LookRotation(facing);
             Vector3 side = Vector3.Cross(Vector3.up, facing);
+            Obstacles.AddBox(p, new Vector2(18f, 4f), Quaternion.LookRotation(facing).eulerAngles.y);
             for (int k = 0; k < 9; k++)
             {
                 Vector3 o = side * ((k - 4) * 4f) + Vector3.up * R(-2f, 2f) - facing * R(0f, 3f);

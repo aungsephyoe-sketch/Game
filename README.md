@@ -59,6 +59,15 @@ drifting fog, clouds and birds, per-world lighting and a gradient sky. Scenery i
 vertex-coloured meshes (`WorldKit`, `ToonWorld.shader`) so it stays cheap on mobile. The rest of the world
 will move to this standard once the prototypes are approved.
 
+**Collision.** Solid scenery (trees, poles, rocks, walls, fences, buildings, bridge rails, gates, tents) blocks
+movement through invisible circles and boxes (`Obstacles`), including gaps too narrow to pass. Set pieces hide and
+show as a whole when they come between the camera and the slayer (`OcclusionGroup`).
+
+**Sound.** Every sound is synthesised at startup with filters, FM rings and reverb (`AudioManager.Design.cs`):
+per-weapon swings and impacts, element textures, a five-part special-attack sequence (activation, element
+build-up, whoosh, release, finishing boom), softer UI sounds, a mission-clear fanfare, and a home-screen theme
+(pad, koto and bamboo flute) over a bed of wind, birds, leaves and a distant stream.
+
 Characters are merged per joint at build time (`CharacterVisual.Optimize.cs`) so a detailed fighter still renders
 in a few dozen draw calls.
 

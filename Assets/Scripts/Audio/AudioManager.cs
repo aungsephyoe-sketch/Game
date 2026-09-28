@@ -12,9 +12,9 @@ namespace HashiraChronicles
     /// ducks under ultimates. Swap Generate() for licensed/commissioned AudioClips later – callers only use
     /// Play("id") and SetMusicState().
     /// </summary>
-    public class AudioManager : MonoBehaviour
+    public partial class AudioManager : MonoBehaviour
     {
-        const int Rate = 22050;
+        const int Rate = 32000;
         const float CrossfadeSeconds = 1.6f;
 
         readonly Dictionary<string, AudioClip> clips = new Dictionary<string, AudioClip>();
@@ -324,7 +324,8 @@ namespace HashiraChronicles
             b = Buffer(1.0f); AddTone(b, 0f, 0.18f, 60f, 40f, 1f, 18f); AddTone(b, 0.22f, 0.18f, 55f, 38f, 0.7f, 18f); Make("heartbeat", b, 0.9f);
 
             GenerateCombatSounds();
-            tracks[MusicState.Menu] = BuildMenuMusic(scale);
+            GenerateSoundDesign();
+            tracks[MusicState.Menu] = BuildHomeTheme();
             tracks[MusicState.Explore] = BuildExploreMusic(scale);
             tracks[MusicState.Combat] = BuildBattleMusic(scale);
             tracks[MusicState.Boss] = BuildBossMusic(scale);

@@ -246,7 +246,7 @@ namespace HashiraChronicles
             var audio = GameManager.Instance != null ? GameManager.Instance.Audio : null;
             GameEvents.RaiseBanner("THE ECLIPSE DEEPENS", Def.displayName + " casts off his human shape");
             GameEvents.RaiseSubtitle(Def.displayName, "You carry the dawn half of my heart, Ren. Let me show you what the other half became.");
-            if (cam != null) cam.PlayUltimateCinematic(transform, 3.2f);
+            if (cam != null) cam.PlayUltimateCinematic(transform, 3.2f, 8f);
             if (audio != null) audio.Play("roar", 1f);
             // Push everyone back.
             var p = Player;
