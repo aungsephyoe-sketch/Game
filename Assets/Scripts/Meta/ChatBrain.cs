@@ -223,7 +223,7 @@ namespace HashiraChronicles
         }
 
         /// <summary>Game topics the others can talk about.</summary>
-        static readonly string[][] Topics =
+        internal static readonly string[][] Topics =
         {
             new[] { "gate", "Stick together in the gates, the demons in there hit like 5x harder. Frost is the easiest after Embers imo", "gates", "The Abyss gate is insane, bring a healer" },
             new[] { "summon", "Summon at the shrine, pity kicks in eventually so dont give up", "summons", "Ten pulls at once is the best value" },
@@ -313,7 +313,7 @@ namespace HashiraChronicles
             return outList;
         }
 
-        static string TopicReply(string s, System.Random r, out string topic)
+        internal static string TopicReply(string s, System.Random r, out string topic)
         {
             topic = null;
             foreach (var t in Topics)
@@ -325,7 +325,7 @@ namespace HashiraChronicles
             return null;
         }
 
-        static string MentionedCharacter(string s)
+        internal static string MentionedCharacter(string s)
         {
             foreach (var c in GameDatabase.Characters)
             {

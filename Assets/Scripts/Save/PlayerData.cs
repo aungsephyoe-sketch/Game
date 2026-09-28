@@ -102,6 +102,28 @@ namespace HashiraChronicles
         public long time;
     }
 
+    /// <summary>What a (simulated) friend remembers about you and where your conversation stands. Saved, so a reply
+    /// due in three days still arrives after you quit and come back.</summary>
+    [System.Serializable]
+    public class FriendMemory
+    {
+        public string code;
+        /// <summary>Things they learned about you, as key=value (main, likes, got, did, mood, nick, doing).</summary>
+        public List<string> facts = new List<string>();
+        public int rapport;
+        /// <summary>The question they last asked you (so your answer is understood).</summary>
+        public string asked = "";
+        /// <summary>What they meant by their last message (for "what do you mean?").</summary>
+        public string explain = "";
+        public string lastTopic = "";
+        /// <summary>Your messages up to this time have been answered.</summary>
+        public long answeredTo;
+        /// <summary>When their reply arrives (0 = not waiting on them).</summary>
+        public long replyDue;
+        /// <summary>When they next message you first.</summary>
+        public long nextPing;
+    }
+
     [System.Serializable]
     public class DmThread
     {
@@ -189,6 +211,7 @@ namespace HashiraChronicles
         public List<FriendEntry> friends = new List<FriendEntry>();
         public List<FriendEntry> friendRequests = new List<FriendEntry>();
         public List<DmThread> dms = new List<DmThread>();
+        public List<FriendMemory> friendMemory = new List<FriendMemory>();
         /// <summary>What the chat has learned from you: word pairs ("a b") and your own slang.</summary>
         public List<string> chatPairs = new List<string>();
         public List<string> chatSlang = new List<string>();

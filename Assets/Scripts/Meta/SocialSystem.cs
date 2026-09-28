@@ -24,16 +24,7 @@ namespace HashiraChronicles
             "Ichigo", "Rin_Rin", "StormPetal", "Kazu", "NightOwl", "Yuki22", "PeachBlossom", "Daichi", "Mei", "Suzu", "Kenta", "Aoi"
         };
 
-        struct Pending
-        {
-            public string code;
-            public string text;
-            public float at;
-        }
-
-        static readonly List<Pending> pending = new List<Pending>();
         static readonly Dictionary<string, ChatPersona> personas = new Dictionary<string, ChatPersona>();
-        static float nextPing = -1f;
         /// <summary>The friend currently typing (for the "typing…" line) and until when.</summary>
         public static string TypingCode { get; private set; }
         public static float TypingUntil { get; private set; }
@@ -143,7 +134,8 @@ namespace HashiraChronicles
             d.friends.Add(e);
             d.friendRequests.RemoveAll(q => q.code == e.code);
             // They say hi shortly after.
-            Queue(e.code, "hey thanks for the add!", Random.Range(3f, 7f));
+            // They say hi on their own a little later.
+            FriendChat.Memory(d, e).nextPing = System.DateTime.Now.AddMinutes(Random.Range(3f, 30f)).Ticks;
             return true;
         }
 
@@ -183,7 +175,7 @@ namespace HashiraChronicles
             return t;
         }
 
-        static ChatPersona PersonaFor(FriendEntry f)
+        internal static ChatPersona PersonaFor(FriendEntry f)
         {
             ChatPersona p;
             if (!personas.TryGetValue(f.code, out p))
@@ -206,58 +198,26 @@ namespace HashiraChronicles
             Trim(t);
             ChatBrain.Learn(text);
             d.messagesSent++;
-            // Offline friends answer later; online ones after "typing".
-            float delay = IsOnline(f) ? Random.Range(1.5f, 4f) : Random.Range(25f, 60f);
-            var replies = ChatBrain.Reply(PersonaFor(f), text);
-            foreach (var r in replies)
-            {
-                Queue(f.code, r, delay);
-                delay += 0.8f + r.Length * 0.06f;
-            }
-        }
-
-        static void Queue(string code, string text, float delay)
-        {
-            pending.Add(new Pending { code = code, text = text, at = Time.unscaledTime + delay });
+            // They answer in their own time (minutes to days) — see FriendChat.
+            FriendChat.OnPlayerMessage(d, f, text);
         }
 
         static void Trim(DmThread t) { while (t.lines.Count > 80) t.lines.RemoveAt(0); }
 
-        /// <summary>Delivers replies whose time has come and, now and then, a friend messages you first.</summary>
-        public static void Tick(PlayerData d)
+        static float nextTick;
+
+        /// <summary>Delivers replies whose time has come and, now and then, a friend messages you first (checked once a second).</summary>
+        public static void Tick(PlayerData d, string openCode = null)
         {
             if (d == null) return;
             float now = Time.unscaledTime;
-            TypingCode = null;
-            for (int i = pending.Count - 1; i >= 0; i--)
-            {
-                var p = pending[i];
-                if (now < p.at)
-                {
-                    if (p.at - now < 2.5f) { TypingCode = p.code; TypingUntil = p.at; }
-                    continue;
-                }
-                pending.RemoveAt(i);
-                var f = d.friends.Find(x => x.code == p.code);
-                if (f == null) continue;
-                var t = Thread(d, p.code);
-                t.lines.Add(new DmLine { mine = false, text = ProfileSystem.MaskChat(p.text), time = System.DateTime.Now.Ticks });
-                Trim(t);
-                f.unread++;
-                if (GameManager.Instance != null) GameManager.Instance.Audio.PlayPitched("click", 0.35f, 1.6f);
-            }
-            if (nextPing < 0f) nextPing = now + Random.Range(60f, 120f);
-            if (now > nextPing && d.friends.Count > 0)
-            {
-                nextPing = now + Random.Range(90f, 240f);
-                var online = d.friends.FindAll(IsOnline);
-                if (online.Count > 0)
-                {
-                    var f = online[Random.Range(0, online.Count)];
-                    string topic;
-                    Queue(f.code, VillageChatter.Next(PersonaFor(f), out topic), 0.5f);
-                }
-            }
+            if (now < nextTick) return;
+            nextTick = now + 1f;
+            string typing;
+            bool any = FriendChat.Tick(d, openCode, out typing);
+            TypingCode = typing;
+            TypingUntil = now + 1.2f;
+            if (any && GameManager.Instance != null) GameManager.Instance.Save();
         }
 
         public static int Unread(PlayerData d)

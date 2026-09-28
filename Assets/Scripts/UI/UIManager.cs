@@ -132,7 +132,7 @@ namespace HashiraChronicles
 
             if (Event.current.type == EventType.Layout && gm.Data != null)
             {
-                SocialSystem.Tick(gm.Data);
+                SocialSystem.Tick(gm.Data, SocialOpen ? chatWith : null);
                 if (AchievementSystem.Check(gm.Data)) gm.Save();
             }
             try { DrawScreen(); }

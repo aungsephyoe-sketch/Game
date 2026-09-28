@@ -400,6 +400,9 @@ namespace HashiraChronicles
             }
             GUI.EndScrollView();
 
+            string waiting = FriendChat.WaitingText(d, f);
+            if (waiting != null && !typing)
+                GUI.Label(new Rect(view.x + 12f, view.yMax - 30f, view.width - 24f, 26f), "<color=#8890A8><i>" + ChatSafe(waiting) + "</i></color>", UIStyles.Sized(UIStyles.Small, 16));
             var field = new Rect(panel.x + 20f, panel.yMax - 92f, panel.width - 200f, 70f);
             var ev = Event.current;
             bool focused = GUI.GetNameOfFocusedControl() == "DmField";
