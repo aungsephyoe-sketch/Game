@@ -33,6 +33,13 @@ namespace HashiraChronicles
         /// <summary>Where the hands rest when the weapon isn't swinging (torso space).</summary>
         public Vector3 restHandR = new Vector3(0.24f, 0.02f, 0.14f), restHandL = new Vector3(-0.24f, 0.02f, 0.12f);
         public Transform castGlow;
+        /// <summary>Where the second hand holds the weapon for two-handed grips (metres along the blade from the first hand).</summary>
+        public float handleOffset = -0.13f;
+
+        // Showcase pose (team line-up, portraits), designed for the jointed body.
+        public bool hasPose;
+        public Vector3 poseBody, poseWeapon, poseHead;
+        public float poseDrop;
 
         float phase, move, sprint, time, tuck;
 
@@ -88,6 +95,10 @@ namespace HashiraChronicles
             Vector3 restL = torso.localPosition + torso.localRotation * restHandL;
             if (grip == Grip.Twin) { restR += back; restL += back; }
             Vector3 tR = Vector3.Lerp(restR - walk, sR + sd * reach, sw);
+            // Raised hands go out to the side and a little forward so they never end up inside the big head.
+            float upR = Mathf.Clamp01(sd.y) * sw;
+            tR.x = Mathf.Max(tR.x, shoulder.x + 0.22f * upR);
+            tR.z += 0.12f * upR;
             Vector3 hR = TwoBone(upper[0], lower[0], sR, tR, armA, armB, new Vector3(0.7f, -0.2f, -1f), Vector3.forward);
             if (hand[0] != null) { hand[0].localPosition = hR; hand[0].localRotation = lower[0].localRotation; }
             if (cv.SwordPivot != null) cv.SwordPivot.localPosition = hR + lower[0].localRotation * new Vector3(0f, -0.055f, 0.01f);
@@ -99,11 +110,13 @@ namespace HashiraChronicles
                 {
                     Vector3 dm = new Vector3(-sd.x, sd.y, sd.z);
                     tL = Vector3.Lerp(restL + walk, sL + dm * reach, sw);
+                    tL.x = Mathf.Min(tL.x, -shoulder.x - 0.22f * upR);
+                    tL.z += 0.12f * upR;
                     break;
                 }
                 case Grip.TwoHand:
                 {
-                    Vector3 onHandle = (cv.SwordPivot != null ? cv.SwordPivot.localPosition : hR) + d * 0.26f;
+                    Vector3 onHandle = (cv.SwordPivot != null ? cv.SwordPivot.localPosition : hR) + d * handleOffset;
                     tL = Vector3.Lerp(restL + walk, onHandle, Mathf.Max(sw, guard ? 1f : 0f));
                     break;
                 }
@@ -152,7 +165,7 @@ namespace HashiraChronicles
                     fb = hip + new Vector3(s * 0.015f, -(legA + legB) * 0.93f, (i == 0 ? 0.06f : -0.02f) + stepZ * 0.3f);
                 }
                 if (tuck > 0.01f) fb = Vector3.Lerp(fb, hip + new Vector3(s * 0.04f, -(legA + legB) * 0.55f, 0.14f), tuck);
-                Vector3 hF = TwoBone(thigh[i], shin[i], hip, fb, legA, legB, new Vector3(0.15f * s, 0f, 1f), Vector3.forward);
+                Vector3 hF = TwoBone(thigh[i], shin[i], hip, fb, legA, legB, new Vector3(0.05f * s, 0f, 1f), Vector3.forward);
                 if (foot[i] == null) continue;
                 foot[i].localPosition = hF;
                 if (plant)

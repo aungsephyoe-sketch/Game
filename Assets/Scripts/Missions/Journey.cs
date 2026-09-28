@@ -89,7 +89,7 @@ namespace HashiraChronicles
                 }
                 plan.Add(NameAt(m, names, nameIdx++, names[Mathf.Min(nameIdx - 1, names.Length - 1)])); kinds.Add(StageKind.Fight);
             }
-            if (hasBoss) { plan.Add(BossArenaName(m.bossId, m.theme.kind)); kinds.Add(StageKind.Boss); }
+            if (hasBoss) { plan.Add(!string.IsNullOrEmpty(m.arenaName) ? m.arenaName : BossArenaName(m.bossId, m.theme.kind)); kinds.Add(StageKind.Boss); }
 
             // 2. Lay them out along a gently wandering road that always heads "up" the screen (+Z).
             Vector3 pos = Vector3.zero;

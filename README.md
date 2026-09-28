@@ -36,17 +36,31 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
-### New character standard (quality test)
-Three original fighters are built with a new, more detailed builder (`CharacterVisual.Premium.cs` + `PremiumRig`):
-jointed shoulders, elbows, hips and knees driven by two-bone IK (feet stay planted, the weapon hand follows every
-swing), real hands and boots, layered outfits, detailed weapons, faces with irises, highlights, lashes and brows,
-and a primary / secondary / accent element palette with element-tinted rim light and shadows.
-- **Kaito** (Rare, wind): fast twin-kodachi striker — green / white / gold, low bouncing stance, mirrored X-cuts.
-- **Oboro** (Epic, flame): heavy iron-club bruiser — crimson / black / orange, club on the shoulder, two-handed slams.
-- **Shion** (Legendary, thunder): floating staff caster — navy / yellow / electric purple, halo and orbiting charms.
+### Premium characters, demons and worlds
+**Characters.** Every slayer, villager and soldier is built on a jointed rig (`CharacterVisual.Roster.cs` +
+`PremiumRig`): shoulders, elbows, hips and knees driven by two-bone IK (feet stay planted, the weapon hand follows
+every swing), real hands and boots, layered outfits (long haori over hakama, a striker's cropped jacket, armour or a
+layered caster robe), a detailed weapon per kind, anime faces (irises, highlights, lashes, brows) chosen by
+personality, their own hairstyle, element-tinted rim light, and more gold and ornaments the rarer they are (glowing
+crests for Legendary, a halo and orbiting motes for Mythic). Kaito, Oboro and Shion are the hand-designed originals
+(`CharacterVisual.Premium.cs`).
 
-Open them from **CHARACTERS → ★ NEW DESIGNS**: they stand in the village with character cards, a design sheet,
-**VIEW 3D** (animation viewer) and **TRY** (60-second trial). Once approved, the rest of the roster moves to this standard.
+**Demons.** The humanoid demons (ghoul, stalker, shadow, hunter, bone warrior, knight, general, oni, sentinel,
+imp, and the bosses) use the same rig with taller, meaner proportions, claws, horns, glowing slit-pupil eyes and
+detailed weapons (`CharacterVisual.PremiumDemons.cs`). Beasts and walking trees get walking legs (`MonsterGait`),
+smooth shapes and accent rim light.
+
+**Worlds (quality test).** Three prototype environments (`PrototypeWorld*.cs`), playable from
+**CHARACTERS → ★ NEW DESIGNS → WORLDS**: Forest (the Great Tree), Snow Mountain (the Frozen Summit Shrine) and
+Volcano (the Crater Throne). Each has a sculpted, vertex-painted terrain with the road and clearings kept flat, a
+foreground of grass, flowers and rocks, midground set pieces at every place (gate, trail, bridge, ruins or shrine,
+demon camp), a background of forest walls and distant ranges, flowing water or lava, wind in the foliage, weather,
+drifting fog, clouds and birds, per-world lighting and a gradient sky. Scenery is combined into a few
+vertex-coloured meshes (`WorldKit`, `ToonWorld.shader`) so it stays cheap on mobile. The rest of the world
+will move to this standard once the prototypes are approved.
+
+Characters are merged per joint at build time (`CharacterVisual.Optimize.cs`) so a detailed fighter still renders
+in a few dozen draw calls.
 
 ### Every slayer fights differently
 - **Swift** (Sora, Mina, Raiga): fast multi-hit strings, double cuts, a 5-cut flurry finisher, long dash strikes, short recovery.

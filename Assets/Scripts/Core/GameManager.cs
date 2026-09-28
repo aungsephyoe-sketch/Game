@@ -321,6 +321,19 @@ namespace HashiraChronicles
             StartMission(trial);
         }
 
+        /// <summary>Environment quality test: play one of the three prototype worlds with the current team.</summary>
+        public void BeginPrototype(string env)
+        {
+            int total = 0, n = 0;
+            foreach (var id in Data.team)
+            {
+                var c = Data.GetCharacter(id);
+                if (c != null) { total += c.level; n++; }
+            }
+            var m = GameDatabase.PrototypeMission(env, n > 0 ? total / n : 10);
+            if (m != null) StartMission(m);
+        }
+
         /// <summary>Walks the leader to a region without starting anything (map exploration).</summary>
         public void TravelTo(string regionId)
         {

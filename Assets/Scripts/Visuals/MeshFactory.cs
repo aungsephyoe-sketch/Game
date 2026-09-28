@@ -256,6 +256,45 @@ namespace HashiraChronicles
         static Mesh smoothSphere;
 
         /// <summary>High-resolution UV sphere (diameter 1, like Unity's primitive) for smooth faces and hair.</summary>
+        static readonly Dictionary<int, Mesh> spheres = new Dictionary<int, Mesh>();
+
+        /// <summary>UV sphere (diameter 1) at a chosen resolution, for small parts that don't need the full smooth sphere.</summary>
+        public static Mesh Sphere(int lat, int lon)
+        {
+            int key = lat * 1000 + lon;
+            Mesh m;
+            if (spheres.TryGetValue(key, out m) && m != null) return m;
+            var v = new List<Vector3>();
+            var n = new List<Vector3>();
+            var t = new List<int>();
+            for (int i = 0; i <= lat; i++)
+            {
+                float phi = Mathf.PI * i / lat;
+                for (int j = 0; j <= lon; j++)
+                {
+                    float th = Mathf.PI * 2f * j / lon;
+                    var d = new Vector3(Mathf.Sin(phi) * Mathf.Cos(th), Mathf.Cos(phi), Mathf.Sin(phi) * Mathf.Sin(th));
+                    v.Add(d * 0.5f);
+                    n.Add(d);
+                }
+            }
+            int stride = lon + 1;
+            for (int i = 0; i < lat; i++)
+                for (int j = 0; j < lon; j++)
+                {
+                    int a = i * stride + j, b = a + 1, c = a + stride, d = c + 1;
+                    t.Add(a); t.Add(b); t.Add(c);
+                    t.Add(b); t.Add(d); t.Add(c);
+                }
+            m = new Mesh { name = "Sphere" + lat + "x" + lon };
+            m.SetVertices(v);
+            m.SetNormals(n);
+            m.SetTriangles(t, 0);
+            m.RecalculateBounds();
+            spheres[key] = m;
+            return m;
+        }
+
         public static Mesh SmoothSphere()
         {
             if (smoothSphere != null) return smoothSphere;
@@ -302,6 +341,41 @@ namespace HashiraChronicles
             r.sharedMaterial = mat;
             r.shadowCastingMode = shadows ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
             return go;
+        }
+
+        static Mesh smoothCapsule, smoothCylinder;
+
+        /// <summary>High-resolution capsule with the same size as Unity's primitive (height 2, radius 0.5).</summary>
+        public static Mesh SmoothCapsule()
+        {
+            if (smoothCapsule != null) return smoothCapsule;
+            var prof = new List<Vector2>();
+            for (int i = 0; i <= 8; i++)
+            {
+                float a = -Mathf.PI * 0.5f + i * Mathf.PI * 0.5f / 8f;
+                prof.Add(new Vector2(Mathf.Cos(a) * 0.5f, -0.5f + Mathf.Sin(a) * 0.5f));
+            }
+            for (int i = 0; i <= 8; i++)
+            {
+                float a = i * Mathf.PI * 0.5f / 8f;
+                prof.Add(new Vector2(Mathf.Cos(a) * 0.5f, 0.5f + Mathf.Sin(a) * 0.5f));
+            }
+            prof[0] = new Vector2(0.0001f, -1f);
+            prof[prof.Count - 1] = new Vector2(0.0001f, 1f);
+            smoothCapsule = Lathe("smoothCapsule", prof.ToArray(), 32);
+            return smoothCapsule;
+        }
+
+        /// <summary>Cylinder with softly rounded edges, sized like Unity's primitive (height 2, radius 0.5).</summary>
+        public static Mesh SmoothCylinder()
+        {
+            if (smoothCylinder != null) return smoothCylinder;
+            smoothCylinder = Lathe("smoothCylinder", new[]
+            {
+                new Vector2(0f, -1f), new Vector2(0.44f, -1f), new Vector2(0.49f, -0.98f), new Vector2(0.5f, -0.93f),
+                new Vector2(0.5f, 0.93f), new Vector2(0.49f, 0.98f), new Vector2(0.44f, 1f), new Vector2(0f, 1f)
+            }, 32);
+            return smoothCylinder;
         }
 
         /// <summary>Unit quad from z=0 to z=1, x in [-0.5, 0.5]. Scale z for length.</summary>

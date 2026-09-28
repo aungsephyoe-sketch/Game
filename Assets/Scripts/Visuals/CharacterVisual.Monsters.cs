@@ -17,7 +17,12 @@ namespace HashiraChronicles
 
         GameObject P(PrimitiveType t, Vector3 pos, Vector3 scale, Material m, Vector3? euler = null)
         {
-            var go = MeshFactory.Primitive(t, mRoot, pos, scale, m);
+            // Smooth, high-resolution shapes instead of the low-poly built-in primitives.
+            GameObject go;
+            if (t == PrimitiveType.Sphere) go = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), mRoot, pos, scale, m);
+            else if (t == PrimitiveType.Capsule) go = MeshFactory.MeshObject(MeshFactory.SmoothCapsule(), mRoot, pos, scale, m);
+            else if (t == PrimitiveType.Cylinder) go = MeshFactory.MeshObject(MeshFactory.SmoothCylinder(), mRoot, pos, scale, m);
+            else go = MeshFactory.Primitive(t, mRoot, pos, scale, m);
             if (euler.HasValue) go.transform.localRotation = Quaternion.Euler(euler.Value);
             Add(go);
             return go;
@@ -60,6 +65,28 @@ namespace HashiraChronicles
         }
 
         bool mNoTeeth;
+        readonly System.Collections.Generic.List<Transform> gaitLegs = new System.Collections.Generic.List<Transform>();
+        readonly System.Collections.Generic.List<float> gaitPhases = new System.Collections.Generic.List<float>();
+
+        /// <summary>A leg that swings from the hip when the creature walks (quadrupeds and walking trees).</summary>
+        void Leg(Vector3 hip, float len, float radius, Material m, float phase, Material foot = null)
+        {
+            var pivot = new GameObject("Leg").transform;
+            pivot.SetParent(mRoot, false);
+            pivot.localPosition = hip;
+            var upper = MeshFactory.MeshObject(MeshFactory.SmoothCapsule(), pivot, new Vector3(0f, -len * 0.5f, 0f), new Vector3(radius * 2f, len * 0.5f, radius * 2f), m);
+            Add(upper);
+            var paw = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), pivot, new Vector3(0f, -len + radius * 0.4f, radius * 0.5f), new Vector3(radius * 2.4f, radius * 1.4f, radius * 3f), foot ?? m);
+            Add(paw);
+            for (int k = 0; k < 3; k++)
+            {
+                var claw = MeshFactory.MeshObject(MeshFactory.Cone(), pivot, new Vector3((k - 1) * radius * 0.6f, -len + radius * 0.2f, radius * 1.9f), new Vector3(radius * 0.4f, radius * 1.1f, radius * 0.4f), mBone);
+                claw.transform.localRotation = Quaternion.Euler(95f, 0f, 0f);
+                Add(claw);
+            }
+            gaitLegs.Add(pivot);
+            gaitPhases.Add(phase);
+        }
 
         /// <summary>Shared menace for every demon: a creeping dark aura and a glowing ground stain.</summary>
         void AddMenace(EnemyDefinition def)
@@ -192,6 +219,12 @@ namespace HashiraChronicles
             mGlow = MaterialFactory.Toon(def.accentColor, 0f, def.accentColor);
             mDark = MaterialFactory.Toon(new Color(0.05f, 0.04f, 0.06f), 0.01f);
             mBone = MaterialFactory.Toon(new Color(0.85f, 0.82f, 0.72f));
+            if (GameConfig.PremiumRoster && BuildPremiumDemon(def))
+            {
+                AddMenace(def);
+                if (Trail != null && def.archetype != EnemyArchetype.Boss && def.archetype != EnemyArchetype.Elite) Trail.widthMultiplier = 0.35f;
+                return true;
+            }
             switch (def.form)
             {
                 case "ghoul": Ghoul(def); break;
@@ -217,6 +250,23 @@ namespace HashiraChronicles
             }
             Scarify(def);
             AddMenace(def);
+            // Premium finish for the creature forms: accent rim light and a cool shadow tint on every surface, and
+            // legs that actually walk.
+            foreach (var rend in mRoot.GetComponentsInChildren<Renderer>())
+            {
+                var mat = rend.sharedMaterial;
+                if (mat == null || !mat.HasProperty("_RimColor")) continue;
+                mat.SetColor("_RimColor", Color.Lerp(def.accentColor, Color.white, 0.2f));
+                if (mat.HasProperty("_ShadowColor")) mat.SetColor("_ShadowColor", new Color(0.42f, 0.36f, 0.52f));
+                if (mat.HasProperty("_RimPower")) mat.SetFloat("_RimPower", 2.4f);
+            }
+            if (gaitLegs.Count > 0)
+            {
+                var g = gameObject.AddComponent<MonsterGait>();
+                g.cv = this;
+                g.legs = gaitLegs.ToArray();
+                g.phases = gaitPhases.ToArray();
+            }
             if (Trail != null && def.archetype != EnemyArchetype.Boss && def.archetype != EnemyArchetype.Elite) Trail.widthMultiplier = 0.25f;
             return true;
         }
@@ -284,8 +334,8 @@ namespace HashiraChronicles
             for (int s = -1; s <= 1; s += 2)
             {
                 Cone(new Vector3(0.3f * s, 1.1f, 1.45f), new Vector3(0.18f, 0.7f, 0.18f), mBone, new Vector3(80f, 0f, -25f * s));
-                P(PrimitiveType.Capsule, new Vector3(0.45f * s, 0.4f, 0.65f), new Vector3(0.3f, 0.45f, 0.3f), mBody);
-                P(PrimitiveType.Capsule, new Vector3(0.4f * s, 0.4f, -0.65f), new Vector3(0.26f, 0.42f, 0.26f), mBody);
+                Leg(new Vector3(0.45f * s, 0.85f, 0.65f), 0.85f, 0.15f, mBody, s > 0 ? 0f : Mathf.PI);
+                Leg(new Vector3(0.4f * s, 0.85f, -0.65f), 0.85f, 0.13f, mBody, s > 0 ? Mathf.PI : 0f);
                 P(PrimitiveType.Cube, new Vector3(0.52f * s, 1.05f, 0.1f), new Vector3(0.03f, 0.08f, 1.1f), mGlow, new Vector3(0f, 0f, 10f * s)); // veins
             }
             Eyes(1.0f, 1.58f, 0.18f, 0.07f, new Color(1f, 0.9f, 0.2f));
@@ -337,7 +387,7 @@ namespace HashiraChronicles
                 // Long root arms dragging on the ground.
                 P(PrimitiveType.Capsule, new Vector3(0.65f * s, 1.05f, 0.25f), new Vector3(0.22f, 0.75f, 0.22f), bark, new Vector3(25f, 0f, 18f * s));
                 for (int f = 0; f < 3; f++) Cone(new Vector3(0.85f * s + (f - 1) * 0.08f, 0.2f, 0.55f), new Vector3(0.06f, 0.35f, 0.06f), bark, new Vector3(150f, 0f, 0f));
-                P(PrimitiveType.Capsule, new Vector3(0.28f * s, 0.35f, 0f), new Vector3(0.3f, 0.38f, 0.3f), bark);
+                Leg(new Vector3(0.28f * s, 0.72f, 0f), 0.72f, 0.16f, bark, s > 0 ? 0f : Mathf.PI, moss);
                 P(PrimitiveType.Cube, new Vector3(0.3f * s, 1.05f, 0.42f), new Vector3(0.04f, 0.5f, 0.02f), sap, new Vector3(0f, 0f, 12f * s));
             }
             for (int i = 0; i < 4; i++)
@@ -357,8 +407,8 @@ namespace HashiraChronicles
             Eyes(1.32f, 1.55f, 0.14f, 0.07f, new Color(1f, 0.8f, 0.2f));
             for (int s = -1; s <= 1; s += 2)
             {
-                P(PrimitiveType.Capsule, new Vector3(0.38f * s, 0.4f, 0.55f), new Vector3(0.26f, 0.42f, 0.26f), rock);
-                P(PrimitiveType.Capsule, new Vector3(0.35f * s, 0.4f, -0.55f), new Vector3(0.24f, 0.4f, 0.24f), rock);
+                Leg(new Vector3(0.38f * s, 0.82f, 0.55f), 0.82f, 0.13f, rock, s > 0 ? 0f : Mathf.PI, lava);
+                Leg(new Vector3(0.35f * s, 0.82f, -0.55f), 0.82f, 0.12f, rock, s > 0 ? Mathf.PI : 0f, lava);
                 P(PrimitiveType.Cube, new Vector3(0.46f * s, 0.95f, 0f), new Vector3(0.02f, 0.4f, 0.9f), lava, new Vector3(20f, 0f, 0f));
             }
             P(PrimitiveType.Capsule, new Vector3(0f, 1.1f, -1.2f), new Vector3(0.1f, 0.5f, 0.1f), rock, new Vector3(-50f, 0f, 0f));

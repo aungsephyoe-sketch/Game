@@ -49,11 +49,17 @@ namespace HashiraChronicles
             }
         };
 
+        bool designWorlds;
+
         void DrawDesigns()
         {
             var d = gm.Data;
             gm.Home.ShowLineup(DesignIds);
             TopBar("NEW DESIGNS", GameScreen.Characters);
+            // Tabs: the character quality test and the environment quality test.
+            if (FlatBtn(new Rect(safe.x + 560f, safe.y + 26f, 220f, 54f), "CHARACTERS", !designWorlds ? TileRed : new Color(0.16f, 0.17f, 0.26f), true, 20)) designWorlds = false;
+            if (FlatBtn(new Rect(safe.x + 790f, safe.y + 26f, 200f, 54f), "WORLDS", designWorlds ? TileRed : new Color(0.16f, 0.17f, 0.26f), true, 20)) designWorlds = true;
+            if (designWorlds) { DrawWorldPrototypes(); return; }
             designPick = Mathf.Clamp(designPick, 0, DesignIds.Count - 1);
 
             // The three fighters in the village: a card under each.
@@ -149,6 +155,166 @@ namespace HashiraChronicles
             Round(foot, new Color(1f, 0.85f, 0.35f, 0.08f), 10f);
             GUI.Label(new Rect(foot.x + 12f, foot.y + 6f, foot.width - 24f, foot.height - 12f),
                 "<b>Quality test.</b> These three are original designs built to the new standard: jointed limbs, real hands and boots, layered outfits, detailed weapons and faces. Approve them and the rest of the roster gets the same treatment.", noteSt);
+        }
+    
+        // ------------------------------------------------------------------ Worlds (environment prototypes)
+
+        static readonly string[] WorldIds = { "forest", "snow", "volcano" };
+        static readonly string[] WorldNames = { "FOREST", "SNOW MOUNTAIN", "VOLCANO" };
+        static readonly string[] WorldLandmark = { "The Great Tree", "Frozen Summit Shrine", "The Crater Throne" };
+        static readonly string[] WorldRoute =
+        {
+            "Forest Gate → Mossy Trail → Old Stream Bridge → Moss Ruins → Demon Camp → Heart of the Great Tree",
+            "Trailhead → Pine Ridge → Frozen River Bridge → Mountain Shrine → Ice Cave Camp → Frozen Summit Shrine",
+            "Ashen Gate → Basalt Path → Lava River Bridge → Ruined Fire Temple → Demon Forge Camp → Crater Throne"
+        };
+        static readonly string[] WorldMood =
+        {
+            "Warm sunlight and soft shadows, sunbeams through the canopy, drifting leaves and spirit motes. Green, warm yellow, brown and a clear blue stream.",
+            "Cold blue light on bright snow, terraced cliffs, snow-laden pines, ice crystals, a frozen river and a frozen waterfall. White, light blue and deep blue.",
+            "Red and orange glow from lava rivers and cracked basalt, burnt trees with ember tips, smoke, ash and embers, an erupting volcano on the horizon."
+        };
+        static readonly Color[][] WorldPalette =
+        {
+            new[] { new Color(0.36f, 0.6f, 0.26f), new Color(0.95f, 0.8f, 0.35f), new Color(0.45f, 0.3f, 0.18f), new Color(0.3f, 0.6f, 0.8f) },
+            new[] { new Color(0.95f, 0.97f, 1f), new Color(0.65f, 0.85f, 1f), new Color(0.2f, 0.3f, 0.55f), new Color(0.8f, 0.16f, 0.16f) },
+            new[] { new Color(0.1f, 0.08f, 0.08f), new Color(0.3f, 0.2f, 0.16f), new Color(1f, 0.45f, 0.08f), new Color(0.85f, 0.15f, 0.1f) }
+        };
+        readonly Texture2D[] worldArt = new Texture2D[3];
+
+        void DrawWorldPrototypes()
+        {
+            UIStyles.Rect(new Rect(0f, 106f + safe.y, W, H), new Color(0.03f, 0.04f, 0.07f, 0.72f));
+            float top = safe.y + 130f;
+            GUI.Label(new Rect(safe.x + 30f, top, W - 60f, 40f), "Environment quality test — three worlds built to the new standard. Play one to see it at gameplay camera distance.", UIStyles.Sized(UIStyles.Body, 22));
+            float cw = (safe.width - 60f - 2f * 24f) / 3f, ch = H - top - 90f;
+            if (designNoteStyle == null) designNoteStyle = new GUIStyle(UIStyles.Sized(UIStyles.Small, 18)) { wordWrap = true };
+            for (int i = 0; i < 3; i++)
+            {
+                var r = new Rect(safe.x + 30f + i * (cw + 24f), top + 54f, cw, ch);
+                Round(Offset(r, 0f, 5f), new Color(0f, 0f, 0f, 0.4f), 16f);
+                Round(r, new Color(0.07f, 0.08f, 0.12f, 0.96f), 16f);
+                RoundFrame(r, WorldPalette[i][i == 2 ? 2 : 1], 2f, 16f);
+                var art = new Rect(r.x + 10f, r.y + 10f, r.width - 20f, (r.width - 20f) * 0.56f);
+                if (worldArt[i] == null) worldArt[i] = PaintWorld(i);
+                GUI.DrawTexture(art, worldArt[i], ScaleMode.ScaleAndCrop, false);
+                float y = art.yMax + 10f;
+                UIStyles.Outlined(new Rect(r.x + 18f, y, r.width - 36f, 40f), WorldNames[i], UIStyles.Sized(UIStyles.H2, 30), Color.white, 2f);
+                y += 40f;
+                UIStyles.Colored(new Rect(r.x + 18f, y, r.width - 36f, 28f), "Landmark: " + WorldLandmark[i], UIStyles.Sized(UIStyles.Body, 18), new Color(1f, 0.85f, 0.4f));
+                y += 32f;
+                for (int k = 0; k < 4; k++)
+                {
+                    var sw = new Rect(r.x + 18f + k * 58f, y, 50f, 22f);
+                    Round(sw, WorldPalette[i][k], 5f);
+                    RoundFrame(sw, new Color(1f, 1f, 1f, 0.2f), 1f, 5f);
+                }
+                y += 32f;
+                float mh = designNoteStyle.CalcHeight(new GUIContent(WorldMood[i]), r.width - 36f);
+                GUI.Label(new Rect(r.x + 18f, y, r.width - 36f, mh + 4f), WorldMood[i], designNoteStyle);
+                y += mh + 8f;
+                float rh = designNoteStyle.CalcHeight(new GUIContent(WorldRoute[i]), r.width - 36f);
+                GUI.Label(new Rect(r.x + 18f, y, r.width - 36f, rh + 4f), "<color=#AAAAAA>" + WorldRoute[i] + "</color>", designNoteStyle);
+                if (FlatBtn(new Rect(r.x + 18f, r.yMax - 76f, r.width - 36f, 60f), "PLAY ▶", TileRed, true, 26)) { gm.BeginPrototype(WorldIds[i]); return; }
+            }
+        }
+
+        /// <summary>A small painted preview of each world: sky, layered ranges, the landmark and the foreground.</summary>
+        static Texture2D PaintWorld(int k)
+        {
+            const int w = 320, h = 180;
+            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, name = "WorldArt" + k };
+            var px = new Color[w * h];
+            Color skyTop = k == 0 ? new Color(0.32f, 0.58f, 0.9f) : k == 1 ? new Color(0.36f, 0.56f, 0.86f) : new Color(0.12f, 0.05f, 0.1f);
+            Color skyLow = k == 0 ? new Color(0.85f, 0.92f, 0.88f) : k == 1 ? new Color(0.85f, 0.92f, 0.99f) : new Color(0.7f, 0.25f, 0.12f);
+            Color[] layers = k == 0
+                ? new[] { new Color(0.55f, 0.7f, 0.75f), new Color(0.35f, 0.55f, 0.4f), new Color(0.2f, 0.42f, 0.2f), new Color(0.36f, 0.6f, 0.26f) }
+                : k == 1
+                    ? new[] { new Color(0.7f, 0.78f, 0.92f), new Color(0.52f, 0.62f, 0.8f), new Color(0.9f, 0.94f, 1f), new Color(0.96f, 0.98f, 1f) }
+                    : new[] { new Color(0.4f, 0.14f, 0.12f), new Color(0.22f, 0.09f, 0.09f), new Color(0.12f, 0.07f, 0.07f), new Color(0.16f, 0.12f, 0.12f) };
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    float t = y / (float)h;
+                    Color c = Color.Lerp(skyLow, skyTop, Mathf.Pow(t, 0.8f));
+                    // Layered ranges, far to near.
+                    for (int l = 0; l < 4; l++)
+                    {
+                        float baseY = h * (0.62f - l * 0.13f);
+                        float amp = h * (0.2f - l * 0.03f);
+                        float n = Mathf.PerlinNoise(x * (0.012f + l * 0.008f) + l * 13f + k * 7f, l * 3.1f);
+                        float ridge = baseY + amp * n;
+                        if (k == 1 && l < 2) ridge += Mathf.Max(0f, 1f - Mathf.Abs(((x + l * 60) % 110) - 55f) / 55f) * h * 0.18f;
+                        if (y < ridge)
+                        {
+                            c = layers[l];
+                            if (k == 1 && l < 2 && y > ridge - h * 0.05f) c = Color.Lerp(c, Color.white, 0.8f);
+                        }
+                    }
+                    px[y * w + x] = c;
+                }
+            // Landmark silhouettes.
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    float cx = x - w * 0.62f, cy = y - h * 0.3f;
+                    if (k == 0)
+                    {
+                        if (Mathf.Abs(cx) < 7f && cy > 0f && cy < h * 0.35f) px[y * w + x] = new Color(0.32f, 0.22f, 0.15f);
+                        float d = new Vector2(cx / 1.3f, cy - h * 0.45f).magnitude;
+                        if (d < h * 0.24f) px[y * w + x] = Color.Lerp(new Color(0.46f, 0.68f, 0.26f), new Color(0.2f, 0.42f, 0.2f), d / (h * 0.24f));
+                    }
+                    else if (k == 1)
+                    {
+                        for (int tier = 0; tier < 3; tier++)
+                        {
+                            float ty = h * 0.3f + tier * 14f, tw = 34f - tier * 8f;
+                            if (y > ty && y < ty + 10f && Mathf.Abs(cx) < tw - (y - ty) * 1.2f) px[y * w + x] = new Color(0.95f, 0.97f, 1f);
+                            if (y > ty - 10f && y <= ty && Mathf.Abs(cx) < tw * 0.6f) px[y * w + x] = new Color(0.72f, 0.14f, 0.12f);
+                        }
+                    }
+                    else
+                    {
+                        float vx = x - w * 0.5f, vy = y - h * 0.5f;
+                        if (vy > 0f && vy < h * 0.35f && Mathf.Abs(vx) < 90f - vy * 1.6f) px[y * w + x] = vy > h * 0.3f ? new Color(1f, 0.5f, 0.1f) : new Color(0.14f, 0.09f, 0.09f);
+                        if (vy > h * 0.35f && vy < h * 0.5f && Mathf.Abs(vx + (vy - h * 0.35f) * 0.6f) < 12f - (vy - h * 0.35f) * 0.4f) px[y * w + x] = new Color(0.3f, 0.26f, 0.26f, 1f);
+                    }
+                }
+            // Foreground road and scatter.
+            var rnd = new System.Random(k * 31 + 5);
+            for (int y = 0; y < h * 0.22f; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    float road = Mathf.Abs(x - w * 0.5f - (h * 0.22f - y) * 0.8f);
+                    if (road < 18f + y * 0.9f) px[y * w + x] = k == 0 ? new Color(0.66f, 0.52f, 0.34f) : k == 1 ? new Color(0.68f, 0.74f, 0.86f) : new Color(0.36f, 0.31f, 0.28f);
+                }
+            for (int i = 0; i < 26; i++)
+            {
+                int bx = rnd.Next(w), by = rnd.Next((int)(h * 0.3f));
+                if (Mathf.Abs(bx - w * 0.5f) < 40) continue;
+                int th = 18 + rnd.Next(26);
+                Color tc = k == 0 ? new Color(0.18f, 0.4f, 0.18f) : k == 1 ? new Color(0.1f, 0.3f, 0.3f) : new Color(0.08f, 0.06f, 0.06f);
+                for (int y = 0; y < th; y++)
+                {
+                    int half = k == 2 ? 1 : (int)((th - y) * 0.35f);
+                    for (int x = -half; x <= half; x++)
+                    {
+                        int px0 = bx + x, py = by + y;
+                        if (px0 < 0 || px0 >= w || py >= h) continue;
+                        px[py * w + px0] = k == 1 && y % 7 > 4 ? new Color(0.95f, 0.97f, 1f) : tc;
+                    }
+                }
+                if (k == 2 && by + th < h) px[(by + th) * w + bx] = new Color(1f, 0.5f, 0.1f);
+            }
+            if (k == 2)
+                for (int x = 0; x < w; x++)
+                {
+                    int ly = (int)(h * 0.12f + Mathf.Sin(x * 0.04f) * 6f);
+                    for (int y = ly - 3; y <= ly + 3; y++) if (y >= 0 && y < h && Mathf.Abs(x - w * 0.5f) > 30f) px[y * w + x] = new Color(1f, 0.45f + Mathf.PerlinNoise(x * 0.1f, y * 0.3f) * 0.3f, 0.08f);
+                }
+            tex.SetPixels(px);
+            tex.Apply();
+            return tex;
         }
     }
 }

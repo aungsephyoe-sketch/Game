@@ -8,7 +8,7 @@ namespace HashiraChronicles
     /// </summary>
     public static class MaterialFactory
     {
-        static Shader toon, additive, transparent;
+        static Shader toon, additive, transparent, world, sky;
         static Texture2D softDot, white;
 
         static Shader LoadShader(string resource, params string[] fallbacks)
@@ -26,6 +26,24 @@ namespace HashiraChronicles
 
         static Shader ToonShader { get { return toon != null ? toon : (toon = LoadShader("Shaders/Toon", "Standard", "Unlit/Color")); } }
         static Shader AdditiveShader { get { return additive != null ? additive : (additive = LoadShader("Shaders/UnlitAdditive", "Sprites/Default")); } }
+        static Shader WorldShader { get { return world != null ? world : (world = LoadShader("Shaders/ToonWorld", "Standard", "Unlit/Color")); } }
+        static Shader SkyShader { get { return sky != null ? sky : (sky = LoadShader("Shaders/SkyGradient", "Unlit/Color")); } }
+
+        /// <summary>Vertex-coloured cel material for combined world meshes; vertex alpha drives wind sway and (optionally) glow.</summary>
+        public static Material World(Color tint, float wind = 0f, Color? alphaGlow = null, Color? shadow = null, Color? rim = null)
+        {
+            var m = new Material(WorldShader);
+            m.color = tint;
+            if (m.HasProperty("_Wind")) m.SetFloat("_Wind", wind);
+            if (m.HasProperty("_AlphaEmit")) m.SetColor("_AlphaEmit", alphaGlow ?? Color.black);
+            if (shadow.HasValue && m.HasProperty("_ShadowColor")) m.SetColor("_ShadowColor", shadow.Value);
+            if (rim.HasValue && m.HasProperty("_RimColor")) m.SetColor("_RimColor", rim.Value);
+            return m;
+        }
+
+        /// <summary>Unlit vertex-colour material for the sky dome.</summary>
+        public static Material Sky() { return new Material(SkyShader); }
+
         static Shader TransparentShader { get { return transparent != null ? transparent : (transparent = LoadShader("Shaders/UnlitTransparent", "Sprites/Default")); } }
 
         public static Texture2D White

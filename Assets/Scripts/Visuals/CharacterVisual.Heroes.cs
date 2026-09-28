@@ -40,6 +40,11 @@ namespace HashiraChronicles
         /// <summary>Body tilt, crouch, weapon angle and head tilt for each personality's showcase pose.</summary>
         void PoseValues(out Vector3 body, out float drop, out Vector3 weapon, out Vector3 headE)
         {
+            if (rig != null && rig.hasPose)
+            {
+                body = rig.poseBody; drop = rig.poseDrop; weapon = rig.poseWeapon; headE = rig.poseHead;
+                return;
+            }
             switch (Motion)
             {
                 case MotionStyle.Confident: body = new Vector3(-4f, 0f, 0f); drop = 0f; weapon = new Vector3(-125f, 25f, 0f); headE = new Vector3(-8f, 0f, 0f); break;   // blade on the shoulder
@@ -95,7 +100,10 @@ namespace HashiraChronicles
         /// <summary>Smooth, high-resolution sphere part (faces, hair, hands).</summary>
         GameObject Ball(Transform parent, Vector3 pos, Vector3 scale, Material m, Vector3? euler = null)
         {
-            var go = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), parent, pos, scale, m);
+            // Resolution by size: tiny parts (fingers, eye highlights) don't need thousands of vertices.
+            float size = Mathf.Max(scale.x, Mathf.Max(scale.y, scale.z));
+            Mesh mesh = size < 0.07f ? MeshFactory.Sphere(10, 14) : size < 0.2f ? MeshFactory.Sphere(16, 24) : size < 0.5f ? MeshFactory.Sphere(24, 36) : MeshFactory.SmoothSphere();
+            var go = MeshFactory.MeshObject(mesh, parent, pos, scale, m);
             if (euler.HasValue) go.transform.localRotation = Quaternion.Euler(euler.Value);
             Add(go);
             return go;

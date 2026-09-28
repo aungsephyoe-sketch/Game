@@ -969,6 +969,51 @@ namespace HashiraChronicles
         }
 
         /// <summary>Five events, five quests each (Easy, Easy, Medium, Medium, Hard), each with its own little story.</summary>
+        /// <summary>
+        /// Environment quality test: one mission per prototype world (Forest, Snow Mountain, Volcano), each a full
+        /// route from the gate through a trail, a bridge, ruins or a shrine and a demon camp to a boss arena.
+        /// </summary>
+        public static MissionDefinition PrototypeMission(string env, int level)
+        {
+            EnsureBuilt();
+            level = Mathf.Clamp(level, 3, 80);
+            MissionDefinition m;
+            switch (env)
+            {
+                case "snow":
+                    m = M(null, "PROTO_SNOW", MissionType.Side, null, "Snow Mountain (Prototype)", level,
+                        "Climb past the pine ridge and the frozen river to the shrine at the summit, where the Frost Oni waits.",
+                        Wave("runner", 4, "ice_wraith", 1), Wave("frost_oni", 1, "runner", 3), Wave("ice_wraith", 2, "runner", 3), Wave("frost_oni", 2, "ice_wraith", 2));
+                    m.theme = Theme(EnvironmentKind.Mountain);
+                    m.route.AddRange(new[] { "Mountain Trailhead", "Pine Ridge", "Frozen River Bridge", "Mountain Shrine", "Ice Cave Camp" });
+                    m.bossId = "boss_hyoga";
+                    m.arenaName = "Frozen Summit Shrine";
+                    break;
+                case "volcano":
+                    m = M(null, "PROTO_VOLCANO", MissionType.Side, null, "Volcano (Prototype)", level,
+                        "Cross the ashen fields and the lava river, through the ruined fire temple and the demons' forge, to the crater throne.",
+                        Wave("lava_imp", 5, "grunt", 2), Wave("flame_beast", 1, "lava_imp", 3), Wave("demon_warrior", 1, "lava_imp", 4), Wave("brute", 2, "demon_warrior", 1));
+                    m.theme = Theme(EnvironmentKind.DemonLand);
+                    m.route.AddRange(new[] { "Ashen Gate", "Basalt Path", "Lava River Bridge", "Ruined Fire Temple", "Demon Forge Camp" });
+                    m.bossId = "boss_goken";
+                    m.arenaName = "Crater Throne";
+                    break;
+                default:
+                    m = M(null, "PROTO_FOREST", MissionType.Side, null, "Forest (Prototype)", level,
+                        "Follow the old shrine road through the forest, over the stream and past the moss ruins, to the Great Tree.",
+                        Wave("grunt", 4, "shadow_demon", 1), Wave("shadow_demon", 3, "grunt", 2), Wave("forest_beast", 1, "spitter", 2, "grunt", 2), Wave("forest_beast", 2, "shadow_demon", 2));
+                    m.theme = Theme(EnvironmentKind.Forest);
+                    m.route.AddRange(new[] { "Forest Gate", "Mossy Trail", "Old Stream Bridge", "Moss Ruins", "Demon Camp" });
+                    m.bossId = "boss_thousandarm";
+                    m.arenaName = "Heart of the Great Tree";
+                    break;
+            }
+            m.prototypeEnv = env == "snow" || env == "volcano" ? env : "forest";
+            m.regionId = null;
+            m.timeLimit = 900f;
+            return m;
+        }
+
         static void BuildEvents()
         {
             Events.Clear();

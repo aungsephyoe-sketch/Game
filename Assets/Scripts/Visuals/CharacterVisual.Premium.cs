@@ -31,6 +31,7 @@ namespace HashiraChronicles
                 case "oboro_iron": BuildOboro(def); break;
                 default: BuildShion(def); break;
             }
+            OptimizeParts();
             if (rig != null) rig.Solve(0f);
         }
 
@@ -249,12 +250,13 @@ namespace HashiraChronicles
             var mSkin = PM(def.skinTone); var mWrap = PM(new Color(0.88f, 0.87f, 0.8f), 0.01f); var mSole = PM(new Color(0.08f, 0.08f, 0.08f), 0.01f);
             var mBoot = PM(new Color(0.1f, 0.14f, 0.13f)); var mHair = PM(hairC); var mTip = PM(tipC, 0.01f);
 
-            var r = NewRig(0.6f, 0.085f, 0.27f, 0.27f, 0.08f, new Vector3(0.185f, 0.3f, -0.01f), 0.2f, 0.19f, new Vector3(0f, 0.36f, 0f));
-            r.stance = 0.12f; r.crouch = 0.07f; r.lean = 10f; r.tempo = 12.5f; r.stride = 0.19f; r.lift = 0.14f;
-            r.idleBounce = 0.025f; r.idleBounceFreq = 2.4f; r.twistGain = 0.3f; r.swingDip = 0.06f; r.swingLunge = 12f;
+            var r = NewRig(0.6f, 0.085f, 0.27f, 0.27f, 0.08f, new Vector3(0.215f, 0.29f, -0.01f), 0.2f, 0.19f, new Vector3(0f, 0.36f, 0f));
+            r.stance = 0.1f; r.crouch = 0.035f; r.lean = 8f; r.tempo = 12.5f; r.stride = 0.19f; r.lift = 0.14f;
+            r.idleBounce = 0.018f; r.idleBounceFreq = 2.4f; r.twistGain = 0.3f; r.swingDip = 0.06f; r.swingLunge = 12f;
             r.grip = PremiumRig.Grip.Twin;
-            r.restHandR = new Vector3(0.25f, 0.02f, 0.12f);
-            r.restHandL = new Vector3(-0.25f, 0.02f, 0.1f);
+            r.restHandR = new Vector3(0.31f, 0.03f, 0.08f);
+            r.restHandL = new Vector3(-0.31f, 0.03f, 0.06f);
+            r.hasPose = true; r.poseBody = new Vector3(10f, 0f, 0f); r.poseDrop = 0.04f; r.poseWeapon = new Vector3(30f, 115f, 0f); r.poseHead = new Vector3(4f, -8f, 0f);
             var T = r.torso;
             Vector3 ts = new Vector3(1.05f, 1f, 0.82f);
 
@@ -326,10 +328,11 @@ namespace HashiraChronicles
             for (int i = 0; i < 2; i++)
             {
                 int side = i == 0 ? 1 : -1;
-                Ball(r.upper[i], new Vector3(0f, -0.02f, 0f), Vector3.one * 0.125f, mGreen);
-                Taper(r.upper[i], Vector3.zero, 0.19f, 0.058f, 0.05f, mGreen);
-                Band(r.upper[i], new Vector3(0f, -0.185f, 0f), 0.052f, 0.036f, 0.012f, mWhite);
-                Band(r.upper[i], new Vector3(0f, -0.2f, 0f), 0.056f, 0.008f, 0.005f, mGold);
+                // Short jacket sleeve over a bare upper arm, so the arm reads against the green jacket.
+                Taper(r.upper[i], Vector3.zero, 0.19f, 0.054f, 0.048f, mSkin);
+                Ball(r.upper[i], new Vector3(0f, -0.01f, 0f), Vector3.one * 0.14f, mGreen);
+                Taper(r.upper[i], Vector3.zero, 0.09f, 0.068f, 0.066f, mGreen);
+                Band(r.upper[i], new Vector3(0f, -0.09f, 0f), 0.066f, 0.02f, 0.008f, mGold);
                 Ball(r.lower[i], Vector3.zero, Vector3.one * 0.09f, mWrap);
                 Taper(r.lower[i], Vector3.zero, 0.17f, 0.045f, 0.038f, mWrap);
                 for (int k = 0; k < 3; k++) Band(r.lower[i], new Vector3(0f, -0.05f - k * 0.045f, 0f), 0.044f - k * 0.002f, 0.01f, 0.006f, mLeather);
@@ -435,13 +438,13 @@ namespace HashiraChronicles
             var mGlove = PM(new Color(0.22f, 0.13f, 0.1f)); var mSole = PM(new Color(0.07f, 0.06f, 0.06f), 0.01f);
             var mEmber = PMe(orange, 0f, new Color(1f, 0.45f, 0.1f));
 
-            var r = NewRig(0.62f, 0.12f, 0.28f, 0.27f, 0.09f, new Vector3(0.27f, 0.31f, -0.01f), 0.22f, 0.21f, new Vector3(0f, 0.38f, 0f));
+            var r = NewRig(0.62f, 0.12f, 0.28f, 0.27f, 0.09f, new Vector3(0.31f, 0.3f, -0.01f), 0.22f, 0.21f, new Vector3(0f, 0.38f, 0f));
             Model.localScale = Vector3.one * 1.1f;
             r.stance = 0.18f; r.crouch = 0.04f; r.lean = -3f; r.tempo = 8.5f; r.stride = 0.15f; r.lift = 0.1f; r.toeOut = 18f;
             r.weightShift = 0.025f; r.twistGain = 0.45f; r.swingDip = 0.1f; r.swingLunge = 16f;
             r.grip = PremiumRig.Grip.TwoHand;
-            r.restHandR = new Vector3(0.27f, 0.26f, 0.22f);
-            r.restHandL = new Vector3(-0.3f, 0.06f, 0.03f);
+            r.restHandR = new Vector3(0.3f, 0.26f, 0.22f);
+            r.restHandL = new Vector3(-0.37f, 0.08f, 0.05f);
             swordRest = Quaternion.Euler(-108f, 32f, 0f);
             var T = r.torso;
             Vector3 ts = new Vector3(1.2f, 1f, 0.9f);
@@ -640,12 +643,12 @@ namespace HashiraChronicles
             var mSpark = PMe(new Color(1f, 0.92f, 0.5f), 0f, new Color(1f, 0.85f, 0.4f));
             var mBolt = PMe(purple, 0f, purple * 0.8f);
 
-            var r = NewRig(0.64f, 0.075f, 0.28f, 0.27f, 0.08f, new Vector3(0.165f, 0.29f, -0.01f), 0.2f, 0.19f, new Vector3(0f, 0.35f, 0f));
+            var r = NewRig(0.64f, 0.075f, 0.28f, 0.27f, 0.08f, new Vector3(0.2f, 0.28f, -0.01f), 0.2f, 0.19f, new Vector3(0f, 0.35f, 0f));
             r.stance = 0.07f; r.hover = 0.16f; r.lean = -2f; r.tempo = 7f; r.stride = 0.06f; r.lift = 0.03f;
             r.twistGain = 0.15f; r.swingDip = 0f; r.swingLunge = 4f;
             r.grip = PremiumRig.Grip.Caster;
-            r.restHandR = new Vector3(0.27f, 0.12f, 0.16f);
-            r.restHandL = new Vector3(-0.16f, 0.3f, 0.3f);
+            r.restHandR = new Vector3(0.31f, 0.12f, 0.14f);
+            r.restHandL = new Vector3(-0.22f, 0.3f, 0.3f);
             swordRest = Quaternion.Euler(-78f, 12f, 0f);
             var T = r.torso;
             Vector3 ts = new Vector3(1f, 1f, 0.82f);
@@ -658,13 +661,14 @@ namespace HashiraChronicles
                 var panel = Part(PrimitiveType.Cube, T, new Vector3(s * 0.028f, 0.22f, 0.106f), new Vector3(0.06f, 0.17f, 0.012f), mWhite, new Vector3(-14f, 0f, s * 24f));
                 Part(PrimitiveType.Cube, panel.transform, new Vector3(s * 0.5f, 0f, 0.2f), new Vector3(0.22f, 1f, 1.2f), mYellow);
             }
-            Shell(T, "sh_capelet", new[] { new Vector2(0.25f, 0.16f), new Vector2(0.24f, 0.19f), new Vector2(0.195f, 0.26f), new Vector2(0.145f, 0.305f),
-                new Vector2(0.09f, 0.34f), new Vector2(0f, 0.35f) }, Vector3.zero, new Vector3(1f, 1f, 0.9f), mPurple);
-            Band(T, new Vector3(0f, 0.165f, 0f), 0.25f, 0.018f, 0.007f, mGold, new Vector3(1f, 1f, 0.9f));
+            // A short mantle over the shoulders (the arms come out underneath it).
+            Shell(T, "sh_capelet2", new[] { new Vector2(0.205f, 0.2f), new Vector2(0.2f, 0.23f), new Vector2(0.17f, 0.28f), new Vector2(0.12f, 0.32f),
+                new Vector2(0.07f, 0.345f), new Vector2(0f, 0.35f) }, Vector3.zero, new Vector3(1f, 1f, 0.9f), mPurple);
+            Band(T, new Vector3(0f, 0.205f, 0f), 0.205f, 0.018f, 0.007f, mGold, new Vector3(1f, 1f, 0.9f));
             for (int k = 0; k < 10; k++)
             {
                 float a = (k * 36f + 18f) * Mathf.Deg2Rad;
-                Ball(T, new Vector3(Mathf.Sin(a) * 0.253f, 0.15f, Mathf.Cos(a) * 0.253f * 0.9f), new Vector3(0.022f, 0.03f, 0.022f), mGold);
+                Ball(T, new Vector3(Mathf.Sin(a) * 0.208f, 0.19f, Mathf.Cos(a) * 0.208f * 0.9f), new Vector3(0.022f, 0.03f, 0.022f), mGold);
             }
             Shell(T, "sh_collar", new[] { new Vector2(0.068f, 0.3f), new Vector2(0.075f, 0.35f), new Vector2(0.082f, 0.39f) }, Vector3.zero, Vector3.one, mNavyDk);
             Band(T, new Vector3(0f, 0.39f, 0f), 0.082f, 0.012f, 0.005f, mGold);
@@ -727,9 +731,11 @@ namespace HashiraChronicles
             for (int i = 0; i < 2; i++)
             {
                 int side = i == 0 ? 1 : -1;
-                Taper(r.upper[i], Vector3.zero, 0.19f, 0.052f, 0.056f, mNavy);
+                // Purple upper sleeves and white bell sleeves stand out against the navy robe.
+                Ball(r.upper[i], new Vector3(0f, -0.01f, 0f), Vector3.one * 0.12f, mPurple);
+                Taper(r.upper[i], Vector3.zero, 0.19f, 0.056f, 0.058f, mPurple);
                 Shell(r.lower[i], "sh_sleeve", new[] { new Vector2(0.12f, -0.17f), new Vector2(0.126f, -0.15f), new Vector2(0.09f, -0.07f), new Vector2(0.06f, 0f),
-                    new Vector2(0.05f, 0.025f) }, Vector3.zero, Vector3.one, mNavy);
+                    new Vector2(0.05f, 0.025f) }, Vector3.zero, Vector3.one, mWhite);
                 Band(r.lower[i], new Vector3(0f, -0.155f, 0f), 0.124f, 0.022f, 0.008f, mGold);
                 Band(r.lower[i], new Vector3(0f, -0.13f, 0f), 0.114f, 0.012f, 0.006f, mYellow);
                 Part(PrimitiveType.Cylinder, r.lower[i], new Vector3(0f, -0.172f, 0f), new Vector3(0.23f, 0.004f, 0.23f), mPurple);

@@ -284,6 +284,10 @@ namespace HashiraChronicles
         public string investigateLine;
         /// <summary>Summon-banner trial: this slayer alone at max power for 60 seconds.</summary>
         public string trialCharacterId;
+        /// <summary>Environment quality-test world ("forest", "snow", "volcano"); null for the normal builder.</summary>
+        public string prototypeEnv;
+        /// <summary>Custom name for the destination arena (otherwise chosen from the boss).</summary>
+        public string arenaName;
         /// <summary>Free-roam village (no enemies, talk to villagers, find chests).</summary>
         public bool openWorld;
         /// <summary>The event this quest belongs to (null for story missions).</summary>

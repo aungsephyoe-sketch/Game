@@ -137,7 +137,7 @@ namespace HashiraChronicles
                 try
                 {
                     Journey = Journey.Build(def);
-                    World = JourneyBuilder.Build(Journey, def, transform);
+                    World = string.IsNullOrEmpty(def.prototypeEnv) ? JourneyBuilder.Build(Journey, def, transform) : PrototypeWorld.Build(Journey, def, transform);
                     spawn = Journey.Start;
                 }
                 catch (System.Exception ex)
