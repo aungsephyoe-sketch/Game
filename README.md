@@ -36,6 +36,32 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Friends who text back, dangerous banners, meaner demons (0.23.0)
+- **Friend chat rebuilt** (`Meta/FriendChat.cs`). Friends reply in real time, anywhere from 3 minutes to 12 days: usually minutes to hours, sometimes days.
+  - Pending replies are saved, so they still arrive after you quit and come back. A long wait comes with a "sorry, just saw this!".
+  - They read everything you sent since their last reply and answer it together, in order.
+  - They understand slang (wyd, wdym, hbu, idk...), ask things back and understand your answer to their question, and explain what they meant when you ask.
+  - **Learning:** each friend remembers (in your save) who you main, what you like, what you pulled or cleared, how you've been feeling and what to call you. They bring it up later ("feeling better?", "how's Seren treating u?").
+  - The more you talk, the warmer and faster they reply. They also message you first every few hours to few days.
+  - Asked if they're a bot, they say honestly that they're simulated players until real online is ready.
+- **Event banners:**
+  - painted with themed gradients, rays and particles;
+  - the event's demon huge on the right with a red-hot silhouette;
+  - claw slashes, glowing cracks, a dark vignette, a pulsing red rim and a THREAT ☠ rating;
+  - the chosen event's header gets the same treatment, and so do limited banners on the home carousel.
+- **Summon banners:**
+  - the featured Mythic is shown in an action pose (their battle stance, turned three-quarters, from a low heroic angle) with an element halo;
+  - the other featured Mythics stand behind in shadow;
+  - switching banners slides the slayer in with a flash, and a blade gleam sweeps across every few seconds.
+- **Demons attack more:**
+  - roughly a quarter less time between attacks, and 4 can attack at once instead of 3;
+  - normal demons mix 1- and 2-swipe combos with pounces;
+  - fast demons also claw, tanks also combo, archers fire 3-shot volleys, and elites do 3-hit combos.
+- **Demon visuals:**
+  - a star glint pops over a demon's head the moment it starts an attack;
+  - every demon has a pulsing ground aura in its colour that flares red while winding up, plus drifting embers;
+  - they burst out of the ground on spawn and burst apart in their colour on death.
+
 ### Co-op and snow fixes (0.22.2)
 - **Co-op teammates play to clear fast.** They hunt demons up to 45 m away instead of staying near you. They sprint everywhere, dash-lunge to close gaps, and run ahead to the next objective when nothing is in sight.
 - **Co-op is leader-only.** You bring just your leader, with no switching; the other two slots are your teammates.

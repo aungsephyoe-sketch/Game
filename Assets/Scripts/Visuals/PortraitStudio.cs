@@ -69,6 +69,13 @@ namespace HashiraChronicles
             return Get("h:" + def.id + (fullBody ? ":f" : ""));
         }
 
+        /// <summary>Full body in a dynamic battle pose from a low, heroic angle (summon and promo banners).</summary>
+        public static Texture HeroAction(CharacterDefinition def)
+        {
+            if (def == null) return null;
+            return Get("h:" + def.id + ":a");
+        }
+
         public static Texture Enemy(EnemyDefinition def)
         {
             if (def == null) return null;
@@ -96,7 +103,8 @@ namespace HashiraChronicles
         void Render(string key)
         {
             var parts = key.Split(':');
-            bool full = parts.Length > 2 && parts[2] == "f";
+            bool action = parts.Length > 2 && parts[2] == "a";
+            bool full = parts.Length > 2 && (parts[2] == "f" || action);
             var holder = new GameObject("Subject").transform;
             holder.SetParent(stage, false);
             holder.localRotation = Quaternion.Euler(0f, 18f, 0f); // face the camera (which looks back along -Z), turned a little
@@ -107,7 +115,17 @@ namespace HashiraChronicles
             {
                 var def = GameDatabase.GetCharacter(parts[1]);
                 if (def != null) v = CharacterVisual.BuildHero(def, holder);
-                if (v != null) { headY = v.HeadY; height = headY + 0.45f; v.FidgetsEnabled = false; v.ApplyTeamIdle(); }
+                if (v != null)
+                {
+                    headY = v.HeadY; height = headY + 0.45f; v.FidgetsEnabled = false;
+                    if (action)
+                    {
+                        // Turned three-quarters, in their battle pose.
+                        holder.localRotation = Quaternion.Euler(0f, 34f, 0f);
+                        v.ApplyBannerPose();
+                    }
+                    else v.ApplyTeamIdle();
+                }
             }
             else
             {
@@ -125,8 +143,8 @@ namespace HashiraChronicles
             float span = full ? height * 1.1f : 1.3f;
             float dist = span * 0.5f / Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
             Vector3 focus = StagePos + Vector3.up * focusY;
-            cam.transform.position = focus + new Vector3(0f, full ? 0.2f : 0.1f, dist);
-            cam.transform.LookAt(focus);
+            cam.transform.position = focus + new Vector3(0f, action ? -height * 0.28f : full ? 0.2f : 0.1f, dist);
+            cam.transform.LookAt(focus + (action ? Vector3.up * height * 0.06f : Vector3.zero));
 
             // High-resolution, 8× anti-aliased portraits with mipmaps so they stay crisp at every size on screen.
             var rt = new RenderTexture(full ? 800 : 512, full ? 1200 : 512, 24, RenderTextureFormat.ARGB32)

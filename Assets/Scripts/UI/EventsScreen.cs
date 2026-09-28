@@ -44,29 +44,62 @@ namespace HashiraChronicles
                 int done = 0;
                 foreach (var q in ev.quests) if (d.IsMissionCleared(q.id)) done++;
                 Color a = ev.accent;
-                Round(Offset(r, 0f, 4f), new Color(0f, 0f, 0f, 0.4f), 16f);
-                for (int g = 0; g < 4; g++)
-                    Round(new Rect(r.x, r.y, r.width * (1f - g * 0.2f), r.height), new Color(a.r * 0.5f, a.g * 0.5f, a.b * 0.5f, 0.25f + (picked ? 0.1f : 0f)), 16f);
-                Round(r, new Color(0.05f, 0.05f, 0.09f, picked ? 0.5f : 0.7f), 16f);
-                if (picked) RoundFrame(r, a, 3f, 16f);
-                // Banner boss portrait on the right.
+                // Painted like a promo banner, then torn up: themed gradient, rays and particles, the event's
+                // demon huge on the right, claw slashes and cracks. Clipped to the card.
+                Round(Offset(r, 0f, 5f), new Color(0f, 0f, 0f, 0.5f), 16f);
+                var th = ThemeForColor(a);
+                var lr = new Rect(0f, 0f, r.width, r.height);
+                GUI.BeginGroup(r);
+                promoOrigin = r.position;
+                Vector2 focus = new Vector2(lr.width * 0.8f, lr.height * 0.55f);
+                PromoBackdrop(lr, th, focus, i * 1.3f + 0.4f, lr.height * 1.2f);
                 var boss = GameDatabase.GetEnemy(ev.bannerEnemy);
-                var pr = new Rect(r.xMax - lh + 10f, r.y + 10f, lh - 20f, lh - 20f);
-                UIStyles.CircleTex(pr.center, pr.width * 0.55f, new Color(a.r, a.g, a.b, 0.2f));
-                if (boss != null)
+                var art = boss != null ? ArtLibrary.Monster(boss) : null;
+                if (art != null)
                 {
-                    var art = ArtLibrary.Monster(boss);
-                    if (art != null) GUI.DrawTexture(pr, art, ScaleMode.ScaleAndCrop, true, 0f, Color.white, 0f, pr.width * 0.5f);
+                    float bob = Mathf.Sin(Time.unscaledTime * 1.3f + i) * 3f;
+                    var ar = new Rect(lr.width * 0.5f, -lr.height * 0.28f + bob, lr.height * 1.55f, lr.height * 1.55f);
+                    var oldC = GUI.color;
+                    // A red-hot silhouette behind, then the demon.
+                    GUI.color = new Color(1f, 0.15f, 0.1f, 0.55f);
+                    GUI.DrawTexture(Grow(ar, 7f), art, ScaleMode.ScaleAndCrop, true);
+                    GUI.color = picked ? Color.white : new Color(0.82f, 0.8f, 0.86f, 1f);
+                    GUI.DrawTexture(ar, art, ScaleMode.ScaleAndCrop, true);
+                    GUI.color = oldC;
                 }
-                UIStyles.Outlined(new Rect(r.x + 22f, r.y + 12f, lw - lh - 30f, 40f), ev.title, UIStyles.Sized(UIStyles.H2, 28), Color.white, 1.5f);
-                GUI.Label(new Rect(r.x + 22f, r.y + 50f, lw - lh - 30f, 30f), "<color=#CCCCCC>" + ev.subtitle + "</color>", UIStyles.Sized(UIStyles.Small, 16));
+                // Dark slash for the text.
+                var savedM = GUI.matrix;
+                PromoRotate(-6f, new Vector2(lr.width * 0.3f, lr.height * 0.5f));
+                UIStyles.Rect(new Rect(-30f, lr.height * 0.08f, lr.width * 0.72f, lr.height * 0.84f), new Color(0f, 0f, 0f, 0.5f));
+                UIStyles.Rect(new Rect(-30f, lr.height * 0.08f - 4f, lr.width * 0.72f, 4f), th.glow);
+                GUI.matrix = savedM;
+                DangerOverlay(lr, a, i * 2.1f + 1f, picked ? 1f : 0.75f);
+                if (!picked) UIStyles.Rect(lr, new Color(0f, 0f, 0f, 0.18f));
+                GUI.EndGroup();
+                if (picked)
+                {
+                    float gp = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 4f);
+                    RoundFrame(Grow(r, 3f), new Color(a.r, a.g, a.b, 0.7f + 0.3f * gp), 4f, 18f);
+                }
+                UIStyles.Outlined(new Rect(r.x + 22f, r.y + 10f, lw - 150f, 40f), ev.title.ToUpperInvariant(), UIStyles.Sized(UIStyles.H2, 28), Color.white, 3f);
+                GUI.Label(new Rect(r.x + 22f, r.y + 48f, lw - 170f, 30f), "<color=#E6DCE8>" + ev.subtitle + "</color>", UIStyles.Sized(UIStyles.Small, 16));
+                // Threat level: skulls from the hardest quest's level.
+                int maxLv = 0;
+                foreach (var q in ev.quests) maxLv = Mathf.Max(maxLv, q.enemyLevel);
+                int skulls = Mathf.Clamp(1 + maxLv / 12, 1, 5);
+                string sk = "";
+                for (int q = 0; q < skulls; q++) sk += "☠";
+                var chip = new Rect(r.xMax - 150f, r.y + 10f, 136f, 30f);
+                Round(chip, new Color(0.55f, 0.02f, 0.05f, 0.9f), 10f);
+                UIStyles.Outlined(chip, "THREAT " + sk, UIStyles.Sized(UIStyles.Center, 15), new Color(1f, 0.85f, 0.8f), 1.5f);
                 // Progress pips.
                 for (int p = 0; p < ev.quests.Count; p++)
                 {
                     bool clr = d.IsMissionCleared(ev.quests[p].id);
-                    UIStyles.CircleTex(new Vector2(r.x + 32f + p * 26f, r.yMax - 26f), 9f, clr ? a : new Color(1f, 1f, 1f, 0.2f));
+                    UIStyles.CircleTex(new Vector2(r.x + 32f + p * 26f, r.yMax - 26f), 10f, new Color(0f, 0f, 0f, 0.6f));
+                    UIStyles.CircleTex(new Vector2(r.x + 32f + p * 26f, r.yMax - 26f), 8f, clr ? Color.Lerp(a, Color.white, 0.2f) : new Color(1f, 1f, 1f, 0.2f));
                 }
-                GUI.Label(new Rect(r.x + 32f + ev.quests.Count * 26f, r.yMax - 42f, 200f, 32f), done == ev.quests.Count ? "<color=#7CFF8A>COMPLETE ✓</color>" : "<color=#BBBBBB>" + done + "/" + ev.quests.Count + "</color>", UIStyles.Sized(UIStyles.Body, 18));
+                UIStyles.Outlined(new Rect(r.x + 32f + ev.quests.Count * 26f, r.yMax - 42f, 200f, 32f), done == ev.quests.Count ? "<color=#7CFF8A>COMPLETE ✓</color>" : done + "/" + ev.quests.Count, UIStyles.Sized(UIStyles.Body, 18), Color.white, 1.5f);
                 if (GUI.Button(r, GUIContent.none, GUIStyle.none) && !picked) { eventPick = i; gm.Audio.Play("switch", 0.5f); eventScroll = Vector2.zero; }
             }
 
@@ -76,6 +109,15 @@ namespace HashiraChronicles
             Round(Offset(panel, 0f, 6f), new Color(0f, 0f, 0f, 0.4f), 18f);
             Round(panel, new Color(0.05f, 0.06f, 0.1f, 0.94f), 18f);
             Round(new Rect(panel.x, panel.y, panel.width, 8f), e.accent, 4f);
+            // A torn, glowing header band behind the event's name.
+            var head = new Rect(panel.x, panel.y, panel.width, 190f);
+            GUI.BeginGroup(head);
+            promoOrigin = head.position;
+            var hth = ThemeForColor(e.accent);
+            PromoBackdrop(new Rect(0f, 0f, head.width, head.height), hth, new Vector2(head.width * 0.85f, head.height * 0.5f), eventPick * 1.3f + 0.4f, head.height * 1.4f);
+            UIStyles.Rect(new Rect(0f, 0f, head.width, head.height), new Color(0f, 0f, 0f, 0.45f));
+            DangerOverlay(new Rect(0f, 0f, head.width, head.height), e.accent, eventPick + 5f, 0.7f);
+            GUI.EndGroup();
             float x = panel.x + 28f, w = panel.width - 56f, y = panel.y + 22f;
             UIStyles.Outlined(new Rect(x, y, w, 60f), e.title, UIStyles.Sized(UIStyles.H1, 46), e.accent, 2f);
             y += 62f;

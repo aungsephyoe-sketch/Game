@@ -25,6 +25,8 @@ namespace HashiraChronicles
         public static Texture Character(CharacterDefinition def) { return PortraitStudio.Hero(def); }
 
         public static Texture CharacterFull(CharacterDefinition def) { return PortraitStudio.Hero(def, true); }
+        /// <summary>Full body in an action pose, for banners.</summary>
+        public static Texture CharacterAction(CharacterDefinition def) { return PortraitStudio.HeroAction(def); }
 
         public static Texture Monster(EnemyDefinition def) { return PortraitStudio.Enemy(def); }
 

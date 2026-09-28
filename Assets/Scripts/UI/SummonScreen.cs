@@ -9,6 +9,7 @@ namespace HashiraChronicles
     public partial class UIManager
     {
         int bannerPick = 1;
+        float bannerSwitchAt = -10f;
 
         void DrawSummonBanner(PlayerData d, SummonStage st)
         {
@@ -35,7 +36,7 @@ namespace HashiraChronicles
                 if (ft != null) GUI.DrawTexture(face, ft, ScaleMode.ScaleAndCrop, true, 0f, Color.white, 0f, 33f);
                 GUI.Label(new Rect(face.xMax + 10f, tr.y + 8f, tr.width - 90f, 30f), "<b>" + SummonSystem.BannerNames[i] + "</b>", UIStyles.Sized(UIStyles.Body, 20));
                 GUI.Label(new Rect(face.xMax + 10f, tr.y + 40f, tr.width - 90f, 28f), "<color=#BBBBBB>" + td.displayName + "</color>", UIStyles.Sized(UIStyles.Small, 17));
-                if (!on && GUI.Button(tr, GUIContent.none, GUIStyle.none)) { bannerPick = i; gm.Audio.Play("switch", 0.5f); }
+                if (!on && GUI.Button(tr, GUIContent.none, GUIStyle.none)) { bannerPick = i; bannerSwitchAt = Time.unscaledTime; gm.Audio.Play("sp_whoosh", 0.45f); }
             }
             float btop = top + 92f;
             var def0 = GameDatabase.GetCharacter(SummonSystem.FeaturedIds[bannerPick]);
@@ -53,13 +54,56 @@ namespace HashiraChronicles
                 promoOrigin = banner.position;
                 PromoBackdrop(new Rect(0f, 0f, banner.width, banner.height), ThemeFor(def0.element), auraC - banner.position, bannerPick * 1.7f, h * 0.9f);
                 GUI.EndGroup();
-                var art = ArtLibrary.CharacterFull(def0);
+                // The other featured Mythics stand behind in shadow; the featured one strikes a battle pose in front,
+                // sliding in with a flash when you switch banners, a blade gleam sweeping across now and then.
+                float since = Time.unscaledTime - bannerSwitchAt;
+                float slide = 1f - Mathf.Pow(1f - Mathf.Clamp01(since / 0.45f), 3f);
                 float bob = Mathf.Sin(Time.unscaledTime * 1.6f) * 6f;
+                var th0 = ThemeFor(def0.element);
+                GUI.BeginGroup(banner);
+                promoOrigin = banner.position;
+                Vector2 ac = auraC - banner.position;
+                int side = 0;
+                for (int j = 0; j < SummonSystem.FeaturedIds.Length; j++)
+                {
+                    if (j == bannerPick) continue;
+                    var dj = GameDatabase.GetCharacter(SummonSystem.FeaturedIds[j]);
+                    var tj = dj != null ? ActionArt(dj) : null;
+                    if (tj == null) { side++; continue; }
+                    float dx = (side == 0 ? -1f : 1f) * h * 0.36f;
+                    var br2 = new Rect(ac.x + dx - h * 0.3f, h * 0.1f + bob * 0.5f, h * 0.6f, h * 0.85f);
+                    var oc = GUI.color;
+                    GUI.color = new Color(th0.top.r * 0.6f, th0.top.g * 0.6f, th0.top.b * 0.8f, 0.85f);
+                    GUI.DrawTexture(br2, tj, ScaleMode.ScaleToFit, true);
+                    GUI.color = oc;
+                    side++;
+                }
+                var art = ActionArt(def0);
                 if (art != null)
                 {
-                    var ar = new Rect(auraC.x - h * 0.31f, banner.y + 20f + bob, h * 0.62f, h);
+                    var ar = new Rect(ac.x - h * 0.42f + (1f - slide) * 260f, -h * 0.02f + bob, h * 0.84f, h * 1.12f);
+                    var oc = GUI.color;
+                    // Element halo, then the slayer.
+                    GUI.color = new Color(th0.glow.r, th0.glow.g, th0.glow.b, 0.55f * slide);
+                    GUI.DrawTexture(Grow(ar, 10f), art, ScaleMode.ScaleToFit, true);
+                    GUI.color = new Color(1f, 1f, 1f, slide);
                     GUI.DrawTexture(ar, art, ScaleMode.ScaleToFit, true);
+                    GUI.color = oc;
+                    // Blade gleam: a bright diagonal bar sweeping over the slayer every few seconds.
+                    float gc = Mathf.Repeat(Time.unscaledTime, 4f) / 0.5f;
+                    if (gc < 1f)
+                    {
+                        var sm = GUI.matrix;
+                        float gx = Mathf.Lerp(ar.x - 80f, ar.xMax + 80f, gc);
+                        PromoRotate(22f, new Vector2(gx, ar.center.y));
+                        UIStyles.Rect(new Rect(gx - 18f, ar.y - 60f, 36f, ar.height + 120f), new Color(1f, 1f, 1f, 0.16f * Mathf.Sin(gc * Mathf.PI)));
+                        UIStyles.Rect(new Rect(gx - 5f, ar.y - 60f, 10f, ar.height + 120f), new Color(1f, 1f, 1f, 0.3f * Mathf.Sin(gc * Mathf.PI)));
+                        GUI.matrix = sm;
+                    }
                 }
+                // Switch flash.
+                if (since < 0.3f) UIStyles.Rect(new Rect(0f, 0f, banner.width, banner.height), new Color(1f, 1f, 1f, 0.5f * (1f - since / 0.3f)));
+                GUI.EndGroup();
                 // Text on the left.
                 float tx = banner.x + 32f, tw2 = bw * 0.5f;
                 // Dark slash behind the text for readability, chips and the countdown.

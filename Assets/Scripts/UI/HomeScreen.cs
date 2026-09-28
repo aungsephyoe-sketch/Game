@@ -158,6 +158,14 @@ namespace HashiraChronicles
             public System.Action open;
         }
 
+        /// <summary>A slayer's action-pose banner art (the standing full body until it has rendered).</summary>
+        static Texture ActionArt(CharacterDefinition def)
+        {
+            var t = ArtLibrary.CharacterAction(def);
+            if (t == null) t = ArtLibrary.CharacterFull(def);
+            return t;
+        }
+
         List<BannerSlide> BannerSlides(PlayerData d)
         {
             var list = new List<BannerSlide>();
@@ -177,7 +185,7 @@ namespace HashiraChronicles
                 if (f != null)
                     list.Add(new BannerSlide { tag = "LIMITED SUMMON", headline = SummonSystem.BannerNames.Length > 0 ? SummonSystem.BannerNames[0].ToUpperInvariant() : "NEW BANNER", title = f.displayName, sub = f.versionTitle + " · featured Mythic", accent = new Color(0.75f, 0.4f, 1f),
                         element = f.element, stars = 6, limited = true,
-                        art = ArtLibrary.CharacterFull(f), open = () => gm.GoTo(GameScreen.Summon) });
+                        art = ActionArt(f), open = () => gm.GoTo(GameScreen.Summon) });
             }
             list.Add(new BannerSlide { tag = "VILLAGE HUB", headline = "PLAY TOGETHER", element = Element.Beast, title = "Kiriha Village", sub = "Chat, team up in threes and brave the co-op gates (online preview)", accent = new Color(0.35f, 0.85f, 0.55f),
                 art = TileArt.Village, open = () => gm.BeginMission(GameDatabase.OpenWorld) });

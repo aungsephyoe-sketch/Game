@@ -136,6 +136,77 @@ namespace HashiraChronicles
             }
         }
 
+        /// <summary>A promo theme from any accent colour (events): near-black top, the accent burning at the bottom.</summary>
+        static PromoTheme ThemeForColor(Color a)
+        {
+            float h, sat, v;
+            Color.RGBToHSV(a, out h, out sat, out v);
+            int fx = h < 0.07f || h > 0.93f ? 0 : h < 0.17f ? 0 : h < 0.45f ? 5 : h < 0.62f ? 4 : 3;
+            return new PromoTheme
+            {
+                top = new Color(a.r * 0.08f, a.g * 0.05f, a.b * 0.1f + 0.02f), bottom = Color.Lerp(a, Color.black, 0.25f),
+                glow = Color.Lerp(a, Color.white, 0.25f), particle = Color.Lerp(a, Color.white, 0.5f), fx = fx
+            };
+        }
+
+        /// <summary>
+        /// Makes a banner look dangerous: a dark vignette, three claw slashes torn across it, jagged cracks glowing
+        /// in the accent colour, and a slow red pulse around the rim. Draw inside the banner's GUI group.
+        /// </summary>
+        void DangerOverlay(Rect r, Color accent, float seed, float strength = 1f)
+        {
+            float t = Time.unscaledTime;
+            var saved = GUI.matrix;
+            // Vignette.
+            for (int i = 0; i < 6; i++)
+            {
+                float a = 0.1f * strength;
+                float e = r.height * (0.05f + i * 0.04f);
+                UIStyles.Rect(new Rect(r.x, r.y, r.width, e), new Color(0f, 0f, 0f, a));
+                UIStyles.Rect(new Rect(r.x, r.yMax - e, r.width, e), new Color(0f, 0f, 0f, a));
+                UIStyles.Rect(new Rect(r.x, r.y, e, r.height), new Color(0f, 0f, 0f, a));
+            }
+            // Claw slashes: three tapered tears, dark inside with a hot edge.
+            var rng = new System.Random(Mathf.RoundToInt(seed * 131f) + 7);
+            float cx = r.x + r.width * (0.55f + (float)rng.NextDouble() * 0.2f), cy = r.y + r.height * 0.5f;
+            float ang = -58f + (float)rng.NextDouble() * 16f;
+            float len = r.height * 1.25f, shimmer = 0.6f + 0.4f * Mathf.Sin(t * 3f + seed);
+            for (int k = 0; k < 3; k++)
+            {
+                GUI.matrix = saved;
+                var c = new Vector2(cx + (k - 1) * r.height * 0.13f, cy + (k - 1) * 4f);
+                PromoRotate(ang, c);
+                float w = (k == 1 ? 11f : 8f) * Mathf.Max(0.6f, r.height / 220f);
+                for (int s = 0; s < 3; s++)
+                {
+                    // Tapered: three stacked bars, shorter and thicker toward the middle.
+                    float f = 1f - s * 0.28f, ww = w * (0.5f + s * 0.35f);
+                    UIStyles.Rect(new Rect(c.x - len * 0.5f * f, c.y - ww * 0.5f, len * f, ww), new Color(0.05f, 0f, 0.02f, 0.55f * strength));
+                }
+                UIStyles.Rect(new Rect(c.x - len * 0.42f, c.y - w * 0.5f - 2f, len * 0.84f, 2f), new Color(accent.r, accent.g * 0.6f, accent.b * 0.6f, 0.8f * shimmer * strength));
+            }
+            GUI.matrix = saved;
+            // Cracks from the lower-left corner.
+            for (int c = 0; c < 3; c++)
+            {
+                Vector2 a = new Vector2(r.x + (float)rng.NextDouble() * r.width * 0.25f, r.yMax);
+                for (int sgm = 0; sgm < 5; sgm++)
+                {
+                    Vector2 b = a + new Vector2(8f + (float)rng.NextDouble() * 26f, -(10f + (float)rng.NextDouble() * 22f)) * Mathf.Max(0.7f, r.height / 220f);
+                    float an = Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg;
+                    GUI.matrix = saved;
+                    PromoRotate(an, a);
+                    float glow = 0.35f + 0.35f * Mathf.Sin(t * 2.5f + c + sgm * 0.7f);
+                    UIStyles.Rect(new Rect(a.x, a.y - 1.5f, (b - a).magnitude, 3f), new Color(Mathf.Min(1f, accent.r + 0.3f), accent.g * 0.7f, accent.b * 0.5f, glow * strength));
+                    a = b;
+                }
+            }
+            GUI.matrix = saved;
+            // Slow red pulse around the rim.
+            float pulse = 0.5f + 0.5f * Mathf.Sin(t * 2f + seed);
+            RoundFrame(new Rect(r.x + 1f, r.y + 1f, r.width - 2f, r.height - 2f), new Color(1f, 0.15f, 0.12f, (0.25f + 0.35f * pulse) * strength), 3f, 14f);
+        }
+
         /// <summary>A chunky label chip (NEW EVENT, LIMITED SUMMON...).</summary>
         void PromoChip(Rect r, string text, Color c)
         {
@@ -189,6 +260,7 @@ namespace HashiraChronicles
                 Round(cd, new Color(0f, 0f, 0f, 0.55f), 12f);
                 UIStyles.Outlined(cd, "⏱ " + Countdown(), UIStyles.Sized(UIStyles.Center, 17), Color.white, 1.5f);
             }
+            if (limited) DangerOverlay(lr, th.glow, seed, 0.8f);
             RoundFrame(new Rect(X + 2f, Y + 2f, lr.width - 4f, lr.height - 4f), new Color(1f, 1f, 1f, 0.25f), 2f, 14f);
         }
     }

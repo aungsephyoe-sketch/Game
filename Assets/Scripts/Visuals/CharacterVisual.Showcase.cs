@@ -41,6 +41,24 @@ namespace HashiraChronicles
             showcase = wasShow;
         }
 
+        /// <summary>
+        /// Banner art: the personality's battle pose, pushed further — leaning into it, weapon out, chin set — so the
+        /// summon and promo art reads as action rather than standing on a podium.
+        /// </summary>
+        public void ApplyBannerPose()
+        {
+            bool wasPosing = posing, wasShow = showcase;
+            posing = true;
+            showcase = false;
+            ApplySignaturePose();
+            Model.localRotation = Model.localRotation * Quaternion.Euler(7f, -6f, 3f);
+            Model.localPosition += Vector3.down * 0.04f;
+            if (head != null) head.localRotation = head.localRotation * Quaternion.Euler(-6f, 8f, 0f);
+            if (rig != null) rig.Solve(0f);
+            posing = wasPosing;
+            showcase = wasShow;
+        }
+
         /// <summary>A small personal head angle (pitch, yaw, tilt): the only place personality shows in the stance.</summary>
         Vector3 TeamHead()
         {

@@ -13,12 +13,14 @@ namespace HashiraChronicles
     {
         protected enum State { Spawning, Chase, Attacking, Staggered, Airborne, Down, Dead }
 
-        const int MaxSimultaneousAttackers = 3;
+        const int MaxSimultaneousAttackers = 4;
         static int attackTokensInUse;
 
         public EnemyDefinition Def { get; private set; }
         public int Level { get; private set; }
         public bool IsBoss { get { return Def.archetype == EnemyArchetype.Boss; } }
+        /// <summary>Winding up a telegraphed attack right now (the aura flares red).</summary>
+        public bool IsWindingUp { get { return state == State.Attacking && telegraphs.Count > 0; } }
         public event System.Action<EnemyController> Killed;
 
         protected CharacterVisual visual;
@@ -106,6 +108,7 @@ namespace HashiraChronicles
             Health.Init(Stats.hp);
             Health.Died += OnDied;
             visual = CharacterVisual.BuildDemon(def, transform);
+            if (def.form != "dummy") DemonAura.Attach(this, def);
             attackTimer = Random.Range(0.4f, 1.1f);
             strafeSign = Random.value < 0.5f ? -1f : 1f;
             zigzagPhase = Random.Range(0f, 100f);
@@ -119,6 +122,9 @@ namespace HashiraChronicles
             state = State.Spawning;
             if (Def.ambush && !IsBoss) { yield return AmbushRoutine(); yield break; }
             VFX.Smoke(Position, new Color(0.3f, 0.1f, 0.25f, 0.8f), 18);
+            // A burst of the demon's colour as it claws out of the ground.
+            VFX.Shockwave(Position, 2.2f * Def.scale, Def.accentColor, 0.45f);
+            VFX.Breath(Position, Def.accentColor, 14);
             Vector3 end = transform.position;
             Vector3 start = end - Vector3.up * 2f;
             float t = 0f;
@@ -335,8 +341,8 @@ namespace HashiraChronicles
             yield return routine;
             ClearTelegraphs();
             ReleaseToken();
-            // Faster attack rhythm: about a third less time between attacks.
-            attackTimer = Def.attackCooldown * 0.65f * Random.Range(0.8f, 1.2f) / Mathf.Max(0.5f, speedMultiplier);
+            // Aggressive rhythm: about half the listed time between attacks.
+            attackTimer = Def.attackCooldown * 0.5f * Random.Range(0.8f, 1.2f) / Mathf.Max(0.5f, speedMultiplier);
             attackRoutine = null;
             if (state == State.Attacking) state = State.Chase;
         }
@@ -375,11 +381,11 @@ namespace HashiraChronicles
         {
             switch (Def.archetype)
             {
-                case EnemyArchetype.Fast: return LungeAttack(target);
-                case EnemyArchetype.Tank: return SlamAttack();
-                case EnemyArchetype.Ranged: return ShootAttack(target);
-                case EnemyArchetype.Elite: return Random.value < 0.4f ? LeapAttack(target) : ClawCombo(target, 2);
-                default: return ClawCombo(target, 1);
+                case EnemyArchetype.Fast: return Random.value < 0.35f ? ClawCombo(target, 2, 0.8f) : LungeAttack(target);
+                case EnemyArchetype.Tank: return Random.value < 0.3f ? ClawCombo(target, 2, 1.1f) : SlamAttack();
+                case EnemyArchetype.Ranged: return Random.value < 0.35f ? VolleyAttack(target) : ShootAttack(target);
+                case EnemyArchetype.Elite: return Random.value < 0.4f ? LeapAttack(target) : ClawCombo(target, 3);
+                default: return Random.value < 0.25f ? LungeAttack(target) : ClawCombo(target, Random.value < 0.45f ? 2 : 1);
             }
         }
 
@@ -393,6 +399,7 @@ namespace HashiraChronicles
                 float range = Def.attackRange + 0.6f;
                 Track(Telegraph.Sector(Position, fwd, range, 110f, Windup(Def.windup)));
                 visual.Flash(Def.accentColor, 0.4f);
+                if (i == 0) WarnGlint();
                 yield return new WaitForSeconds(Windup(Def.windup));
                 ClearTelegraphs();
                 visual.Swing(-100f, 100f, 0.12f, 20f);
@@ -409,6 +416,7 @@ namespace HashiraChronicles
             Vector3 fwd = transform.forward;
             float dist = 4f;
             Track(Telegraph.Line(Position, fwd, 1.2f, dist, Windup(Def.windup)));
+            WarnGlint();
             yield return new WaitForSeconds(Windup(Def.windup));
             ClearTelegraphs();
             visual.Swing(-90f, 90f, 0.12f, 15f);
@@ -430,6 +438,7 @@ namespace HashiraChronicles
             float r = Def.attackRange + 0.8f;
             Track(Telegraph.Circle(Position, r, Windup(Def.windup)));
             visual.Flash(Def.accentColor, 0.5f);
+            WarnGlint();
             yield return new WaitForSeconds(Windup(Def.windup));
             ClearTelegraphs();
             visual.Swing(0f, 0f, 0.1f, 90f);
@@ -441,6 +450,29 @@ namespace HashiraChronicles
             yield return new WaitForSeconds(0.8f);
         }
 
+        /// <summary>The anime "ting!": a quick star glint over the demon's head the moment it starts an attack.</summary>
+        protected void WarnGlint()
+        {
+            VFX.HitStar(Position + Vector3.up * (1.9f * Def.scale), Color.Lerp(Def.accentColor, Color.white, 0.3f), 0.55f + 0.2f * Def.scale, 0.16f);
+        }
+
+        /// <summary>Three shots in a fan.</summary>
+        IEnumerator VolleyAttack(PlayerCharacter target)
+        {
+            FaceTowards(target.Position - Position, 1f);
+            Vector3 fwd = target.Position - Position;
+            fwd.y = 0f;
+            fwd.Normalize();
+            for (int k = -1; k <= 1; k++) Track(Telegraph.Line(Position, Quaternion.Euler(0f, k * 18f, 0f) * fwd, 0.6f, 11f, Windup(Def.windup * 1.2f)));
+            WarnGlint();
+            yield return new WaitForSeconds(Windup(Def.windup * 1.2f));
+            ClearTelegraphs();
+            for (int k = -1; k <= 1; k++)
+                EnemyProjectile.Fire(this, Position + fwd * 0.6f, Quaternion.Euler(0f, k * 18f, 0f) * fwd, 13f, 12f, EnemyTag(0.75f, 2f), Def.accentColor);
+            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("shoot", 0.6f);
+            yield return new WaitForSeconds(0.45f);
+        }
+
         IEnumerator ShootAttack(PlayerCharacter target)
         {
             FaceTowards(target.Position - Position, 1f);
@@ -448,6 +480,7 @@ namespace HashiraChronicles
             fwd.y = 0f;
             fwd.Normalize();
             Track(Telegraph.Line(Position, fwd, 0.8f, 12f, Windup(Def.windup)));
+            WarnGlint();
             yield return new WaitForSeconds(Windup(Def.windup));
             ClearTelegraphs();
             EnemyProjectile.Fire(this, Position + fwd * 0.6f, fwd, 13f, 14f, EnemyTag(1f, 2f), Def.accentColor);
@@ -563,6 +596,10 @@ namespace HashiraChronicles
             visual.PlayDeath();
             VFX.Smoke(Position, new Color(0.15f, 0.1f, 0.12f, 0.7f), IsBoss ? 60 : 20);
             VFX.Breath(Position, new Color(1f, 0.5f, 0.3f), IsBoss ? 80 : 15);
+            // Bursts apart in its own colour.
+            VFX.HitStar(Position + Vector3.up * Def.scale, Def.accentColor, (IsBoss ? 3f : 1.4f) * Mathf.Max(0.8f, Def.scale), 0.2f);
+            VFX.Shockwave(Position, (IsBoss ? 9f : 3f) * Mathf.Max(0.8f, Def.scale), Color.Lerp(Def.accentColor, Color.white, 0.3f), 0.4f);
+            VFX.HitSpark(Position + Vector3.up, Def.accentColor, IsBoss ? 60 : 24);
             if (GameManager.Instance != null) GameManager.Instance.Audio.Play("enemyDeath", 0.6f);
             // Demons drop gold that flies into the active slayer.
             if (Def.form != "dummy")
