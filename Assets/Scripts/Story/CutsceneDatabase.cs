@@ -409,7 +409,7 @@ namespace HashiraChronicles
                 .Dolly(new Vector3(0f, 6f, -14f), new Vector3(0f, 8f, 30f), 5f, false)
                 .Say("Ren", "...It's morning.")
                 .Fade(1f, 3f)
-                .Title("THE END", "Thank you for playing Hashira Chronicles", 5f);
+                .Title("THE END", "Thank you for playing Blade Legends", 5f);
         }
     }
 }

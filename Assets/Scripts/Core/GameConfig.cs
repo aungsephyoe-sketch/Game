@@ -6,8 +6,9 @@ namespace HashiraChronicles
     /// </summary>
     public static class GameConfig
     {
-        public const string TitleLine1 = "BLADES OF DAWN";
-        public const string TitleLine2 = "HASHIRA CHRONICLES";
+        public const string TitleLine1 = "BLADE LEGENDS";
+        public const string TitleLine2 = "BLADE LEGENDS";
+        public const string GameName = "Blade Legends";
         public const string Subtitle = "A story of dawn and eclipse · original characters";
         /// <summary>Every mission uses the new-standard worlds (Forest, Snow Mountain, Volcano).</summary>
         public const bool NewWorlds = true;

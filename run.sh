@@ -30,9 +30,9 @@ rm -rf Builds/Desktop
   -executeMethod HashiraChronicles.EditorTools.BuildTools.BuildDesktop -logFile "$PWD/build.log"
 
 echo "== 4/4 Result"
-if [ -d Builds/Desktop/HashiraChronicles.app ]; then
+if [ -d Builds/Desktop/BladeLegends.app ]; then
   echo "   Build OK - launching."
-  open Builds/Desktop/HashiraChronicles.app
+  open Builds/Desktop/BladeLegends.app
   echo "   Checking the game log in 25 seconds (keep playing)..."
   sleep 25
   bash tools/show_errors.sh

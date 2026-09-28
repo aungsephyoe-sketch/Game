@@ -792,7 +792,7 @@ namespace HashiraChronicles
                 if (Event.current.type == EventType.KeyDown) Event.current.Use();
             }
             UIStyles.Outlined(new Rect(br.xMax + 30f, safe.y + 18f, 400f, 52f), GameConfig.TitleLine1, UIStyles.Sized(UIStyles.Title, 38), new Color(0.9f, 0.12f, 0.12f), 2f);
-            GUI.Label(new Rect(br.xMax + 32f, safe.y + 68f, 420f, 34f), "<b>H A S H I R A   C H R O N I C L E S</b>", UIStyles.Sized(UIStyles.Body, 18));
+            GUI.Label(new Rect(br.xMax + 32f, safe.y + 68f, 420f, 34f), "<b>S L A Y E R   R P G</b>", UIStyles.Sized(UIStyles.Body, 18));
             string title = m.type == MissionType.Training ? "TRAINING" : "MISSION " + m.MissionLabel;
             UIStyles.Outlined(new Rect(br.xMax + 480f, safe.y + 20f, 560f, 76f), title, UIStyles.Sized(UIStyles.H1, 56), Color.white, 2f);
             Currencies(new Rect(safe.xMax - 1000f, safe.y + 32f, 980f, 56f));

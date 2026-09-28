@@ -471,7 +471,7 @@ namespace HashiraChronicles
 
         static readonly string[] CreditLines =
         {
-            "<size=40>" + GameConfig.TitleLine1 + "</size>", "<size=70>" + GameConfig.TitleLine2 + "</size>", "", "",
+            "<size=40>SLAYER RPG</size>", "<size=70>" + GameConfig.TitleLine2 + "</size>", "", "",
             "<color=#FFD36B>STARRING</color>", "Ren — the Dawn Blade", "Sora — the Frightened Blade", "Kiba — the Arena Rival", "Hana — the Wisteria Healer",
             "Homura — the Flame Pillar", "Tetsu — the Iron Captain", "Master Tessai", "The echo of Akatsuki", "", "Veyrath — the Demon Lord of the Eclipse", "", "",
             "<color=#FFD36B>IN MEMORY OF</color>", "Everyone who held the gate.", "", "",

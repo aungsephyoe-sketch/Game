@@ -13,7 +13,7 @@ namespace HashiraChronicles.EditorTools
     {
         const string ScenePath = "Assets/Scenes/Main.unity";
 
-        [MenuItem("Hashira Chronicles/Build Desktop")]
+        [MenuItem("Blade Legends/Build Desktop")]
         public static void BuildDesktop()
         {
             ProjectSetup.RunFromMenu();
@@ -23,15 +23,15 @@ namespace HashiraChronicles.EditorTools
             {
                 case RuntimePlatform.OSXEditor:
                     target = BuildTarget.StandaloneOSX;
-                    path = "Builds/Desktop/HashiraChronicles.app";
+                    path = "Builds/Desktop/BladeLegends.app";
                     break;
                 case RuntimePlatform.WindowsEditor:
                     target = BuildTarget.StandaloneWindows64;
-                    path = "Builds/Desktop/HashiraChronicles.exe";
+                    path = "Builds/Desktop/BladeLegends.exe";
                     break;
                 default:
                     target = BuildTarget.StandaloneLinux64;
-                    path = "Builds/Desktop/HashiraChronicles.x86_64";
+                    path = "Builds/Desktop/BladeLegends.x86_64";
                     break;
             }
             // HD desktop build: a 1080p window at full Retina pixel density, resizable.
@@ -44,12 +44,12 @@ namespace HashiraChronicles.EditorTools
             Build(target, path);
         }
 
-        [MenuItem("Hashira Chronicles/Build Android APK")]
+        [MenuItem("Blade Legends/Build Android APK")]
         public static void BuildAndroid()
         {
             ProjectSetup.RunFromMenu();
             PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Android, "com.aungsephyoe.hashirachronicles");
-            Build(BuildTarget.Android, "Builds/Android/HashiraChronicles.apk");
+            Build(BuildTarget.Android, "Builds/Android/BladeLegends.apk");
         }
 
         static void Build(BuildTarget target, string path)

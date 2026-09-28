@@ -7,7 +7,7 @@ namespace HashiraChronicles
     /// The home screen, laid out like a premium anime action RPG lobby over the living night village:
     ///   top-left      player profile (portrait, level, name, EXP) and a compact shortcut column
     ///                 (Event, Notice, Ranking, Friends)
-    ///   upper-left    the HASHIRA CHRONICLES logo, then a large event banner carousel with indicator dots
+    ///   upper-left    the BLADE LEGENDS logo, then a large event banner carousel with indicator dots
     ///   top-right     gold, diamonds and XP counters, mail, gift and settings
     ///   centre-right  the featured slayer standing in the village (HomeStage) — the focal point
     ///   right         TEAM POWER panel with the three team portraits and a member list
@@ -30,6 +30,7 @@ namespace HashiraChronicles
             HomeBanner(d);
             HomeResources(d);
             HomeTeamPower(d);
+            HomeHeroDrag();
             HomeNav(d);
             DrawNpcBubbles();
         }
@@ -111,7 +112,7 @@ namespace HashiraChronicles
             }
         }
 
-        /// <summary>The title treatment: a red brush stroke, HASHIRA large, CHRONICLES in red, a spaced subtitle.</summary>
+        /// <summary>The title treatment: a red brush stroke, BLADE large, LEGENDS in red, a spaced subtitle.</summary>
         void HomeLogo()
         {
             float k = Enter(0.05f, 0.6f);
@@ -125,13 +126,13 @@ namespace HashiraChronicles
             Round(new Rect(x + 90f, y + 130f, 470f, 36f), new Color(0.75f, 0.08f, 0.1f, 0.5f), 18f);
             GUI.matrix = saved;
             RotateGui(-4f, new Vector2(x, y + 60f));
-            UIStyles.Outlined(new Rect(x + 3f, y + 4f, 900f, 120f), "HASHIRA", UIStyles.Sized(UIStyles.Title, 104), new Color(0f, 0f, 0f, 0.6f), 0f);
-            UIStyles.Outlined(new Rect(x, y, 900f, 120f), "HASHIRA", UIStyles.Sized(UIStyles.Title, 104), Color.white, 5f);
-            UIStyles.Outlined(new Rect(x + 36f, y + 96f, 900f, 96f), "CHRONICLES", UIStyles.Sized(UIStyles.Title, 76), new Color(0.95f, 0.16f, 0.16f), 5f);
+            UIStyles.Outlined(new Rect(x + 3f, y + 4f, 900f, 120f), "BLADE", UIStyles.Sized(UIStyles.Title, 110), new Color(0f, 0f, 0f, 0.6f), 0f);
+            UIStyles.Outlined(new Rect(x, y, 900f, 120f), "BLADE", UIStyles.Sized(UIStyles.Title, 110), Color.white, 5f);
+            UIStyles.Outlined(new Rect(x + 60f, y + 96f, 900f, 96f), "LEGENDS", UIStyles.Sized(UIStyles.Title, 80), new Color(0.95f, 0.16f, 0.16f), 5f);
             GUI.matrix = saved;
             Round(new Rect(x + 60f, y + 206f, 70f, 2f), new Color(1f, 1f, 1f, 0.7f), 1f);
             Round(new Rect(x + 430f, y + 206f, 70f, 2f), new Color(1f, 1f, 1f, 0.7f), 1f);
-            UIStyles.Outlined(new Rect(x + 130f, y + 192f, 300f, 30f), "B L A D E S   O F   D A W N", UIStyles.Sized(UIStyles.Center, 18), new Color(0.95f, 0.92f, 0.85f), 1.5f);
+            UIStyles.Outlined(new Rect(x + 130f, y + 192f, 300f, 30f), "S L A Y E R   R P G", UIStyles.Sized(UIStyles.Center, 18), new Color(0.95f, 0.92f, 0.85f), 1.5f);
             GUI.color = old;
         }
 
@@ -180,17 +181,36 @@ namespace HashiraChronicles
             if (Time.unscaledTime - bannerSince > 5.5f) SetBanner((bannerIndex + 1) % slides.Count);
             bannerIndex = Mathf.Clamp(bannerIndex, 0, slides.Count - 1);
 
+            // Swipe: drag the banner left or right to change events; a tap opens the one showing.
+            var ev = Event.current;
+            if (ev.type == EventType.MouseDown && r.Contains(ev.mousePosition)) { bannerDragging = true; bannerDrag = 0f; bannerDragLast = ev.mousePosition.x; ev.Use(); }
+            else if (bannerDragging && ev.type == EventType.MouseDrag) { bannerDrag += ev.mousePosition.x - bannerDragLast; bannerDragLast = ev.mousePosition.x; bannerSince = Time.unscaledTime; ev.Use(); }
+            else if (bannerDragging && ev.type == EventType.MouseUp)
+            {
+                bannerDragging = false;
+                ev.Use();
+                if (bannerDrag < -70f) SetBanner((bannerIndex + 1) % slides.Count, 1);
+                else if (bannerDrag > 70f) SetBanner((bannerIndex - 1 + slides.Count) % slides.Count, -1);
+                else if (Mathf.Abs(bannerDrag) < 10f && slides[bannerIndex].open != null) { bannerDrag = 0f; gm.Audio.Play("click", 0.5f); slides[bannerIndex].open(); return; }
+                bannerDrag = 0f;
+            }
+
             Round(Offset(r, 0f, 6f), new Color(0f, 0f, 0f, 0.4f), 14f);
             GUI.BeginGroup(r);
             var local = new Rect(0f, 0f, r.width, r.height);
-            // Slide transition: the new slide eases in from the right while the old one leaves.
-            float tk = bannerFrom < 0f ? 1f : Mathf.Clamp01((Time.unscaledTime - bannerFrom) / 0.45f);
+            // Slide transition: the new slide eases in from the side it was swiped from; while dragging it follows the finger.
+            float tk = bannerFrom < 0f ? 1f : Mathf.Clamp01((Time.unscaledTime - bannerFrom) / 0.4f);
             tk = tk * tk * (3f - 2f * tk);
-            if (tk < 1f && bannerPrev >= 0 && bannerPrev < slides.Count) DrawSlide(Offset(local, -tk * r.width, 0f), slides[bannerPrev]);
-            DrawSlide(Offset(local, (1f - tk) * r.width, 0f), slides[bannerIndex]);
+            float drag = bannerDragging ? Mathf.Clamp(bannerDrag, -r.width, r.width) : 0f;
+            if (tk < 1f && bannerPrev >= 0 && bannerPrev < slides.Count) DrawSlide(Offset(local, -tk * r.width * bannerDir, 0f), slides[bannerPrev]);
+            DrawSlide(Offset(local, (1f - tk) * r.width * bannerDir + drag, 0f), slides[bannerIndex]);
+            if (Mathf.Abs(drag) > 1f)
+            {
+                int nb = drag < 0f ? (bannerIndex + 1) % slides.Count : (bannerIndex - 1 + slides.Count) % slides.Count;
+                DrawSlide(Offset(local, drag + (drag < 0f ? r.width : -r.width), 0f), slides[nb]);
+            }
             GUI.EndGroup();
             RoundFrame(r, new Color(1f, 1f, 1f, 0.35f), 2f, 14f);
-            if (GUI.Button(r, GUIContent.none, GUIStyle.none) && slides[bannerIndex].open != null) { gm.Audio.Play("click", 0.5f); slides[bannerIndex].open(); return; }
             // Indicator dots (tap to jump).
             float dw = slides.Count * 26f;
             for (int i = 0; i < slides.Count; i++)
@@ -202,9 +222,14 @@ namespace HashiraChronicles
             }
         }
 
-        void SetBanner(int i)
+        bool bannerDragging;
+        float bannerDrag, bannerDragLast;
+        int bannerDir = 1;
+
+        void SetBanner(int i, int dir = 1)
         {
             if (i == bannerIndex) return;
+            bannerDir = dir;
             bannerPrev = bannerIndex;
             bannerIndex = i;
             bannerFrom = Time.unscaledTime;
@@ -355,6 +380,32 @@ namespace HashiraChronicles
                     return;
                 }
             }
+        }
+
+        bool heroDragging;
+        float heroDragLast;
+
+        /// <summary>Drag the featured slayer to turn them around (they ease back to facing you after a while).</summary>
+        void HomeHeroDrag()
+        {
+            var cam = Camera.main;
+            if (cam == null || gm.Home == null || !gm.Home.LeaderVisible) return;
+            float s = HudLayout.Scale;
+            Vector3 feet = cam.WorldToScreenPoint(gm.Home.LeaderFeet);
+            Vector3 top = cam.WorldToScreenPoint(gm.Home.LeaderHead);
+            if (feet.z <= 0f) return;
+            var fp = new Vector2(feet.x / s, (Screen.height - feet.y) / s);
+            var tp = new Vector2(top.x / s, (Screen.height - top.y) / s);
+            var area = new Rect(fp.x - 150f, tp.y, 300f, fp.y - tp.y + 20f);
+            var ev = Event.current;
+            if (ev.type == EventType.MouseDown && area.Contains(ev.mousePosition)) { heroDragging = true; heroDragLast = ev.mousePosition.x; ev.Use(); }
+            else if (heroDragging && ev.type == EventType.MouseDrag)
+            {
+                gm.Home.RotateLeader(-(ev.mousePosition.x - heroDragLast) * 0.6f);
+                heroDragLast = ev.mousePosition.x;
+                ev.Use();
+            }
+            else if (heroDragging && ev.type == EventType.MouseUp) { heroDragging = false; ev.Use(); }
         }
 
         /// <summary>A rounded vertical gradient (top colour to bottom colour).</summary>

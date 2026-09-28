@@ -327,6 +327,9 @@ namespace HashiraChronicles
             Phase = SummonPhase.Cards;
             PhaseStart = Time.unscaledTime;
             advance = false;
+            // The rite is over: the moon and the swirl leave the sky so the reveals stay clean.
+            if (moon != null) moon.gameObject.SetActive(false);
+            if (swirl != null) swirl.gameObject.SetActive(false);
             var cam = CameraController.Instance;
             if (cam != null) cam.Dolly(new Vector3(0f, 4.4f, -9.5f), AltarPos + Vector3.up * 1f, 0.8f);
             int n = Results.Count;
@@ -463,7 +466,8 @@ namespace HashiraChronicles
             if (shown != null) { shown.Flash(Color.white, 1f); shown.Victory(); }
             if (audio != null) audio.Play(big ? "ultimate" : "victory", 0.8f);
             if (rarity >= 6) foreach (var p in pillars) VFX.Pillar(p.position, rc, 12f, 1f);
-            if (cam != null) cam.Dolly(new Vector3(-1.1f, 1.7f, -3.9f), land + new Vector3(-0.9f, 1.25f, 0f), 1.2f);
+            // Frame the slayer on the left third, clear of the name card on the right.
+            if (cam != null) cam.Dolly(new Vector3(1.3f, 1.6f, -4.3f), land + new Vector3(1.15f, 1.15f, 0f), 0.9f);
             advance = false;
             float auto = multi ? 2.2f : 4.5f;
             float t0 = Time.unscaledTime;

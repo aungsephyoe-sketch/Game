@@ -1,4 +1,4 @@
-# Hashira Chronicles — Blades of Dawn
+# Blade Legends
 
 A mobile 2.5D **story-driven** anime action RPG in **Unity (C#)**: real-time hack-and-slash with a
 three-slayer team, breathing-style skills, cinematic ultimates, boss events, an in-engine story told

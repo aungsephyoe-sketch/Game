@@ -34,7 +34,7 @@ namespace HashiraChronicles.EditorTools
         /// <summary>States that hold their final pose instead of returning to locomotion.</summary>
         static readonly HashSet<string> Holds = new HashSet<string> { "Knockdown", "Victory", "Defeat", "Death" };
 
-        [MenuItem("Hashira Chronicles/Build Character Prefabs")]
+        [MenuItem("Blade Legends/Build Character Prefabs")]
         public static void BuildAll()
         {
             int built = Build("Assets/Art/Characters", "Assets/Resources/Characters");

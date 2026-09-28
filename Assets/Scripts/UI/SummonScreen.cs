@@ -252,10 +252,10 @@ namespace HashiraChronicles
 
             // Band behind the card.
             var saved = GUI.matrix;
-            RotateGui(-8f, new Vector2(W * 0.62f, H * 0.5f));
-            UIStyles.Rect(new Rect(W * 0.3f - (1f - k) * W, H * 0.5f - 220f, W * 0.9f, 440f), new Color(rc.r * 0.35f, rc.g * 0.35f, rc.b * 0.35f, 0.85f));
-            UIStyles.Rect(new Rect(W * 0.3f - (1f - k) * W, H * 0.5f - 230f, W * 0.9f, 8f), rc);
-            UIStyles.Rect(new Rect(W * 0.3f - (1f - k) * W, H * 0.5f + 222f, W * 0.9f, 8f), rc);
+            RotateGui(-8f, new Vector2(W * 0.7f, H * 0.5f));
+            UIStyles.Rect(new Rect(W * 0.46f + (1f - k) * W, H * 0.5f - 220f, W * 0.8f, 440f), new Color(rc.r * 0.35f, rc.g * 0.35f, rc.b * 0.35f, 0.85f));
+            UIStyles.Rect(new Rect(W * 0.46f + (1f - k) * W, H * 0.5f - 230f, W * 0.8f, 8f), rc);
+            UIStyles.Rect(new Rect(W * 0.46f + (1f - k) * W, H * 0.5f + 222f, W * 0.8f, 8f), rc);
             if (legend)
                 for (int i = 0; i < 6; i++)
                 {
@@ -265,13 +265,7 @@ namespace HashiraChronicles
             GUI.matrix = saved;
 
             var card = new Rect(safe.xMax - 860f + (1f - k) * 400f, H * 0.5f - 200f, 800f, 400f);
-            var portrait = ArtLibrary.CharacterFull(r.def);
-            if (portrait != null)
-            {
-                var pr = new Rect(card.x - 360f - (1f - k) * 200f, H * 0.5f - 350f, 340f, 700f);
-                if (legend) for (int i = 3; i >= 1; i--) UIStyles.CircleTex(pr.center, 150f + i * 40f, new Color(rc.r, rc.g, rc.b, 0.08f));
-                ArtLibrary.DrawFit(pr, portrait, k);
-            }
+            // The slayer themselves stands in the shrine on the left (3D); no flat portrait on top of them.
             float slam = Mathf.Clamp01((t - 0.15f) / 0.25f);
             int nameSize = Mathf.RoundToInt(Mathf.Lerp(120f, mythic ? 80f : 70f, slam));
             UIStyles.Outlined(new Rect(card.x + 40f, card.y + 10f, 740f, 90f), RarityInfo.Name(r.rarity), UIStyles.Sized(UIStyles.Big, nameSize), new Color(rc.r, rc.g, rc.b, slam), 4f);

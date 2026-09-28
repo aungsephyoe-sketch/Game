@@ -14,8 +14,31 @@ namespace HashiraChronicles
         static string PathMain { get { return Path.Combine(Application.persistentDataPath, FileName); } }
         static string PathBackup { get { return PathMain + ".bak"; } }
 
+        /// <summary>
+        /// The game was renamed (Hashira Chronicles → Blade Legends), which moves Unity's save folder. On the first
+        /// run under the new name, bring the old save across so no progress is lost.
+        /// </summary>
+        static void MigrateRenamedSave()
+        {
+            try
+            {
+                if (File.Exists(PathMain)) return;
+                string dir = Application.persistentDataPath;
+                string oldDir = dir.Replace(GameConfig.GameName, "Hashira Chronicles");
+                if (oldDir == dir) return;
+                string oldMain = Path.Combine(oldDir, FileName);
+                if (!File.Exists(oldMain)) oldMain = oldMain + ".bak";
+                if (!File.Exists(oldMain)) return;
+                Directory.CreateDirectory(dir);
+                File.Copy(oldMain, PathMain, false);
+                Debug.Log("[Save] Brought the save across from " + oldDir);
+            }
+            catch (System.Exception e) { Debug.LogWarning("[Save] Could not bring the old save across: " + e.Message); }
+        }
+
         public static PlayerData Load()
         {
+            MigrateRenamedSave();
             var data = TryRead(PathMain) ?? TryRead(PathBackup);
             // Saves from before the story overhaul don't match the new world; start the new story fresh.
             if (data != null && data.saveVersion < 2) data = null;

@@ -18,6 +18,16 @@ namespace HashiraChronicles
         /// <summary>World position just above the home leader's head (for the greeting bubble).</summary>
         public Vector3 LeaderHead { get { return heroHolder != null ? heroHolder.position + Vector3.up * 2.4f : Vector3.up * 2.4f; } }
         public bool LeaderVisible { get { return heroHolder != null && heroHolder.gameObject.activeInHierarchy; } }
+        public Vector3 LeaderFeet { get { return heroHolder != null ? heroHolder.position : Vector3.zero; } }
+
+        float leaderSpin, leaderSpinAt = -10f;
+
+        /// <summary>Turns the featured slayer (drag on the home screen); after a few seconds they turn back to you.</summary>
+        public void RotateLeader(float degrees)
+        {
+            leaderSpin += degrees;
+            leaderSpinAt = Time.time;
+        }
         CharacterVisual hero;
         CharacterDefinition heroDef;
         string shownId = "";
@@ -465,7 +475,9 @@ namespace HashiraChronicles
                     nextLook = Time.time + Random.Range(5f, 9f);
                     yawTarget = HomeYaw + Random.Range(-6f, 6f);
                 }
-                heroHolder.rotation = Quaternion.Slerp(heroHolder.rotation, Quaternion.Euler(0f, yawTarget, 0f), 1f - Mathf.Exp(-Time.deltaTime * 1.5f));
+                if (Time.time - leaderSpinAt > 6f) leaderSpin = Mathf.Lerp(leaderSpin, Mathf.Round(leaderSpin / 360f) * 360f, 1f - Mathf.Exp(-Time.deltaTime * 1.2f));
+                bool spinning = Time.time - leaderSpinAt < 0.3f;
+                heroHolder.rotation = Quaternion.Slerp(heroHolder.rotation, Quaternion.Euler(0f, yawTarget + leaderSpin, 0f), 1f - Mathf.Exp(-Time.deltaTime * (spinning ? 14f : 1.5f)));
                 if (hero != null && !hero.Posing) hero.HoldTeamIdle();
                 if (CameraController.Instance != null)
                 {

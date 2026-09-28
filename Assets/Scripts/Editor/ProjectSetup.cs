@@ -26,13 +26,13 @@ namespace HashiraChronicles.EditorTools
             };
         }
 
-        [MenuItem("Hashira Chronicles/Setup Main Scene and Build Settings")]
+        [MenuItem("Blade Legends/Setup Main Scene and Build Settings")]
         public static void RunFromMenu()
         {
             Run(true);
         }
 
-        [MenuItem("Hashira Chronicles/Open Save Folder")]
+        [MenuItem("Blade Legends/Open Save Folder")]
         public static void OpenSaveFolder()
         {
             EditorUtility.RevealInFinder(Application.persistentDataPath);
@@ -74,8 +74,8 @@ namespace HashiraChronicles.EditorTools
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
             PlayerSettings.allowedAutorotateToLandscapeLeft = true;
             PlayerSettings.allowedAutorotateToLandscapeRight = true;
-            if (PlayerSettings.productName == "Game" || string.IsNullOrEmpty(PlayerSettings.productName))
-                PlayerSettings.productName = "Hashira Chronicles";
+            // The game is called Blade Legends (window title, app name, save and log folders).
+            PlayerSettings.productName = GameConfig.GameName;
 
             if (verbose) Debug.Log("[Hashira Chronicles] Setup complete. Open " + ScenePath + " and press Play.");
         }
