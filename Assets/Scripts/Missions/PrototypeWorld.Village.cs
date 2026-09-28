@@ -179,7 +179,7 @@ namespace HashiraChronicles
         {
             var cube = WorldKit.Prim(PrimitiveType.Cube);
             // Big, bright cartoon flagstones (reads cleanly from the battle camera too).
-            Color[] stones = { new Color(0.96f, 0.72f, 0.58f), new Color(0.92f, 0.64f, 0.52f), new Color(1f, 0.78f, 0.62f), new Color(0.88f, 0.6f, 0.5f), new Color(0.98f, 0.7f, 0.56f) };
+            Color[] stones = { new Color(0.78f, 0.56f, 0.52f), new Color(0.72f, 0.5f, 0.48f), new Color(0.84f, 0.62f, 0.56f), new Color(0.68f, 0.48f, 0.5f), new Color(0.8f, 0.58f, 0.5f) };
             const float cell = 1.45f;
             Vector3 mn = J.places[0].pos, mx = mn;
             foreach (var p in J.path) { mn = Vector3.Min(mn, p); mx = Vector3.Max(mx, p); }
@@ -308,8 +308,8 @@ namespace HashiraChronicles
             var rot = Quaternion.LookRotation(h.face);
             Vector3 f = h.face, sd = rot * Vector3.right;
             // Cartoon palette: cream and warm walls, bold roof colours.
-            Color[] walls = { new Color(1f, 0.93f, 0.8f), new Color(0.72f, 0.45f, 0.3f), new Color(1f, 0.86f, 0.7f) };
-            Color[] roofs = { new Color(0.2f, 0.38f, 0.85f), new Color(0.85f, 0.22f, 0.2f), new Color(0.12f, 0.6f, 0.52f) };
+            Color[] walls = { new Color(0.96f, 0.86f, 0.72f), new Color(0.62f, 0.38f, 0.28f), new Color(0.92f, 0.76f, 0.62f) };
+            Color[] roofs = { new Color(0.18f, 0.28f, 0.7f), new Color(0.72f, 0.16f, 0.2f), new Color(0.1f, 0.48f, 0.46f) };
             Color[] norens = { new Color(0.16f, 0.22f, 0.46f), new Color(0.62f, 0.14f, 0.14f), new Color(0.2f, 0.36f, 0.3f), new Color(0.36f, 0.2f, 0.42f) };
             Color wall = walls[h.style % 3], roof = roofs[(h.style + (h.two ? 1 : 0)) % 3];
             float w = h.w, d = h.d, H1 = 2.9f, b0 = 0.4f;
@@ -417,6 +417,28 @@ namespace HashiraChronicles
             EndProp();
         }
 
+        static readonly System.Collections.Generic.Dictionary<string, Material> glowMats = new System.Collections.Generic.Dictionary<string, Material>();
+
+        static Material LanternHalo(Color c)
+        {
+            string key = "halo" + ColorUtility.ToHtmlStringRGB(c);
+            Material m;
+            if (!glowMats.TryGetValue(key, out m) || m == null) { m = MaterialFactory.Additive(new Color(c.r, c.g * 0.85f, c.b * 0.6f, 0.14f)); glowMats[key] = m; }
+            return m;
+        }
+
+        /// <summary>A warm pool of lantern light on the ground under a light source.</summary>
+        static void GlowPool(Vector3 above, Color c, float radius)
+        {
+            Vector3 g = OnGround(above);
+            if (above.y - g.y > 6f) return;
+            string key = "pool" + ColorUtility.ToHtmlStringRGB(c);
+            Material m;
+            if (!glowMats.TryGetValue(key, out m) || m == null) { m = MaterialFactory.Additive(new Color(c.r, c.g * 0.75f, c.b * 0.45f, 0.22f), true); glowMats[key] = m; }
+            var pool = MeshFactory.MeshObject(MeshFactory.PlanarDisc(), dyn, g + Vector3.up * 0.05f, new Vector3(radius, 1f, radius), m, false);
+            pool.name = "LightPool";
+        }
+
         static void HangingLantern(Vector3 top, Color c, bool light)
         {
             var l = new GameObject("PaperLantern").transform;
@@ -430,6 +452,10 @@ namespace HashiraChronicles
             var cap = T(new Color(0.12f, 0.08f, 0.07f), 0f);
             MeshFactory.MeshObject(MeshFactory.SmoothCylinder(), l, new Vector3(0f, -0.1f, 0f), new Vector3(0.2f, 0.03f, 0.2f), cap, false);
             MeshFactory.MeshObject(MeshFactory.SmoothCylinder(), l, new Vector3(0f, -0.58f, 0f), new Vector3(0.2f, 0.03f, 0.2f), cap, false);
+            // Fake glow (no real light needed): a soft halo round the paper and a warm pool on the ground below.
+            var halo = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), l, new Vector3(0f, -0.34f, 0f), Vector3.one * 1.3f, LanternHalo(c), false);
+            halo.name = "Halo";
+            GlowPool(top + Vector3.down * 0.4f, c, 2.6f);
             if (light) PointLight(top + Vector3.down * 0.4f, P.lantern, 7f, 1.1f);
         }
 

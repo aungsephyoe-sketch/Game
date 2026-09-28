@@ -426,24 +426,38 @@ namespace HashiraChronicles
             if (Btn(new Rect(safe.xMax - 210f, 18f, 190f, 64f), "SKIP ▶▶", UIStyles.ButtonSmall)) { cp.Skip(); return; }
             if (GUI.Button(new Rect(0f, 100f, W, H - 100f), GUIContent.none, GUIStyle.none)) cp.Advance();
 
-            // Dialogue.
+            // Dialogue: a chunky cartoon box, the speaker's name plate and their portrait (reacting to the line).
             if (!string.IsNullOrEmpty(cp.FullText))
             {
-                var box = new Rect(W * 0.5f - 900f, H - 330f, 1800f, 220f);
-                UIStyles.Rect(box, new Color(0.02f, 0.01f, 0.05f, 0.82f));
+                float boxW = Mathf.Min(1700f, W - 200f);
+                bool hasFace = cp.SpeakerDef != null;
+                var box = new Rect(W * 0.5f - boxW * 0.5f + (hasFace ? 110f : 0f), H - 320f, boxW - (hasFace ? 110f : 0f), 200f);
                 Color sc = SpeakerColor(cp.Speaker);
-                UIStyles.Rect(new Rect(box.x, box.y, box.width, 3f), sc);
+                Round(Offset(Grow(box, 5f), 0f, 8f), new Color(0f, 0f, 0f, 0.4f), 26f);
+                Round(Grow(box, 5f), new Color(0.05f, 0.04f, 0.1f, 0.97f), 26f);
+                Round(box, new Color(0.1f, 0.09f, 0.18f, 0.96f), 22f);
+                Round(new Rect(box.x + 8f, box.y + 6f, box.width - 16f, 8f), new Color(sc.r, sc.g, sc.b, 0.8f), 4f);
+                if (hasFace)
+                {
+                    // The portrait pops a little with each new line and shakes when the line is angry or shocked.
+                    float since = Time.unscaledTime - cp.LineStarted;
+                    float pop = 1f + 0.12f * Mathf.Exp(-since * 8f);
+                    Vector2 fc = new Vector2(box.x - 90f, box.center.y - 10f);
+                    if (cp.SpeakerMood == CharacterExpression.Mood.Angry || cp.SpeakerMood == CharacterExpression.Mood.Surprised)
+                        fc += new Vector2(Mathf.Sin(Time.unscaledTime * 60f), Mathf.Cos(Time.unscaledTime * 53f)) * 3f * Mathf.Exp(-since * 3f);
+                    UIStyles.CircleTex(fc, 100f * pop, new Color(0.05f, 0.04f, 0.1f));
+                    FaceCircle(fc, 92f * pop, cp.SpeakerDef, sc);
+                }
                 if (!string.IsNullOrEmpty(cp.Speaker))
                 {
-                    var plate = new Rect(box.x + 40f, box.y - 44f, Mathf.Max(220f, cp.Speaker.Length * 22f + 60f), 56f);
-                    UIStyles.Rect(plate, new Color(sc.r * 0.35f, sc.g * 0.35f, sc.b * 0.35f, 0.95f));
-                    UIStyles.Frame(plate, sc, 2f);
-                    UIStyles.Colored(plate, cp.Speaker, UIStyles.Sized(UIStyles.Center, 30), sc);
+                    var plate = new Rect(box.x + 30f, box.y - 40f, Mathf.Max(220f, cp.Speaker.Length * 20f + 70f), 60f);
+                    FlatBtnLook(plate, sc);
+                    UIStyles.Outlined(new Rect(plate.x, plate.y - 3f, plate.width, plate.height), cp.Speaker, UIStyles.Sized(UIStyles.Center, 30), Color.white, 3f);
                 }
                 string shown = cp.FullText.Substring(0, Mathf.Clamp(cp.VisibleChars, 0, cp.FullText.Length));
-                GUI.Label(new Rect(box.x + 50f, box.y + 30f, box.width - 100f, box.height - 50f), shown, UIStyles.Sized(UIStyles.Body, 36));
-                if (cp.VisibleChars >= cp.FullText.Length && Mathf.Sin(Time.unscaledTime * 6f) > 0f)
-                    GUI.Label(new Rect(box.xMax - 80f, box.yMax - 60f, 50f, 50f), "▼", UIStyles.Sized(UIStyles.Center, 30));
+                GUI.Label(new Rect(box.x + 44f, box.y + 36f, box.width - 90f, box.height - 50f), "<b>" + shown + "</b>", new GUIStyle(UIStyles.Sized(UIStyles.Body, 34)) { wordWrap = true, richText = true });
+                if (cp.VisibleChars >= cp.FullText.Length)
+                    GUI.Label(new Rect(box.xMax - 80f, box.yMax - 64f + Mathf.Abs(Mathf.Sin(Time.unscaledTime * 5f)) * -8f, 50f, 50f), "▼", UIStyles.Sized(UIStyles.Center, 30));
             }
 
             // Title cards ("THE JOURNEY BEGINS").

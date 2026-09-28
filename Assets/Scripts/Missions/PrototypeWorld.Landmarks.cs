@@ -109,6 +109,7 @@ namespace HashiraChronicles
             ConeAt(stat, p + Vector3.up * 1.33f * s, new Vector3(0.95f, 0.32f, 0.95f) * s, stone, q, 4);
             if (K == Kind.Snow) ConeAt(stat, p + Vector3.up * 1.38f * s, new Vector3(0.8f, 0.24f, 0.8f) * s, new Color(0.95f, 0.97f, 1f), q, 4);
             Sph(stat, p + Vector3.up * 1.67f * s, Vector3.one * 0.12f * s, stone);
+            if (K == Kind.Village) GlowPool(p + Vector3.up * 1.2f * s, P.lantern, 2.4f * s);
             if (light) PointLight(p + Vector3.up * 1.2f * s, P.lantern, 7f, 1.2f);
         }
 

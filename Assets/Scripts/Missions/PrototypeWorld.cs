@@ -105,6 +105,23 @@ namespace HashiraChronicles
             return BuildCore(Kind.Village, j, 20260928, parent, battleCamera);
         }
 
+        /// <summary>
+        /// A story-scene set in the new worlds: Kiriha for village scenes, otherwise a short route with a wide
+        /// clearing at the origin (where the scene's actors stand) in the matching world (forest, snow, volcano).
+        /// </summary>
+        public static JourneyBuilder.Result BuildStage(ArenaTheme theme, Transform parent)
+        {
+            if (theme != null && theme.kind == EnvironmentKind.Village) return BuildVillage(Journey.Village(), parent, false);
+            Kind k = Kind.Forest;
+            if (theme != null)
+                switch (theme.kind)
+                {
+                    case EnvironmentKind.Mountain: case EnvironmentKind.Temple: k = Kind.Snow; break;
+                    case EnvironmentKind.DemonLand: case EnvironmentKind.Castle: case EnvironmentKind.FallenCity: k = Kind.Volcano; break;
+                }
+            return BuildCore(k, Journey.Stage(), 4242 + (int)k, parent, false);
+        }
+
         /// <summary>Re-applies the village's night lighting (the home screen, after a battle changed it).</summary>
         public static void ApplyVillageLighting()
         {
@@ -193,22 +210,22 @@ namespace HashiraChronicles
                     p.lantern = new Color(1f, 0.5f, 0.15f);
                     break;
                 case Kind.Village:
-                    // Kiriha at twilight, cartoon style: bright green grass, warm sandy paving, hot-pink cherry blossom,
-                    // a deep blue sky melting into a pink-orange horizon, warm low sun and bright ambient light.
-                    p.grassA = new Color(0.3f, 0.72f, 0.32f); p.grassB = new Color(0.38f, 0.8f, 0.3f); p.grassC = new Color(0.52f, 0.86f, 0.3f);
-                    p.path = new Color(0.62f, 0.44f, 0.36f); p.pathEdge = new Color(0.55f, 0.42f, 0.3f); p.clearing = new Color(0.66f, 0.48f, 0.38f);
-                    p.rock = new Color(0.62f, 0.6f, 0.72f); p.rockDark = new Color(0.42f, 0.4f, 0.55f); p.bank = new Color(0.22f, 0.58f, 0.3f);
-                    p.leafDark = new Color(0.92f, 0.38f, 0.62f); p.leafMid = new Color(1f, 0.56f, 0.76f); p.leafLight = new Color(1f, 0.78f, 0.88f);
-                    p.trunk = new Color(0.42f, 0.24f, 0.2f); p.accent = new Color(0.95f, 0.2f, 0.18f);
-                    p.flowerA = new Color(1f, 0.85f, 0.2f); p.flowerB = new Color(1f, 0.45f, 0.65f); p.flowerC = new Color(0.55f, 0.6f, 1f);
-                    p.water = new Color(0.18f, 0.55f, 0.95f); p.waterFoam = new Color(0.9f, 0.96f, 1f, 0.55f);
-                    p.skyTop = new Color(0.12f, 0.18f, 0.55f); p.skyHorizon = new Color(1f, 0.48f, 0.5f); p.sunGlow = new Color(1f, 0.8f, 0.55f);
-                    p.fog = new Color(0.62f, 0.38f, 0.62f); p.fogStart = 45f; p.fogEnd = 280f;
-                    p.amSky = new Color(0.7f, 0.66f, 1f); p.amEquator = new Color(0.95f, 0.7f, 0.8f); p.amGround = new Color(0.55f, 0.45f, 0.5f);
-                    // Warm low sun from over the viewer's left shoulder, so faces stay lit.
-                    p.sun = new Color(1f, 0.86f, 0.7f); p.sunIntensity = 1.1f; p.sunEuler = new Vector3(34f, 30f, 0f);
-                    p.shadow = new Color(0.55f, 0.42f, 0.82f); p.rim = new Color(1f, 0.8f, 0.55f); p.far = new Color(0.55f, 0.4f, 0.75f);
-                    p.lantern = new Color(1f, 0.66f, 0.28f);
+                    // Kiriha at dusk: vibrant but deep — rich green grass, warm rose-stone streets, pink blossom,
+                    // a blue-violet sky glowing magenta-orange at the horizon, a low warm sun, lanterns doing the rest.
+                    p.grassA = new Color(0.16f, 0.52f, 0.3f); p.grassB = new Color(0.22f, 0.6f, 0.3f); p.grassC = new Color(0.36f, 0.7f, 0.28f);
+                    p.path = new Color(0.36f, 0.24f, 0.26f); p.pathEdge = new Color(0.32f, 0.26f, 0.24f); p.clearing = new Color(0.38f, 0.26f, 0.28f);
+                    p.rock = new Color(0.46f, 0.44f, 0.6f); p.rockDark = new Color(0.26f, 0.24f, 0.4f); p.bank = new Color(0.14f, 0.4f, 0.26f);
+                    p.leafDark = new Color(0.8f, 0.28f, 0.55f); p.leafMid = new Color(0.98f, 0.5f, 0.72f); p.leafLight = new Color(1f, 0.74f, 0.86f);
+                    p.trunk = new Color(0.34f, 0.18f, 0.18f); p.accent = new Color(0.95f, 0.2f, 0.18f);
+                    p.flowerA = new Color(1f, 0.82f, 0.2f); p.flowerB = new Color(1f, 0.42f, 0.62f); p.flowerC = new Color(0.5f, 0.55f, 1f);
+                    p.water = new Color(0.14f, 0.42f, 0.85f); p.waterFoam = new Color(0.85f, 0.92f, 1f, 0.5f);
+                    p.skyTop = new Color(0.07f, 0.09f, 0.32f); p.skyHorizon = new Color(0.95f, 0.38f, 0.45f); p.sunGlow = new Color(1f, 0.62f, 0.3f);
+                    p.fog = new Color(0.36f, 0.24f, 0.46f); p.fogStart = 32f; p.fogEnd = 220f;
+                    p.amSky = new Color(0.46f, 0.44f, 0.82f); p.amEquator = new Color(0.72f, 0.46f, 0.62f); p.amGround = new Color(0.3f, 0.24f, 0.32f);
+                    // Low warm sun from over the viewer's left shoulder (faces lit), long deep shadows.
+                    p.sun = new Color(1f, 0.72f, 0.5f); p.sunIntensity = 0.95f; p.sunEuler = new Vector3(24f, 34f, 0f);
+                    p.shadow = new Color(0.34f, 0.26f, 0.62f); p.rim = new Color(1f, 0.7f, 0.45f); p.far = new Color(0.3f, 0.22f, 0.5f);
+                    p.lantern = new Color(1f, 0.62f, 0.24f);
                     break;
                 default:
                     p.grassA = new Color(0.32f, 0.72f, 0.24f); p.grassB = new Color(0.44f, 0.82f, 0.28f); p.grassC = new Color(0.62f, 0.88f, 0.3f);
@@ -782,7 +799,7 @@ namespace HashiraChronicles
             RenderSettings.fogEndDistance = p.fogEnd;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
             // Cartoon look: strong, bright ambient so nothing sinks into murky shadow.
-            float amb = GameConfig.CartoonStyle ? 1.05f : 0.85f;
+            float amb = GameConfig.CartoonStyle ? 0.92f : 0.85f;
             RenderSettings.ambientSkyColor = p.amSky * amb;
             RenderSettings.ambientEquatorColor = p.amEquator * amb;
             RenderSettings.ambientGroundColor = p.amGround * amb;

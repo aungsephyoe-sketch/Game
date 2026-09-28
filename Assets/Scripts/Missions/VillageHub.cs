@@ -165,12 +165,19 @@ namespace HashiraChronicles
                 var sp = RandomPlayer(true);
                 if (sp != null)
                 {
-                    string line = ChatBrain.Chatter(sp.persona);
+                    string topic;
+                    string line = VillageChatter.Next(sp.persona, out topic);
                     Say(sp, line);
-                    if (rng.NextDouble() < 0.45)
+                    var other = RandomPlayer(true);
+                    if (other != null && other != sp)
                     {
-                        var other = RandomPlayer(true);
-                        if (other != null && other != sp) Answer(other, line, R(2f, 4.5f));
+                        // Questions usually get an answer; other lines sometimes get a reaction.
+                        if (topic != null && rng.NextDouble() < 0.8)
+                        {
+                            string ans = VillageChatter.AnswerFor(topic, other.persona);
+                            if (ans != null) queued.Add(new Queued { who = other, text = ans, at = Time.time + R(2.5f, 5f) });
+                        }
+                        else if (rng.NextDouble() < 0.3) Answer(other, line, R(2f, 4.5f));
                     }
                 }
             }

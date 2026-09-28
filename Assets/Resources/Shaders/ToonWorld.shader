@@ -87,8 +87,8 @@ Shader "Hashira/ToonWorld"
                 fixed3 baseCol = i.color.rgb * _Color.rgb;
                 fixed3 ambient = ShadeSH9(float4(n, 1.0));
                 fixed3 light = min(_LightColor0.rgb, 1.0);
-                fixed3 col = lerp(baseCol * lerp(_ShadowColor.rgb, fixed3(1, 1, 1), 0.25) * 0.8, baseCol * lerp(fixed3(1, 1, 1), light, 0.6) * 1.04, lit);
-                col += baseCol * ambient * 0.34;
+                fixed3 col = lerp(baseCol * lerp(_ShadowColor.rgb, fixed3(1, 1, 1), 0.18) * 0.64, baseCol * lerp(fixed3(1, 1, 1), light, 0.6) * 1.04, lit);
+                col += baseCol * ambient * 0.26;
                 float rim = pow(1.0 - saturate(dot(n, v)), _RimPower) * saturate(ndl + 0.4);
                 col += _RimColor.rgb * smoothstep(0.45, 0.5, rim) * 0.1;
                 float luma = dot(col, float3(0.299, 0.587, 0.114));

@@ -191,6 +191,23 @@ namespace HashiraChronicles
             return j;
         }
 
+        /// <summary>A short set for story scenes: a road through a wide clearing centred on the origin.</summary>
+        public static Journey Stage()
+        {
+            var j = new Journey { halfWidth = 5.5f };
+            j.places.Add(new JourneyPlace { name = "Gate", pos = new Vector3(0f, 0f, -34f), radius = 8f });
+            j.places.Add(new JourneyPlace { name = "Clearing", pos = Vector3.zero, radius = 15f });
+            j.places.Add(new JourneyPlace { name = "Ruins", pos = new Vector3(4f, 0f, 36f), radius = 10f });
+            for (int i = 0; i <= 28; i++)
+            {
+                float t = i / 28f;
+                j.path.Add(new Vector3(Mathf.Sin(t * Mathf.PI) * 3f + (t > 0.5f ? (t - 0.5f) * 8f : 0f), 0f, Mathf.Lerp(-34f, 36f, t)));
+            }
+            for (int i = 1; i < j.path.Count; i++) j.Length += Vector3.Distance(j.path[i - 1], j.path[i]);
+            j.EndDirection = (j.path[j.path.Count - 1] - j.path[j.path.Count - 2]).normalized;
+            return j;
+        }
+
         public static string ReachText(string place)
         {
             return place.StartsWith("The ") ? "Reach " + place : "Reach the " + place;

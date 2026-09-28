@@ -148,7 +148,10 @@ namespace HashiraChronicles
 
         struct BannerSlide
         {
-            public string tag, title, sub;
+            public string tag, title, sub, headline;
+            public Element element;
+            public int stars;
+            public bool limited;
             public Color accent;
             public Texture art;
             public System.Action<Rect> picture;
@@ -163,7 +166,8 @@ namespace HashiraChronicles
             {
                 var ev = events[0];
                 var enemy = string.IsNullOrEmpty(ev.bannerEnemy) ? null : GameDatabase.GetEnemy(ev.bannerEnemy);
-                list.Add(new BannerSlide { tag = "LIMITED EVENT", title = ev.title, sub = ev.subtitle, accent = ev.accent,
+                list.Add(new BannerSlide { tag = "NEW EVENT", headline = "LIMITED EVENT", title = ev.title, sub = ev.subtitle, accent = ev.accent,
+                    element = enemy != null ? enemy.element : Element.Flame, limited = true,
                     art = enemy != null ? PortraitStudio.Enemy(enemy) : null, open = () => gm.GoTo(GameScreen.Events) });
             }
             var ids = SummonSystem.FeaturedIds;
@@ -171,12 +175,13 @@ namespace HashiraChronicles
             {
                 var f = GameDatabase.GetCharacter(ids[0]);
                 if (f != null)
-                    list.Add(new BannerSlide { tag = "LIMITED SUMMON", title = f.displayName + " — " + f.versionTitle, sub = "Featured Mythic · rate up", accent = new Color(0.75f, 0.4f, 1f),
+                    list.Add(new BannerSlide { tag = "LIMITED SUMMON", headline = SummonSystem.BannerNames.Length > 0 ? SummonSystem.BannerNames[0].ToUpperInvariant() : "NEW BANNER", title = f.displayName, sub = f.versionTitle + " · featured Mythic", accent = new Color(0.75f, 0.4f, 1f),
+                        element = f.element, stars = 6, limited = true,
                         art = ArtLibrary.CharacterFull(f), open = () => gm.GoTo(GameScreen.Summon) });
             }
-            list.Add(new BannerSlide { tag = "VILLAGE HUB", title = "Kiriha Village", sub = "Chat, team up in threes and brave the co-op gates (online preview)", accent = new Color(0.35f, 0.85f, 0.55f),
+            list.Add(new BannerSlide { tag = "VILLAGE HUB", headline = "PLAY TOGETHER", element = Element.Beast, title = "Kiriha Village", sub = "Chat, team up in threes and brave the co-op gates (online preview)", accent = new Color(0.35f, 0.85f, 0.55f),
                 art = TileArt.Village, open = () => gm.BeginMission(GameDatabase.OpenWorld) });
-            list.Add(new BannerSlide { tag = "FORGE", title = "Upgrade Your Gear", sub = "Swords, haori and charms for every slayer", accent = new Color(1f, 0.7f, 0.25f),
+            list.Add(new BannerSlide { tag = "FORGE", headline = "GET STRONGER", element = Element.Flame, title = "Upgrade Your Gear", sub = "Swords, haori and charms for every slayer", accent = new Color(1f, 0.7f, 0.25f),
                 picture = PicUpgrade, open = () => OpenMenu("EQUIPMENT") });
             return list;
         }
@@ -186,7 +191,8 @@ namespace HashiraChronicles
             var slides = BannerSlides(d);
             if (slides.Count == 0) return;
             float k = Enter(0.15f, 0.5f);
-            var r = new Rect(safe.x + 150f - (1f - k) * 80f, safe.y + 352f, 640f, 210f);
+            var r = new Rect(safe.x + 150f - (1f - k) * 80f, safe.y + 344f, 700f, 236f);
+            bannerRect = r;
             if (bannerSince < 0f) bannerSince = Time.unscaledTime;
             if (Time.unscaledTime - bannerSince > 5.5f) SetBanner((bannerIndex + 1) % slides.Count);
             bannerIndex = Mathf.Clamp(bannerIndex, 0, slides.Count - 1);
@@ -246,23 +252,12 @@ namespace HashiraChronicles
             bannerSince = Time.unscaledTime;
         }
 
+        Rect bannerRect;
+
         void DrawSlide(Rect r, BannerSlide s)
         {
-            Color a = s.accent;
-            Round(r, Color.Lerp(new Color(0.06f, 0.05f, 0.1f), a, 0.28f), 14f);
-            for (int i = 0; i < 8; i++)
-                Round(new Rect(r.x + r.width * (0.42f + i * 0.07f), r.y, r.width * 0.07f + 2f, r.height), new Color(a.r, a.g, a.b, 0.05f + i * 0.02f), 0f);
-            var artR = new Rect(r.x + r.width * 0.5f, r.y, r.width * 0.5f, r.height);
-            if (s.art != null) GUI.DrawTexture(artR, s.art, ScaleMode.ScaleAndCrop, true);
-            else if (s.picture != null) s.picture(new Rect(artR.x + 20f, artR.y + 20f, artR.width - 40f, artR.height - 40f));
-            // Fade the art into the text side.
-            for (int i = 0; i < 10; i++)
-                UIStyles.Rect(new Rect(artR.x + i * 12f, r.y, 12f, r.height), new Color(0.05f, 0.04f, 0.09f, 0.55f * (1f - i / 10f)));
-            var tagR = new Rect(r.x + 22f, r.y + 20f, 180f, 30f);
-            Round(tagR, a, 8f);
-            UIStyles.Outlined(tagR, s.tag, UIStyles.Sized(UIStyles.Center, 16), Color.white, 1.5f);
-            UIStyles.Outlined(new Rect(r.x + 22f, r.y + 58f, r.width * 0.56f, 90f), s.title, new GUIStyle(UIStyles.Sized(UIStyles.H2, 34)) { wordWrap = true }, Color.white, 2.5f);
-            GUI.Label(new Rect(r.x + 24f, r.y + r.height - 58f, r.width * 0.52f, 50f), "<color=#E6E0FF>" + s.sub + "</color>", new GUIStyle(UIStyles.Sized(UIStyles.Small, 16)) { wordWrap = true });
+            // Painted promo art (element theme, rays, particles, big character, chips, countdown).
+            PromoBanner(r, bannerRect.position, s.tag, s.headline, s.title, s.sub, s.art, s.picture, s.element, s.stars, s.limited, s.title.Length * 0.37f);
         }
 
         void HomeResources(PlayerData d)

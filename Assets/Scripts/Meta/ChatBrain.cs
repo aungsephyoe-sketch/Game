@@ -19,7 +19,7 @@ namespace HashiraChronicles
             return new ChatPersona
             {
                 name = name, rng = new System.Random(seed * 7 + System.Environment.TickCount), main = mainCharacter,
-                typo = (float)r.NextDouble() * 0.12f, lowercase = 0.4f + (float)r.NextDouble() * 0.6f, emote = 0.15f + (float)r.NextDouble() * 0.45f,
+                typo = (float)r.NextDouble() * 0.12f, lowercase = 0.4f + (float)r.NextDouble() * 0.6f, emote = 0.06f + (float)r.NextDouble() * 0.3f,
                 slang = 0.2f + (float)r.NextDouble() * 0.7f, excite = (float)r.NextDouble(), split = (float)r.NextDouble() * 0.35f,
                 faceSet = r.Next(ChatBrain.FaceSets.Length)
             };

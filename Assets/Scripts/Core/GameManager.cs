@@ -439,6 +439,7 @@ namespace HashiraChronicles
             }
             if (result.victory)
             {
+                VillageChatter.OnMissionCleared(m);
                 QuestSystem.Report("clear", 1);
                 if (!string.IsNullOrEmpty(m.bossId))
                 {

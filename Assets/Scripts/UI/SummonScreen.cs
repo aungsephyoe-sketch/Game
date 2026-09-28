@@ -42,37 +42,17 @@ namespace HashiraChronicles
             Color bc = BannerColor(bannerPick);
             var banner = new Rect(safe.x + 24f - (1f - k) * 200f, btop, bw, H - btop - 24f);
             Round(Offset(banner, 0f, 6f), new Color(0f, 0f, 0f, 0.45f), 22f);
-            for (int i = 0; i < 10; i++)
-            {
-                float f = i / 10f;
-                Round(new Rect(banner.x, banner.y + banner.height * f, banner.width, banner.height * 0.1f + 22f),
-                    Color.Lerp(new Color(0.04f, 0.04f, 0.12f), Color.Lerp(bc, Color.black, 0.55f), f), i == 0 ? 22f : 0f);
-            }
-            Round(new Rect(banner.x, banner.yMax - 60f, banner.width, 60f), Color.Lerp(bc, Color.black, 0.55f), 22f);
-            var rng = new System.Random(7 + bannerPick);
-            for (int i = 0; i < 70; i++)
-            {
-                float sx = banner.x + 20f + (float)rng.NextDouble() * (banner.width - 40f);
-                float sy = banner.y + 20f + (float)rng.NextDouble() * (banner.height * 0.6f);
-                float tw = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * (1.5f + (float)rng.NextDouble() * 3f) + i);
-                UIStyles.CircleTex(new Vector2(sx, sy), 1.5f + (float)rng.NextDouble() * 2.5f, new Color(1f, 1f, 1f, 0.25f + 0.6f * tw));
-            }
             if (def0 != null)
             {
                 Color ec = ElementChart.ColorOf(def0.element);
-                // The Mythic on the right: rays, aura, full art.
                 float h = banner.height - 40f;
                 Vector2 auraC = new Vector2(banner.xMax - bw * 0.27f, banner.y + h * 0.52f);
-                float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 2.4f);
-                var saved = GUI.matrix;
-                for (int r = 0; r < 10; r++)
-                {
-                    GUI.matrix = saved;
-                    RotateGui(r * 36f + Time.unscaledTime * 14f, auraC);
-                    UIStyles.Rect(new Rect(auraC.x, auraC.y - 12f, h * 0.55f, 24f), new Color(bc.r, bc.g, bc.b, 0.09f));
-                }
-                GUI.matrix = saved;
-                for (int r = 4; r >= 1; r--) UIStyles.CircleTex(auraC, h * (0.16f + r * 0.06f + pulse * 0.01f), new Color(ec.r, ec.g, ec.b, 0.08f));
+                // Painted promo backdrop in the featured slayer's element (gradient, rays, glow, particles).
+                // Clipped to the banner (the rays would otherwise spill over the screen).
+                GUI.BeginGroup(banner);
+                promoOrigin = banner.position;
+                PromoBackdrop(new Rect(0f, 0f, banner.width, banner.height), ThemeFor(def0.element), auraC - banner.position, bannerPick * 1.7f, h * 0.9f);
+                GUI.EndGroup();
                 var art = ArtLibrary.CharacterFull(def0);
                 float bob = Mathf.Sin(Time.unscaledTime * 1.6f) * 6f;
                 if (art != null)
@@ -82,9 +62,20 @@ namespace HashiraChronicles
                 }
                 // Text on the left.
                 float tx = banner.x + 32f, tw2 = bw * 0.5f;
-                var tag = new Rect(tx, banner.y + 26f, 250f, 42f);
-                Round(tag, bc, 21f);
-                GUI.Label(tag, "<b>MYTHIC BANNER</b>", UIStyles.Sized(UIStyles.Center, 20));
+                // Dark slash behind the text for readability, chips and the countdown.
+                GUI.BeginGroup(banner);
+                var savedM = GUI.matrix;
+                promoOrigin = banner.position;
+                PromoRotate(-5f, new Vector2(bw * 0.28f, h * 0.4f));
+                UIStyles.Rect(new Rect(-60f, 60f, bw * 0.62f, h * 0.62f), new Color(0f, 0f, 0f, 0.45f));
+                UIStyles.Rect(new Rect(-60f, 54f, bw * 0.62f, 6f), ec);
+                GUI.matrix = savedM;
+                GUI.EndGroup();
+                PromoChip(new Rect(tx, banner.y + 18f, 220f, 46f), "LIMITED SUMMON", new Color(0.95f, 0.18f, 0.25f));
+                PromoChip(new Rect(tx + 234f, banner.y + 18f, 150f, 46f), "NEW!", new Color(1f, 0.62f, 0.1f));
+                var cdr = new Rect(banner.xMax - 250f, banner.y + 20f, 226f, 44f);
+                Round(cdr, new Color(0f, 0f, 0f, 0.55f), 14f);
+                UIStyles.Outlined(cdr, "⏱ Ends in " + Countdown(), UIStyles.Sized(UIStyles.Center, 21), Color.white, 2f);
                 UIStyles.Outlined(new Rect(tx, banner.y + 76f, tw2 + 80f, 74f), SummonSystem.BannerNames[bannerPick], UIStyles.Sized(UIStyles.H1, 54), Color.white, 4f);
                 GUI.Label(new Rect(tx, banner.y + 150f, tw2, 40f), def0.FullName + "  " + ElementTag(def0.element), UIStyles.Sized(UIStyles.Body, 26));
                 UIStyles.Outlined(new Rect(tx, banner.y + 190f, tw2, 30f), "MYTHIC  " + Stars(6), UIStyles.Sized(UIStyles.Body, 22), RarityInfo.Color(6), 1.5f);

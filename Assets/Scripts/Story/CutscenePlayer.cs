@@ -15,6 +15,10 @@ namespace HashiraChronicles
 
         // ---- UI-facing state
         public string Speaker { get; private set; }
+        /// <summary>The speaking character (for the portrait by the dialogue box), when they're in the scene.</summary>
+        public CharacterDefinition SpeakerDef { get; private set; }
+        public CharacterExpression.Mood SpeakerMood { get; private set; }
+        public float LineStarted { get; private set; }
         public string FullText { get; private set; }
         public int VisibleChars { get; private set; }
         public string TitleText { get; private set; }
@@ -129,45 +133,87 @@ namespace HashiraChronicles
                     if (set != null) Destroy(set);
                     set = new GameObject("Set");
                     set.transform.SetParent(transform, false);
-                    ArenaBuilder.Build(s.theme, set.transform, false, s.theme.GetHashCode());
+                    BuildSet(s.theme);
                     break;
 
                 case StepKind.Actor:
                     SpawnActor(s.a, s.b, s.v1, s.f1, s.f2 <= 0f ? 1f : s.f2);
+                    // Someone arriving mid-scene walks in rather than popping into existence.
+                    if (spokenLines > 0) StartCoroutine(EnterRoutine(s.a, s.v1));
                     break;
 
                 case StepKind.Remove:
                     Transform t;
-                    if (actors.TryGetValue(s.a, out t) && t != null) Destroy(t.gameObject);
+                    if (actors.TryGetValue(s.a, out t) && t != null)
+                    {
+                        CharacterVisual rv;
+                        visuals.TryGetValue(s.a, out rv);
+                        StartCoroutine(ExitRoutine(t, rv));
+                    }
                     actors.Remove(s.a);
                     visuals.Remove(s.a);
                     break;
 
                 case StepKind.Cut:
                     if (cam != null) cam.Cut(s.v1, s.v2);
+                    camLook = s.v2;
+                    camBusyUntil = Time.unscaledTime + 0.05f;
                     break;
 
                 case StepKind.Dolly:
                     if (cam != null) cam.Dolly(s.v1, s.v2, s.f1);
+                    camLook = s.v2;
+                    camBusyUntil = Time.unscaledTime + s.f1;
                     if (s.wait) yield return new WaitForSecondsRealtime(s.f1);
                     break;
 
                 case StepKind.Orbit:
+                    camBusyUntil = Time.unscaledTime + Mathf.Max(0.1f, s.v1.z);
                     if (s.wait) yield return OrbitRoutine(s);
                     else StartCoroutine(OrbitRoutine(s));
                     break;
 
                 case StepKind.Say:
+                {
                     Speaker = s.a;
                     FullText = s.b;
                     VisibleChars = 0;
                     typeStart = Time.unscaledTime;
+                    LineStarted = Time.unscaledTime;
                     advance = false;
+                    spokenLines++;
                     if (audio != null) audio.Play("click", 0.25f);
                     float auto = Mathf.Max(3f, s.b.Length * 0.06f + 1.8f);
+                    var mood = CharacterExpression.FromText(s.b);
+                    string who = SpeakerKey(s.a);
+                    SpeakerMood = mood;
+                    CharacterDefinition sdef = null;
+                    if (who != null) heroDefs.TryGetValue(who, out sdef);
+                    SpeakerDef = sdef;
+                    CharacterExpression expr = null;
+                    if (who != null)
+                    {
+                        CharacterVisual sv;
+                        if (visuals.TryGetValue(who, out sv) && sv != null)
+                        {
+                            expr = CharacterExpression.For(sv);
+                            expr.Current = mood;
+                            // A little body language to go with the line.
+                            if (mood == CharacterExpression.Mood.Angry || mood == CharacterExpression.Mood.Determined) sv.Punch(1.06f);
+                            else if (mood == CharacterExpression.Mood.Surprised) sv.Punch(1.1f);
+                        }
+                        TurnListenersTo(who);
+                        CinematicPush(who, mood, auto);
+                    }
                     float t0 = Time.unscaledTime;
-                    while (!advance && Time.unscaledTime - t0 < auto && !finished) yield return null;
+                    while (!advance && Time.unscaledTime - t0 < auto && !finished)
+                    {
+                        if (expr != null) expr.Talking = FullText != null && VisibleChars < FullText.Length;
+                        yield return null;
+                    }
+                    if (expr != null) { expr.Talking = false; expr.Current = CharacterExpression.Mood.Neutral; }
                     break;
+                }
 
                 case StepKind.Move:
                     if (s.wait) yield return MoveRoutine(s.a, s.v1, s.f1);
@@ -229,6 +275,145 @@ namespace HashiraChronicles
             }
         }
 
+        int spokenLines;
+        float camBusyUntil;
+        Vector3 camLook;
+
+        /// <summary>The set for the scene, built in the new worlds (the old flat arena only as a fallback).</summary>
+        void BuildSet(ArenaTheme theme)
+        {
+            try
+            {
+                PrototypeWorld.BuildStage(theme, set.transform);
+                if (theme != null && theme.burning)
+                {
+                    // A village under attack: fires among the houses and smoke drifting over the street.
+                    for (int i = 0; i < 7; i++)
+                    {
+                        float a = i * 51f * Mathf.Deg2Rad;
+                        Vector3 p = new Vector3(Mathf.Cos(a) * Random.Range(9f, 16f), 0f, 6f + Mathf.Sin(a) * Random.Range(8f, 14f));
+                        EnvFx.Fire(set.transform, p, Random.Range(1.2f, 2f), i < 3);
+                        EnvFx.Smoke(set.transform, p + Vector3.up * 2f, 1.5f);
+                    }
+                    RenderSettings.fogColor = new Color(0.45f, 0.18f, 0.2f);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("[Cutscene] new-world set failed, using the simple arena: " + ex);
+                foreach (Transform c in set.transform) Destroy(c.gameObject);
+                ArenaBuilder.Build(theme, set.transform, false, theme != null ? theme.GetHashCode() : 1);
+                ArenaBuilder.ApplyLighting(theme);
+            }
+        }
+
+        /// <summary>The actor who says a line: by key, or by the character's display name.</summary>
+        string SpeakerKey(string speaker)
+        {
+            if (string.IsNullOrEmpty(speaker)) return null;
+            string sp = speaker.ToLowerInvariant();
+            foreach (var kv in actors) if (kv.Key.ToLowerInvariant() == sp) return kv.Key;
+            foreach (var kv in visuals)
+            {
+                string id = kv.Key;
+                var hero = defs.ContainsKey(id) ? defs[id] : null;
+                if (hero == null) continue;
+                string n = hero.ToLowerInvariant();
+                if (n == sp || sp.Contains(n) || n.Contains(sp)) return id;
+            }
+            foreach (var kv in actors) if (sp.Contains(kv.Key.ToLowerInvariant()) || kv.Key.ToLowerInvariant().Contains(sp.Split(' ')[sp.Split(' ').Length - 1])) return kv.Key;
+            return null;
+        }
+
+        readonly Dictionary<string, string> defs = new Dictionary<string, string>();
+        readonly Dictionary<string, CharacterDefinition> heroDefs = new Dictionary<string, CharacterDefinition>();
+
+        /// <summary>Everyone else in the scene turns toward whoever is speaking (smoothly).</summary>
+        void TurnListenersTo(string speakerKey)
+        {
+            Transform sp;
+            if (!actors.TryGetValue(speakerKey, out sp) || sp == null) return;
+            foreach (var kv in actors)
+            {
+                if (kv.Key == speakerKey || kv.Value == null) continue;
+                if ((kv.Value.position - sp.position).magnitude > 12f) continue;
+                StartCoroutine(TurnRoutine(kv.Value, sp.position));
+            }
+        }
+
+        IEnumerator TurnRoutine(Transform t, Vector3 target)
+        {
+            Vector3 d = target - t.position;
+            d.y = 0f;
+            if (d.sqrMagnitude < 0.01f) yield break;
+            var from = t.rotation;
+            var to = Quaternion.LookRotation(d);
+            float e = 0f;
+            while (e < 0.35f && t != null)
+            {
+                e += Time.unscaledDeltaTime;
+                t.rotation = Quaternion.Slerp(from, to, Mathf.SmoothStep(0f, 1f, e / 0.35f));
+                yield return null;
+            }
+        }
+
+        /// <summary>
+        /// A slow push-in toward the speaker while they talk (unless the script is moving the camera itself);
+        /// dramatic lines push harder, with a small shake and a burst in the speaker's colour.
+        /// </summary>
+        void CinematicPush(string speakerKey, CharacterExpression.Mood mood, float seconds)
+        {
+            var cam = CameraController.Instance;
+            var mc = Camera.main;
+            Transform sp;
+            if (cam == null || mc == null || !actors.TryGetValue(speakerKey, out sp) || sp == null) return;
+            if (Time.unscaledTime < camBusyUntil) return;
+            bool big = mood == CharacterExpression.Mood.Angry || mood == CharacterExpression.Mood.Surprised;
+            Vector3 pos = mc.transform.position;
+            Vector3 face = sp.position + Vector3.up * 1.5f;
+            Vector3 look = Vector3.Lerp(camLook == Vector3.zero ? face : camLook, face, 0.35f);
+            Vector3 toward = (face - pos);
+            float push = Mathf.Min(toward.magnitude * (big ? 0.18f : 0.08f), big ? 1.6f : 0.7f);
+            cam.Dolly(pos + toward.normalized * push + Vector3.right * Random.Range(-0.15f, 0.15f), look, seconds);
+            camLook = look;
+            if (big)
+            {
+                cam.Shake(0.15f);
+                CharacterVisual v;
+                if (visuals.TryGetValue(speakerKey, out v) && v != null) VFX.Breath(sp.position, mood == CharacterExpression.Mood.Angry ? new Color(1f, 0.4f, 0.3f) : new Color(1f, 0.95f, 0.6f), 20);
+            }
+        }
+
+        IEnumerator EnterRoutine(string key, Vector3 to)
+        {
+            Transform t;
+            if (!actors.TryGetValue(key, out t) || t == null) yield break;
+            Vector3 from = to - t.forward * 3f;
+            t.position = from;
+            VFX.Dust(from, 4);
+            yield return MoveRoutine(key, to, 0.8f);
+        }
+
+        IEnumerator ExitRoutine(Transform t, CharacterVisual v)
+        {
+            Vector3 from = t.position, to = from - t.forward * 0.1f + (t.position - (Camera.main != null ? Camera.main.transform.position : t.position - t.forward)).normalized * 3.5f;
+            to.y = from.y;
+            Vector3 d = to - from;
+            if (d.sqrMagnitude > 0.01f) t.rotation = Quaternion.LookRotation(d);
+            Vector3 s0 = t.localScale;
+            float e = 0f;
+            while (e < 0.9f && t != null)
+            {
+                e += Time.unscaledDeltaTime;
+                float k = e / 0.9f;
+                t.position = Vector3.Lerp(from, to, k);
+                if (v != null) v.SetMoving(0.6f);
+                if (k > 0.6f) t.localScale = s0 * (1f - (k - 0.6f) / 0.4f);
+                yield return null;
+            }
+            if (t != null) Destroy(t.gameObject);
+        }
+
         void SpawnActor(string key, string defId, Vector3 pos, float yaw, float scale)
         {
             Transform old;
@@ -240,14 +425,19 @@ namespace HashiraChronicles
             go.transform.localScale = Vector3.one * scale;
             CharacterVisual v = null;
             var hero = GameDatabase.GetCharacter(defId);
-            if (hero != null) v = CharacterVisual.BuildHero(hero, go.transform);
+            if (hero != null) { v = CharacterVisual.BuildHero(hero, go.transform); defs[key] = hero.displayName ?? key; heroDefs[key] = hero; }
             else
             {
                 var enemy = GameDatabase.GetEnemy(defId);
-                if (enemy != null) v = CharacterVisual.BuildDemon(enemy, go.transform);
+                if (enemy != null) { v = CharacterVisual.BuildDemon(enemy, go.transform); defs[key] = enemy.displayName ?? key; }
             }
             actors[key] = go.transform;
-            if (v != null) visuals[key] = v;
+            if (v != null)
+            {
+                visuals[key] = v;
+                v.FidgetsEnabled = false; // no random weapon flourishes mid-conversation
+                CharacterExpression.For(v);
+            }
         }
 
         void PlayAnim(string key, string anim)

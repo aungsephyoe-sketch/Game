@@ -1,0 +1,195 @@
+using UnityEngine;
+
+namespace HashiraChronicles
+{
+    /// <summary>
+    /// Promotional banner art, painted live in layers: an element-themed gradient, rotating speed rays and a
+    /// pulsing glow behind the featured character, element particles (embers, bubbles, lightning, wisps,
+    /// sparkles, leaves), the character art large with a coloured halo, a diagonal title slash, bold event title,
+    /// NEW / LIMITED labels, rarity stars and a live countdown. Fire is red and orange, water blue and cyan,
+    /// thunder purple and yellow, dark black and purple, light white and gold.
+    /// </summary>
+    public partial class UIManager
+    {
+        /// <summary>Top-left of the GUI group the banner is drawn in (rotations need top-level coordinates).</summary>
+        Vector2 promoOrigin;
+
+        void PromoRotate(float angle, Vector2 pivot) { RotateGui(angle, pivot + promoOrigin); }
+
+        struct PromoTheme
+        {
+            public Color top, bottom, glow, particle;
+            public int fx; // 0 embers, 1 bubbles, 2 bolts, 3 wisps, 4 sparkles, 5 leaves
+        }
+
+        static PromoTheme ThemeFor(Element e)
+        {
+            switch (e)
+            {
+                case Element.Flame: return new PromoTheme { top = new Color(0.32f, 0.02f, 0.04f), bottom = new Color(1f, 0.42f, 0.06f), glow = new Color(1f, 0.55f, 0.15f), particle = new Color(1f, 0.75f, 0.25f), fx = 0 };
+                case Element.Water: return new PromoTheme { top = new Color(0.02f, 0.07f, 0.3f), bottom = new Color(0.08f, 0.66f, 0.95f), glow = new Color(0.3f, 0.85f, 1f), particle = new Color(0.8f, 0.97f, 1f), fx = 1 };
+                case Element.Thunder: return new PromoTheme { top = new Color(0.18f, 0.04f, 0.38f), bottom = new Color(0.95f, 0.78f, 0.15f), glow = new Color(1f, 0.9f, 0.35f), particle = new Color(1f, 0.95f, 0.5f), fx = 2 };
+                case Element.Dark: return new PromoTheme { top = new Color(0.02f, 0f, 0.05f), bottom = new Color(0.42f, 0.08f, 0.58f), glow = new Color(0.7f, 0.3f, 1f), particle = new Color(0.8f, 0.5f, 1f), fx = 3 };
+                case Element.Light: return new PromoTheme { top = new Color(0.55f, 0.36f, 0.1f), bottom = new Color(1f, 0.95f, 0.78f), glow = new Color(1f, 0.92f, 0.6f), particle = Color.white, fx = 4 };
+                default: return new PromoTheme { top = new Color(0.03f, 0.2f, 0.12f), bottom = new Color(0.45f, 0.88f, 0.3f), glow = new Color(0.6f, 1f, 0.5f), particle = new Color(0.8f, 1f, 0.6f), fx = 5 };
+            }
+        }
+
+        /// <summary>Time left until the weekly rotation (Sunday night), as "3d 04h" / "04h 12m".</summary>
+        static string Countdown()
+        {
+            var now = System.DateTime.Now;
+            int days = ((int)System.DayOfWeek.Sunday - (int)now.DayOfWeek + 7) % 7;
+            var end = now.Date.AddDays(days).AddHours(23).AddMinutes(59);
+            var left = end - now;
+            if (left.TotalDays >= 1) return (int)left.TotalDays + "d " + left.Hours.ToString("00") + "h";
+            return left.Hours.ToString("00") + "h " + left.Minutes.ToString("00") + "m";
+        }
+
+        /// <summary>The layered background: gradient, rays, glow and particles, focused on focus (the character).</summary>
+        void PromoBackdrop(Rect r, PromoTheme th, Vector2 focus, float seed, float radius)
+        {
+            // Gradient (diagonal feel: darker top-left, bright bottom-right).
+            const int bands = 14;
+            for (int i = 0; i < bands; i++)
+            {
+                float f = i / (float)(bands - 1);
+                Color c = Color.Lerp(th.top, th.bottom, Mathf.Pow(f, 1.3f));
+                UIStyles.Rect(new Rect(r.x, r.y + r.height * i / bands, r.width, r.height / bands + 1f), c);
+            }
+            // Rotating speed rays from the character.
+            var saved = GUI.matrix;
+            float t = Time.unscaledTime;
+            for (int k = 0; k < 14; k++)
+            {
+                GUI.matrix = saved;
+                PromoRotate(k * (360f / 14f) + t * 10f + seed * 20f, focus);
+                UIStyles.Rect(new Rect(focus.x, focus.y - radius * 0.07f, radius * 2.2f, radius * 0.14f), new Color(th.glow.r, th.glow.g, th.glow.b, k % 2 == 0 ? 0.12f : 0.06f));
+            }
+            GUI.matrix = saved;
+            // Glow.
+            float pulse = 0.5f + 0.5f * Mathf.Sin(t * 2.2f + seed);
+            for (int k = 5; k >= 1; k--) UIStyles.CircleTex(focus, radius * (0.3f + k * 0.14f + pulse * 0.03f), new Color(th.glow.r, th.glow.g, th.glow.b, 0.07f));
+            UIStyles.CircleTex(focus, radius * 0.45f, new Color(1f, 1f, 1f, 0.06f + 0.04f * pulse));
+            PromoParticles(r, th, seed);
+        }
+
+        void PromoParticles(Rect r, PromoTheme th, float seed)
+        {
+            var rng = new System.Random(Mathf.RoundToInt(seed * 100f) + 11);
+            float t = Time.unscaledTime;
+            int n = th.fx == 2 ? 6 : 34;
+            for (int i = 0; i < n; i++)
+            {
+                float x0 = (float)rng.NextDouble(), sp = 0.05f + (float)rng.NextDouble() * 0.12f, ph = (float)rng.NextDouble();
+                float size = 2f + (float)rng.NextDouble() * 5f;
+                switch (th.fx)
+                {
+                    case 0: // embers rising and flickering
+                    case 3: // wisps drifting up
+                    case 5: // leaves drifting
+                    {
+                        float y = 1f - Mathf.Repeat(ph + t * sp, 1f);
+                        float x = x0 + Mathf.Sin(t * (th.fx == 5 ? 1.2f : 2f) + i) * 0.02f;
+                        float a = Mathf.Sin(y * Mathf.PI) * (th.fx == 3 ? 0.35f : 0.85f) * (0.6f + 0.4f * Mathf.Sin(t * 9f + i));
+                        var p = new Vector2(r.x + x * r.width, r.y + y * r.height);
+                        if (th.fx == 3) UIStyles.CircleTex(p, size * 3f, new Color(th.particle.r, th.particle.g, th.particle.b, a * 0.4f));
+                        else if (th.fx == 5) Round(new Rect(p.x, p.y, size * 2.2f, size), new Color(th.particle.r, th.particle.g, th.particle.b, a), size * 0.5f);
+                        else UIStyles.CircleTex(p, size, new Color(th.particle.r, th.particle.g, th.particle.b, a));
+                        break;
+                    }
+                    case 1: // bubbles
+                    {
+                        float y = 1f - Mathf.Repeat(ph + t * sp * 0.8f, 1f);
+                        var p = new Vector2(r.x + (x0 + Mathf.Sin(t + i) * 0.015f) * r.width, r.y + y * r.height);
+                        UIStyles.CircleTex(p, size * 1.6f, new Color(1f, 1f, 1f, 0.35f * Mathf.Sin(y * Mathf.PI)), UIStyles.Ring);
+                        break;
+                    }
+                    case 2: // lightning bolts that flash now and then
+                    {
+                        float cyc = Mathf.Repeat(t * 0.7f + ph * 3f, 3f);
+                        if (cyc > 0.18f) break;
+                        var saved = GUI.matrix;
+                        Vector2 a = new Vector2(r.x + x0 * r.width, r.y);
+                        float segs = 5f, seg = r.height / segs;
+                        for (int s = 0; s < 5; s++)
+                        {
+                            float off = ((s * 37 + i * 13) % 7 - 3) * 8f;
+                            Vector2 b = a + new Vector2(off, seg);
+                            float ang = Mathf.Atan2(b.y - a.y, b.x - a.x) * Mathf.Rad2Deg;
+                            GUI.matrix = saved;
+                            PromoRotate(ang, a);
+                            UIStyles.Rect(new Rect(a.x, a.y - 2.5f, (b - a).magnitude, 5f), new Color(1f, 0.97f, 0.7f, 0.9f));
+                            a = b;
+                        }
+                        GUI.matrix = saved;
+                        break;
+                    }
+                    default: // sparkles
+                    {
+                        float tw = Mathf.Max(0f, Mathf.Sin(t * (2f + sp * 20f) + i));
+                        var p = new Vector2(r.x + x0 * r.width, r.y + ph * r.height);
+                        UIStyles.Outlined(new Rect(p.x - 10f, p.y - 10f, 20f, 20f), "✦", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(10 + size * 2f)), new Color(1f, 1f, 0.9f, tw), 0f);
+                        break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>A chunky label chip (NEW EVENT, LIMITED SUMMON...).</summary>
+        void PromoChip(Rect r, string text, Color c)
+        {
+            FlatBtnLook(r, c);
+            UIStyles.Outlined(new Rect(r.x, r.y - 2f, r.width, r.height), text, UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(r.height * 0.46f)), Color.white, 2f);
+        }
+
+        /// <summary>
+        /// A full promo banner (home carousel): themed backdrop, character art on the right with a halo, a slash
+        /// behind the title, chips, stars and countdown.
+        /// </summary>
+        void PromoBanner(Rect lr, Vector2 groupOrigin, string chip, string headline, string title, string sub, Texture art, System.Action<Rect> picture, Element element, int stars, bool limited, float seed)
+        {
+            var th = ThemeFor(element);
+            promoOrigin = groupOrigin;
+            float X = lr.x, Y = lr.y;
+            Vector2 focus = new Vector2(X + lr.width * 0.74f, Y + lr.height * 0.55f);
+            PromoBackdrop(lr, th, focus, seed, lr.height);
+            if (art != null)
+            {
+                float bob = Mathf.Sin(Time.unscaledTime * 1.6f + seed) * 4f;
+                var ar = new Rect(X + lr.width * 0.46f, Y - lr.height * 0.12f + bob, lr.width * 0.58f, lr.height * 1.3f);
+                // Halo: the art drawn tinted and slightly larger behind itself.
+                var old = GUI.color;
+                GUI.color = new Color(th.glow.r, th.glow.g, th.glow.b, 0.55f);
+                GUI.DrawTexture(Grow(ar, 8f), art, ScaleMode.ScaleAndCrop, true);
+                GUI.color = old;
+                GUI.DrawTexture(ar, art, ScaleMode.ScaleAndCrop, true);
+            }
+            else if (picture != null) picture(new Rect(X + lr.width * 0.56f, Y + 16f, lr.width * 0.4f, lr.height - 32f));
+            // Title slash: a dark diagonal band for readability.
+            var saved = GUI.matrix;
+            PromoRotate(-6f, new Vector2(X + lr.width * 0.3f, Y + lr.height * 0.55f));
+            UIStyles.Rect(new Rect(X - 40f, Y + lr.height * 0.3f, lr.width * 0.68f, lr.height * 0.5f), new Color(0f, 0f, 0f, 0.42f));
+            UIStyles.Rect(new Rect(X - 40f, Y + lr.height * 0.3f - 5f, lr.width * 0.68f, 5f), th.glow);
+            GUI.matrix = saved;
+            PromoChip(new Rect(X + 16f, Y + 14f, Mathf.Max(150f, chip.Length * 12f + 40f), 36f), chip, limited ? new Color(0.95f, 0.18f, 0.25f) : new Color(0.2f, 0.55f, 1f));
+            if (!string.IsNullOrEmpty(headline))
+                UIStyles.Outlined(new Rect(X + 18f, Y + 56f, lr.width * 0.62f, 30f), headline, UIStyles.Sized(UIStyles.Body, 20), th.glow, 2f);
+            UIStyles.Outlined(new Rect(X + 18f, Y + lr.height * 0.34f, lr.width * 0.6f, 84f), title, new GUIStyle(UIStyles.Sized(UIStyles.H1, 34)) { wordWrap = true }, Color.white, 4f);
+            if (stars > 0)
+            {
+                string st = "";
+                for (int i = 0; i < stars; i++) st += "★";
+                UIStyles.Outlined(new Rect(X + 20f, Y + lr.height * 0.34f + 80f, 300f, 30f), st, UIStyles.Sized(UIStyles.Body, 22), new Color(1f, 0.85f, 0.3f), 2f);
+            }
+            GUI.Label(new Rect(X + 20f, Y + lr.height - 44f, lr.width * 0.55f, 40f), "<color=#F2EEFF>" + sub + "</color>", new GUIStyle(UIStyles.Sized(UIStyles.Small, 15)) { wordWrap = true });
+            if (limited)
+            {
+                var cd = new Rect(X + lr.width - 170f, Y + lr.height - 42f, 156f, 32f);
+                Round(cd, new Color(0f, 0f, 0f, 0.55f), 12f);
+                UIStyles.Outlined(cd, "⏱ " + Countdown(), UIStyles.Sized(UIStyles.Center, 17), Color.white, 1.5f);
+            }
+            RoundFrame(new Rect(X + 2f, Y + 2f, lr.width - 4f, lr.height - 4f), new Color(1f, 1f, 1f, 0.25f), 2f, 14f);
+        }
+    }
+}

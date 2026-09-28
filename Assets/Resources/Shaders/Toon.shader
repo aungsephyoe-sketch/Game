@@ -82,11 +82,11 @@ Shader "Hashira/Toon"
                 fixed3 baseCol = tex2D(_MainTex, i.uv).rgb * _Color.rgb;
                 fixed3 ambient = ShadeSH9(float4(n, 1.0));
                 fixed3 light = min(_LightColor0.rgb, 1.0);
-                fixed3 shadowTone = baseCol * lerp(_ShadowColor.rgb, fixed3(1, 1, 1), 0.2) * 0.78;
+                fixed3 shadowTone = baseCol * lerp(_ShadowColor.rgb, fixed3(1, 1, 1), 0.15) * 0.66;
                 fixed3 midTone = baseCol * lerp(fixed3(1, 1, 1), light, 0.5) * 0.93;
                 fixed3 litTone = baseCol * lerp(fixed3(1, 1, 1), light, 0.6) * 1.06;
                 fixed3 col = lerp(lerp(shadowTone, midTone, toMid), litTone, toLit);
-                col += baseCol * ambient * 0.3;
+                col += baseCol * ambient * 0.26;
 
                 // Bright cartoon highlight: a small hard spot.
                 float3 h = normalize(l + v);

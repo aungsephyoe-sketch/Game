@@ -14,6 +14,8 @@ namespace HashiraChronicles
         public WeaponKind Weapon = WeaponKind.Katana;
         public float HeadY { get; private set; }
         Transform head;
+        /// <summary>The head joint (faces, expressions, look-at).</summary>
+        public Transform HeadTransform { get { return head; } }
 
         static readonly Color Ink = new Color(0.04f, 0.04f, 0.06f);
 

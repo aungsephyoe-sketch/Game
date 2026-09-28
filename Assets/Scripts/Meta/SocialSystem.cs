@@ -254,7 +254,8 @@ namespace HashiraChronicles
                 if (online.Count > 0)
                 {
                     var f = online[Random.Range(0, online.Count)];
-                    Queue(f.code, ChatBrain.Chatter(PersonaFor(f)), 0.5f);
+                    string topic;
+                    Queue(f.code, VillageChatter.Next(PersonaFor(f), out topic), 0.5f);
                 }
             }
         }

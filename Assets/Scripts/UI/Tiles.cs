@@ -380,6 +380,17 @@ namespace HashiraChronicles
 
         void Bounce(Rect r) { bounceAt[RectKey(r)] = Time.unscaledTime; }
 
+        /// <summary>A chunky panel in a colour (name plates, tags) without button behaviour.</summary>
+        void FlatBtnLook(Rect r, Color c)
+        {
+            float depth = Mathf.Clamp(r.height * 0.1f, 4f, 8f);
+            Round(Offset(Grow(r, 3f), 0f, 5f), new Color(0f, 0f, 0f, 0.3f), 16f);
+            Round(Grow(r, 4f), new Color(0.06f, 0.05f, 0.12f, 0.96f), 18f);
+            Round(new Rect(r.x, r.y + depth, r.width, r.height - depth), Color.Lerp(c, Color.black, 0.45f), 14f);
+            Round(new Rect(r.x, r.y, r.width, r.height - depth), c, 14f);
+            Round(new Rect(r.x + 6f, r.y + 4f, r.width - 12f, (r.height - depth) * 0.36f), new Color(1f, 1f, 1f, 0.28f), 10f);
+        }
+
         /// <summary>Chunky colour button (CLAIM, SELECT, PLAY...): see <see cref="ChunkyBody"/>.</summary>
         bool FlatBtn(Rect r, string label, Color c, bool enabled = true, int size = 28)
         {
