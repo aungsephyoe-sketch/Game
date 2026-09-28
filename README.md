@@ -36,6 +36,37 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Ground placement and AI rebuild (0.24.0)
+**Characters sinking into or hovering over the ground: root cause and fix.**
+- **Cause:** all movement code works on a flat plane. `BattleController.ClampToArena` forced `y = 0`, and about 75 other places write positions assuming flat ground. The new worlds aren't flat: river trenches dip beside the bridges, bridge decks sit above the riverbed, and banks rise at the edges.
+- **Measured** with the real `Journey` and terrain code in an offline harness: on walkable ground, feet at y=0 floated up to 1.4 m on the dips next to the bridges and were buried up to 0.1 m at the edges. The ground under the bridge planks is up to 3.2 m lower, so the deck needs to count as ground.
+- **Fix: `World/Ground.cs`.** The world builder hands over the exact terrain height grid it meshed. Heights are read with the same triangle split the mesh uses, so they match the drawn surface exactly. Bridge decks are registered as platforms, with their arch or sag.
+- **Fix: `World/GroundFollower.cs`,** on every fighter (added in `Combatant.OnEnable`).
+  - Before gameplay runs each frame it takes the ground height out, so every movement script keeps working on the flat "height above ground" plane it was written for. That covers walking, dodges, lunges, knockback, leaps, specials and respawns.
+  - After gameplay, and before the camera, it adds the real ground height under the feet.
+  - Recovery: bad (NaN) or flung positions go back to the last good spot, anyone below the ground plane stands back up, and anyone inside a solid or off the walkable area is eased out to the nearest valid ground. Health and state are untouched.
+- **Spawns are validated:** enemies (`SpawnEnemy`) and party slayers are placed on walkable ground, never inside scenery. Telegraphs, demon auras and range rings sit on the real ground too.
+
+**AI navigation (`Missions/NavAgent.cs`),** used by party slayers and demons.
+- It routes along the road when the straight line is blocked (over the bridge, not into the river bank).
+- Short feelers slide it around rocks and walls, keeping to one side so it doesn't dither at corners.
+- It detects being stuck (barely moved for 1.2 s) or circling (no progress for 3 s) and takes the best reachable detour. It re-routes as the target moves.
+- **Tested offline** with the real `Journey`, `Obstacles` and `NavAgent` code, on snow, forest and volcano maps with the bridge banks and roadside rocks. Obstacles for the volcano's lava moat and side river weren't modelled.
+  - From all around the near end of a bridge to the far side (the screenshot situation), the old straight-line movement failed 19% of runs (stuck against the invisible bank), and the new agent failed 0%.
+  - On 400+ random routes, the old movement reached 93–96% of targets, and the new agent 100%.
+
+**Party AI rebuilt as a state machine** (`PartySlayer`).
+- It runs Observe → Decide → Act several times a second. States: Search, Navigate, Position, Attack, Special, Ultimate, Reposition, Dodge, Retreat, Help Ally, Defend, Recover.
+- It observes target health, its own health and recent damage, cooldowns, enemy groups, hurt allies, red zones and walkable lines.
+- **Roles:**
+  - The Vanguard holds the line between enemies and the weakest ally, leaps in when 2+ enemies are bunched (only with a clear landing), and braces with Iron Wall when it's taking heavy damage.
+  - The Duelist flanks, prefers weak or isolated targets, and only Flash Steps along a clear line (otherwise it repositions for a better angle).
+  - The Skirmisher keeps 6–8 m, backs off when rushed, and fires its volley only with 2+ enemies in the fan.
+  - The Support stays with whoever needs it, keeps out of melee, heals hurt allies, and saves Sanctuary for when 2+ allies are low.
+  - Ultimates need a payoff (3+ enemies close, or an elite/boss) and are cancelled if the target is gone.
+- **Personalities:** Aggressive, Balanced, Defensive and Tactical change retreat thresholds, spacing, how many enemies a special needs, and target focus.
+- **Reactions:** dodging out of red zones to spots not inside another zone, sidestepping after heavy hits, retreating when low, responding when an ally or the player goes down, smooth turning and walk/run blending.
+
 ### Friends who text back, dangerous banners, meaner demons (0.23.0)
 - **Friend chat rebuilt** (`Meta/FriendChat.cs`). Friends reply in real time, anywhere from 3 minutes to 12 days: usually minutes to hours, sometimes days.
   - Pending replies are saved, so they still arrive after you quit and come back. A long wait comes with a "sorry, just saw this!".

@@ -42,6 +42,8 @@ namespace HashiraChronicles
         float zigzagPhase;
         float slotAngle;
         float dodgeCooldown;
+        /// <summary>Routing around scenery, along the road, and out of dead ends (created in Init).</summary>
+        protected NavAgent nav;
         float height;
         float verticalVelocity;
         float downTimer;
@@ -109,6 +111,7 @@ namespace HashiraChronicles
             Health.Died += OnDied;
             visual = CharacterVisual.BuildDemon(def, transform);
             if (def.form != "dummy") DemonAura.Attach(this, def);
+            nav = new NavAgent();
             attackTimer = Random.Range(0.4f, 1.1f);
             strafeSign = Random.value < 0.5f ? -1f : 1f;
             zigzagPhase = Random.Range(0f, 100f);
@@ -230,7 +233,7 @@ namespace HashiraChronicles
             Vector3 move = Vector3.zero;
             if (Def.archetype == EnemyArchetype.Ranged)
             {
-                if (dist > desired + 1.5f) move = to.normalized;
+                if (dist > desired + 1.5f) move = nav != null ? nav.Steer(Position, player.Position, desired, dt) : to.normalized;
                 else if (dist < 3.5f) move = -to.normalized * 1.6f; // flee when a slayer closes in
                 else if (dist < desired - 2f) move = -to.normalized;
                 strafeTimer -= dt;
@@ -239,7 +242,9 @@ namespace HashiraChronicles
             }
             else if (dist > desired)
             {
-                move = to.normalized;
+                // Chase by a walkable route (around rocks and walls, over the bridge), not blindly in a straight line.
+                move = nav != null ? nav.Steer(Position, player.Position, desired * 0.9f, dt) : to.normalized;
+                if (move.sqrMagnitude < 0.0001f) move = to.normalized;
                 if (Def.archetype == EnemyArchetype.Fast) move += Vector3.Cross(Vector3.up, move) * Mathf.Sin(Time.time * 4f + zigzagPhase) * 0.7f;
             }
             else if (!CanAttackNow())
@@ -249,7 +254,7 @@ namespace HashiraChronicles
                 Vector3 slot = player.Position + Quaternion.Euler(0f, slotAngle, 0f) * Vector3.forward * (Def.attackRange + 1.4f);
                 Vector3 toSlot = slot - Position;
                 toSlot.y = 0f;
-                move = toSlot.magnitude > 0.3f ? toSlot.normalized * 0.7f : Vector3.zero;
+                move = toSlot.magnitude > 0.3f ? (nav != null ? nav.Steer(Position, slot, 0.3f, dt) : toSlot.normalized) * 0.7f : Vector3.zero;
             }
             else if (dist > desired * 0.6f)
             {

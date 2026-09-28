@@ -141,6 +141,7 @@ namespace HashiraChronicles
             var res = new JourneyBuilder.Result();
             root = new GameObject("PrototypeWorld").transform;
             root.SetParent(parent, false);
+            HashiraChronicles.Ground.Clear();
             res.root = root.gameObject;
             stat = new GameObject("Static").transform;
             stat.SetParent(root, false);
@@ -410,6 +411,8 @@ namespace HashiraChronicles
                     float x = mn.x + ix * step, z = mn.z + iz * step;
                     hts[iz * nx + ix] = Height(x, z);
                 }
+            // Characters stand on exactly this surface (see Ground / GroundFollower).
+            HashiraChronicles.Ground.SetTerrain(root.position + new Vector3(mn.x, 0f, mn.z), step, nx, nz, hts, root.position.y);
             var verts = new List<Vector3>(nx * nz);
             var cols = new List<Color>(nx * nz);
             var tris = new List<int>((nx - 1) * (nz - 1) * 6);

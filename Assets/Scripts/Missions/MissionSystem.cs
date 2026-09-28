@@ -770,6 +770,8 @@ namespace HashiraChronicles
             }
             var go = new GameObject(def.displayName);
             go.transform.SetParent(battle.transform, false);
+            // Spawn only on valid walkable ground: inside the playable area and out of anything solid.
+            pos = BattleController.ClampToArena(pos);
             go.transform.position = pos;
             go.AddComponent<HealthSystem>();
             EnemyController e = def.archetype == EnemyArchetype.Boss ? go.AddComponent<BossController>() : go.AddComponent<EnemyController>();

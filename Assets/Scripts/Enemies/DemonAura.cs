@@ -40,7 +40,7 @@ namespace HashiraChronicles
             float pulse = 0.5f + 0.5f * Mathf.Sin(t * (winding ? 14f : 2.5f));
             // Keep the ring flat on the ground under the demon (not tilting with its body).
             Vector3 p = owner.transform.position;
-            ring.position = new Vector3(p.x, 0.05f, p.z);
+            ring.position = new Vector3(p.x, Ground.HeightAt(p.x, p.z) + 0.05f, p.z);
             ring.rotation = Quaternion.Euler(0f, t * 25f, 0f);
             ring.localScale = Vector3.one * baseScale * (1f + 0.06f * pulse + (winding ? 0.15f : 0f)) / Mathf.Max(0.01f, owner.transform.lossyScale.x);
             Color c = winding ? Color.Lerp(col, new Color(1f, 0.15f, 0.1f), 0.6f) : col;

@@ -31,7 +31,12 @@ namespace HashiraChronicles
         public bool IsAlive { get { return Health != null && !Health.IsDead; } }
         public Vector3 Position { get { return transform.position; } }
 
-        protected virtual void OnEnable() { if (!All.Contains(this)) All.Add(this); }
+        protected virtual void OnEnable()
+        {
+            if (!All.Contains(this)) All.Add(this);
+            // Every fighter stands on the real ground and is recovered if it ever ends up somewhere invalid.
+            GroundFollower.Ensure(this);
+        }
         protected virtual void OnDisable() { All.Remove(this); }
 
         /// <summary>Called after damage was applied to this combatant.</summary>

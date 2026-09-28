@@ -68,7 +68,7 @@ namespace HashiraChronicles
         static Telegraph Create(Mesh mesh, Vector3 pos, Quaternion rot, Vector3 scale, float duration, bool lengthOnly, bool pulseOnly = false)
         {
             var go = new GameObject("Telegraph");
-            go.transform.SetPositionAndRotation(new Vector3(pos.x, 0.03f, pos.z), rot);
+            go.transform.SetPositionAndRotation(new Vector3(pos.x, Ground.HeightAt(pos.x, pos.z) + 0.03f, pos.z), rot);
             var tg = go.AddComponent<Telegraph>();
             tg.duration = Mathf.Max(0.05f, duration);
             tg.fullScale = scale;

@@ -78,7 +78,7 @@ namespace HashiraChronicles
                 var lk = PlayerCharacter.LockTarget;
                 at = lk != null && lk.IsAlive ? lk.Position : pc.Position + fwd.normalized * 6f;
             }
-            root.SetPositionAndRotation(new Vector3(at.x, at.y + 0.05f, at.z), Quaternion.LookRotation(fwd));
+            root.SetPositionAndRotation(new Vector3(at.x, Ground.HeightAt(at.x, at.z) + 0.05f, at.z), Quaternion.LookRotation(fwd));
             Color c = ElementChart.ColorOf(pc.Def.element);
             float full = charge >= 1f ? 1f : 0f;
             float pulse = full * (0.5f + 0.5f * Mathf.Sin(Time.time * 18f));

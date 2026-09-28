@@ -147,6 +147,7 @@ namespace HashiraChronicles
 
             Vector3 spawn = new Vector3(0f, 0f, -6f);
             Obstacles.Clear();
+            Ground.Clear();
             if (def.openWorld)
             {
                 World = OpenWorldBuilder.Build(transform);

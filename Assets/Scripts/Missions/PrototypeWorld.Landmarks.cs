@@ -573,6 +573,9 @@ namespace HashiraChronicles
             float chHalf = channels.Count > 0 ? channels[0].half + 0.6f : 3f;
             for (int s = -1; s <= 1; s += 2)
                 Obstacles.AddBox(c + side * s * (w * 0.5f + 4.1f), new Vector2(4f, chHalf), rot.eulerAngles.y);
+            // The deck is walkable ground over the chasm (feet follow its arch or sag, not the riverbed below).
+            Vector3 deckTop = root.position + new Vector3(c.x, K == Kind.Volcano ? 0.05f : K == Kind.Snow ? -0.02f : -0.01f, c.z);
+            HashiraChronicles.Ground.AddPlatform(deckTop, rot.eulerAngles.y, w * 0.5f + 0.3f, span * 0.5f + 0.4f, K == Kind.Volcano ? 0f : K == Kind.Snow ? -0.1f : 0.12f);
             switch (K)
             {
                 case Kind.Volcano:
