@@ -122,6 +122,26 @@ namespace HashiraChronicles
             if (ActiveChanged != null) ActiveChanged(to);
         }
 
+        /// <summary>PvP: a fallen member returns; if nobody was standing, they become the active slayer.</summary>
+        public void Respawn(PlayerCharacter pc, Vector3 at)
+        {
+            if (pc == null || !Members.Contains(pc)) return;
+            pc.Revive(at, 1f);
+            if (Active == null || !Active.IsAlive || AllDefeated)
+            {
+                AllDefeated = false;
+                int idx = Members.IndexOf(pc);
+                var from = Active;
+                if (from != null && from != pc) { from.OnSwitchOut(); from.gameObject.SetActive(false); }
+                ActiveIndex = idx;
+                pc.gameObject.SetActive(true);
+                pc.transform.position = at;
+                pc.Visual.ResetPose();
+                pc.OnSwitchIn();
+                if (ActiveChanged != null) ActiveChanged(pc);
+            }
+        }
+
         void OnMemberDown(PlayerCharacter pc)
         {
             if (!Members.Contains(pc)) return;

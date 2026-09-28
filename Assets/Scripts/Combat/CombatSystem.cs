@@ -59,6 +59,9 @@ namespace HashiraChronicles
     {
         static readonly List<Combatant> scratch = new List<Combatant>();
 
+        /// <summary>Raised for every hit that lands (attacker, target, damage) — PvP scoring listens.</summary>
+        public static event System.Action<Combatant, Combatant, float> Damaged;
+
         /// <summary>Collects living opponents inside an arc. arcDegrees 360 = full circle.</summary>
         public static List<Combatant> Query(Combatant attacker, Vector3 origin, Vector3 forward, float range, float arcDegrees)
         {
@@ -70,7 +73,8 @@ namespace HashiraChronicles
             for (int i = 0; i < Combatant.All.Count; i++)
             {
                 var t = Combatant.All[i];
-                if (t == attacker || t.Team == attacker.Team || !t.IsAlive) continue;
+                if (t == attacker || !t.IsAlive) continue;
+                if (t.Team == attacker.Team && !t.Neutral) continue;
                 Vector3 to = t.Position - origin;
                 to.y = 0f;
                 float dist = to.magnitude;
@@ -124,6 +128,7 @@ namespace HashiraChronicles
             info.knockback = dir.normalized * tag.knockback;
 
             if (!target.Health.TakeDamage(ref info)) return 0f;
+            if (Damaged != null) Damaged(attacker, target, info.amount);
 
             info.launch = tag.launch;
             info.heavy = tag.heavy;

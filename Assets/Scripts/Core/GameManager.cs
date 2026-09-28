@@ -416,6 +416,9 @@ namespace HashiraChronicles
             Audio.PlayMusic(true);
         }
 
+        /// <summary>Trophies won or lost by the last ranked PvP match (0 otherwise).</summary>
+        public int LastTrophyDelta { get; private set; }
+
         public void EndBattle(BattleResult result)
         {
             var m = result.mission;
@@ -434,6 +437,17 @@ namespace HashiraChronicles
             {
                 if (result.victory) Data.coopClears++;
                 // People you just played with may want to stay in touch.
+                for (int i = 0; i < m.coopAllyNames.Count && i < m.coopAllyIds.Count; i++)
+                    SocialSystem.MaybeRequest(Data, m.coopAllyNames[i], m.coopAllyIds[i], m.enemyLevel + Random.Range(-3, 6));
+            }
+            LastTrophyDelta = 0;
+            if (m.pvpMode >= 0)
+            {
+                bool draw = result.failReason == "Draw";
+                LastTrophyDelta = PvpSystem.Record(Data, result.victory, m.pvpRanked, draw);
+                if (m.pvpRanked && UI != null)
+                    UI.Toast((LastTrophyDelta >= 0 ? "+" : "") + LastTrophyDelta + " trophies  ·  " + PvpSystem.RankName(Data.pvpTrophies));
+                // Rivals and teammates may want to add you.
                 for (int i = 0; i < m.coopAllyNames.Count && i < m.coopAllyIds.Count; i++)
                     SocialSystem.MaybeRequest(Data, m.coopAllyNames[i], m.coopAllyIds[i], m.enemyLevel + Random.Range(-3, 6));
             }

@@ -744,6 +744,16 @@ namespace HashiraChronicles
             if (BattleController.Current != null) BattleController.Current.RegisterHit(info.amount);
         }
 
+        /// <summary>PvP respawn: back on their feet at a spawn point with some health.</summary>
+        public void Revive(Vector3 at, float fraction)
+        {
+            Health.Revive(fraction);
+            Health.GrantInvulnerability(1.5f);
+            transform.position = at;
+            Visual.ResetPose();
+            VFX.Pillar(at, ElementChart.ColorOf(Element), 5f, 0.5f);
+        }
+
         void OnDied()
         {
             StopAction();

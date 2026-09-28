@@ -304,6 +304,11 @@ namespace HashiraChronicles
         public int coopTier = -1;
         public List<string> coopAllyIds = new List<string>();
         public List<string> coopAllyNames = new List<string>();
+        /// <summary>PvP: -1 not PvP, 0 3v3 Battle, 1 Moon Crystal, 2 Boss Rush; ranked or casual; the opposing team.</summary>
+        public int pvpMode = -1;
+        public bool pvpRanked;
+        public List<string> pvpEnemyIds = new List<string>();
+        public List<string> pvpEnemyNames = new List<string>();
         public string MissionLabel { get { return id.ToUpper(); } }
     }
 

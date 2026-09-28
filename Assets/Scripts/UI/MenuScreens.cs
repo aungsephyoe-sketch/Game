@@ -932,7 +932,14 @@ namespace HashiraChronicles
             float k = Enter(0.05f, 0.35f);
             int size = Mathf.RoundToInt(Mathf.Lerp(150f, 84f, k));
             var tc = r.victory ? UIStyles.Gold : UIStyles.Bad;
-            UIStyles.Outlined(new Rect(panel.x, panel.y + 18f, panel.width, 120f), r.victory ? "MISSION COMPLETE" : "MISSION FAILED", UIStyles.Sized(UIStyles.Big, size), new Color(tc.r, tc.g, tc.b, k), 4f);
+            UIStyles.Outlined(new Rect(panel.x, panel.y + 18f, panel.width, 120f), r.mission.pvpMode >= 0 ? (r.victory ? "VICTORY!" : r.failReason == "Draw" ? "DRAW" : "DEFEAT") : r.victory ? "MISSION COMPLETE" : "MISSION FAILED", UIStyles.Sized(UIStyles.Big, size), new Color(tc.r, tc.g, tc.b, k), 4f);
+            if (r.mission.pvpMode >= 0)
+            {
+                string tl = r.failReason + (r.mission.pvpRanked ? "   ·   <color=#FFD36B>" + (gm.LastTrophyDelta >= 0 ? "+" : "") + gm.LastTrophyDelta + " trophies</color>  " + PvpSystem.RankName(gm.Data.pvpTrophies) : "   ·   Casual");
+                if (r.victory) tl = PvpSystem.ModeNames[r.mission.pvpMode] + "   ·   " + tl;
+                GUI.Label(new Rect(panel.x, panel.y + 130f, panel.width, 44f), tl, UIStyles.Center);
+            }
+            else
             GUI.Label(new Rect(panel.x, panel.y + 130f, panel.width, 44f), "Mission " + r.mission.id + " — " + r.mission.name + (r.victory ? "" : "   (" + r.failReason + ")"), UIStyles.Center);
 
             // Rating.

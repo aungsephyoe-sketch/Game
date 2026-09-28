@@ -11,7 +11,7 @@ namespace HashiraChronicles
     /// </summary>
     public partial class UIManager
     {
-        enum SocialPanel { None, Profile, Friends, Achievements }
+        enum SocialPanel { None, Profile, Friends, Achievements, Arena }
 
         SocialPanel social = SocialPanel.None;
         float socialOpenedAt;
@@ -90,6 +90,7 @@ namespace HashiraChronicles
                 case SocialPanel.Profile: DrawProfilePanel(d, k); break;
                 case SocialPanel.Friends: DrawFriendsPanel(d, k); break;
                 case SocialPanel.Achievements: DrawAchievementsPanel(d, k); break;
+                case SocialPanel.Arena: DrawArenaPanel(d, k); break;
             }
         }
 

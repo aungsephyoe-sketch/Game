@@ -153,6 +153,20 @@ namespace HashiraChronicles
                 spawn = OpenWorldBuilder.Spawn;
                 gameObject.AddComponent<VillageHub>();
             }
+            else if (def.pvpMode >= 0)
+            {
+                // PvP: a compact arena built from the new worlds' stage sets; teams start at opposite bases.
+                try { World = PrototypeWorld.BuildStage(def.theme, transform); }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError("[Battle] pvp stage failed, using a single arena: " + ex);
+                    foreach (Transform c in transform) Destroy(c.gameObject);
+                    World = null;
+                    ArenaBuilder.Build(def.theme, transform);
+                }
+                spawn = PvpMatch.BlueBase;
+                gameObject.AddComponent<PvpMatch>();
+            }
             else if (def.collisionTest) CollisionTestArena.Build(def.theme, transform);
             else if (def.training) ArenaBuilder.Build(def.theme, transform);
             else
@@ -178,7 +192,7 @@ namespace HashiraChronicles
             }
 
             // Solid scenery blocks movement (the prototype worlds register their own obstacles).
-            if (Journey == null || string.IsNullOrEmpty(WorldEnv(def))) Obstacles.Scan(transform);
+            if ((Journey == null && !(def.pvpMode >= 0 && World != null)) || (Journey != null && string.IsNullOrEmpty(WorldEnv(def)))) Obstacles.Scan(transform);
             // Scenery never hides the fighting slayer.
             CameraOcclusion.Attach(this);
             // Tall set pieces (towers, spires, far hills) threw long jagged shadow streaks across the road.
@@ -189,6 +203,7 @@ namespace HashiraChronicles
             teamGo.transform.SetParent(transform, false);
             Team = teamGo.AddComponent<TeamSystem>();
             Team.Setup(data, spawn);
+            if (def.pvpMode >= 0) foreach (var mbr in Team.Members) mbr.transform.rotation = Quaternion.LookRotation(Vector3.forward);
             if (Journey != null && Team.Active != null && Journey.path.Count > 1)
             {
                 Vector3 dir = Journey.path[1] - Journey.path[0];

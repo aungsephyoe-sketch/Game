@@ -83,8 +83,8 @@ namespace HashiraChronicles
         void HomeShortcuts(PlayerData d)
         {
             float x = safe.x + 34f, y = safe.y + 150f;
-            string[] labels = { "EVENT", "NOTICE", "RANKING", "FRIENDS" };
-            string[] icons = { "sun", "scroll", "up", "people" };
+            string[] labels = { "EVENT", "NOTICE", "ARENA", "FRIENDS" };
+            string[] icons = { "sun", "scroll", "swords", "people" };
             for (int i = 0; i < labels.Length; i++)
             {
                 float k = Enter(0.08f + i * 0.05f, 0.35f);
@@ -115,7 +115,7 @@ namespace HashiraChronicles
                     {
                         case 0: gm.GoTo(GameScreen.Events); break;
                         case 1: gm.GoTo(GameScreen.Story); break;
-                        case 2: Toast("Rankings open with the next season."); break;
+                        case 2: OpenArena(); break;
                         default: OpenSocial(SocialPanel.Friends); break;
                     }
                 }

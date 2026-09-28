@@ -22,6 +22,13 @@ namespace HashiraChronicles
         public static readonly List<PartySlayer> Party = new List<PartySlayer>();
 
         public string DisplayName = "";
+        /// <summary>Where they respawn and wander when there's no one to follow (PvP bases).</summary>
+        public Vector3 Home;
+        /// <summary>A point worth fighting over (the PvP crystal or boss); they head there when idle.</summary>
+        public Vector3? Objective;
+        public float RespawnDelay = 10f;
+        /// <summary>Raised when a party slayer goes down (PvP scoring).</summary>
+        public static event System.Action<PartySlayer> Downed;
         public Style PlayStyle { get; private set; }
         public string Bubble { get; private set; }
         public float BubbleUntil { get; private set; }
@@ -40,7 +47,7 @@ namespace HashiraChronicles
         static readonly string[] Specials = { "Ground Breaker", "Flash Step", "Crescent Volley", "Healing Bloom" };
         static readonly string[] Ultimates = { "Titan Fall", "Thousand Cuts", "Starfall Barrage", "Sanctuary" };
 
-        public static PartySlayer Spawn(Transform parent, Vector3 pos, int level, string characterId, string name, int index, Style? avoid)
+        public static PartySlayer Spawn(Transform parent, Vector3 pos, int level, string characterId, string name, int index, Style? avoid, CombatTeam team = CombatTeam.Player)
         {
             var d = GameDatabase.GetCharacter(characterId);
             if (d == null) return null;
@@ -51,7 +58,8 @@ namespace HashiraChronicles
             var a = go.AddComponent<PartySlayer>();
             a.def = d;
 
-            a.Team = CombatTeam.Player;
+            a.Team = team;
+            a.Home = pos;
             a.Element = d.element;
             a.DisplayName = name;
             a.tint = ElementChart.ColorOf(d.element);
@@ -95,6 +103,7 @@ namespace HashiraChronicles
         {
             get
             {
+                if (Team != CombatTeam.Player) return null;
                 var b = BattleController.Current;
                 return b != null && b.Team != null ? b.Team.Active : null;
             }
@@ -173,6 +182,13 @@ namespace HashiraChronicles
                     float ang = Random.Range(-100f, 100f) + slotAngle * 0.4f;
                     roam = lead.Position + Quaternion.Euler(0f, ang, 0f) * fwd.normalized * Random.Range(3.5f, 8f);
                 }
+                else if (lead == null && roamTimer <= 0f)
+                {
+                    // No one to follow (the other PvP team): push toward the objective, or patrol near home.
+                    roamTimer = Random.Range(2f, 4.5f);
+                    Vector3 c = Objective.HasValue ? Objective.Value : Home;
+                    roam = c + new Vector3(Random.Range(-4f, 4f), 0f, Random.Range(-4f, 4f));
+                }
                 goal = roam;
                 stop = 0.6f;
                 if (idleTalk <= 0f)
@@ -186,7 +202,7 @@ namespace HashiraChronicles
             // Keep apart from the other party member.
             foreach (var o in Party)
             {
-                if (o == this || o.Down) continue;
+                if (o == this || o.Down || o.Team != Team) continue;
                 Vector3 sep = Position - o.Position;
                 sep.y = 0f;
                 if (sep.magnitude < 1.8f) to += sep.normalized * (1.8f - sep.magnitude) * 3f;
@@ -225,9 +241,9 @@ namespace HashiraChronicles
             float bestScore = float.MaxValue;
             foreach (var c in All)
             {
-                if (c == null || !c.IsAlive || c.Team != CombatTeam.Enemy) continue;
+                if (c == null || c == this || !c.IsAlive || (c.Team == Team && !c.Neutral)) continue;
                 float dSelf = (c.Position - Position).magnitude;
-                if (dSelf > 18f) continue;
+                if (dSelf > (Objective.HasValue ? 30f : 18f)) continue;
                 float score = dSelf;
                 if (lead != null)
                 {
@@ -246,7 +262,7 @@ namespace HashiraChronicles
         bool TeamHurt(PlayerCharacter lead)
         {
             if (lead != null && lead.Health != null && lead.Health.Normalized < 0.7f) return true;
-            foreach (var o in Party) if (o != null && !o.Down && o.Health.Normalized < 0.6f) return true;
+            foreach (var o in Party) if (o != null && o.Team == Team && !o.Down && o.Health.Normalized < 0.6f) return true;
             return false;
         }
 
@@ -333,10 +349,10 @@ namespace HashiraChronicles
             visual.Victory();
             float frac = big ? 0.35f : 0.14f;
             var b = BattleController.Current;
-            if (b != null && b.Team != null)
+            if (b != null && b.Team != null && Team == CombatTeam.Player)
                 foreach (var m in b.Team.Members)
                     if (m != null && m.IsAlive && (m.Position - Position).magnitude < 10f) m.Health.Heal(m.Health.Max * frac);
-            foreach (var o in Party) if (o != null && !o.Down) o.Health.Heal(o.Health.Max * frac);
+            foreach (var o in Party) if (o != null && o.Team == Team && !o.Down) o.Health.Heal(o.Health.Max * frac);
             VFX.BurstDisc(Position, big ? 9f : 7f, new Color(0.5f, 1f, 0.6f), 0.6f);
             VFX.Breath(Position, new Color(0.5f, 1f, 0.6f), 40);
             if (Random.value < 0.5f) Say(Pick("healing!!", "heals up", "stay close, healing", "got u"));
@@ -369,7 +385,8 @@ namespace HashiraChronicles
         void OnDied()
         {
             Down = true;
-            downTimer = 10f;
+            downTimer = RespawnDelay;
+            if (Downed != null) Downed(this);
             if (visual != null) visual.PlayDeath();
             Say(Pick("noooo", "rip ;-;", "down! brb", "welp"), 3f);
         }
@@ -379,6 +396,7 @@ namespace HashiraChronicles
             Down = false;
             var lead = Lead;
             if (lead != null) transform.position = BattleController.ClampToArena(lead.Position + Quaternion.Euler(0f, slotAngle, 0f) * Vector3.back * 2f);
+            else transform.position = BattleController.ClampToArena(Home);
             Health.Revive(0.5f);
             Destroy(visual.gameObject);
             visual = CharacterVisual.BuildHero(def, transform);

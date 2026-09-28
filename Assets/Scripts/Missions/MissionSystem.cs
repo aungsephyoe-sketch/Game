@@ -83,6 +83,13 @@ namespace HashiraChronicles
                 yield return OpenWorldLoop();
                 yield break;
             }
+            if (Def.pvpMode >= 0)
+            {
+                // The PvP match controller runs the match; the mission only waits for its result.
+                started = true;
+                while (!Finished) yield return null;
+                yield break;
+            }
             if (!string.IsNullOrEmpty(Def.trialCharacterId))
             {
                 GameEvents.RaiseBanner("MYTHIC TRIAL", "60 seconds at max power · the special is ready — use it!");
@@ -797,9 +804,12 @@ namespace HashiraChronicles
         {
             if (Finished || !started) return;
             Elapsed += Time.deltaTime;
-            if (battle.Team.AllDefeated) End(false, "All slayers have fallen");
+            if (battle.Team.AllDefeated && Def.pvpMode < 0) End(false, "All slayers have fallen");
             else if (Elapsed >= Def.timeLimit && !Def.training) End(false, "Time's up");
         }
+
+        /// <summary>PvP: the match controller decides the result.</summary>
+        public void EndMatch(bool victory, string reason) { End(victory, reason); }
 
         public void Retreat()
         {

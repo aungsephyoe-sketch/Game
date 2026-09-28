@@ -10,6 +10,8 @@ namespace HashiraChronicles
         public static readonly List<Combatant> All = new List<Combatant>();
 
         public CombatTeam Team;
+        /// <summary>Anyone can hit it, whatever their team (the PvP boss both teams race to damage).</summary>
+        public bool Neutral;
         public Element Element;
         public StatBlock Stats;
         public float Radius = 0.5f;

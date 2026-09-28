@@ -199,6 +199,11 @@ namespace HashiraChronicles
         public bool homeTourDone;
         public bool mapTutorialDone;
 
+        // ---- PvP
+        public int pvpTrophies;
+        public int pvpBestTrophies;
+        public int pvpWins, pvpLosses;
+
         // ---- Achievements
         public List<AchievementState> achievements = new List<AchievementState>();
         public int chestsFound;

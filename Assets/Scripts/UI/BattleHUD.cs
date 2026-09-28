@@ -15,7 +15,7 @@ namespace HashiraChronicles
 
             DrawLowHealth(b);
             DrawEnemyBars(cam);
-            if (b.Def != null && b.Def.coopAllyIds.Count > 0) DrawPartyTags(cam);
+            if (b.Def != null && (b.Def.coopAllyIds.Count > 0 || b.Def.pvpMode >= 0)) DrawPartyTags(cam);
             DrawDamageNumbers(cam);
             DrawImpactFrame();
             if (!b.CinematicLock)
@@ -51,15 +51,16 @@ namespace HashiraChronicles
         {
             if (cam == null) return;
             float s = HudLayout.Scale;
+            bool b0pvp = PvpMatch.Current != null;
             foreach (var ally in PartySlayer.Party)
             {
                 if (ally == null) continue;
                 Vector3 sp = cam.WorldToScreenPoint(ally.Position + Vector3.up * 2.3f);
                 if (sp.z < 0f) continue;
                 var p = new Vector2(sp.x / s, (Screen.height - sp.y) / s);
-                Color el = ElementChart.ColorOf(ally.Element);
+                Color el = ally.Team == CombatTeam.Enemy ? PvpRed : b0pvp ? PvpBlue : ElementChart.ColorOf(ally.Element);
                 UIStyles.Outlined(new Rect(p.x - 120f, p.y - 40f, 240f, 28f), ally.DisplayName + (ally.Down ? "  <size=16>DOWN</size>" : ""), UIStyles.Sized(UIStyles.Center, 20), Color.Lerp(el, Color.white, 0.5f), 2f);
-                UIStyles.Bar(new Rect(p.x - 60f, p.y - 10f, 120f, 9f), ally.Down ? 0f : ally.Health.Normalized, new Color(0.4f, 0.95f, 0.5f));
+                UIStyles.Bar(new Rect(p.x - 60f, p.y - 10f, 120f, 9f), ally.Down ? 0f : ally.Health.Normalized, ally.Team == CombatTeam.Enemy ? PvpRed : new Color(0.4f, 0.95f, 0.5f));
                 if (!string.IsNullOrEmpty(ally.Bubble) && Time.time < ally.BubbleUntil)
                 {
                     float w = Mathf.Clamp(ally.Bubble.Length * 12f + 30f, 120f, 360f);
@@ -123,6 +124,7 @@ namespace HashiraChronicles
         void DrawObjectives(BattleController b)
         {
             var m = b.Mission;
+            if (m.Def.pvpMode >= 0) { DrawPvpHud(b); return; }
             var r = new Rect(safe.x + 24f, safe.y + 20f, 540f, 214f);
             Round(r, new Color(0.04f, 0.05f, 0.08f, 0.62f), 14f);
             Round(new Rect(r.x, r.y + 12f, 5f, r.height - 24f), UIStyles.Gold, 2f);
@@ -339,6 +341,8 @@ namespace HashiraChronicles
         {
             var boss = b.Mission.Boss;
             if (boss == null || !boss.IsAlive) return;
+            // PvP draws its own boss bar under the scoreboard.
+            if (b.Def != null && b.Def.pvpMode >= 0) return;
             // Sits between the objectives panel (left) and the pause button (right).
             float w = Mathf.Clamp(W - 1200f, 420f, 900f);
             var r = new Rect(W * 0.5f - w * 0.5f, safe.y + 30f, w, 34f);
