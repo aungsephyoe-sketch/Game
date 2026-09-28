@@ -36,6 +36,18 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Sound and fixes (0.22.1)
+- The home screen no longer shows speech boxes. Villagers still stroll through the village.
+- **Blade swings** are rebuilt in layers: a whoosh that rises and falls as the blade passes, an airy low body, a bright steel ring and a short room tail. Each weapon has its own tuning.
+- **Impacts** get a sharp crack, a body thump, a sub-boom and a short reverb.
+- The **battle theme** is now 140 BPM, with war-drum fills, a pulsing bass line, a dark string drone and a melody doubled an octave up in the second half.
+- Fixes:
+  - PvP is a true 3v3: you bring only your leader.
+  - Rigged models no longer stay stuck in the death pose after a respawn.
+  - PvP results offer PLAY AGAIN, ARENA and HOME instead of story buttons.
+  - The PvP roster no longer overlaps the portraits.
+  - The minimap no longer covers the kill feed.
+
 ### Arena PvP, living story scenes, evening look (0.22.0)
 - **Arena (3v3)** — the home **ARENA** shortcut opens a rank card (Bronze → Silver → Gold → Platinum → Diamond → Master, three divisions each below Master), trophies, a tier ladder, wins and losses, three modes and a Ranked/Casual toggle. **FIND MATCH** shows *SEARCHING FOR OPPONENT...*, then a **YOUR TEAM vs OPPONENT TEAM** screen with portraits, then the match.
   - **3v3 Battle**: first to 10 knockouts. **Moon Crystal**: hold the centre zone alone to score, first to 60. **Boss Rush**: a boss both teams can hit, and the most damage (plus knockouts) wins.

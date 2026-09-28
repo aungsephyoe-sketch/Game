@@ -31,11 +31,7 @@ namespace HashiraChronicles
             else if (modal == 2) DrawBirthday(d);
             else if (modal == 3) DrawLoginReward(d);
             else if (modal == 4) DrawSocial(d);
-            else
-            {
-                loginShownAt = -1f;
-                if (ready) DrawGreeting(d);
-            }
+            else loginShownAt = -1f; // (no speech boxes over the home screen)
         }
 
         void DrawLoginReward(PlayerData d)

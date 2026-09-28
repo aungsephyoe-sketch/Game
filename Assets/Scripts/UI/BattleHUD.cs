@@ -35,7 +35,8 @@ namespace HashiraChronicles
             DrawSubtitle();
             DrawBossIntro();
 
-            if (!b.CinematicLock) DrawMinimap(b);
+            // PvP uses that corner for the kill feed.
+            if (!b.CinematicLock && (b.Def == null || b.Def.pvpMode < 0)) DrawMinimap(b);
             // Pause button.
             var pr = HudLayout.Pause;
             Round(pr, new Color(0.05f, 0.06f, 0.1f, 0.7f), 16f);

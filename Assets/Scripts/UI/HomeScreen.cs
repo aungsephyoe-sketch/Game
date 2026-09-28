@@ -32,7 +32,7 @@ namespace HashiraChronicles
             HomeTeamPower(d);
             HomeHeroDrag();
             HomeNav(d);
-            DrawNpcBubbles();
+            // Villagers still stroll and chat to each other, but no speech boxes over the home screen.
         }
 
         /// <summary>Soft gradients at the left, top and bottom so the UI reads over the scene, leaving the hero clear.</summary>

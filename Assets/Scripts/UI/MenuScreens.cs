@@ -43,41 +43,6 @@ namespace HashiraChronicles
             }
         }
 
-        /// <summary>Villagers' chatter floats above their heads.</summary>
-        /// <summary>
-        /// Home screen: at most one villager speaks at a time (the latest), in a rounded bubble kept in the open
-        /// middle of the screen so it never covers the logo, the banner or the team panel.
-        /// </summary>
-        void DrawNpcBubbles()
-        {
-            var cam = Camera.main;
-            if (cam == null) return;
-            float s = HudLayout.Scale;
-            NpcWalker speaker = null;
-            foreach (var n in NpcWalker.All)
-            {
-                if (n == null || !n.gameObject.activeInHierarchy || string.IsNullOrEmpty(n.CurrentLine) || Time.time > n.LineUntil) continue;
-                if (speaker == null || n.LineUntil > speaker.LineUntil) speaker = n;
-            }
-            if (speaker == null) return;
-            Vector3 sp = cam.WorldToScreenPoint(speaker.transform.position + Vector3.up * 2.3f);
-            if (sp.z < 0f) return;
-            var p = new Vector2(sp.x / s, (Screen.height - sp.y) / s);
-            float w = Mathf.Clamp(speaker.CurrentLine.Length * 11f + 30f, 220f, 440f);
-            float minX = safe.x + 960f, maxX = W - safe.x - 470f;
-            if (maxX - minX < w) return;
-            float bx = Mathf.Clamp(p.x - w * 0.5f, minX, maxX - w);
-            float by = Mathf.Clamp(p.y - 96f, H * 0.52f, H - 330f);
-            var r = new Rect(bx, by, w, 74f);
-            float fade = Mathf.Clamp01((speaker.LineUntil - Time.time) / 0.4f);
-            Round(Offset(r, 0f, 3f), new Color(0f, 0f, 0f, 0.25f * fade), 16f);
-            Round(r, new Color(1f, 0.98f, 0.93f, 0.95f * fade), 16f);
-            float tx = Mathf.Clamp(p.x, r.x + 20f, r.xMax - 20f);
-            UIStyles.Rect(new Rect(tx - 7f, r.yMax - 2f, 14f, 10f), new Color(1f, 0.98f, 0.93f, 0.95f * fade));
-            GUI.Label(new Rect(r.x + 14f, r.y + 4f, r.width - 28f, 26f), "<color=#8A4B2A><b>" + speaker.SpeakerName + "</b></color>", UIStyles.Sized(UIStyles.Small, 17));
-            GUI.Label(new Rect(r.x + 14f, r.y + 28f, r.width - 28f, 44f), "<color=#222222>" + speaker.CurrentLine + "</color>", UIStyles.Sized(UIStyles.Small, 18));
-        }
-
         static string RegionName(string id)
         {
             var r = GameDatabase.GetRegion(id);
@@ -1029,6 +994,25 @@ namespace HashiraChronicles
             float by = panel.yMax - 124f, bw = 370f, gap = 22f;
             float bx = panel.x + (panel.width - (bw * 4f + gap * 3f)) * 0.5f;
             var next = NextMission(r.mission);
+            if (r.mission.pvpMode >= 0)
+            {
+                // Arena: queue again straight away, or head home.
+                if (Enter(1.2f) > 0f && FlatBtn(new Rect(bx, by, bw * 2f + gap, 100f), "PLAY AGAIN ▶", TileRed, true, 30))
+                {
+                    int mode = r.mission.pvpMode;
+                    bool ranked = r.mission.pvpRanked;
+                    gm.GoTo(GameScreen.MainMenu);
+                    OpenArena();
+                    arenaMode = mode;
+                    arenaRanked = ranked;
+                    arenaStage = 1;
+                    arenaStageAt = Time.unscaledTime;
+                    arenaSearchFor = Random.Range(2.2f, 4f);
+                }
+                if (Enter(1.3f) > 0f && FlatBtn(new Rect(bx + (bw + gap) * 2f, by, bw, 100f), "ARENA", new Color(0.14f, 0.17f, 0.28f), true, 30)) { gm.GoTo(GameScreen.MainMenu); OpenArena(); }
+                if (Enter(1.4f) > 0f && FlatBtn(new Rect(bx + (bw + gap) * 3f, by, bw, 100f), "HOME", new Color(0.14f, 0.17f, 0.28f), true, 30)) gm.GoTo(GameScreen.MainMenu);
+                return;
+            }
             if (r.mission.type == MissionType.Encounter)
             {
                 // An encounter interrupted a journey: pick the road back up.

@@ -130,6 +130,24 @@ namespace HashiraChronicles
             }
         }
 
+        /// <summary>
+        /// A blade swing: a band-passed whoosh that rises to f1 then falls back as the blade passes (doppler), an airy
+        /// low body (weight), a metallic ring at ringFreq and a short reverb tail.
+        /// </summary>
+        void AddBladeSwing(float[] d, float length, float f0, float f1, float ringFreq, float weight, float ring, float start = 0f)
+        {
+            float up = length * 0.55f;
+            AddSweep(d, start, up, f0, f1, 2.4f, 1f, 3.5f / length, 0.012f);
+            AddSweep(d, start + up * 0.7f, length - up * 0.5f, f1, f0 * 1.4f, 2.2f, 0.7f, 5f / length, 0.01f);
+            if (weight > 0f) AddSweep(d, start, length, Mathf.Max(90f, f0 * 0.35f), Mathf.Max(300f, f0 * 1.2f), 0.9f, weight, 3f / length, 0.03f);
+            if (ring > 0f)
+            {
+                AddFM(d, start + up * 0.6f, length * 1.2f, ringFreq, 2.76f, 1.3f, 0.1f * ring, 14f);
+                AddFM(d, start + up * 0.6f, length, ringFreq * 1.5f, 1.41f, 0.8f, 0.05f * ring, 20f);
+            }
+            if (start <= 0f) Reverb(d, 0.16f, 0.45f);
+        }
+
         static void Saturate(float[] d, float drive)
         {
             for (int i = 0; i < d.Length; i++) d[i] = (float)System.Math.Tanh(d[i] * drive);
@@ -181,22 +199,28 @@ namespace HashiraChronicles
             float[] b;
 
             // Swings, one family per weapon.
-            b = Buffer(0.26f); AddSweep(b, 0f, 0.24f, 700f, 3800f, 2.2f, 1f, 16f, 0.02f); AddFM(b, 0.03f, 0.22f, 3150f, 1.41f, 1.6f, 0.12f, 22f); Make("sw_blade", b, 0.75f);
-            b = Buffer(0.16f); AddSweep(b, 0f, 0.15f, 1500f, 5200f, 2.8f, 1f, 30f, 0.008f); AddFM(b, 0.02f, 0.12f, 4700f, 1.41f, 1.2f, 0.08f, 32f); Make("sw_quick", b, 0.7f);
-            b = Buffer(0.45f); AddSweep(b, 0f, 0.42f, 220f, 950f, 1.2f, 1f, 7f, 0.05f); AddTone(b, 0.02f, 0.4f, 95f, 55f, 0.45f, 8f, 0.04f); Saturate(b, 1.6f); Make("sw_heavy", b, 0.85f);
-            b = Buffer(0.32f); AddSweep(b, 0f, 0.3f, 380f, 1500f, 1.5f, 1f, 11f, 0.02f); AddTone(b, 0f, 0.25f, 520f, 880f, 0.1f, 10f, 0.02f); Make("sw_staff", b, 0.7f);
-            b = Buffer(0.18f); AddSweep(b, 0f, 0.17f, 300f, 1300f, 1.1f, 1f, 20f, 0.008f); Make("sw_fist", b, 0.7f);
-            b = Buffer(0.3f); for (int k = 0; k < 3; k++) AddSweep(b, k * 0.06f, 0.12f, 1100f, 2600f, 2f, 0.7f, 30f, 0.005f); Make("sw_fan", b, 0.65f);
-            b = Buffer(0.4f); AddPluck(b, 0f, 196f, 0.7f, 0.3f, 0.985f); AddSweep(b, 0.02f, 0.2f, 1500f, 4500f, 3f, 0.6f, 22f); Make("sw_bow", b, 0.7f);
-            // The shared slash sounds used by skills and cutscenes get the new blade swish too.
-            b = Buffer(0.26f); AddSweep(b, 0f, 0.24f, 800f, 4000f, 2.2f, 1f, 17f, 0.015f); AddFM(b, 0.03f, 0.2f, 3300f, 1.41f, 1.4f, 0.1f, 24f); Make("slash", b, 0.7f);
-            b = Buffer(0.45f); AddSweep(b, 0f, 0.42f, 260f, 1200f, 1.3f, 1f, 8f, 0.04f); AddTone(b, 0f, 0.35f, 110f, 60f, 0.35f, 9f, 0.03f); Make("slashHeavy", b, 0.8f);
+            // Each swing is layered: a doppler whoosh (rising then falling as the blade passes), an airy body, a
+            // bright steel "shing" and a short room tail, so blades sound sharp and sweeping instead of like hiss.
+            b = Buffer(0.42f); AddBladeSwing(b, 0.26f, 600f, 4200f, 3150f, 0.35f, 0.9f); Make("sw_blade", b, 0.8f);
+            b = Buffer(0.3f); AddBladeSwing(b, 0.17f, 1200f, 5600f, 4700f, 0.2f, 0.75f); Make("sw_quick", b, 0.75f);
+            b = Buffer(0.6f); AddBladeSwing(b, 0.4f, 180f, 1500f, 1850f, 1f, 0.55f); AddTone(b, 0.03f, 0.4f, 90f, 45f, 0.5f, 7f, 0.04f); Saturate(b, 1.5f); Make("sw_heavy", b, 0.9f);
+            b = Buffer(0.45f); AddBladeSwing(b, 0.3f, 320f, 1800f, 1320f, 0.6f, 0.35f); AddTone(b, 0f, 0.25f, 520f, 880f, 0.08f, 10f, 0.02f); Make("sw_staff", b, 0.75f);
+            b = Buffer(0.28f); AddSweep(b, 0f, 0.1f, 300f, 1500f, 1.1f, 1f, 22f, 0.006f); AddSweep(b, 0.07f, 0.1f, 1500f, 500f, 1.2f, 0.6f, 30f, 0.004f); AddTone(b, 0f, 0.12f, 140f, 80f, 0.3f, 20f); Reverb(b, 0.15f, 0.4f); Make("sw_fist", b, 0.75f);
+            b = Buffer(0.45f); for (int k = 0; k < 3; k++) AddBladeSwing(b, 0.12f, 1000f, 3200f, 2600f + k * 400f, 0.2f, 0.4f, k * 0.06f + 0.0001f); Reverb(b, 0.16f, 0.45f); Make("sw_fan", b, 0.7f);
+            b = Buffer(0.5f); AddPluck(b, 0f, 196f, 0.7f, 0.3f, 0.985f); AddSweep(b, 0.02f, 0.2f, 1500f, 4500f, 3f, 0.6f, 22f); AddSweep(b, 0.08f, 0.2f, 4500f, 1800f, 3f, 0.35f, 22f); Reverb(b, 0.15f, 0.5f); Make("sw_bow", b, 0.72f);
+            // The shared slash sounds used by skills and cutscenes.
+            b = Buffer(0.42f); AddBladeSwing(b, 0.26f, 700f, 4400f, 3300f, 0.35f, 0.9f); Make("slash", b, 0.75f);
+            b = Buffer(0.6f); AddBladeSwing(b, 0.4f, 240f, 1900f, 2100f, 0.9f, 0.6f); AddTone(b, 0f, 0.35f, 110f, 55f, 0.4f, 8f, 0.03f); Saturate(b, 1.4f); Make("slashHeavy", b, 0.85f);
 
             // Impacts.
-            b = Buffer(0.3f); AddNoise(b, 0f, 0.012f, 1f, 200f, 1f, 0.001f); AddSweep(b, 0f, 0.08f, 3200f, 1400f, 3f, 0.8f, 40f, 0.002f);
-            AddTone(b, 0f, 0.18f, 150f, 70f, 0.9f, 18f); AddFM(b, 0.005f, 0.2f, 2650f, 2.76f, 1.4f, 0.12f, 30f); Saturate(b, 1.4f); Make("hit_blade", b, 0.8f);
-            b = Buffer(0.45f); AddTone(b, 0f, 0.4f, 95f, 38f, 1f, 9f); AddNoise(b, 0f, 0.25f, 0.8f, 16f, 0.35f, 0.002f); AddNoise(b, 0f, 0.02f, 0.6f, 120f, 1f); Saturate(b, 2f); Make("hit_heavy", b, 0.95f);
-            b = Buffer(0.25f); AddTone(b, 0f, 0.2f, 130f, 65f, 1f, 18f); AddNoise(b, 0f, 0.12f, 0.6f, 30f, 0.45f, 0.002f); Saturate(b, 1.5f); Make("hit_blunt", b, 0.85f);
+            // Impacts: a sharp crack, a body thump, a sub boom you feel, and a short room tail.
+            b = Buffer(0.5f); AddNoise(b, 0f, 0.012f, 1f, 200f, 1f, 0.001f); AddSweep(b, 0f, 0.08f, 3600f, 1400f, 3f, 0.9f, 40f, 0.002f);
+            AddTone(b, 0f, 0.2f, 160f, 70f, 0.9f, 16f); AddTone(b, 0f, 0.3f, 62f, 38f, 0.55f, 10f, 0.004f); AddFM(b, 0.004f, 0.25f, 2650f, 2.76f, 1.5f, 0.16f, 22f);
+            Saturate(b, 1.6f); Reverb(b, 0.18f, 0.45f); Make("hit_blade", b, 0.85f);
+            b = Buffer(0.8f); AddNoise(b, 0f, 0.02f, 1f, 150f, 1f, 0.001f); AddTone(b, 0f, 0.5f, 100f, 34f, 1f, 7f); AddTone(b, 0f, 0.6f, 55f, 28f, 0.7f, 5f, 0.006f);
+            AddNoise(b, 0f, 0.35f, 0.8f, 12f, 0.35f, 0.002f); AddSweep(b, 0f, 0.15f, 2500f, 600f, 1.5f, 0.5f, 20f, 0.002f); Saturate(b, 2.2f); Reverb(b, 0.25f, 0.7f); Make("hit_heavy", b, 1f);
+            b = Buffer(0.4f); AddNoise(b, 0f, 0.01f, 0.9f, 200f, 1f, 0.001f); AddTone(b, 0f, 0.22f, 135f, 60f, 1f, 16f); AddTone(b, 0f, 0.28f, 60f, 36f, 0.5f, 11f, 0.004f);
+            AddNoise(b, 0f, 0.14f, 0.6f, 28f, 0.45f, 0.002f); Saturate(b, 1.7f); Reverb(b, 0.14f, 0.4f); Make("hit_blunt", b, 0.9f);
             b = Buffer(0.3f); AddTone(b, 0f, 0.25f, 1800f, 500f, 0.5f, 16f); AddNoise(b, 0f, 0.1f, 0.6f, 40f, 0.95f); AddTone(b, 0f, 0.15f, 160f, 80f, 0.5f, 20f); Make("hit_magic", b, 0.75f);
             b = Buffer(0.7f); AddNoise(b, 0f, 0.015f, 1f, 150f, 1f, 0.001f); AddTone(b, 0f, 0.2f, 170f, 60f, 1f, 16f);
             AddFM(b, 0.01f, 0.6f, 1760f, 2.01f, 1.2f, 0.35f, 7f); AddFM(b, 0.04f, 0.55f, 2637f, 1.5f, 0.8f, 0.2f, 8f); AddSweep(b, 0f, 0.1f, 4000f, 1500f, 2f, 0.6f, 30f, 0.002f);

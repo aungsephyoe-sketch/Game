@@ -55,9 +55,9 @@ namespace HashiraChronicles
             }
 
             // Rosters (left).
-            var roster = new Rect(safe.x + 24f, safe.y + 20f, 360f, 250f);
+            var roster = new Rect(safe.x + 24f, safe.y + 16f, 360f, 222f);
             Round(roster, new Color(0.04f, 0.05f, 0.08f, 0.62f), 14f);
-            float ry = roster.y + 10f;
+            float ry = roster.y + 6f;
             var me = b.Team.Active;
             RosterRow(ref ry, roster.x, "You", me != null && me.IsAlive, me != null ? me.Health.Normalized : 0f, PvpBlue);
             foreach (var p in PartySlayer.Party) if (p != null && p.Team == CombatTeam.Player) RosterRow(ref ry, roster.x, p.DisplayName, !p.Down, p.Health.Normalized, PvpBlue);
@@ -91,7 +91,7 @@ namespace HashiraChronicles
             UIStyles.CircleTex(new Vector2(x + 26f, y + 17f), 9f, alive ? team : new Color(0.35f, 0.35f, 0.4f));
             GUI.Label(new Rect(x + 44f, y, 170f, 34f), (alive ? "" : "<color=#888888>") + name.Replace("<", "‹") + (alive ? "" : "</color>"), UIStyles.Sized(UIStyles.Body, 20));
             UIStyles.Bar(new Rect(x + 214f, y + 12f, 130f, 10f), alive ? hp : 0f, alive ? team : new Color(0.3f, 0.3f, 0.35f));
-            y += 36f;
+            y += 34f;
         }
     }
 }

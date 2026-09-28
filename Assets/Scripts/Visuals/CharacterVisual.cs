@@ -747,6 +747,7 @@ namespace HashiraChronicles
 
         public void ResetPose()
         {
+            bool wasDead = dead;
             dead = false;
             posing = false;
             showcase = false;
@@ -757,7 +758,18 @@ namespace HashiraChronicles
             trailRoutine = null;
             Model.localPosition = Vector3.zero;
             Model.localScale = Vector3.one * baseScale;
-            if (driver != null) { driver.SetBool("Guard", false); return; }
+            if (driver != null)
+            {
+                driver.SetBool("Guard", false);
+                // Revived (PvP respawn): leave the death/knockdown state.
+                if (wasDead)
+                {
+                    int idle = Animator.StringToHash("Idle");
+                    if (driver.Has("GetUp")) driver.Trigger("GetUp");
+                    else if (driver.Animator.HasState(0, idle)) driver.Animator.Play(idle, 0, 0f);
+                }
+                return;
+            }
             Model.localRotation = Quaternion.identity;
             if (SwordPivot != null) SwordPivot.localRotation = swordRest;
         }

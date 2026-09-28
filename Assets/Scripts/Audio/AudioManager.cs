@@ -469,32 +469,53 @@ namespace HashiraChronicles
             MakeLoopable(b); Make("amb_village", b, 0.3f);
         }
 
+        /// <summary>
+        /// Driving battle theme: war taiko on eighths with fills, a pulsing bass ostinato, a dark string drone, shaker
+        /// sixteenths, and the koto melody doubled an octave up in the second half for lift.
+        /// </summary>
         AudioClip BuildBattleMusic(float[] scale)
         {
-            const float bpm = 132f;
+            const float bpm = 140f;
             float beat = 60f / bpm;
             int bars = 8;
             var b = Buffer(bars * 4 * beat);
             int[] melody = { 0, 2, 3, 2, 4, 3, 2, 1, 0, 2, 3, 5, 4, 3, 2, 3, 5, 4, 3, 2, 3, 2, 1, 0, 0, 1, 2, 3, 4, 5, 4, 3 };
+            int[] roots = { 0, 0, 3, 2, 0, 0, 3, 4 };
             for (int bar = 0; bar < bars; bar++)
             {
                 float t0 = bar * 4 * beat;
-                AddTaiko(b, t0, 1f);
-                AddTaiko(b, t0 + beat * 1.5f, 0.6f);
-                AddTaiko(b, t0 + beat * 2f, 0.9f);
-                AddTaiko(b, t0 + beat * 3f, 0.6f);
-                AddTaiko(b, t0 + beat * 3.5f, 0.5f);
-                for (int k = 0; k < 8; k++) AddNoise(b, t0 + k * beat * 0.5f, 0.04f, 0.12f, 60f, 1f);
+                bool fill = bar % 4 == 3;
+                // Drums.
+                AddTaiko(b, t0, 1.1f);
+                AddTone(b, t0, 0.5f, 60f, 32f, 0.6f, 6f);
+                AddTaiko(b, t0 + beat * 0.75f, 0.45f);
+                AddTaiko(b, t0 + beat * 1.5f, 0.7f);
+                AddTaiko(b, t0 + beat * 2f, 1f);
+                AddTaiko(b, t0 + beat * 2.75f, 0.45f);
+                if (fill) for (int k = 0; k < 4; k++) AddTaiko(b, t0 + beat * (3f + k * 0.25f), 0.55f + k * 0.15f);
+                else { AddTaiko(b, t0 + beat * 3f, 0.7f); AddTaiko(b, t0 + beat * 3.5f, 0.55f); }
+                if (bar % 4 == 0) AddNoise(b, t0, 1.2f, 0.28f, 3.5f, 0.95f, 0.002f); // crash
+                for (int k = 0; k < 16; k++) AddNoise(b, t0 + k * beat * 0.25f, 0.03f, k % 4 == 2 ? 0.14f : 0.07f, 70f, 1f);
+                // Bass ostinato on eighths.
+                float root = scale[roots[bar]] * 0.25f;
+                for (int k = 0; k < 8; k++) AddPluck(b, t0 + k * beat * 0.5f, k % 4 == 3 ? root * 1.5f : root, 0.32f, beat * 0.45f, 0.993f);
+                // Dark drone.
+                AddPad(b, t0, 4 * beat + 0.2f, scale[roots[bar]] * 0.5f, 0.12f);
+                AddPad(b, t0, 4 * beat + 0.2f, scale[roots[bar]] * 0.75f, 0.07f);
+                // Melody (doubled an octave up in the second half).
                 for (int n = 0; n < 4; n++)
                 {
                     int note = melody[(bar * 4 + n) % melody.Length];
-                    AddPluck(b, t0 + n * beat, scale[note], 0.35f, beat * 1.2f, 0.994f);
+                    AddPluck(b, t0 + n * beat, scale[note], 0.36f, beat * 1.2f, 0.994f);
+                    if (bar >= 4) AddPluck(b, t0 + n * beat + 0.01f, scale[note] * 2f, 0.16f, beat, 0.992f);
                 }
-                AddPluck(b, t0, scale[0] * 0.5f, 0.3f, beat * 3.5f, 0.998f);
             }
+            // Glue the mix: bring it to a known level, then a gentle tape-style squash.
+            Normalize(b, 0.9f);
+            Saturate(b, 1.3f);
             MakeLoopable(b);
             var clip = AudioClip.Create("battle_music", b.Length, 1, Rate, false);
-            Normalize(b, 0.6f);
+            Normalize(b, 0.62f);
             clip.SetData(b, 0);
             return clip;
         }
