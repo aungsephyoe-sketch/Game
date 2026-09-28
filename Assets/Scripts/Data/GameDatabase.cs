@@ -417,6 +417,28 @@ namespace HashiraChronicles
             h.skills = new[] { Ab("Riptide", AbilityShape.MultiSlash, 5f, 0.85f, 6, 0f, 4f, "Six cuts like crashing waves."), Ab("Undertow", AbilityShape.Dash, 7f, 2.2f, 2, 8f, 2f, "Drags through the enemy line."), Ab("Whirlpool", AbilityShape.Spin, 9f, 1.2f, 4, 0f, 4.5f, "A spinning whirlpool.") };
             h.ultimate = Ab("Maelstrom Waltz", AbilityShape.Burst, 0f, 2.6f, 1, 0f, 10f, "Rings of water geysers spread from her dance.", 25f, 7f);
             Characters.Add(h);
+
+            // ---- Premium design test: three new fighters built to the new character-quality standard.
+            h = Hero("kaito_gale", "kaito", "Kaito Hayate", "Gale Fang", "Crosswind Breathing", 4, Element.Beast, Role.DPS,
+                "A grinning twin-blade striker who fights low and never stops moving.",
+                "Kaito ran messages between mountain shrines until he could outrun the wind itself. Now he carries two short blades and a scarf that is always three steps behind him.", C, C, C, C);
+            h.skills = new[] { Ab("Crosscut", AbilityShape.MultiSlash, 4f, 0.7f, 6, 0f, 3.6f, "Six crossing cuts from both blades."), Ab("Gale Step", AbilityShape.Dash, 6f, 1.9f, 2, 8f, 1.8f, "Dashes through the enemy line on the wind."), Ab("Whirlwind", AbilityShape.Spin, 8f, 1.1f, 4, 0f, 4f, "A spinning cyclone of blades.") };
+            h.ultimate = Ab("Crosswind Cyclone", AbilityShape.Burst, 0f, 2.3f, 1, 0f, 8f, "Leaps into the sky, drags demons into a green cyclone and ends it with an X-cut.", 20f, 6f);
+            h.attackSpeed = 1.2f;
+            Characters.Add(h);
+            h = Hero("oboro_iron", "oboro", "Oboro Tetsugane", "Iron Sun", "Forge Breathing", 5, Element.Flame, Role.Tank,
+                "A mountain of a man with a studded iron club that glows like a forge.",
+                "Oboro was a smith who hammered blades for slayers for thirty years. When the demons burned his forge, he picked up the heaviest thing left in it.", C, C, C, C);
+            h.skills = new[] { Ab("Anvil Drop", AbilityShape.Burst, 6f, 2.2f, 1, 0f, 4.2f, "Brings the club straight down like a hammer."), Ab("Bellows Charge", AbilityShape.Dash, 8f, 2f, 1, 7f, 2.2f, "A shoulder charge that shoves demons aside."), Ab("Slag Sweep", AbilityShape.Spin, 9f, 1.4f, 3, 0f, 4.8f, "A wide sweep that leaves burning slag.") };
+            h.ultimate = Ab("Sunbreaker", AbilityShape.Burst, 0f, 2.6f, 1, 0f, 9f, "A leaping slam that splits the ground into rivers of molten light.", 30f, 8f);
+            h.attackSpeed = 0.85f;
+            Characters.Add(h);
+            h = Hero("shion_storm", "shion", "Shion Raiu", "Storm Oracle", "Heavenly Thunder Breathing", 6, Element.Thunder, Role.Burst,
+                "A calm oracle who floats above the battlefield and calls lightning with paper charms.",
+                "Shion reads the weather the way others read books. The shrine elders say the storms started listening to her before she could walk.", C, C, C, C);
+            h.skills = new[] { Ab("Charm Volley", AbilityShape.Wave, 5f, 1.7f, 3, 11f, 1.6f, "Three charms fly out and burst into sparks."), Ab("Thunder Seal", AbilityShape.Burst, 7f, 1.6f, 3, 0f, 4.5f, "A seal on the ground that strikes three times."), Ab("Storm Veil", AbilityShape.Spin, 9f, 1.2f, 4, 0f, 4.5f, "Lightning circles around her.") };
+            h.ultimate = Ab("Heavenly Thunder Array", AbilityShape.Burst, 0f, 2.7f, 1, 0f, 10f, "Charms form a six-point seal; lightning strikes every point, then the heavens strike the center.", 25f, 7f);
+            Characters.Add(h);
         }
 
         static void Look(string id, HairStyle hair, WeaponKind weapon, CombatStyle style, MotionStyle motion, Color body, Color outfit, Color hairC, Color blade,
@@ -492,6 +514,13 @@ namespace HashiraChronicles
                 new Color(0.15f, 0.15f, 0.2f), new Color(0.55f, 0.5f, 0.2f), new Color(0.85f, 0.85f, 0.9f), new Color(1f, 0.95f, 0.4f), 1.08f, 1f, false, true);
             Look("mizuki_tide", HairStyle.Long, WeaponKind.TwinBlades, CombatStyle.Swift, MotionStyle.Aggressive,
                 new Color(0.1f, 0.15f, 0.25f), new Color(0.1f, 0.45f, 0.6f), new Color(0.1f, 0.3f, 0.45f), new Color(0.4f, 0.9f, 1f), 1f, 0.94f, true, true);
+            // Premium test designs (the builder uses its own palettes; these drive combat style, motion and UI colours).
+            Look("kaito_gale", HairStyle.Spiky, WeaponKind.TwinBlades, CombatStyle.Swift, MotionStyle.Light,
+                new Color(0.95f, 0.96f, 0.93f), new Color(0.13f, 0.58f, 0.34f), new Color(0.1f, 0.3f, 0.19f), new Color(0.55f, 1f, 0.6f), 1f, 1f, true, false, false, false, false, new Color(0.96f, 0.76f, 0.3f));
+            Look("oboro_iron", HairStyle.Short, WeaponKind.Greatsword, CombatStyle.Heavy, MotionStyle.Confident,
+                new Color(0.1f, 0.08f, 0.09f), new Color(0.66f, 0.08f, 0.09f), new Color(0.12f, 0.08f, 0.08f), new Color(1f, 0.5f, 0.12f), 1.1f, 1.2f, false, true, false, true, false, new Color(1f, 0.5f, 0.12f));
+            Look("shion_storm", HairStyle.Long, WeaponKind.Staff, CombatStyle.Ranged, MotionStyle.Graceful,
+                new Color(0.1f, 0.12f, 0.32f), new Color(0.6f, 0.32f, 1f), new Color(0.85f, 0.8f, 0.97f), new Color(1f, 0.88f, 0.35f), 1f, 0.92f, false, false, false, false, false, new Color(1f, 0.84f, 0.22f));
             // Skin tones: a varied, friendly cast.
             Color porcelain = new Color(0.99f, 0.88f, 0.8f), light = new Color(0.97f, 0.81f, 0.68f), medium = new Color(0.88f, 0.67f, 0.5f),
                 tan = new Color(0.78f, 0.56f, 0.4f), brown = new Color(0.6f, 0.41f, 0.28f), deep = new Color(0.44f, 0.29f, 0.2f);
@@ -512,6 +541,7 @@ namespace HashiraChronicles
             Skin("daigo_stone", deep); Skin("hotaru_light", light); Skin("kenta_spear", tan); Skin("rin_shadow", porcelain);
             Skin("akane_fire", light); Skin("tsukasa_storm", brown); Skin("mizuki_tide", medium);
             Skin("garou_onyx", brown);
+            Skin("kaito_gale", light); Skin("oboro_iron", tan); Skin("shion_storm", porcelain);
             // Mina's blade burns violet: she fights with dark flames.
             var mina = Characters.Find(x => x.id == "mina_ember");
             if (mina != null) mina.element = Element.Dark;
@@ -928,6 +958,9 @@ namespace HashiraChronicles
                 case "E5":
                     t.burning = src.burning;
                     break;
+                case "E7": // The treasury at golden hour.
+                    t.night = false; t.sky = new Color(0.98f, 0.8f, 0.5f); t.fog = new Color(0.95f, 0.8f, 0.6f); t.sun = new Color(1f, 0.85f, 0.6f); t.sunIntensity = 1.1f;
+                    break;
             }
             // Keep the far fog from swallowing everything into black.
             t.fogStart = Mathf.Max(t.fogStart, 30f);
@@ -998,6 +1031,41 @@ namespace HashiraChronicles
             Quest(ev, 4, 1, "Crescent Gauntlet", 33, "Three Crescent Hunters, one after another. No rest between.", Wave("elite", 2), Wave("elite", 1, "corrupted_knight", 2));
             q = Quest(ev, 5, 2, "The Crimson Fist", 38, "The blood moon is at its peak. So is Goken.", Wave("elite", 1, "lava_imp", 4));
             q.bossId = "boss_goken"; q.firstClearRewards.equipmentIds.Add("acc_dragonscale"); q.firstClearRewards.crystals = 1000;
+
+            // 6 — XP farm: replay any time for big piles of XP.
+            ev = new EventDefinition { id = "E6", title = "Scholar's Trial", subtitle = "XP event · replay for huge piles of XP", regionId = "temple",
+                accent = new Color(0.65f, 0.45f, 1f), bannerEnemy = "boss_seal_guardian", prizeText = "Up to 60,000 XP per clear",
+                story = "Deep in the Forgotten Temple, the old masters left training spirits that never tire. Every spirit defeated leaves behind a glowing scroll of battle wisdom — XP your slayers can use to grow stronger. The monks say the deeper rooms teach the most." };
+            Events.Add(ev);
+            int[] xpScrolls = { 8, 14, 24, 36, 60 };
+            string[] xpNames = { "Spirit Sparring", "Hall of Echoes", "The Scroll Library", "Trial of Patience", "The Grand Master Spirit" };
+            string[] xpStory = { "Gentle spirits for new slayers.", "The echoes fight back a little harder.", "Scrolls everywhere — and their guardians.", "Only the patient reach the inner rooms.", "The oldest spirit teaches the hardest lesson." };
+            int[] xpLv = { 6, 14, 22, 30, 38 };
+            for (int i = 0; i < 5; i++)
+            {
+                q = Quest(ev, i + 1, i < 2 ? 0 : i < 4 ? 1 : 2, xpNames[i], xpLv[i], xpStory[i],
+                    i < 2 ? Wave("shadow_demon", 4 + i) : i < 4 ? Wave("corrupted_knight", 1 + (i - 2), "shadow_demon", 4) : Wave("castle_sentinel", 1, "shadow_demon", 4));
+                q.rewards.expScrolls = xpScrolls[i];
+                q.rewards.exp *= 3;
+                if (i == 4) q.bossId = "boss_seal_guardian";
+            }
+
+            // 7 — Gold farm: replay for gold, and every demon here drops extra coins.
+            ev = new EventDefinition { id = "E7", title = "Gold Rush", subtitle = "Gold event · replay to fill your wallet", regionId = "kingdom",
+                accent = new Color(1f, 0.8f, 0.2f), bannerEnemy = "boss_chancellor", prizeText = "Up to 150,000 gold per clear",
+                story = "Thieving demons broke into the Royal Treasury and stuffed their pockets with the kingdom's gold. The King has a simple deal: whatever you win back, you keep. Every demon here drops three times the usual coins." };
+            Events.Add(ev);
+            int[] goldRewards = { 15000, 30000, 55000, 90000, 150000 };
+            string[] gNames = { "Coin Snatchers", "Vault Corridor", "The Counting Room", "Golden Guards", "The Treasure Tyrant" };
+            string[] gStory = { "Little thieves with heavy pockets.", "The hallway to the vault is crawling with them.", "They've started counting the gold. Rude.", "The vault's guards have gone demonic.", "The masked thief sits on the biggest pile of all." };
+            int[] gLv = { 6, 14, 22, 30, 38 };
+            for (int i = 0; i < 5; i++)
+            {
+                q = Quest(ev, i + 1, i < 2 ? 0 : i < 4 ? 1 : 2, gNames[i], gLv[i], gStory[i],
+                    i < 2 ? Wave("runner", 4 + i, "grunt", 2) : i < 4 ? Wave("demon_warrior", 2, "runner", 4) : Wave("elite", 1, "demon_warrior", 2));
+                q.rewards.coins = goldRewards[i];
+                if (i == 4) q.bossId = "boss_chancellor";
+            }
         }
 
         static void BuildMissions()

@@ -25,7 +25,8 @@ namespace HashiraChronicles
         protected State state = State.Spawning;
         protected float attackTimer;
         protected float speedMultiplier = 1f;
-        protected float windupMultiplier = 1f;
+        /// <summary>Demons wind up faster than before (their red warnings still show, just shorter).</summary>
+        protected float windupMultiplier = 0.7f;
         protected readonly List<Telegraph> telegraphs = new List<Telegraph>();
 
         Coroutine attackRoutine;
@@ -96,7 +97,7 @@ namespace HashiraChronicles
             Health.Init(Stats.hp);
             Health.Died += OnDied;
             visual = CharacterVisual.BuildDemon(def, transform);
-            attackTimer = Random.Range(0.6f, 1.6f);
+            attackTimer = Random.Range(0.4f, 1.1f);
             strafeSign = Random.value < 0.5f ? -1f : 1f;
             zigzagPhase = Random.Range(0f, 100f);
             slotAngle = Random.Range(0f, 360f);
@@ -319,7 +320,8 @@ namespace HashiraChronicles
             yield return routine;
             ClearTelegraphs();
             ReleaseToken();
-            attackTimer = Def.attackCooldown * Random.Range(0.8f, 1.2f) / Mathf.Max(0.5f, speedMultiplier);
+            // Faster attack rhythm: about a third less time between attacks.
+            attackTimer = Def.attackCooldown * 0.65f * Random.Range(0.8f, 1.2f) / Mathf.Max(0.5f, speedMultiplier);
             attackRoutine = null;
             if (state == State.Attacking) state = State.Chase;
         }
@@ -552,7 +554,10 @@ namespace HashiraChronicles
             {
                 int each = 4 + Level * 2;
                 bool big = Def.archetype == EnemyArchetype.Elite || Def.archetype == EnemyArchetype.Tank;
-                GoldCoin.Burst(Position, IsBoss ? 24 : (big ? 6 : 3), IsBoss ? each * 5 : each);
+                // Gold Rush event: three times the coins.
+                var bc = BattleController.Current;
+                int rush = bc != null && bc.Def != null && bc.Def.eventId == "E7" ? 3 : 1;
+                GoldCoin.Burst(Position, (IsBoss ? 24 : (big ? 6 : 3)) * Mathf.Min(rush, 2), (IsBoss ? each * 5 : each) * rush);
                 // Sometimes a demon drops diamonds too: bosses always, elites often, others now and then.
                 if (IsBoss) GoldCoin.Diamonds(Position, 3, 5);
                 else if (Random.value < (big ? 0.3f : 0.07f)) GoldCoin.Diamonds(Position, 1, big ? 3 : 1);

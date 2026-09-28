@@ -62,6 +62,7 @@ namespace HashiraChronicles
             Model.localPosition = Vector3.down * drop;
             if (SwordPivot != null) SwordPivot.localRotation = Quaternion.Euler(wpn);
             if (head != null) head.localRotation = Quaternion.Euler(he);
+            if (rig != null) rig.Solve(0f);
         }
 
         /// <summary>Ease into the showcase pose and hold it, breathing (team line-up, character screen).</summary>

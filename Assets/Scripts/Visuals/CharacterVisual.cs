@@ -57,7 +57,8 @@ namespace HashiraChronicles
             v.Model = model;
             if (GameConfig.UseImportedModels && v.TryLoadModel("Characters/" + def.id, def.bladeColor, 1f, 1.75f * def.scale)) return v;
 
-            v.BuildChibi(def);
+            if (IsPremium(def.id)) v.BuildPremium(def);
+            else v.BuildChibi(def);
             return v;
         }
 

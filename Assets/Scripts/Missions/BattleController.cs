@@ -152,6 +152,8 @@ namespace HashiraChronicles
                 }
             }
 
+            // Scenery never hides the fighting slayer.
+            CameraOcclusion.Attach(this);
             // Tall set pieces (towers, spires, far hills) threw long jagged shadow streaks across the road.
             foreach (var rend in GetComponentsInChildren<Renderer>(true))
                 if (rend.bounds.size.y > 5f) rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

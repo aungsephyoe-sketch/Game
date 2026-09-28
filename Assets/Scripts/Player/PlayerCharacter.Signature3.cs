@@ -26,13 +26,17 @@ namespace HashiraChronicles
                 case "rin_shadow": return ShadowSnare(tag, tally, focus);
                 case "akane_fire": return FireworkFinale(tag, tally, focus);
                 case "tsukasa_storm": return ChainStorm(tag, tally, focus);
+                case "kaito_gale": return CrosswindCyclone(tag, tally, focus);
+                case "oboro_iron": return Sunbreaker(tag, tally, focus);
+                case "shion_storm": return HeavenlyThunderArray(tag, tally, focus);
                 default: return MaelstromWaltz(tag, tally);
             }
         }
 
         static readonly HashSet<string> NewcomerIds = new HashSet<string>
         {
-            "taro_rock", "nami_bubble", "koji_ember", "yuna_gale", "daigo_stone", "hotaru_light", "kenta_spear", "rin_shadow", "akane_fire", "tsukasa_storm", "mizuki_tide"
+            "taro_rock", "nami_bubble", "koji_ember", "yuna_gale", "daigo_stone", "hotaru_light", "kenta_spear", "rin_shadow", "akane_fire", "tsukasa_storm", "mizuki_tide",
+            "kaito_gale", "oboro_iron", "shion_storm"
         };
 
         Vector3 DirTo(Vector3 focus)

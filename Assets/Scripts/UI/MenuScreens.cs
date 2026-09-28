@@ -36,25 +36,26 @@ namespace HashiraChronicles
             if (HomeTile(new Rect(x + 416f, top, 270f, 272f), "EVENTS", null, new Color(1f, 0.6f, 0.25f), 0.16f, TileArt.Events, null, EventBadge(d)))
                 gm.GoTo(GameScreen.Events);
             // OPEN WORLD: walk around Kiriha Village freely — houses, trees and villagers to talk to.
-            if (HomeTile(new Rect(x + 702f, top, 224f, 272f), "OPEN WORLD", IconFactory.Get("people"), new Color(0.2f, 0.62f, 0.4f), 0.2f))
+            if (HomeTile(new Rect(x + 702f, top, 224f, 272f), "OPEN WORLD", null, new Color(0.2f, 0.62f, 0.4f), 0.2f, TileArt.Village))
                 gm.BeginMission(GameDatabase.OpenWorld);
             // Row 2: SUMMON, CHARACTERS, TEAM.
             float r2 = top + 290f, h2 = 190f;
-            if (HomeTile(new Rect(x, r2, 262f, h2), "SUMMON", IconFactory.Get("flame"), new Color(0.52f, 0.26f, 0.85f), 0.22f, null, null, MenuBadge("SUMMON"))) OpenMenu("SUMMON");
-            if (HomeTile(new Rect(x + 278f, r2, 272f, h2), "CHARACTERS", IconFactory.Get("people"), new Color(0.2f, 0.42f, 0.85f), 0.26f)) OpenMenu("CHARACTERS");
-            if (HomeTile(new Rect(x + 566f, r2, 360f, h2), "TEAM", IconFactory.Get("group"), new Color(0.2f, 0.62f, 0.4f), 0.3f)) OpenMenu("TEAM");
+            if (HomeTile(new Rect(x, r2, 262f, h2), "SUMMON", IconFactory.Get("flame"), new Color(0.52f, 0.26f, 0.85f), 0.22f, null, null, MenuBadge("SUMMON"), false, PicSummon)) OpenMenu("SUMMON");
+            if (HomeTile(new Rect(x + 278f, r2, 272f, h2), "CHARACTERS", IconFactory.Get("people"), new Color(0.2f, 0.42f, 0.85f), 0.26f, null, null, 0, false, PicCharacters)) OpenMenu("CHARACTERS");
+            if (HomeTile(new Rect(x + 566f, r2, 360f, h2), "TEAM", IconFactory.Get("group"), new Color(0.2f, 0.62f, 0.4f), 0.3f, null, null, 0, false, PicTeam)) OpenMenu("TEAM");
             // Row 3: EQUIPMENT, MISSIONS, SHOP, SETTINGS.
             float r3 = r2 + h2 + 16f;
-            if (HomeTile(new Rect(x, r3, 262f, h2), "UPGRADE", IconFactory.Get("up"), new Color(0.72f, 0.5f, 0.18f), 0.34f)) OpenMenu("EQUIPMENT");
-            if (HomeTile(new Rect(x + 278f, r3, 212f, h2), "MISSIONS", IconFactory.Get("scroll"), new Color(0.62f, 0.14f, 0.18f), 0.38f, null, null, MenuBadge("MISSIONS"))) OpenMenu("MISSIONS");
-            if (HomeTile(new Rect(x + 506f, r3, 196f, h2), "SHOP", IconFactory.Get("cart"), new Color(0.12f, 0.58f, 0.62f), 0.42f, null, null, MenuBadge("SHOP"))) OpenMenu("SHOP");
-            if (HomeTile(new Rect(x + 718f, r3, 208f, h2), "SETTINGS", IconFactory.Get("gear"), new Color(0.42f, 0.44f, 0.5f), 0.46f)) OpenMenu("SETTINGS");
+            if (HomeTile(new Rect(x, r3, 262f, h2), "UPGRADE", IconFactory.Get("up"), new Color(0.72f, 0.5f, 0.18f), 0.34f, null, null, 0, false, PicUpgrade)) OpenMenu("EQUIPMENT");
+            if (HomeTile(new Rect(x + 278f, r3, 212f, h2), "MISSIONS", IconFactory.Get("scroll"), new Color(0.62f, 0.14f, 0.18f), 0.38f, null, null, MenuBadge("MISSIONS"), false, PicMissions)) OpenMenu("MISSIONS");
+            if (HomeTile(new Rect(x + 506f, r3, 196f, h2), "SHOP", IconFactory.Get("cart"), new Color(0.12f, 0.58f, 0.62f), 0.42f, null, null, MenuBadge("SHOP"), false, PicShop)) OpenMenu("SHOP");
+            // INVENTORY takes the tile; SETTINGS moves to the small gear button at the top right.
+            if (HomeTile(new Rect(x + 718f, r3, 208f, h2), "INVENTORY", IconFactory.Get("bag"), new Color(0.6f, 0.4f, 0.2f), 0.46f, null, null, 0, false, PicInventory)) gm.GoTo(GameScreen.Inventory);
 
             // Top right: coins and crystals with +, mail (missions board) and menu (journal).
             float px = safe.xMax - 40f;
             if (IconButton(new Rect(px - 72f, safe.y + 24f, 72f, 64f), IconFactory.Get("menu"))) OpenMenu("JOURNAL");
             if (IconButton(new Rect(px - 154f, safe.y + 24f, 72f, 64f), IconFactory.Get("mail"))) OpenMenu("MISSIONS");
-            if (IconButton(new Rect(px - 236f, safe.y + 24f, 72f, 64f), IconFactory.Get("bag"))) gm.GoTo(GameScreen.Inventory);
+            if (IconButton(new Rect(px - 236f, safe.y + 24f, 72f, 64f), IconFactory.Get("gear"))) OpenMenu("SETTINGS");
             // Three currencies: gold, diamonds and XP.
             PlusPill(new Rect(px - 506f, safe.y + 24f, 250f, 64f), 2, d.xp.ToString("N0"), () => OpenMenu("SHOP"));
             PlusPill(new Rect(px - 772f, safe.y + 24f, 250f, 64f), 1, d.crystals.ToString("N0"), () => OpenMenu("SHOP"));

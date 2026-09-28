@@ -162,6 +162,7 @@ namespace HashiraChronicles
                 case GameScreen.Settings: DrawSettings(); break;
                 case GameScreen.Events: DrawEvents(); break;
                 case GameScreen.Inventory: DrawInventory(); break;
+                case GameScreen.Designs: DrawDesigns(); break;
             }
 
         }

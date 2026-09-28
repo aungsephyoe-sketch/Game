@@ -53,6 +53,7 @@ namespace HashiraChronicles
         Cutscene,
         Credits,
         Events,
-        Inventory
+        Inventory,
+        Designs
     }
 }

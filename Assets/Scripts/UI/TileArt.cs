@@ -8,7 +8,52 @@ namespace HashiraChronicles
     /// </summary>
     public static class TileArt
     {
-        static Texture2D story, play, events;
+        static Texture2D story, play, events, village;
+
+        /// <summary>OPEN WORLD: the village on a sunny day — roofs, trees and a path.</summary>
+        public static Texture2D Village { get { if (village == null) village = PaintVillage(); return village; } }
+
+        static Texture2D PaintVillage()
+        {
+            const int W = 300, H = 272;
+            var tex = NewTex(W, H);
+            var px = new Color[W * H];
+            for (int y = 0; y < H; y++)
+                for (int x = 0; x < W; x++)
+                {
+                    float u = (float)x / W, v = (float)y / H;
+                    Color c = Mix(new Color(0.55f, 0.78f, 0.98f), new Color(0.85f, 0.93f, 1f), 1f - v);
+                    // Clouds.
+                    float cl = Mathf.PerlinNoise(u * 4f, v * 6f + 3f);
+                    if (v > 0.7f && cl > 0.62f) c = Mix(c, Color.white, (cl - 0.62f) * 4f);
+                    // Hills.
+                    float hill = 0.46f + 0.06f * Mathf.Sin(u * 6f + 1f);
+                    if (v < hill) c = new Color(0.45f, 0.72f, 0.38f);
+                    if (v < hill - 0.12f) c = new Color(0.4f, 0.66f, 0.34f);
+                    // Path.
+                    float path = Mathf.Abs(u - 0.5f - (0.3f - v) * 0.4f);
+                    if (v < 0.34f && path < 0.03f + (0.34f - v) * 0.3f) c = new Color(0.82f, 0.7f, 0.5f);
+                    // Houses: three little buildings with red and blue roofs.
+                    for (int i = 0; i < 3; i++)
+                    {
+                        float hx = 0.18f + i * 0.3f, hy = 0.36f + (i % 2) * 0.05f, hw = 0.09f;
+                        if (Mathf.Abs(u - hx) < hw && v > hy && v < hy + 0.12f) c = new Color(0.96f, 0.9f, 0.8f);
+                        if (Mathf.Abs(u - hx) < 0.025f && v > hy && v < hy + 0.06f) c = new Color(0.45f, 0.3f, 0.2f);
+                        float roofH = hy + 0.12f + (hw + 0.03f - Mathf.Abs(u - hx)) * 0.9f;
+                        if (Mathf.Abs(u - hx) < hw + 0.03f && v > hy + 0.11f && v < roofH) c = i == 1 ? new Color(0.3f, 0.4f, 0.7f) : new Color(0.8f, 0.3f, 0.25f);
+                    }
+                    // Round trees.
+                    for (int i = 0; i < 4; i++)
+                    {
+                        Vector2 tc = new Vector2(0.05f + i * 0.31f, 0.52f + (i % 2) * 0.04f);
+                        if (Vector2.Distance(new Vector2(u * 1.1f, v), new Vector2(tc.x * 1.1f, tc.y)) < 0.07f) c = new Color(0.25f, 0.55f, 0.28f);
+                    }
+                    px[y * W + x] = c;
+                }
+            tex.SetPixels(px);
+            tex.Apply(true, true);
+            return tex;
+        }
 
         /// <summary>EVENTS: a festival night — paper lanterns over a river, fireworks in the sky.</summary>
         public static Texture2D Events { get { if (events == null) events = PaintEvents(); return events; } }

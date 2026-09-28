@@ -36,6 +36,18 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### New character standard (quality test)
+Three original fighters are built with a new, more detailed builder (`CharacterVisual.Premium.cs` + `PremiumRig`):
+jointed shoulders, elbows, hips and knees driven by two-bone IK (feet stay planted, the weapon hand follows every
+swing), real hands and boots, layered outfits, detailed weapons, faces with irises, highlights, lashes and brows,
+and a primary / secondary / accent element palette with element-tinted rim light and shadows.
+- **Kaito** (Rare, wind): fast twin-kodachi striker — green / white / gold, low bouncing stance, mirrored X-cuts.
+- **Oboro** (Epic, flame): heavy iron-club bruiser — crimson / black / orange, club on the shoulder, two-handed slams.
+- **Shion** (Legendary, thunder): floating staff caster — navy / yellow / electric purple, halo and orbiting charms.
+
+Open them from **CHARACTERS → ★ NEW DESIGNS**: they stand in the village with character cards, a design sheet,
+**VIEW 3D** (animation viewer) and **TRY** (60-second trial). Once approved, the rest of the roster moves to this standard.
+
 ### Every slayer fights differently
 - **Swift** (Sora, Mina, Raiga): fast multi-hit strings, double cuts, a 5-cut flurry finisher, long dash strikes, short recovery.
 - **Heavy** (Tetsu, Homura — Last Flame): slower swings, big knockback, a ground-slam finisher, super armour while attacking.
@@ -219,6 +231,8 @@ To test on a phone, switch the platform to Android/iOS in **File → Build Setti
   team member's EXP bar filling and levelling up.
 - **Character versions**: e.g. *Ren Kagami — Initiate* (Water ★4) and *Ren Kagami — Dawn Dance* (Light ★5)
   with different stats, forms and ultimate.
+- **Events**: five story events plus **Scholar's Trial** (XP event: big XP rewards) and **Gold Rush** (gold farming:
+  large gold rewards, and demons drop far more coins).
 - **Save system**: JSON in `persistentDataPath` with backup and validation/migration.
 - **Presentation**: cel-shaded toon shader with outlines and rim light, procedural particles,
   and fully **synthesised audio** (SFX + taiko/shamisen-style music) — no external assets needed.

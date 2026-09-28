@@ -125,7 +125,7 @@ namespace HashiraChronicles
                     Vector3 at = p + side * s * off + ahead * R(-1f, 1f);
                     at.y = 0f;
                     if (InPlace(j, at, 1.5f) || j.DistanceToPath(at) < j.halfWidth + 1.2f) continue;
-                    bool far = off > j.halfWidth + 6f;
+                    bool far = off > j.halfWidth + 9f; // trees and tall things stay well back from the road
                     double r = rng.NextDouble();
                     if (grim)
                     {

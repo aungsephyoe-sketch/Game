@@ -19,6 +19,10 @@ namespace HashiraChronicles
             var d = gm.Data;
             if (string.IsNullOrEmpty(rosterPick) || d.GetCharacter(rosterPick) == null) rosterPick = d.team.Count > 0 ? d.team[0] : (d.characters.Count > 0 ? d.characters[0].id : null);
             DrawTeamEdit(d, true);
+            // The premium quality-test designs.
+            var nd = new Rect(safe.x + 560f, safe.y + 24f, 300f, 58f);
+            if (FlatBtn(nd, "★ NEW DESIGNS", new Color(0.55f, 0.25f, 0.85f), true, 24)) gm.GoTo(GameScreen.Designs);
+            RoundFrame(Grow(nd, 3f), new Color(1f, 0.85f, 0.35f, 0.4f + 0.3f * Mathf.Sin(Time.unscaledTime * 3f)), 2f, 13f);
         }
 
         // ------------------------------------------------------------------ Detail

@@ -131,7 +131,7 @@ namespace HashiraChronicles
         /// A home-screen tile in the reference style: vertical gradient, soft rim, big icon above a centred label,
         /// or a painted background with the label bottom-left and a chevron (PLAY / STORY).
         /// </summary>
-        bool HomeTile(Rect r, string label, Texture2D icon, Color c, float delay, Texture2D art = null, Texture portrait = null, int badge = 0, bool glow = false)
+        bool HomeTile(Rect r, string label, Texture2D icon, Color c, float delay, Texture2D art = null, Texture portrait = null, int badge = 0, bool glow = false, System.Action<Rect> picture = null)
         {
             float k = Enter(delay, 0.5f);
             if (k <= 0f) return false;
@@ -225,7 +225,15 @@ namespace HashiraChronicles
             else
             {
                 float isz = Mathf.Min(rr.height * 0.42f, 86f) * (hover ? 1.1f : 1f);
-                if (icon != null)
+                if (picture != null)
+                {
+                    // A picture of what's inside (faces, the team, gear...) instead of a plain icon.
+                    float bob = Mathf.Sin(t * 1.8f + seed * 4f) * 3f;
+                    GUI.BeginGroup(new Rect(rr.x + 6f, rr.y + 6f, rr.width - 12f, rr.height - 66f));
+                    picture(new Rect(0f, bob, rr.width - 12f, rr.height - 66f));
+                    GUI.EndGroup();
+                }
+                else if (icon != null)
                 {
                     float bob = Mathf.Sin(t * 2.4f + seed * 4f) * 4f;
                     var ir = new Rect(rr.center.x - isz * 0.5f, rr.y + rr.height * 0.18f + bob, isz, isz);
