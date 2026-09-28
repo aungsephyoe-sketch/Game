@@ -217,11 +217,12 @@ namespace HashiraChronicles
             var d = gm.Data;
             TopBar("SOLMERE MARKET", GameScreen.MainMenu);
             // Tabs: supplies (XP packs, chests, diamonds) and accessories for gold.
-            string[] tabs = { "SUPPLIES", "ACCESSORIES", "MYTHIC EXCHANGE" };
-            for (int t = 0; t < 3; t++)
-                if (FlatBtn(new Rect(safe.x + 30f + t * 260f, safe.y + 120f, 240f, 60f), tabs[t], shopTab == t ? TileRed : TileNavy, true, t == 2 ? 18 : 22)) shopTab = t;
-            if (shopTab == 1) { DrawAccessoryShop(d); return; }
-            if (shopTab == 2) { DrawMythicExchange(d); return; }
+            string[] tabs = { "DIAMONDS", "SUPPLIES", "ACCESSORIES", "MYTHIC EXCHANGE" };
+            for (int t = 0; t < 4; t++)
+                if (FlatBtn(new Rect(safe.x + 30f + t * 260f, safe.y + 120f, 240f, 60f), tabs[t], shopTab == t ? TileRed : TileNavy, true, t == 3 ? 18 : 22)) shopTab = t;
+            if (shopTab == 0) { DrawDiamondPacks(d); return; }
+            if (shopTab == 2) { DrawAccessoryShop(d); return; }
+            if (shopTab == 3) { DrawMythicExchange(d); return; }
             float cw = 520f, ch = 230f, gap = 22f;
             int cols = Mathf.Max(1, Mathf.FloorToInt((safe.width - 60f + gap) / (cw + gap)));
             float top = safe.y + 200f;
@@ -250,6 +251,52 @@ namespace HashiraChronicles
         }
 
         int shopTab;
+
+        /// <summary>Diamond packs: a grid of cards with the amount, a gem pile, a ribbon for the featured ones and the price.</summary>
+        void DrawDiamondPacks(PlayerData d)
+        {
+            var packs = ShopSystem.DiamondPacks;
+            int cols = 4;
+            float gap = 22f, top = safe.y + 200f;
+            float cw = (safe.width - 60f - (cols - 1) * gap) / cols, ch = (H - top - 40f - gap) / 2f;
+            for (int i = 0; i < packs.Count; i++)
+            {
+                var p = packs[i];
+                float k = Enter(i * 0.05f, 0.3f);
+                var r = new Rect(safe.x + 30f + (i % cols) * (cw + gap), top + (i / cols) * (ch + gap) + (1f - k) * 40f, cw, ch);
+                bool featured = !string.IsNullOrEmpty(p.badge);
+                Color accent = p.diamonds >= 10000 ? new Color(0.75f, 0.45f, 1f) : p.diamonds == 2000 ? new Color(1f, 0.45f, 0.25f) : featured ? new Color(1f, 0.8f, 0.25f) : new Color(0.35f, 0.65f, 1f);
+                Round(Offset(r, 0f, 6f), new Color(0f, 0f, 0f, 0.4f), 18f);
+                Round(r, Color.Lerp(new Color(0.06f, 0.07f, 0.13f), accent, featured ? 0.22f : 0.1f), 18f);
+                RoundFrame(r, featured ? accent : new Color(1f, 1f, 1f, 0.1f), featured ? 3f : 2f, 18f);
+                if (featured)
+                {
+                    var rib = new Rect(r.x + 14f, r.y - 14f, Mathf.Min(r.width - 28f, 220f), 34f);
+                    Round(rib, accent, 17f);
+                    GUI.Label(rib, "<b>" + p.badge + "</b>", UIStyles.Sized(UIStyles.Center, 17));
+                }
+                // A pile of gems that grows with the pack.
+                int gems = Mathf.Clamp(1 + Mathf.RoundToInt(Mathf.Log(p.diamonds / 250f, 2f) * 1.5f), 1, 9);
+                Vector2 gc = new Vector2(r.center.x, r.y + ch * 0.36f);
+                float glow = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f + i);
+                UIStyles.CircleTex(gc, ch * 0.22f + glow * 4f, new Color(accent.r, accent.g, accent.b, 0.15f));
+                for (int g = 0; g < gems; g++)
+                {
+                    float a = g * 2.4f;
+                    Vector2 o = g == 0 ? Vector2.zero : new Vector2(Mathf.Cos(a), Mathf.Sin(a) * 0.5f) * (18f + g * 5f);
+                    DiamondIcon(gc + o, g == 0 ? 70f : 44f);
+                }
+                UIStyles.Outlined(new Rect(r.x, r.y + ch * 0.55f, r.width, 50f), p.diamonds.ToString("N0"), UIStyles.Sized(UIStyles.H1, 42), Color.white, 2f);
+                GUI.Label(new Rect(r.x, r.y + ch * 0.55f + 46f, r.width, 28f), "<color=#9FD8FF>DIAMONDS</color>" + (string.IsNullOrEmpty(p.tag) ? "" : "  <color=#BBBBBB>· " + p.tag + "</color>"), UIStyles.Sized(UIStyles.Center, 17));
+                if (FlatBtn(new Rect(r.x + 18f, r.yMax - 76f, r.width - 36f, 60f), p.price, TileGreen, true, 28))
+                {
+                    ShopSystem.BuyDiamondPack(d, p);
+                    gm.Save();
+                    gm.Audio.Play("gem", 0.8f);
+                    Toast("+" + p.diamonds.ToString("N0") + " diamonds (test purchase — store billing isn't connected yet)");
+                }
+            }
+        }
 
         /// <summary>Tokens from paid step-up ×10s buy a featured Mythic: 30 tokens each.</summary>
         void DrawMythicExchange(PlayerData d)
@@ -425,8 +472,8 @@ namespace HashiraChronicles
         static readonly string[] CreditLines =
         {
             "<size=40>" + GameConfig.TitleLine1 + "</size>", "<size=70>" + GameConfig.TitleLine2 + "</size>", "", "",
-            "<color=#FFD36B>STARRING</color>", "Ren Kagami — the Dawn Blade", "Sora Ikazuchi — the Frightened Blade", "Kiba Arashi — the Arena Rival", "Hana Shiraume — the Wisteria Healer",
-            "Homura Enjoji — the Flame Pillar", "Tetsu Ganryu — the Iron Captain", "Master Tessai", "The echo of Akatsuki", "", "Veyrath — the Demon Lord of the Eclipse", "", "",
+            "<color=#FFD36B>STARRING</color>", "Ren — the Dawn Blade", "Sora — the Frightened Blade", "Kiba — the Arena Rival", "Hana — the Wisteria Healer",
+            "Homura — the Flame Pillar", "Tetsu — the Iron Captain", "Master Tessai", "The echo of Akatsuki", "", "Veyrath — the Demon Lord of the Eclipse", "", "",
             "<color=#FFD36B>IN MEMORY OF</color>", "Everyone who held the gate.", "", "",
             "<color=#FFD36B>MUSIC & SOUND</color>", "Procedurally synthesised, original compositions", "", "",
             "<color=#FFD36B>BUILT WITH</color>", "Unity  ·  C#  ·  Claude", "", "", "",

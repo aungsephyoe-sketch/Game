@@ -103,7 +103,8 @@ namespace HashiraChronicles
             forward.Normalize();
             var rot = Quaternion.LookRotation(forward) * Quaternion.Euler(0f, 0f, roll);
             float dur = 0.2f + 0.06f * power;
-            // Glow, colour and white-hot core.
+            // Dark backing (contrast on bright ground), then glow, colour and white-hot core.
+            VFX.SlashBacking(center, forward, radius * 1.1f, arc, roll, c, dur * 1.3f);
             VFX.Slash(center, forward, radius * 1.12f, arc, roll, new Color(c.r, c.g, c.b, 0.45f), dur * 1.3f);
             VFX.Slash(center, forward, radius, arc, roll, c, dur);
             VFX.Slash(center, forward, radius * 0.9f, arc * 0.92f, roll, Color.Lerp(c, Color.white, 0.75f), dur * 0.6f);

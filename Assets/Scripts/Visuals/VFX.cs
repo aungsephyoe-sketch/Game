@@ -140,6 +140,18 @@ namespace HashiraChronicles
                 new Vector3(radius * 0.8f, 1f, radius * 0.8f), new Vector3(radius * 1.1f, 1f, radius * 1.1f), color, duration);
         }
 
+        /// <summary>A soft dark copy just behind a slash, so the glow still reads on snow and other bright ground.</summary>
+        public static void SlashBacking(Vector3 center, Vector3 forward, float radius, float arcDegrees, float roll, Color color, float duration)
+        {
+            Ensure();
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 0.001f) forward = Vector3.forward;
+            var rot = Quaternion.LookRotation(forward) * Quaternion.Euler(0f, 0f, roll);
+            var fx = FlashFx.Get(MeshFactory.Sector(arcDegrees, 0.66f), true);
+            fx.Play(center + Vector3.up * 0.98f, rot, new Vector3(radius * 0.85f, 1f, radius * 0.85f), new Vector3(radius * 1.15f, 1f, radius * 1.15f),
+                new Color(color.r * 0.2f, color.g * 0.2f, color.b * 0.25f, 0.38f), duration);
+        }
+
         public static void Shockwave(Vector3 center, float radius, Color color, float duration = 0.35f)
         {
             Flash(MeshFactory.Ring(0.85f), center + Vector3.up * 0.08f, Quaternion.identity,

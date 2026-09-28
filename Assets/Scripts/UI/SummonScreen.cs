@@ -278,7 +278,7 @@ namespace HashiraChronicles
             GUI.Label(new Rect(card.x + 40f, card.y + 238f, 740f, 44f), r.def.versionTitle + "   " + ElementTag(r.def.element) + "  " + r.def.role, UIStyles.Body);
             GUI.Label(new Rect(card.x + 40f, card.y + 284f, 740f, 40f), "<color=#FFD36B>✦ Special: " + r.def.ultimate.name + "</color>", UIStyles.Sized(UIStyles.Small, 22));
             if (r.isNew) UIStyles.Outlined(new Rect(card.xMax - 210f, card.y + 20f, 190f, 70f), "NEW!", UIStyles.Sized(UIStyles.Big, 58), UIStyles.Good, 3f);
-            else GUI.Label(new Rect(card.xMax - 380f, card.y + 330f, 360f, 50f), "<color=#C77DFF>DUPLICATE → awaken: +30 Lv, purple star</color>", UIStyles.Sized(UIStyles.Right, 22));
+            else GUI.Label(new Rect(card.xMax - 380f, card.y + 330f, 360f, 50f), (r.def.rarity >= 5 ? "<color=#C77DFF>DUPLICATE → awaken: +30 Lv, purple star</color>" : "<color=#FF9C7A>DUPLICATE → feed for double EXP</color>"), UIStyles.Sized(UIStyles.Right, 22));
             GUI.Label(new Rect(0f, H - 90f, W, 50f), "<color=#BBBBBB>Tap to continue</color>", UIStyles.Sized(UIStyles.Center, 26));
         }
 

@@ -48,15 +48,16 @@ namespace HashiraChronicles
             string roadKey = ArtLibrary.RoadKey(theme);
             var roadMat = MaterialFactory.Painted(roadKey, MaterialFactory.TextureTint(roadC, 0.35f), 1f);
             var edgeMat = MaterialFactory.Painted(roadKey, MaterialFactory.TextureTint(Color.Lerp(roadC, theme.ground, 0.5f), 0.5f) * 0.8f, 1f);
-            Ribbon(stat, j.path, j.halfWidth + 0.9f, 0.012f, edgeMat);
-            Ribbon(stat, j.path, j.halfWidth - 0.4f, 0.02f, roadMat);
+            // Layers sit clearly apart in height so they never flicker into dashes at a distance.
+            Ribbon(stat, j.path, j.halfWidth + 0.9f, 0.03f, edgeMat);
+            Ribbon(stat, j.path, j.halfWidth - 0.4f, 0.06f, roadMat);
             foreach (var pl in j.places)
             {
                 // Clearings use planar UVs: one texture tile per ~3 m, like the road.
                 var em = new Material(edgeMat); em.mainTextureScale = Vector2.one * ((pl.radius + 1f) / 3f);
                 var rm = new Material(roadMat); rm.mainTextureScale = Vector2.one * (pl.radius / 3f);
-                MeshFactory.MeshObject(MeshFactory.PlanarDisc(), stat, pl.pos + Vector3.up * 0.011f, new Vector3(pl.radius + 1f, 1f, pl.radius + 1f), em, false);
-                MeshFactory.MeshObject(MeshFactory.PlanarDisc(), stat, pl.pos + Vector3.up * 0.018f, new Vector3(pl.radius, 1f, pl.radius), rm, false);
+                MeshFactory.MeshObject(MeshFactory.PlanarDisc(), stat, pl.pos + Vector3.up * 0.045f, new Vector3(pl.radius + 1f, 1f, pl.radius + 1f), em, false);
+                MeshFactory.MeshObject(MeshFactory.PlanarDisc(), stat, pl.pos + Vector3.up * 0.075f, new Vector3(pl.radius, 1f, pl.radius), rm, false);
             }
 
             // Scenery: the region's set dressing around every place and along every stretch between them.
@@ -71,6 +72,7 @@ namespace HashiraChronicles
 
             RoadsideGuides(j, theme, stat, dyn);
             RoadsideScatter(j, theme, stat, dyn);
+            DenseScatter(j, theme, stat, dyn);
             BackgroundLayers(j, theme, stat, center, extent);
             Prowlers(j, theme, dyn);
             foreach (var pl in j.places)
@@ -123,7 +125,7 @@ namespace HashiraChronicles
                 case EnvironmentKind.Temple: return new Color(0.45f, 0.47f, 0.46f);
                 case EnvironmentKind.Castle: return new Color(0.16f, 0.13f, 0.17f);
                 case EnvironmentKind.DemonLand: return new Color(0.2f, 0.12f, 0.1f);
-                case EnvironmentKind.Mountain: return new Color(0.7f, 0.72f, 0.78f);
+                case EnvironmentKind.Mountain: return new Color(0.48f, 0.52f, 0.6f);
                 default: return Color.Lerp(t.groundAccent, new Color(0.45f, 0.35f, 0.24f), 0.6f);
             }
         }
@@ -172,16 +174,62 @@ namespace HashiraChronicles
         }
 
         /// <summary>A flat strip following the road.</summary>
+        /// <summary>
+        /// The road surface as a flat strip along the path. Each point's width runs along the bisector of the
+        /// segments on either side (no pinching at bends), near-duplicate points are dropped, and the strip is
+        /// broken at sharp turns or gaps (with a round patch over the joint) so it can never fold into long
+        /// thin spikes across the map.
+        /// </summary>
         static void Ribbon(Transform parent, List<Vector3> pts, float half, float y, Material mat)
         {
+            // Clean the path: flat, no near-duplicates.
+            var clean = new List<Vector3>();
+            foreach (var p0 in pts)
+            {
+                var p = new Vector3(p0.x, 0f, p0.z);
+                if (clean.Count == 0 || (p - clean[clean.Count - 1]).sqrMagnitude > 0.09f) clean.Add(p);
+            }
+            if (clean.Count < 2) return;
+            var strip = new List<Vector3> { clean[0] };
+            for (int i = 1; i < clean.Count; i++)
+            {
+                Vector3 seg = clean[i] - clean[i - 1];
+                bool gap = seg.magnitude > 8f;
+                bool sharp = false;
+                if (i >= 2)
+                {
+                    Vector3 prev = clean[i - 1] - clean[i - 2];
+                    sharp = Vector3.Angle(prev, seg) > 75f;
+                }
+                if (gap || sharp)
+                {
+                    RibbonStrip(parent, strip, half, y, mat);
+                    // Round patch over the joint so the break doesn't show.
+                    var patch = MeshFactory.MeshObject(MeshFactory.PlanarDisc(), parent, clean[i - 1] + Vector3.up * y, new Vector3(half, 1f, half), mat, false);
+                    patch.GetComponent<Renderer>().receiveShadows = true;
+                    strip = new List<Vector3> { clean[i - 1] };
+                    if (gap) strip = new List<Vector3>();
+                }
+                strip.Add(clean[i]);
+            }
+            RibbonStrip(parent, strip, half, y, mat);
+        }
+
+        static void RibbonStrip(Transform parent, List<Vector3> pts, float half, float y, Material mat)
+        {
+            if (pts.Count < 2) return;
             var verts = new List<Vector3>();
             var tris = new List<int>();
             var uvs = new List<Vector2>();
             float along = 0f;
             for (int i = 0; i < pts.Count; i++)
             {
-                Vector3 dir = i < pts.Count - 1 ? pts[i + 1] - pts[i] : pts[i] - pts[i - 1];
+                Vector3 dir;
+                if (i == 0) dir = pts[1] - pts[0];
+                else if (i == pts.Count - 1) dir = pts[i] - pts[i - 1];
+                else dir = (pts[i + 1] - pts[i]).normalized + (pts[i] - pts[i - 1]).normalized;
                 dir.y = 0f;
+                if (dir.sqrMagnitude < 0.0001f) dir = pts[Mathf.Min(i + 1, pts.Count - 1)] - pts[Mathf.Max(0, i - 1)];
                 Vector3 side = Vector3.Cross(Vector3.up, dir.normalized) * half;
                 if (i > 0) along += Vector3.Distance(pts[i], pts[i - 1]);
                 verts.Add(pts[i] - side + Vector3.up * y);

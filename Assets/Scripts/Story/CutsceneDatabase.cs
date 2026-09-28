@@ -173,7 +173,7 @@ namespace HashiraChronicles
                 .Say("Sora", "Before it died, that thing said... 'the Lord's servants are everywhere.'")
                 .Say("Ren", "Then this is bigger than Kiriha. Bigger than one village.")
                 .Fx("darkpulse", new Vector3(0f, 6f, 10f), Eclipse).Shake(0.3f).Sky(new Color(0.1f, 0.02f, 0.05f), new Color(0.15f, 0.05f, 0.08f), 1f)
-                .Say("Veyrath", "Ren Kagami. Run to your little kingdom. I will be waiting there.")
+                .Say("Veyrath", "Ren. Run to your little kingdom. I will be waiting there.")
                 .Say("Ren", "It... knows my name.")
                 .Say("Sora", "Why does the scary sky voice know your NAME?!");
 
@@ -246,7 +246,7 @@ namespace HashiraChronicles
                 .Cut(new Vector3(0f, 1.8f, -4.5f), new Vector3(0f, 1.3f, 0f)).Fade(0f, 1f)
                 .Say("Tetsu", "Twenty years. I stood beside him for twenty years and never saw it.")
                 .Say("Ren", "Then stand beside us now. We could use a wall.")
-                .Say("Tetsu", "...The Guard is yours, Ren Kagami.")
+                .Say("Tetsu", "...The Guard is yours, Ren.")
                 .Title("TETSU JOINS YOUR TEAM", "Stone Breathing · Tank", 2.5f);
 
             // ------------------------------------------------ Chapter 4
@@ -260,7 +260,7 @@ namespace HashiraChronicles
                 .Fx("fire", new Vector3(0f, 0f, 5f), new Color(1f, 0.5f, 0.1f))
                 .Say("Homura", "So you're the boy with the dawn in his chest.")
                 .Say("Ren", "Who are you?")
-                .Say("Homura", "Homura Enjoji. Flame Pillar. The King sent me to watch you. I decided to help instead.")
+                .Say("Homura", "Homura. Flame Pillar. The King sent me to watch you. I decided to help instead.")
                 .Anim("homura", "victory")
                 .Title("HOMURA JOINS YOUR TEAM", "Blaze Breathing · Legendary", 2.5f);
 
@@ -271,7 +271,7 @@ namespace HashiraChronicles
                 .Anim("goken", "defeat")
                 .Cut(new Vector3(2f, 1.5f, -3f), new Vector3(0f, 1.2f, 1f)).Fade(0f, 1f)
                 .Say("Goken", "Heh... that was a good fight. The best in a century.")
-                .Say("Goken", "The Lord knew your name before you were born, Ren Kagami. Go to the temple. Ask it... why.")
+                .Say("Goken", "The Lord knew your name before you were born, Ren. Go to the temple. Ask it... why.")
                 .Anim("goken", "fade").Fx("darkpulse", new Vector3(0f, 1f, 2f), Eclipse)
                 .Say("Ren", "Before I was born...?");
 

@@ -7,6 +7,8 @@ namespace HashiraChronicles
     public class FlashFx : MonoBehaviour
     {
         static readonly Stack<FlashFx> pool = new Stack<FlashFx>();
+        static readonly Stack<FlashFx> darkPool = new Stack<FlashFx>();
+        bool dark;
         static Transform poolRoot;
 
         Material mat;
@@ -15,10 +17,14 @@ namespace HashiraChronicles
         Vector3 from, to;
         float duration, t;
 
-        public static FlashFx Get(Mesh mesh)
+        public static FlashFx Get(Mesh mesh) { return Get(mesh, false); }
+
+        /// <summary>alphaBlend: a normally-blended (not glowing) flash, used for dark backings that give slashes contrast on bright ground.</summary>
+        public static FlashFx Get(Mesh mesh, bool alphaBlend)
         {
             FlashFx fx = null;
-            while (fx == null && pool.Count > 0) fx = pool.Pop();
+            var src = alphaBlend ? darkPool : pool;
+            while (fx == null && src.Count > 0) fx = src.Pop();
             if (fx == null)
             {
                 if (poolRoot == null)
@@ -34,7 +40,8 @@ namespace HashiraChronicles
                 var mr = go.AddComponent<MeshRenderer>();
                 mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 mr.receiveShadows = false;
-                fx.mat = MaterialFactory.Additive(Color.white);
+                fx.dark = alphaBlend;
+                fx.mat = alphaBlend ? MaterialFactory.Transparent(Color.white) : MaterialFactory.Additive(Color.white);
                 mr.sharedMaterial = fx.mat;
             }
             fx.filter.sharedMesh = mesh;
@@ -66,7 +73,7 @@ namespace HashiraChronicles
             if (k >= 1f)
             {
                 gameObject.SetActive(false);
-                pool.Push(this);
+                (dark ? darkPool : pool).Push(this);
             }
         }
 

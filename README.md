@@ -109,8 +109,12 @@ Bosses keep their camera reveal and phases and now fall in a slow-motion **defea
 - **Step-up summons**: ×10 costs FREE → 250 → 500 → 500 (double Mythic rate) → 400, then repeats. Rates are
   Common 50% · Rare 30% · Epic 14% · Legendary 4% · Mythic 2%. Each paid ×10 gives a token; 30 tokens buy a featured Mythic in the
   Shop's **Mythic Exchange**.
-- **Awakening**: a duplicate of the same slayer awakens them — one star turns bright purple, +30 max level
-  and +30 levels, +20% stats per purple star. All six purple and maxed out = **GOD** status.
+- **Awakening** (Legendary and Mythic only): a duplicate of the same slayer awakens them — one star turns
+  bright purple, +30 max level and +30 levels, +20% stats per purple star. All six purple and maxed out =
+  **GOD** status. Duplicates of other slayers give double EXP when fed to that same slayer.
+- **Shop**: diamond packs (250 $2.99 … 10,000 $74.99), supplies, accessories and the Mythic exchange. Store
+  billing isn't connected in this build, so pack buttons grant the diamonds directly for testing.
+- Slayers go by their first names only.
 - **27 slayers**: newcomers Taro, Nami, Koji, Yuna (Common), Daigo, Hotaru, Kenta, Rin (Rare) and Akane,
   Tsukasa, Mizuki (Legendary), each with their own special. The Characters screen shows every slayer —
   the ones you don't have yet are greyed out with a lock.

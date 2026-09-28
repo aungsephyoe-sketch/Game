@@ -122,7 +122,8 @@ namespace HashiraChronicles
             return new CharacterDefinition
             {
                 // Rarity tiers are 2★ Common .. 6★ Mythic (the data table lists them one step higher).
-                id = id, baseId = baseId, displayName = name, versionTitle = title, breathingStyle = style, rarity = rarity - 1,
+                // Slayers go by their first name only.
+                id = id, baseId = baseId, displayName = name.Split(' ')[0], versionTitle = title, breathingStyle = style, rarity = rarity - 1,
                 element = el, role = role, description = desc, story = story, baseStats = BaseStats(rarity, role),
                 bodyColor = body, haoriColor = haori, hairColor = hair, bladeColor = blade
             };
@@ -752,10 +753,11 @@ namespace HashiraChronicles
                     t.sun = new Color(0.55f, 0.75f, 0.7f); t.sunIntensity = 0.7f;
                     break;
                 case EnvironmentKind.Mountain:
-                    t.ground = new Color(0.85f, 0.88f, 0.95f); t.groundAccent = new Color(0.65f, 0.7f, 0.8f);
-                    t.sky = new Color(0.55f, 0.65f, 0.8f); t.fog = new Color(0.75f, 0.8f, 0.9f); t.fogStart = 20f; t.fogEnd = 70f;
+                    // Snow toned down to a soft blue-grey: glowing attacks must stay readable on it.
+                    t.ground = new Color(0.62f, 0.68f, 0.78f); t.groundAccent = new Color(0.5f, 0.56f, 0.68f);
+                    t.sky = new Color(0.55f, 0.65f, 0.8f); t.fog = new Color(0.66f, 0.72f, 0.84f); t.fogStart = 24f; t.fogEnd = 80f;
                     t.lantern = new Color(1f, 0.8f, 0.5f); t.foliage = new Color(0.15f, 0.3f, 0.25f); t.petals = false; t.night = false;
-                    t.sun = new Color(1f, 0.97f, 0.9f); t.sunIntensity = 1.25f;
+                    t.sun = new Color(1f, 0.97f, 0.9f); t.sunIntensity = 1.05f;
                     break;
                 case EnvironmentKind.Kingdom:
                     t.ground = new Color(0.55f, 0.52f, 0.48f); t.groundAccent = new Color(0.7f, 0.62f, 0.5f);

@@ -65,12 +65,8 @@ namespace HashiraChronicles
         void AddMenace(EnemyDefinition def)
         {
             if (def.form == "dummy") return;
-            var aura = EnvFx.Smoke(mRoot, new Vector3(0f, 0.15f, 0f), 0.5f);
-            if (aura != null)
-            {
-                var m = aura.main;
-                m.startColor = new Color(0.08f, 0.02f, 0.1f, 0.55f);
-            }
+            // (The old dark smoke aura drifted off in world space and smudged dark blobs all over the
+            // battlefield, hiding the attacks — the glowing stain and rising motes carry the menace now.)
             var stain = MaterialFactory.Additive(new Color(def.accentColor.r, def.accentColor.g, def.accentColor.b, 0.22f));
             var disc = MeshFactory.MeshObject(MeshFactory.PlanarDisc(), mRoot, Vector3.up * 0.04f, new Vector3(0.9f, 1f, 0.9f), stain, false);
             Add(disc);

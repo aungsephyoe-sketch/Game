@@ -14,6 +14,8 @@ namespace HashiraChronicles
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             var r = go.GetComponent<ParticleSystemRenderer>();
             r.material = additive ? MaterialFactory.Additive(Color.white, true) : MaterialFactory.Transparent(Color.white, true);
+            // No particle may fill more than a sliver of the screen, even right in front of the camera.
+            r.maxParticleSize = 0.035f;
             var main = ps.main;
             main.loop = true;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
@@ -97,7 +99,8 @@ namespace HashiraChronicles
         public static ParticleSystem Weather(Transform parent, Vector3 center, string kind, float area = 40f)
         {
             bool additive = kind == "embers" || kind == "motes";
-            var ps = Make(parent, "Weather_" + kind, center + Vector3.up * 10f, additive);
+            // Emitted low (the battle camera sits ~11 m up) so flakes never blur right in front of the lens.
+            var ps = Make(parent, "Weather_" + kind, center + Vector3.up * 6f, additive);
             var main = ps.main;
             main.maxParticles = 400;
             var shape = ps.shape;
@@ -111,8 +114,8 @@ namespace HashiraChronicles
             {
                 case "snow":
                     main.startLifetime = 8f; main.startSpeed = 0.2f; main.gravityModifier = 0.05f;
-                    main.startSize = new ParticleSystem.MinMaxCurve(0.06f, 0.16f); main.startColor = new Color(1f, 1f, 1f, 0.9f);
-                    em.rateOverTime = 45f * scale; noise.strength = 0.4f; noise.frequency = 0.3f;
+                    main.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.11f); main.startColor = new Color(1f, 1f, 1f, 0.55f);
+                    em.rateOverTime = 16f * scale; noise.strength = 0.4f; noise.frequency = 0.3f;
                     break;
                 case "embers":
                     ps.transform.localPosition = center + Vector3.up * 0.2f;
@@ -126,12 +129,12 @@ namespace HashiraChronicles
                     main.startSize = new ParticleSystem.MinMaxCurve(0.1f, 0.22f);
                     main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.85f, 0.45f, 0.15f), new Color(0.55f, 0.65f, 0.2f));
                     main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
-                    em.rateOverTime = 12f * scale; noise.strength = 0.7f; noise.frequency = 0.3f;
+                    em.rateOverTime = 8f * scale; noise.strength = 0.7f; noise.frequency = 0.3f;
                     break;
                 case "ash":
                     main.startLifetime = 9f; main.startSpeed = 0.2f; main.gravityModifier = 0.02f;
-                    main.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.14f); main.startColor = new Color(0.25f, 0.23f, 0.23f, 0.8f);
-                    em.rateOverTime = 30f * scale; noise.strength = 0.5f; noise.frequency = 0.3f;
+                    main.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.1f); main.startColor = new Color(0.45f, 0.42f, 0.42f, 0.45f);
+                    em.rateOverTime = 12f * scale; noise.strength = 0.5f; noise.frequency = 0.3f;
                     break;
                 default: // glowing motes
                     ps.transform.localPosition = center + Vector3.up * 1.5f;

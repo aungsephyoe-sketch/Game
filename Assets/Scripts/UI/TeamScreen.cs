@@ -505,7 +505,7 @@ namespace HashiraChronicles
             GUI.Label(new Rect(r.x + 150f, r.y + 32f, w - 160f, 36f), ddef.displayName + "  <color=#FFD36B>×" + stack.count + "</color>", UIStyles.Sized(UIStyles.Body, 20));
             UIStyles.Outlined(new Rect(r.x + 8f, r.y + 72f, 136f, 20f), RarityInfo.Name(ddef.rarity), UIStyles.Sized(UIStyles.CenterSmall, 13), RarityInfo.Color(ddef.rarity), 1.2f);
             bool sameChar = stack.id == c.id;
-            if (sameChar)
+            if (sameChar && CharacterSystem.CanAwakenRarity(c))
             {
                 // A copy of this very slayer: AWAKEN (purple star, +30 max level and levels, +20% stats).
                 bool canAw = c.awaken < ExperienceSystem.MaxAwaken;
@@ -522,7 +522,7 @@ namespace HashiraChronicles
                 return;
             }
             float bw = (w - 160f - 10f) / 2f;
-            int fx = ExperienceSystem.CopyXp(ddef.rarity), fg = ExperienceSystem.CopyGold(ddef.rarity);
+            int fx = ExperienceSystem.CopyXp(ddef.rarity) * (sameChar ? 2 : 1), fg = ExperienceSystem.CopyGold(ddef.rarity);
             if (FlatBtn(new Rect(r.x + 150f, r.y + 68f, bw, 42f), "FEED <size=14>+" + fx.ToString("N0") + " EXP</size>", new Color(0.45f, 0.3f, 0.75f), !maxed, 17))
             {
                 int gained = CharacterSystem.FeedCopy(d, c, stack.id);

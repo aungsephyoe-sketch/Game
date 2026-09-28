@@ -92,6 +92,122 @@ namespace HashiraChronicles
             }
         }
 
+        /// <summary>
+        /// Countryside: fills the land on both sides of the road with the region's trees, bushes, flowers, rocks
+        /// and props (hay bales and barrels in the village, snowy pines on the pass, dead trees in the wastes...).
+        /// Tall things stay back from the road so they never hide the fight.
+        /// </summary>
+        static void DenseScatter(Journey j, ArenaTheme theme, Transform stat, Transform dyn)
+        {
+            var k = Kit(theme);
+            var trunk = MaterialFactory.Toon(new Color(0.42f, 0.3f, 0.2f));
+            var leafB = MaterialFactory.Toon(Color.Lerp(theme.foliage, new Color(0.25f, 0.5f, 0.25f), 0.6f));
+            var leafC = MaterialFactory.Toon(Color.Lerp(theme.foliage, new Color(0.35f, 0.6f, 0.3f), 0.35f));
+            var bush = MaterialFactory.Toon(new Color(0.28f, 0.5f, 0.26f));
+            var berry = MaterialFactory.Toon(new Color(0.9f, 0.25f, 0.3f), 0f);
+            var hay = MaterialFactory.Toon(new Color(0.9f, 0.78f, 0.4f));
+            var barrel = MaterialFactory.Toon(new Color(0.5f, 0.33f, 0.2f));
+            var dead = MaterialFactory.Toon(new Color(0.18f, 0.14f, 0.12f));
+            bool lush = Lush(theme), snowy = theme.kind == EnvironmentKind.Mountain;
+            bool grim = theme.kind == EnvironmentKind.DemonLand || theme.kind == EnvironmentKind.Castle || theme.kind == EnvironmentKind.FallenCity || theme.burning;
+            float density = Mathf.Clamp(GameSettings.SceneryDensity, 0.4f, 1.2f);
+            for (float d = 2f; d < j.Length - 2f; d += R(1.8f, 2.6f) / density)
+            {
+                Vector3 p = j.PointAt(d);
+                Vector3 ahead = j.PointAt(d + 1f) - p;
+                ahead.y = 0f;
+                if (ahead.sqrMagnitude < 0.0001f) continue;
+                ahead.Normalize();
+                Vector3 side = Vector3.Cross(Vector3.up, ahead);
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    float off = j.halfWidth + R(1.5f, 26f);
+                    Vector3 at = p + side * s * off + ahead * R(-1f, 1f);
+                    at.y = 0f;
+                    if (InPlace(j, at, 1.5f) || j.DistanceToPath(at) < j.halfWidth + 1.2f) continue;
+                    bool far = off > j.halfWidth + 6f;
+                    double r = rng.NextDouble();
+                    if (grim)
+                    {
+                        if (far && r < 0.3) DeadTreeTall(stat, at, dead);
+                        else if (r < 0.55) Rock(k, stat, at, false);
+                        else if (r < 0.7) Spikes(k, stat, at, R(0f, 360f));
+                        else if (r < 0.82) Bones(k, stat, at, R(0f, 360f));
+                        else Pebbles(k, stat, at);
+                    }
+                    else if (snowy)
+                    {
+                        if (far && r < 0.45) SnowPine(stat, at, trunk, leafB, k.snow);
+                        else if (r < 0.7) Rock(k, stat, at, true);
+                        else if (r < 0.85) Bush(stat, at, bush, null, k.snow);
+                        else Pebbles(k, stat, at);
+                    }
+                    else
+                    {
+                        if (far && r < 0.38) { if (rng.NextDouble() < 0.35) SnowPine(stat, at, trunk, leafB, null); else LeafTree(stat, at, trunk, rng.NextDouble() < 0.5 ? leafB : leafC); }
+                        else if (r < 0.62) Bush(stat, at, bush, rng.NextDouble() < 0.3 ? berry : null, null);
+                        else if (r < 0.76 && lush) Flowers(k, stat, at);
+                        else if (r < 0.84) Rock(k, stat, at, false);
+                        else if (r < 0.9 && theme.kind == EnvironmentKind.Village) HayBale(stat, at, hay);
+                        else if (r < 0.95 && (theme.kind == EnvironmentKind.Village || theme.kind == EnvironmentKind.Kingdom)) Barrel(stat, at, barrel);
+                        else Log(k, stat, at, R(0f, 360f));
+                    }
+                }
+            }
+        }
+
+        static void LeafTree(Transform p, Vector3 at, Material trunk, Material leaf)
+        {
+            float h = R(2.6f, 4f);
+            Prim(PrimitiveType.Cylinder, p, at + Vector3.up * h * 0.5f, new Vector3(0.4f, h * 0.5f, 0.4f), trunk, Vector3.zero);
+            for (int i = 0; i < 4; i++)
+                Prim(PrimitiveType.Sphere, p, at + new Vector3(R(-0.9f, 0.9f), h + R(-0.2f, 0.9f), R(-0.9f, 0.9f)), Vector3.one * R(1.8f, 2.8f), leaf, Vector3.zero);
+        }
+
+        static void SnowPine(Transform p, Vector3 at, Material trunk, Material leaf, Material snow)
+        {
+            float h = R(3.5f, 6f);
+            Prim(PrimitiveType.Cylinder, p, at + Vector3.up * 0.5f, new Vector3(0.35f, 0.5f, 0.35f), trunk, Vector3.zero);
+            for (int k2 = 0; k2 < 3; k2++)
+            {
+                MeshFactory.MeshObject(MeshFactory.Cone(), p, at + Vector3.up * (0.8f + k2 * h * 0.22f), new Vector3(h * (0.5f - k2 * 0.12f), h * 0.38f, h * (0.5f - k2 * 0.12f)), leaf);
+                if (snow != null) MeshFactory.MeshObject(MeshFactory.Cone(), p, at + Vector3.up * (0.8f + k2 * h * 0.22f + h * 0.2f), new Vector3(h * (0.3f - k2 * 0.07f), h * 0.2f, h * (0.3f - k2 * 0.07f)), snow);
+            }
+        }
+
+        static void DeadTreeTall(Transform p, Vector3 at, Material bark)
+        {
+            float h = R(2.5f, 4f);
+            Prim(PrimitiveType.Cylinder, p, at + Vector3.up * h * 0.5f, new Vector3(0.25f, h * 0.5f, 0.25f), bark, new Vector3(R(-6f, 6f), 0f, R(-6f, 6f)));
+            for (int i = 0; i < 3; i++)
+                Prim(PrimitiveType.Cylinder, p, at + Vector3.up * h * R(0.6f, 0.95f), new Vector3(0.08f, R(0.5f, 0.9f), 0.08f), bark, new Vector3(R(30f, 60f), R(0f, 360f), 0f));
+        }
+
+        static void Bush(Transform p, Vector3 at, Material leaf, Material berry, Material snow)
+        {
+            int c = 2 + rng.Next(3);
+            for (int i = 0; i < c; i++)
+            {
+                float s = R(0.6f, 1.1f);
+                var b = Prim(PrimitiveType.Sphere, p, at + new Vector3(R(-0.5f, 0.5f), s * 0.35f, R(-0.5f, 0.5f)), new Vector3(s * 1.2f, s * 0.85f, s), leaf, Vector3.zero);
+                b.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                if (snow != null) Prim(PrimitiveType.Sphere, p, at + new Vector3(0f, s * 0.7f, 0f), new Vector3(s * 0.9f, s * 0.3f, s * 0.8f), snow, Vector3.zero);
+            }
+            if (berry != null)
+                for (int i = 0; i < 5; i++) Prim(PrimitiveType.Sphere, p, at + new Vector3(R(-0.6f, 0.6f), R(0.4f, 0.8f), R(-0.6f, 0.6f)), Vector3.one * 0.12f, berry, Vector3.zero);
+        }
+
+        static void HayBale(Transform p, Vector3 at, Material hay)
+        {
+            Prim(PrimitiveType.Cylinder, p, at + Vector3.up * 0.55f, new Vector3(1.1f, 0.6f, 1.1f), hay, new Vector3(90f, R(0f, 360f), 0f));
+        }
+
+        static void Barrel(Transform p, Vector3 at, Material wood)
+        {
+            int c = 1 + rng.Next(3);
+            for (int i = 0; i < c; i++) Prim(PrimitiveType.Cylinder, p, at + new Vector3(i * 0.75f, 0.45f, R(-0.2f, 0.2f)), new Vector3(0.65f, 0.45f, 0.65f), wood, Vector3.zero);
+        }
+
         static bool Lush(ArenaTheme t)
         {
             return !t.burning && (t.kind == EnvironmentKind.Village || t.kind == EnvironmentKind.Forest || t.kind == EnvironmentKind.Kingdom || t.kind == EnvironmentKind.Temple || t.kind == EnvironmentKind.Mountain);

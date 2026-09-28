@@ -40,9 +40,16 @@ namespace HashiraChronicles
         /// Awaken with a duplicate of the same slayer: one more star turns purple, +30 max level and +30 levels
         /// right away, +20% stats. All six purple and maxed out = GOD.
         /// </summary>
+        /// <summary>Only Legendary and Mythic slayers can awaken (purple stars).</summary>
+        public static bool CanAwakenRarity(OwnedCharacter c)
+        {
+            var def = GameDatabase.GetCharacter(c.id);
+            return def != null && def.rarity >= 5;
+        }
+
         public static bool TryAwaken(PlayerData data, OwnedCharacter c)
         {
-            if (c.awaken >= ExperienceSystem.MaxAwaken || SameCopies(data, c) <= 0) return false;
+            if (!CanAwakenRarity(c) || c.awaken >= ExperienceSystem.MaxAwaken || SameCopies(data, c) <= 0) return false;
             var st = data.copies.Find(x => x.id == c.id);
             st.count--;
             if (st.count <= 0) data.copies.Remove(st);
@@ -139,7 +146,9 @@ namespace HashiraChronicles
             if (stack == null || stack.count <= 0 || def == null) return -1;
             stack.count--;
             if (stack.count <= 0) data.copies.Remove(stack);
-            int gained = ExperienceSystem.AddExp(target, ExperienceSystem.CopyXp(def.rarity));
+            // A copy of the very same slayer is worth double.
+            int xp = ExperienceSystem.CopyXp(def.rarity) * (copyId == target.id ? 2 : 1);
+            int gained = ExperienceSystem.AddExp(target, xp);
             GameEvents.RaiseCharacterUpgraded(target);
             return gained;
         }

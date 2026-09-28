@@ -21,9 +21,6 @@ namespace HashiraChronicles
             new Item { id = "free_crystals", name = "Daily Gift", description = "20 diamonds, free once a day.", grant = new RewardBundle { crystals = 20 }, dailyFree = true },
             new Item { id = "exp5", name = "XP Pack", description = "+5,000 XP for levelling slayers.", coinCost = 2000, grant = new RewardBundle { expScrolls = 5 } },
             new Item { id = "skill3", name = "Big XP Pack", description = "+15,000 XP for levels, skills and ascension.", coinCost = 5500, grant = new RewardBundle { expScrolls = 15 } },
-            new Item { id = "chest4", name = "Forge Chest", description = "A random RARE+ weapon, haori or accessory.", coinCost = 12000, chestRarity = 3 },
-            new Item { id = "chest5", name = "Pillar's Chest", description = "A random EPIC+ weapon, haori or accessory.", crystalCost = 150, chestRarity = 4 },
-            new Item { id = "coins", name = "Gold Pouch", description = "25,000 gold.", crystalCost = 60, grant = new RewardBundle { coins = 25000 } },
         };
 
         /// <summary>Gold price of an accessory by rarity (Common .. Mythic).</summary>
@@ -48,6 +45,33 @@ namespace HashiraChronicles
             InventorySystem.AddEquipment(d, e.id);
             return true;
         }
+
+        /// <summary>A diamond pack on the store (price in USD, shown on the button).</summary>
+        public class DiamondPack
+        {
+            public int diamonds;
+            public string price;
+            public string tag;
+            public string badge;
+        }
+
+        public static readonly List<DiamondPack> DiamondPacks = new List<DiamondPack>
+        {
+            new DiamondPack { diamonds = 250, price = "$2.99", tag = "Starter Pack" },
+            new DiamondPack { diamonds = 500, price = "$4.99", tag = "Popular" },
+            new DiamondPack { diamonds = 1000, price = "$8.99", tag = "Best Value", badge = "★ BEST VALUE" },
+            new DiamondPack { diamonds = 1500, price = "$12.99", tag = "" },
+            new DiamondPack { diamonds = 2000, price = "$16.99", tag = "Best Seller", badge = "BEST SELLER" },
+            new DiamondPack { diamonds = 3000, price = "$24.99", tag = "" },
+            new DiamondPack { diamonds = 5000, price = "$39.99", tag = "" },
+            new DiamondPack { diamonds = 10000, price = "$74.99", tag = "Mega Pack", badge = "◆ MEGA PACK" },
+        };
+
+        /// <summary>
+        /// Real-money purchases need the platform store (App Store / Google Play billing), which isn't connected in
+        /// this build — the button grants the diamonds directly so the flow can be tested.
+        /// </summary>
+        public static void BuyDiamondPack(PlayerData d, DiamondPack p) { d.crystals += p.diamonds; }
 
         public static bool FreeClaimedToday(PlayerData d)
         {
