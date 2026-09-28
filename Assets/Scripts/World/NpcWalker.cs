@@ -45,6 +45,19 @@ namespace HashiraChronicles
             return w;
         }
 
+        /// <summary>Talked to by a slayer: stop, turn to face them and say something.</summary>
+        public void Say(Vector3 listener)
+        {
+            if (Lines == null || Lines.Length == 0) return;
+            CurrentLine = Lines[Random.Range(0, Lines.Length)];
+            LineUntil = Time.unscaledTime + 4f;
+            talkTimer = Random.Range(10f, 20f);
+            wait = 4f;
+            Vector3 d = listener - transform.position;
+            d.y = 0f;
+            if (d.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(d);
+        }
+
         void OnEnable() { All.Add(this); }
         void OnDisable() { All.Remove(this); }
 
@@ -91,6 +104,14 @@ namespace HashiraChronicles
             }
             Vector3 dir = to.normalized;
             transform.position += dir * Speed * Time.deltaTime;
+            // In the open world, villagers walk around houses and trees instead of through them.
+            var b = BattleController.Current;
+            if (b != null && b.Def != null && b.Def.openWorld)
+            {
+                Vector3 before = transform.position;
+                transform.position = OpenWorldBuilder.Clamp(before);
+                if ((transform.position - before).sqrMagnitude > 0.0001f) { wait = 0.5f; PickTarget(); }
+            }
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(dir), Time.deltaTime * 5f);
             visual.SetMoving(0.5f);
         }

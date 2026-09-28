@@ -25,27 +25,19 @@ namespace HashiraChronicles
             UIStyles.Outlined(new Rect(x - 4f, ty + 52f, 1000f, 110f), words[0], UIStyles.Sized(UIStyles.Title, 96), Color.white, 4f);
             if (words.Length > 1) UIStyles.Outlined(new Rect(x - 4f, ty + 144f, 1000f, 110f), words[1], UIStyles.Sized(UIStyles.Title, 96), Color.white, 4f);
 
-            var next = gm.NextStoryMission();
             string leaderId = d.team.Count > 0 ? d.team[0] : null;
             var leader = leaderId != null ? GameDatabase.GetCharacter(leaderId) : null;
 
             // Row 1: PLAY and STORY.
             float top = safe.y + 300f;
-            if (HomeTile(new Rect(x, top, 490f, 272f), "PLAY", null, new Color(1f, 0.25f, 0.2f), 0.1f, TileArt.Play, leader != null ? ArtLibrary.CharacterFull(leader) : null, 0, true))
+            if (HomeTile(new Rect(x, top, 400f, 272f), "PLAY", null, new Color(1f, 0.25f, 0.2f), 0.1f, TileArt.Play, leader != null ? ArtLibrary.CharacterFull(leader) : null, 0, true))
                 gm.GoTo(GameScreen.WorldMap);
-            if (HomeTile(new Rect(x + 506f, top, 420f, 272f), "STORY", null, new Color(0.9f, 0.9f, 0.95f), 0.16f, TileArt.Story))
-            {
-                // Story → world map, opened on the chapter and stop of the next story mission.
-                if (next != null)
-                {
-                    mapSelected = next.regionId;
-                    mapOverview = false;
-                    areaRegion = next.regionId;
-                    areaPick = GameDatabase.MissionsInRegion(next.regionId).IndexOf(next);
-                    gm.GoTo(GameScreen.WorldMap);
-                }
-                else gm.GoTo(GameScreen.Story);
-            }
+            // EVENTS replaces STORY on the home screen (the story lives on the world map and in the journal).
+            if (HomeTile(new Rect(x + 416f, top, 270f, 272f), "EVENTS", null, new Color(1f, 0.6f, 0.25f), 0.16f, TileArt.Events, null, EventBadge(d)))
+                gm.GoTo(GameScreen.Events);
+            // OPEN WORLD: walk around Kiriha Village freely — houses, trees and villagers to talk to.
+            if (HomeTile(new Rect(x + 702f, top, 224f, 272f), "OPEN WORLD", IconFactory.Get("people"), new Color(0.2f, 0.62f, 0.4f), 0.2f))
+                gm.BeginMission(GameDatabase.OpenWorld);
             // Row 2: SUMMON, CHARACTERS, TEAM.
             float r2 = top + 290f, h2 = 190f;
             if (HomeTile(new Rect(x, r2, 262f, h2), "SUMMON", IconFactory.Get("flame"), new Color(0.52f, 0.26f, 0.85f), 0.22f, null, null, MenuBadge("SUMMON"))) OpenMenu("SUMMON");
@@ -128,7 +120,7 @@ namespace HashiraChronicles
             {
                 case "MISSIONS": return QuestSystem.Claimable(d);
                 case "SHOP": return ShopSystem.FreeClaimedToday(d) ? 0 : 1;
-                case "SUMMON": return d.crystals >= SummonSystem.MultiCost ? 10 : 0;
+                case "SUMMON": return d.crystals >= SummonSystem.MultiCostFor(d) ? 10 : 0;
                 default: return 0;
             }
         }
@@ -878,7 +870,7 @@ namespace HashiraChronicles
             if (GUI.Button(br, GUIContent.none, GUIStyle.none) || (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape))
             {
                 gm.Audio.Play("click", 0.5f);
-                gm.GoTo(GameScreen.WorldMap);
+                gm.GoTo(!string.IsNullOrEmpty(m.eventId) ? GameScreen.Events : GameScreen.WorldMap);
                 if (Event.current.type == EventType.KeyDown) Event.current.Use();
             }
             UIStyles.Outlined(new Rect(br.xMax + 30f, safe.y + 18f, 400f, 52f), GameConfig.TitleLine1, UIStyles.Sized(UIStyles.Title, 38), new Color(0.9f, 0.12f, 0.12f), 2f);
@@ -1122,7 +1114,8 @@ namespace HashiraChronicles
                 if ((Enter(1.2f) > 0f && FlatBtn(new Rect(bx, by, bw, 100f), "RETRY", TileRed, true, 30))) gm.BeginMission(r.mission);
                 if ((Enter(1.3f) > 0f && FlatBtn(new Rect(bx + (bw + gap), by, bw, 100f), "UPGRADE SLAYERS", new Color(0.14f, 0.17f, 0.28f), true, 30))) gm.GoTo(GameScreen.Characters);
             }
-            if ((Enter(1.4f) > 0f && FlatBtn(new Rect(bx + (bw + gap) * 2f, by, bw, 100f), "RETURN TO MAP", new Color(0.14f, 0.17f, 0.28f), true, 30))) gm.GoTo(GameScreen.WorldMap);
+            bool evMission = !string.IsNullOrEmpty(r.mission.eventId);
+            if ((Enter(1.4f) > 0f && FlatBtn(new Rect(bx + (bw + gap) * 2f, by, bw, 100f), evMission ? "BACK TO EVENT" : "RETURN TO MAP", new Color(0.14f, 0.17f, 0.28f), true, 30))) gm.GoTo(evMission ? GameScreen.Events : GameScreen.WorldMap);
             if ((Enter(1.5f) > 0f && FlatBtn(new Rect(bx + (bw + gap) * 3f, by, bw, 100f), "CHARACTERS", new Color(0.14f, 0.17f, 0.28f), true, 30))) gm.GoTo(GameScreen.Characters);
         }
 
@@ -1178,6 +1171,12 @@ namespace HashiraChronicles
         /// <summary>The mission this one unlocks on the main path (falls back to the next open story mission).</summary>
         MissionDefinition NextMission(MissionDefinition m)
         {
+            if (!string.IsNullOrEmpty(m.eventId))
+            {
+                var ev = GameDatabase.GetEvent(m.eventId);
+                int i = ev != null ? ev.quests.IndexOf(m) : -1;
+                return ev != null && i >= 0 && i + 1 < ev.quests.Count ? ev.quests[i + 1] : null;
+            }
             foreach (var x in GameDatabase.AllMissions())
                 if (x.requiresMissionId == m.id && (x.type == MissionType.Story || x.type == MissionType.Boss)) return x;
             return gm.NextStoryMission();

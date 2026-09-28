@@ -16,6 +16,8 @@ namespace HashiraChronicles
         public string accessoryUid = "";
         /// <summary>Bitmask of unlocked ability-tree nodes.</summary>
         public int treeNodes;
+        /// <summary>Awakenings from duplicates of this same slayer (0..6): each is a purple star, +30 max level, +20% stats.</summary>
+        public int awaken;
 
         public string GetEquipped(EquipSlot slot)
         {
@@ -116,6 +118,12 @@ namespace HashiraChronicles
 
         // ---- Missions board (daily / weekly quests)
         public string dailyKey = "";
+
+        // ---- Step-up summons: which step of the ×10 ladder is next, and exchange tokens earned from paid ×10s.
+        public int summonStep;
+        public int summonTokens;
+        /// <summary>One-time gift of 100,000 diamonds.</summary>
+        public bool diamondGift;
 
         // ---- Daily login reward (rolled once per day, claimed from a popup on the home screen)
         public string loginKey = "";

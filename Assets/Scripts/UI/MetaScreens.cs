@@ -111,7 +111,7 @@ namespace HashiraChronicles
             foreach (var m in GameDatabase.AllMissions())
             {
                 if (boardTab == 2 && (m.type == MissionType.Side || m.type == MissionType.Treasure)) list.Add(m);
-                if (boardTab == 3 && (m.type == MissionType.Event || m.type == MissionType.Training)) list.Add(m);
+                if (boardTab == 3 && string.IsNullOrEmpty(m.eventId) && (m.type == MissionType.Event || m.type == MissionType.Training)) list.Add(m);
             }
             var view = new Rect(body.x + 20f, body.y + 20f, body.width - 40f, body.height - 40f);
             var content = new Rect(0f, 0f, view.width - 24f, list.Count * 124f);
@@ -217,10 +217,11 @@ namespace HashiraChronicles
             var d = gm.Data;
             TopBar("SOLMERE MARKET", GameScreen.MainMenu);
             // Tabs: supplies (XP packs, chests, diamonds) and accessories for gold.
-            string[] tabs = { "SUPPLIES", "ACCESSORIES" };
-            for (int t = 0; t < 2; t++)
-                if (FlatBtn(new Rect(safe.x + 30f + t * 260f, safe.y + 120f, 240f, 60f), tabs[t], shopTab == t ? TileRed : TileNavy, true, 22)) shopTab = t;
+            string[] tabs = { "SUPPLIES", "ACCESSORIES", "MYTHIC EXCHANGE" };
+            for (int t = 0; t < 3; t++)
+                if (FlatBtn(new Rect(safe.x + 30f + t * 260f, safe.y + 120f, 240f, 60f), tabs[t], shopTab == t ? TileRed : TileNavy, true, t == 2 ? 18 : 22)) shopTab = t;
             if (shopTab == 1) { DrawAccessoryShop(d); return; }
+            if (shopTab == 2) { DrawMythicExchange(d); return; }
             float cw = 520f, ch = 230f, gap = 22f;
             int cols = Mathf.Max(1, Mathf.FloorToInt((safe.width - 60f + gap) / (cw + gap)));
             float top = safe.y + 200f;
@@ -249,6 +250,50 @@ namespace HashiraChronicles
         }
 
         int shopTab;
+
+        /// <summary>Tokens from paid step-up ×10s buy a featured Mythic: 30 tokens each.</summary>
+        void DrawMythicExchange(PlayerData d)
+        {
+            float top = safe.y + 200f;
+            var head = new Rect(safe.x + 30f, top, safe.width - 60f, 70f);
+            Round(head, new Color(0.08f, 0.06f, 0.14f, 0.92f), 16f);
+            GUI.Label(new Rect(head.x + 24f, head.y, head.width - 48f, head.height), "Every paid step-up ×10 summon gives <b>1 token</b>. Trade <b>" + SummonSystem.ExchangeCost + " tokens</b> for the Mythic of your choice.", UIStyles.Sized(UIStyles.Body, 22));
+            GUI.Label(new Rect(head.x + 24f, head.y, head.width - 48f, head.height), "<color=#FFD36B><b>TOKENS  " + d.summonTokens + "</b></color>", UIStyles.Sized(UIStyles.Right, 30));
+            int n = SummonSystem.FeaturedIds.Length;
+            float cw = Mathf.Min(520f, (safe.width - 60f - (n - 1) * 24f) / n), ch = H - top - 110f;
+            float x0 = safe.x + 30f + (safe.width - 60f - (n * cw + (n - 1) * 24f)) * 0.5f;
+            for (int i = 0; i < n; i++)
+            {
+                var def = GameDatabase.GetCharacter(SummonSystem.FeaturedIds[i]);
+                if (def == null) continue;
+                var r = new Rect(x0 + i * (cw + 24f), top + 90f, cw, ch);
+                Color ec = ElementChart.ColorOf(def.element), rc = RarityInfo.Color(6);
+                Round(Offset(r, 0f, 6f), new Color(0f, 0f, 0f, 0.4f), 18f);
+                Round(r, Color.Lerp(new Color(0.07f, 0.06f, 0.12f), rc, 0.15f), 18f);
+                RoundFrame(r, rc, 3f, 18f);
+                var ar = new Rect(r.x + 20f, r.y + 16f, r.width - 40f, r.height - 250f);
+                Aura(ar.center, ar.height * 0.35f, ec, false);
+                var art = ArtLibrary.CharacterFull(def);
+                if (art != null) GUI.DrawTexture(ar, art, ScaleMode.ScaleToFit, true);
+                var owned = d.GetCharacter(def.id);
+                GUI.Label(new Rect(r.x + 20f, r.yMax - 230f, r.width - 40f, 40f), def.displayName, UIStyles.Sized(UIStyles.H2, 30));
+                GUI.Label(new Rect(r.x + 20f, r.yMax - 190f, r.width - 40f, 30f), "<color=#BBBBBB>" + def.versionTitle + "</color>  " + ElementTag(def.element), UIStyles.Sized(UIStyles.Body, 20));
+                UIStyles.Outlined(new Rect(r.x + 20f, r.yMax - 160f, r.width - 40f, 28f), "MYTHIC  " + Stars(6), UIStyles.Sized(UIStyles.Small, 18), rc, 1.2f);
+                GUI.Label(new Rect(r.x + 20f, r.yMax - 130f, r.width - 40f, 30f), owned != null ? "<color=#C77DFF>Owned — another copy awakens them</color>" : "<color=#7CFF8A>Not owned yet</color>", UIStyles.Sized(UIStyles.Small, 17));
+                bool can = d.summonTokens >= SummonSystem.ExchangeCost;
+                if (FlatBtn(new Rect(r.x + 20f, r.yMax - 92f, r.width - 40f, 74f), "EXCHANGE  <size=22>" + SummonSystem.ExchangeCost + " tokens</size>", TileRed, can, 28))
+                {
+                    bool isNew;
+                    if (SummonSystem.Exchange(d, def.id, out isNew))
+                    {
+                        gm.Save();
+                        gm.Audio.Play("ultimate", 0.7f);
+                        Toast(isNew ? def.displayName + " joined you!" : "Got a copy of " + def.displayName + " — use it to awaken them");
+                        if (gm.Home != null) gm.Home.Celebrate(rc);
+                    }
+                }
+            }
+        }
         Vector2 accScroll;
 
         /// <summary>Accessories bought with gold. Each shows its stats; equip it from a slayer's Gear tab.</summary>

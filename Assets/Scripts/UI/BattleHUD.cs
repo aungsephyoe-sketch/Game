@@ -102,6 +102,14 @@ namespace HashiraChronicles
             int secs = Mathf.FloorToInt(m.Elapsed);
             GUI.Label(new Rect(r.x + 18f, r.y + 8f, r.width - 36f, 30f), "<color=#FFD36B>CURRENT OBJECTIVE</color>   <color=#999999>" + m.Def.id + "  " + secs / 60 + ":" + (secs % 60).ToString("00") + "</color>",
                 UIStyles.Sized(UIStyles.Small, 20));
+            if (m.Def.openWorld)
+            {
+                GUI.Label(new Rect(r.x + 18f, r.y + 42f, r.width - 36f, 44f), "Explore Kiriha Village", UIStyles.Sized(UIStyles.H2, 30));
+                GUI.Label(new Rect(r.x + 18f, r.y + 88f, r.width - 36f, 36f), "<color=#DDDDDD>Villagers met " + m.VillagersMet + "   ·   Chests " + m.ChestsFound + "/" + m.ChestsTotal + "</color>", UIStyles.Sized(UIStyles.Body, 22));
+                if (FlatBtn(new Rect(r.x + 18f, r.y + 138f, 200f, 56f), "LEAVE", new Color(0.2f, 0.24f, 0.4f), true, 24)) m.Retreat();
+                DrawVillageTalk(b);
+                return;
+            }
             if (m.Def.training)
             {
                 GUI.Label(new Rect(r.x + 18f, r.y + 42f, r.width - 36f, 44f), "⚔ Practise freely", UIStyles.Sized(UIStyles.H2, 30));
@@ -140,7 +148,7 @@ namespace HashiraChronicles
             float x0 = W * 0.5f - w * 0.5f, y = safe.y + 40f;
             int current = m.StageIndex < j.stages.Count ? j.stages[Mathf.Min(m.StageIndex, j.stages.Count - 1)].place : n - 1;
             bool travelling = m.ObjectiveTarget.HasValue;
-            UIStyles.Rect(new Rect(x0 - 20f, y - 26f, w + 40f, 84f), new Color(0f, 0f, 0f, 0.3f));
+            UIStyles.Rect(new Rect(x0 - 20f, y - 50f, w + 40f, 108f), new Color(0f, 0f, 0f, 0.3f));
             for (int i = 0; i < n; i++)
             {
                 float x = x0 + (n > 1 ? w * i / (n - 1) : w * 0.5f);
@@ -156,8 +164,11 @@ namespace HashiraChronicles
                 Color c = boss ? UIStyles.Crimson : done ? UIStyles.Gold : new Color(0.6f, 0.6f, 0.65f);
                 UIStyles.CircleTex(new Vector2(x, y), rad, c);
                 if (boss) GUI.Label(new Rect(x - 20f, y - 20f, 40f, 40f), "☠", UIStyles.Sized(UIStyles.Center, 22));
-                if (here || i == n - 1)
-                    GUI.Label(new Rect(x - 150f, y + 14f, 300f, 30f), (here ? "<color=#FFD36B>" : "<color=#FF8080>") + j.places[i].name + "</color>", UIStyles.Sized(UIStyles.Center, 18));
+                // Where you are sits under the bar; the destination sits above it, so the two names never overlap.
+                if (here)
+                    GUI.Label(new Rect(x - 150f, y + 14f, 300f, 30f), "<color=#FFD36B>" + j.places[i].name + "</color>", UIStyles.Sized(UIStyles.Center, 18));
+                else if (i == n - 1)
+                    GUI.Label(new Rect(x - 220f, y - 46f, 240f, 28f), "<color=#FF8080>" + j.places[i].name + "</color>", UIStyles.Sized(UIStyles.Right, 16));
             }
         }
 
@@ -226,7 +237,10 @@ namespace HashiraChronicles
                 if (tex != null) GUI.DrawTexture(face, tex, ScaleMode.ScaleAndCrop, true);
                 float tx = face.xMax + 12f, tw = r.xMax - tx - 12f;
                 string name = m.Def.displayName.Split(' ')[0].ToUpper();
-                GUI.Label(new Rect(tx, r.y + 4f, tw, 34f), name + "  <size=18><color=#AAAAAA>Lv." + m.Owned.level + "</color></size>", UIStyles.Sized(UIStyles.H2, 24));
+                // Name and level as separate labels so a long name never wraps the level under the HP bar.
+                var nameStyle = new GUIStyle(UIStyles.Sized(UIStyles.H2, name.Length > 7 ? 20 : 24)) { wordWrap = false, clipping = TextClipping.Clip };
+                GUI.Label(new Rect(tx, r.y + 4f, tw - 70f, 34f), name, nameStyle);
+                GUI.Label(new Rect(tx, r.y + 8f, tw, 30f), "<color=#AAAAAA>Lv." + m.Owned.level + "</color>", UIStyles.Sized(UIStyles.Right, 18));
                 if (!m.IsAlive)
                 {
                     UIStyles.Colored(new Rect(tx, r.y + 40f, tw, 36f), "DOWN", UIStyles.Sized(UIStyles.H2, 26), UIStyles.Bad);
@@ -300,17 +314,50 @@ namespace HashiraChronicles
             UIStyles.Colored(new Rect(r.xMax - 200f, r.y + 38f, 200f, 40f), "PHASE " + (boss.Phase + 1) + "/" + boss.PhaseCount, UIStyles.Sized(UIStyles.Right, 24), UIStyles.Gold);
         }
 
+        /// <summary>Open world: speech bubbles over villagers and a TALK button when you're next to one.</summary>
+        void DrawVillageTalk(BattleController b)
+        {
+            var cam = Camera.main;
+            float s = HudLayout.Scale;
+            if (cam != null)
+                foreach (var n in NpcWalker.All)
+                {
+                    if (n == null || string.IsNullOrEmpty(n.CurrentLine) || Time.unscaledTime > n.LineUntil) continue;
+                    Vector3 sp = cam.WorldToScreenPoint(n.transform.position + Vector3.up * 2.4f);
+                    if (sp.z < 0f) continue;
+                    var p = new Vector2(sp.x / s, (Screen.height - sp.y) / s);
+                    float w = Mathf.Clamp(n.CurrentLine.Length * 12f, 220f, 480f);
+                    var r = new Rect(p.x - w * 0.5f, p.y - 86f, w, 76f);
+                    Round(r, new Color(1f, 0.98f, 0.92f, 0.94f), 14f);
+                    GUI.Label(new Rect(r.x + 12f, r.y + 4f, r.width - 24f, 26f), "<color=#8A4B2A><b>" + n.SpeakerName + "</b></color>", UIStyles.Sized(UIStyles.Small, 17));
+                    GUI.Label(new Rect(r.x + 12f, r.y + 28f, r.width - 24f, 46f), "<color=#222222>" + n.CurrentLine + "</color>", UIStyles.Sized(UIStyles.Small, 18));
+                }
+            var near = b.Mission.NearNpc;
+            if (near != null && cam != null)
+            {
+                Vector3 sp = cam.WorldToScreenPoint(near.transform.position + Vector3.up * 2.4f);
+                if (sp.z > 0f && (string.IsNullOrEmpty(near.CurrentLine) || Time.unscaledTime > near.LineUntil))
+                {
+                    var p = new Vector2(sp.x / s, (Screen.height - sp.y) / s);
+                    if (FlatBtn(new Rect(p.x - 80f, p.y - 70f, 160f, 58f), "TALK", TileGreen, true, 26)) b.Mission.TalkToNear();
+                }
+                if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.T) { b.Mission.TalkToNear(); Event.current.Use(); }
+            }
+        }
+
         void DrawCombo(BattleController b)
         {
             if (b.Combo < 3) return;
             float pulse = 1f + 0.15f * Mathf.Clamp01(b.ComboTimer - 1.9f) * 3f;
-            var style = UIStyles.Sized(UIStyles.Right, Mathf.RoundToInt(64f * pulse));
-            UIStyles.Outlined(new Rect(safe.xMax - 560f, H * 0.32f, 520f, 90f), b.Combo + " <size=34>HITS</size>", style, UIStyles.Gold, 3f);
+            // Top-centre, under the route strip, so it never sits behind the SPECIAL button.
+            var style = UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(56f * pulse));
+            float cy = safe.y + 150f;
+            UIStyles.Outlined(new Rect(W * 0.5f - 260f, cy, 520f, 80f), b.Combo + " <size=30>HITS</size>", style, UIStyles.Gold, 3f);
             string rank = b.Combo >= 100 ? "LEGENDARY" : b.Combo >= 50 ? "AWESOME!" : b.Combo >= 25 ? "GREAT!" : b.Combo >= 10 ? "GOOD" : "";
             if (rank != "")
             {
                 Color rc = b.Combo >= 100 ? new Color(1f, 0.4f, 1f) : b.Combo >= 50 ? new Color(1f, 0.45f, 0.3f) : b.Combo >= 25 ? new Color(0.4f, 0.9f, 1f) : Color.white;
-                UIStyles.Outlined(new Rect(safe.xMax - 560f, H * 0.32f + 80f, 520f, 50f), rank, UIStyles.Sized(UIStyles.Right, 34), rc, 3f);
+                UIStyles.Outlined(new Rect(W * 0.5f - 260f, cy + 70f, 520f, 44f), rank, UIStyles.Sized(UIStyles.Center, 30), rc, 3f);
             }
         }
 

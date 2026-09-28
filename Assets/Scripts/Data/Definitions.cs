@@ -282,7 +282,30 @@ namespace HashiraChronicles
         public string investigate;
         /// <summary>What Ren says when investigating.</summary>
         public string investigateLine;
+        /// <summary>Free-roam village (no enemies, talk to villagers, find chests).</summary>
+        public bool openWorld;
+        /// <summary>The event this quest belongs to (null for story missions).</summary>
+        public string eventId;
+        /// <summary>Event quests: 0 Easy, 1 Medium, 2 Hard.</summary>
+        public int difficulty;
         public string MissionLabel { get { return id.ToUpper(); } }
+    }
+
+    /// <summary>A limited event: its own mini story told across five quests from Easy to Hard.</summary>
+    public class EventDefinition
+    {
+        public string id;
+        public string title;
+        public string subtitle;
+        /// <summary>The mini story shown on the event page.</summary>
+        public string story;
+        public string regionId;
+        public Color accent = Color.white;
+        /// <summary>Enemy whose portrait heads the event banner.</summary>
+        public string bannerEnemy;
+        /// <summary>Shown as the event's prize (granted by the final quest's first clear).</summary>
+        public string prizeText;
+        public List<MissionDefinition> quests = new List<MissionDefinition>();
     }
 
     public class ChapterDefinition

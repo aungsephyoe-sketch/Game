@@ -51,6 +51,7 @@ namespace HashiraChronicles
         MissionsBoard,
         Shop,
         Cutscene,
-        Credits
+        Credits,
+        Events
     }
 }

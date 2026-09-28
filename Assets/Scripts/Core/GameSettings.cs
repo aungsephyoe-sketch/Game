@@ -103,16 +103,19 @@ namespace HashiraChronicles
                     Application.targetFrameRate = 30;
                     break;
                 case GraphicsTier.Medium:
-                    QualitySettings.shadows = ShadowQuality.HardOnly;
-                    QualitySettings.shadowResolution = ShadowResolution.Medium;
-                    QualitySettings.shadowDistance = 30f;
+                    // Soft, higher-resolution shadows over a shorter distance: no more stair-stepped edges.
+                    QualitySettings.shadows = ShadowQuality.All;
+                    QualitySettings.shadowResolution = ShadowResolution.High;
+                    QualitySettings.shadowDistance = 26f;
+                    QualitySettings.shadowCascades = 2;
+                    QualitySettings.shadowProjection = ShadowProjection.StableFit;
                     QualitySettings.antiAliasing = 0;
                     Application.targetFrameRate = 60;
                     break;
                 case GraphicsTier.High:
                     QualitySettings.shadows = ShadowQuality.All;
-                    QualitySettings.shadowResolution = ShadowResolution.High;
-                    QualitySettings.shadowDistance = 45f;
+                    QualitySettings.shadowResolution = ShadowResolution.VeryHigh;
+                    QualitySettings.shadowDistance = 35f;
                     QualitySettings.shadowCascades = 2;
                     QualitySettings.antiAliasing = 4;
                     QualitySettings.anisotropicFiltering = AnisotropicFiltering.Enable;

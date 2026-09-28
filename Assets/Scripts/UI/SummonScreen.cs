@@ -113,22 +113,26 @@ namespace HashiraChronicles
             // ---- Right column: rates, pity and the summon buttons.
             float rx = banner.xMax + 24f, rw = safe.xMax - 24f - rx;
             float rk = Enter(0.2f, 0.4f);
-            var rates = new Rect(rx + (1f - rk) * 200f, top, rw, 420f);
+            var rates = new Rect(rx + (1f - rk) * 200f, top, rw, 330f);
             Round(Offset(rates, 0f, 5f), new Color(0f, 0f, 0f, 0.4f), 18f);
             Round(rates, new Color(0.05f, 0.06f, 0.11f, 0.94f), 18f);
             GUI.Label(new Rect(rates.x + 24f, rates.y + 16f, rw - 48f, 40f), "RATES", UIStyles.Sized(UIStyles.H2, 28));
             float y = rates.y + 62f;
             for (int i = SummonSystem.Rates.Length - 1; i >= 0; i--)
             {
+                if (SummonSystem.Rates[i] <= 0f) continue;
                 int rarity = 2 + i;
                 Color rc = RarityInfo.Color(rarity);
                 Round(new Rect(rates.x + 18f, y, rw - 36f, 44f), new Color(rc.r, rc.g, rc.b, 0.1f), 10f);
                 UIStyles.Colored(new Rect(rates.x + 32f, y, 200f, 44f), RarityInfo.Name(rarity), UIStyles.Sized(UIStyles.Body, 21), rc);
                 UIStyles.Colored(new Rect(rates.x + 170f, y, 200f, 44f), Stars(rarity), UIStyles.Sized(UIStyles.Body, 18), Color.Lerp(rc, new Color(1f, 0.85f, 0.3f), 0.5f));
-                GUI.Label(new Rect(rates.x + 24f, y, rw - 60f, 44f), (SummonSystem.Rates[i] * 100f).ToString("0.#") + "%", UIStyles.Sized(UIStyles.Right, 22));
+                float rate = SummonSystem.Rates[i];
+                if (rarity == 6) rate = SummonSystem.MythicRate(d);
+                else if (rarity == 4) rate = 1f - SummonSystem.MythicRate(d) - SummonSystem.Rates[3];
+                GUI.Label(new Rect(rates.x + 24f, y, rw - 60f, 44f), (rate * 100f).ToString("0.#") + "%" + (rarity == 6 && SummonSystem.Step(d) == SummonSystem.DoubleMythicStep ? " <color=#FF7AD9>×2!</color>" : ""), UIStyles.Sized(UIStyles.Right, 22));
                 y += 50f;
             }
-            GUI.Label(new Rect(rates.x + 24f, y + 6f, rw - 48f, 90f), "<color=#AAAAAA>Every ×10 guarantees EPIC or better.\nPity: a featured MYTHIC within " + SummonSystem.PityLimit + " summons.\nDuplicates can be fed as EXP or sold for gold.</color>", UIStyles.Sized(UIStyles.Small, 17));
+            GUI.Label(new Rect(rates.x + 24f, y + 6f, rw - 48f, 90f), "<color=#AAAAAA>Every summon is EPIC or better.\nPity: a featured MYTHIC within " + SummonSystem.PityLimit + " summons.\nDuplicates awaken a slayer: +30 levels, a purple star.</color>", UIStyles.Sized(UIStyles.Small, 17));
 
             var pity = new Rect(rates.x, rates.yMax + 18f, rw, 96f);
             Round(pity, new Color(0.05f, 0.06f, 0.11f, 0.94f), 18f);
@@ -137,10 +141,30 @@ namespace HashiraChronicles
             Round(new Rect(pity.x + 24f, pity.y + 54f, rw - 48f, 22f), new Color(0f, 0f, 0f, 0.5f), 11f);
             if (pf > 0.01f) Round(new Rect(pity.x + 26f, pity.y + 56f, (rw - 52f) * pf, 18f), Color.Lerp(RarityInfo.Color(6), Color.white, 0.25f * Mathf.Sin(Time.unscaledTime * 4f)), 9f);
 
+            // Step-up ladder: FREE → 250 → 500 → 500 (×2 Mythic) → 400, then repeat. Paid ×10s earn a token.
+            var ladder = new Rect(rates.x, pity.yMax + 14f, rw, 112f);
+            Round(ladder, new Color(0.05f, 0.06f, 0.11f, 0.94f), 18f);
+            GUI.Label(new Rect(ladder.x + 20f, ladder.y + 6f, rw - 40f, 30f), "STEP-UP ×10", UIStyles.Sized(UIStyles.Body, 20));
+            GUI.Label(new Rect(ladder.x + 20f, ladder.y + 6f, rw - 40f, 30f), "<color=#FFD36B>Tokens " + d.summonTokens + "</color>  <color=#888888>(" + SummonSystem.ExchangeCost + " = 1 Mythic in Shop)</color>", UIStyles.Sized(UIStyles.Right, 16));
+            int n2 = SummonSystem.StepCosts.Length, step = SummonSystem.Step(d);
+            float sw = (rw - 40f - (n2 - 1) * 8f) / n2;
+            for (int i = 0; i < n2; i++)
+            {
+                var sr = new Rect(ladder.x + 20f + i * (sw + 8f), ladder.y + 42f, sw, 58f);
+                bool cur = i == step, done = i < step;
+                Color sc = i == SummonSystem.DoubleMythicStep ? RarityInfo.Color(6) : new Color(0.3f, 0.45f, 0.9f);
+                Round(sr, cur ? sc : done ? new Color(0.2f, 0.2f, 0.25f) : new Color(sc.r, sc.g, sc.b, 0.25f), 10f);
+                if (cur) RoundFrame(Grow(sr, 3f), new Color(1f, 1f, 1f, 0.6f + 0.3f * Mathf.Sin(Time.unscaledTime * 5f)), 2f, 12f);
+                int c = SummonSystem.StepCosts[i];
+                GUI.Label(new Rect(sr.x, sr.y + 2f, sr.width, 26f), "<color=#DDDDDD>" + (i + 1) + "</color>", UIStyles.Sized(UIStyles.Center, 14));
+                GUI.Label(new Rect(sr.x, sr.y + 20f, sr.width, 32f), done ? "<color=#888888>✓</color>" : c == 0 ? "<b>FREE</b>" : "<b>" + c + "</b>", UIStyles.Sized(UIStyles.Center, 18));
+                if (i == SummonSystem.DoubleMythicStep) UIStyles.Outlined(new Rect(sr.x - 6f, sr.y - 14f, sr.width + 12f, 22f), "×2 MYTHIC", UIStyles.Sized(UIStyles.Center, 13), new Color(1f, 0.6f, 0.9f), 1.2f);
+            }
+
             // Summon buttons with diamond costs.
             float by = H - 290f;
             SummonButton(new Rect(rx, by, rw, 118f), "SUMMON ×1", SummonSystem.SingleCost, new Color(0.25f, 0.3f, 0.6f), SummonSystem.CanAfford(d, 1), 1, 0.3f);
-            SummonButton(new Rect(rx, by + 134f, rw, 132f), "SUMMON ×10", SummonSystem.MultiCost, TileRed, SummonSystem.CanAfford(d, 10), 10, 0.4f);
+            SummonButton(new Rect(rx, by + 134f, rw, 132f), "SUMMON ×10", SummonSystem.MultiCostFor(d), TileRed, SummonSystem.CanAfford(d, 10), 10, 0.4f);
             if (!SummonSystem.CanAfford(d, 1))
                 GUI.Label(new Rect(rx, by - 64f, rw, 56f), "<color=#FF9C7A>Earn diamonds from mission stars, daily login and demons.</color>", UIStyles.Sized(UIStyles.CenterSmall, 18));
         }
@@ -157,10 +181,10 @@ namespace HashiraChronicles
             }
             if (FlatBtn(r, "", c, can, 30)) DoSummon(count);
             UIStyles.Outlined(new Rect(r.x, r.y + 12f, r.width, r.height * 0.5f), label, UIStyles.Sized(UIStyles.Center, count >= 10 ? 40 : 34), can ? Color.white : new Color(1f, 1f, 1f, 0.6f), 2f);
-            string cs = cost.ToString();
+            string cs = cost > 0 ? cost.ToString() : "FREE";
             float cw = UIStyles.Sized(UIStyles.Body, 28).CalcSize(new GUIContent(cs)).x;
             float cx = r.center.x - (cw + 40f) * 0.5f;
-            DiamondIcon(new Vector2(cx + 14f, r.y + r.height * 0.72f), 30f);
+            if (cost > 0) DiamondIcon(new Vector2(cx + 14f, r.y + r.height * 0.72f), 30f);
             GUI.Label(new Rect(cx + 36f, r.y + r.height * 0.52f, cw + 10f, r.height * 0.4f), cs, UIStyles.Sized(UIStyles.Body, 28));
         }
 
@@ -263,7 +287,7 @@ namespace HashiraChronicles
             GUI.Label(new Rect(card.x + 40f, card.y + 238f, 740f, 44f), r.def.versionTitle + "   " + ElementTag(r.def.element) + "  " + r.def.role, UIStyles.Body);
             GUI.Label(new Rect(card.x + 40f, card.y + 284f, 740f, 40f), "<color=#FFD36B>✦ Special: " + r.def.ultimate.name + "</color>", UIStyles.Sized(UIStyles.Small, 22));
             if (r.isNew) UIStyles.Outlined(new Rect(card.xMax - 210f, card.y + 20f, 190f, 70f), "NEW!", UIStyles.Sized(UIStyles.Big, 58), UIStyles.Good, 3f);
-            else GUI.Label(new Rect(card.xMax - 380f, card.y + 330f, 360f, 50f), "<color=#FF9C7A>DUPLICATE → feed as EXP or sell</color>", UIStyles.Sized(UIStyles.Right, 22));
+            else GUI.Label(new Rect(card.xMax - 380f, card.y + 330f, 360f, 50f), "<color=#C77DFF>DUPLICATE → awaken: +30 Lv, purple star</color>", UIStyles.Sized(UIStyles.Right, 22));
             GUI.Label(new Rect(0f, H - 90f, W, 50f), "<color=#BBBBBB>Tap to continue</color>", UIStyles.Sized(UIStyles.Center, 26));
         }
 
@@ -306,7 +330,8 @@ namespace HashiraChronicles
             }
             float by = H - 150f;
             if (FlatBtn(new Rect(W * 0.5f - 470f, by, 440f, 100f), "OK", new Color(0.2f, 0.24f, 0.4f), true, 36)) st.CloseSummary();
-            if (FlatBtn(new Rect(W * 0.5f + 30f, by, 440f, 100f), res.Count >= 10 ? "SUMMON ×10 AGAIN" : "SUMMON AGAIN", TileRed, SummonSystem.CanAfford(d, res.Count), 32))
+            string again = res.Count >= 10 ? "SUMMON ×10  <size=22>(" + (SummonSystem.MultiCostFor(d) == 0 ? "FREE" : SummonSystem.MultiCostFor(d) + " ◆") + ")</size>" : "SUMMON AGAIN";
+            if (FlatBtn(new Rect(W * 0.5f + 30f, by, 440f, 100f), again, TileRed, SummonSystem.CanAfford(d, res.Count), 32))
                 DoSummon(res.Count);
         }
     }

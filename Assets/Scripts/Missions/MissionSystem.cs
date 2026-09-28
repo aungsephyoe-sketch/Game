@@ -76,6 +76,13 @@ namespace HashiraChronicles
         {
             yield return new WaitForSeconds(0.4f);
             var gm = GameManager.Instance;
+            if (Def.openWorld)
+            {
+                GameEvents.RaiseBanner("KIRIHA VILLAGE", "Explore freely · talk to villagers · find the hidden chests");
+                started = true;
+                yield return OpenWorldLoop();
+                yield break;
+            }
             if (Def.training)
             {
                 GameEvents.RaiseBanner("TRAINING GROUNDS", "Try every skill · PAUSE → Retreat to leave");
@@ -575,6 +582,63 @@ namespace HashiraChronicles
                 if (GameManager.Instance != null) GameManager.Instance.Audio.Play("skill", 0.5f);
             }
             else sealWrong = true;
+        }
+
+        // ------------------------------------------------------------------ Open world
+
+        /// <summary>The villager the active slayer is standing next to (the HUD shows TALK).</summary>
+        public NpcWalker NearNpc { get; private set; }
+        public int ChestsFound { get; private set; }
+        public int ChestsTotal { get { return OpenWorldBuilder.ChestSpots.Count; } }
+        public int VillagersMet { get { return met.Count; } }
+        readonly HashSet<NpcWalker> met = new HashSet<NpcWalker>();
+
+        public void TalkToNear()
+        {
+            var n = NearNpc;
+            var a = battle.Team.Active;
+            if (n == null || a == null) return;
+            n.Say(a.Position);
+            met.Add(n);
+            if (GameManager.Instance != null) GameManager.Instance.Audio.Play("click", 0.5f);
+        }
+
+        IEnumerator OpenWorldLoop()
+        {
+            var opened = new HashSet<Transform>();
+            while (!Finished)
+            {
+                var a = battle.Team.Active;
+                if (a != null)
+                {
+                    // Nearest villager within talking distance.
+                    NpcWalker best = null;
+                    float bd = 3f;
+                    foreach (var n in NpcWalker.All)
+                    {
+                        if (n == null) continue;
+                        float dd = (n.transform.position - a.Position).magnitude;
+                        if (dd < bd) { bd = dd; best = n; }
+                    }
+                    NearNpc = best;
+                    // Chests open when you walk up to them.
+                    foreach (var c in OpenWorldBuilder.ChestSpots)
+                    {
+                        if (c == null || opened.Contains(c)) continue;
+                        if ((c.position - a.Position).magnitude > 1.8f) continue;
+                        opened.Add(c);
+                        ChestsFound++;
+                        var lid = c.Find("Lid");
+                        if (lid != null) { lid.localRotation = Quaternion.Euler(-70f, 0f, 0f); lid.localPosition += new Vector3(0f, 0.3f, -0.3f); }
+                        bool gem = Random.value < 0.35f;
+                        int amount = gem ? 10 : Random.Range(3, 9) * 50;
+                        if (gem) GoldCoin.Diamonds(c.position, 1, amount); else GoldCoin.Burst(c.position, 6, amount / 6);
+                        VFX.Pillar(c.position, new Color(1f, 0.85f, 0.3f), 5f, 0.6f);
+                        GameEvents.RaiseBanner("TREASURE!", gem ? "+" + amount + " diamonds" : "+" + amount + " gold");
+                    }
+                }
+                yield return null;
+            }
         }
 
         // ------------------------------------------------------------------ Training

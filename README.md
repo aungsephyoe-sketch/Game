@@ -103,6 +103,15 @@ Bosses keep their camera reveal and phases and now fall in a slow-motion **defea
   lightning for Legendary+, a portal opens, a silhouette steps out, then the reveal.
   Common · Rare · Epic · Legendary · Mythic, published rates, ×10 Epic guarantee and pity.
 - **Daily login reward**: a random 500–5,000 gold and 50–200 diamonds every day.
+- **Step-up summons**: ×10 costs FREE → 250 → 500 → 500 (double Mythic rate) → 400, then repeats. Rates are
+  Epic 80% · Legendary 15% · Mythic 5%. Each paid ×10 gives a token; 30 tokens buy a featured Mythic in the
+  Shop's **Mythic Exchange**.
+- **Awakening**: a duplicate of the same slayer awakens them — one star turns bright purple, +30 max level
+  and +30 levels, +20% stats per purple star. All six purple and maxed out = **GOD** status.
+- **Events** (home screen): five events, each with its own mini story and five quests from Easy to Hard,
+  with an event prize for the Hard quest.
+- **Open world**: walk around a peaceful Kiriha Village — houses, market, dojo, shrine, river, pond, farms,
+  groves, villagers to talk to (TALK / T) and hidden treasure chests.
 - **Collection viewer**: rotate the 3D model, test each skill, jump into the Training Grounds.
 - **Missions board** (daily/weekly with rewards, side stories, events, training) and a **shop**.
 - **Boss events**: cinematic entrance with a name card and a line of dialogue, enrage with the arena

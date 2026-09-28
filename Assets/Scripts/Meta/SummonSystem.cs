@@ -10,7 +10,15 @@ namespace HashiraChronicles
     public static class SummonSystem
     {
         public const int SingleCost = 50;
-        public const int MultiCost = 450;
+        /// <summary>Step-up ×10 ladder: FREE, 250, 500, 500 (double Mythic rate), 400 — then it repeats.</summary>
+        public static readonly int[] StepCosts = { 0, 250, 500, 500, 400 };
+        public const int DoubleMythicStep = 3;
+        /// <summary>Tokens for the Mythic exchange: one per paid ×10; 30 buys a Mythic.</summary>
+        public const int ExchangeCost = 30;
+
+        public static int Step(PlayerData d) { return ((d.summonStep % StepCosts.Length) + StepCosts.Length) % StepCosts.Length; }
+        public static int MultiCostFor(PlayerData d) { return StepCosts[Step(d)]; }
+        public static int MultiCost { get { return 450; } }
         public const int PityLimit = 80;
         public const string FeaturedId = "kuroe_moon";
         /// <summary>The three featured Mythics of the limited banner.</summary>
@@ -20,7 +28,7 @@ namespace HashiraChronicles
         public static bool IsFeatured(string id) { return System.Array.IndexOf(FeaturedIds, id) >= 0; }
 
         /// <summary>Rates for Common, Rare, Epic, Legendary, Mythic.</summary>
-        public static readonly float[] Rates = { 0.45f, 0.35f, 0.14f, 0.05f, 0.01f };
+        public static readonly float[] Rates = { 0f, 0f, 0.80f, 0.15f, 0.05f };
 
         public class Result
         {
@@ -29,19 +37,29 @@ namespace HashiraChronicles
             public bool isNew;
         }
 
-        public static bool CanAfford(PlayerData d, int count) { return d.crystals >= (count >= 10 ? MultiCost : SingleCost * count); }
+        public static bool CanAfford(PlayerData d, int count) { return d.crystals >= (count >= 10 ? MultiCostFor(d) : SingleCost * count); }
 
         public static List<Result> Summon(PlayerData d, int count)
         {
             var results = new List<Result>();
             if (!CanAfford(d, count)) return results;
-            d.crystals -= count >= 10 ? MultiCost : SingleCost * count;
+            float mythicMul = 1f;
+            if (count >= 10)
+            {
+                // Step-up ×10: pay this step's price, earn a token if it wasn't free, move up the ladder.
+                int cost = MultiCostFor(d);
+                d.crystals -= cost;
+                if (cost > 0) d.summonTokens++;
+                if (Step(d) == DoubleMythicStep) mythicMul = 2f;
+                d.summonStep = (Step(d) + 1) % StepCosts.Length;
+            }
+            else d.crystals -= SingleCost * count;
             bool gotEpic = false;
             for (int i = 0; i < count; i++)
             {
                 d.summonPity++;
                 d.totalSummons++;
-                int rarity = RollRarity();
+                int rarity = RollRarity(mythicMul);
                 if (count >= 10 && i == count - 1 && !gotEpic) rarity = Mathf.Max(rarity, 4);
                 CharacterDefinition def;
                 if (d.summonPity >= PityLimit || rarity == 6)
@@ -61,15 +79,27 @@ namespace HashiraChronicles
             return results;
         }
 
-        static int RollRarity()
+        /// <summary>Mythic chance at this step (the 4th step doubles it, taken from the Epic share).</summary>
+        public static float MythicRate(PlayerData d) { return Rates[4] * (Step(d) == DoubleMythicStep ? 2f : 1f); }
+
+        static int RollRarity(float mythicMul)
         {
-            float r = Random.value, acc = 0f;
-            for (int i = 0; i < Rates.Length; i++)
-            {
-                acc += Rates[i];
-                if (r <= acc) return 2 + i;
-            }
-            return 2;
+            float mythic = Rates[4] * mythicMul;
+            float r = Random.value;
+            if (r < mythic) return 6;
+            r -= mythic;
+            if (r < Rates[3]) return 5;
+            return 4;
+        }
+
+        /// <summary>Trade 30 tokens for a featured Mythic of your choice (a duplicate goes to the awakening pile).</summary>
+        public static bool Exchange(PlayerData d, string id, out bool isNew)
+        {
+            isNew = false;
+            if (d.summonTokens < ExchangeCost || !IsFeatured(id)) return false;
+            d.summonTokens -= ExchangeCost;
+            isNew = InventorySystem.AddCharacter(d, id);
+            return true;
         }
 
         static CharacterDefinition Pick(int rarity)

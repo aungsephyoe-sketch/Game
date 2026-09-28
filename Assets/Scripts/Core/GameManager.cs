@@ -392,6 +392,7 @@ namespace HashiraChronicles
             {
                 LastResult = null;
                 TimeController.ResetAll();
+                if (m.openWorld) { Save(); GoTo(GameScreen.MainMenu); return; }
                 GoTo(GameScreen.Characters);
                 return;
             }
@@ -405,7 +406,7 @@ namespace HashiraChronicles
                     QuestSystem.Report("boss", 1 + m.preBosses.Count);
                     Data.bossesDefeated += 1 + m.preBosses.Count;
                 }
-                if (m.type != MissionType.Encounter && !string.IsNullOrEmpty(m.regionId) && System.Array.IndexOf(MapStage.RouteOrder, m.regionId) >= 0) Data.currentRegion = m.regionId;
+                if (m.type != MissionType.Encounter && m.type != MissionType.Event && !string.IsNullOrEmpty(m.regionId) && System.Array.IndexOf(MapStage.RouteOrder, m.regionId) >= 0) Data.currentRegion = m.regionId;
             }
             Save();
             LastResult = result;

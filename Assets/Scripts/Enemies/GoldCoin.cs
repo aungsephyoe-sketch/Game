@@ -105,6 +105,8 @@ namespace HashiraChronicles
                 if (diamond)
                 {
                     if (b.Mission != null) b.Mission.CollectDiamonds(value);
+                    // The open world has no results screen: treasure goes straight into the wallet.
+                    if (b.Def != null && b.Def.openWorld && GameManager.Instance != null) GameManager.Instance.Data.crystals += value;
                     VFX.HitSpark(transform.position, new Color(0.5f, 0.85f, 1f), 10);
                     DamageNumbers.SpawnText(transform.position + Vector3.up * 0.8f, "+" + value + " DIAMOND" + (value > 1 ? "S" : ""), new Color(0.55f, 0.85f, 1f), 40f);
                     if (GameManager.Instance != null) GameManager.Instance.Audio.PlayPitched("gem", 0.5f, 1.15f);
@@ -112,6 +114,7 @@ namespace HashiraChronicles
                 else
                 {
                     if (b.Mission != null) b.Mission.CollectGold(value);
+                    if (b.Def != null && b.Def.openWorld && GameManager.Instance != null) GameManager.Instance.Data.coins += value;
                     VFX.HitSpark(transform.position, new Color(1f, 0.85f, 0.3f), 5);
                     // Pitch climbs a little with each coin in a streak, so a big drop "rings up".
                     pickupStreak = Time.time - lastPickup < 0.4f ? Mathf.Min(pickupStreak + 1, 10) : 0;

@@ -25,7 +25,17 @@ namespace HashiraChronicles
             }
         }
 
-        public static bool IsMaxed(OwnedCharacter c) { return c.level >= LevelCap(c.stars); }
+        /// <summary>Awakening raises the cap by 30 per purple star.</summary>
+        public const int LevelsPerAwaken = 30;
+        public const int MaxAwaken = 6;
+
+        /// <summary>This slayer's level cap: rarity cap + 30 per awakening.</summary>
+        public static int Cap(OwnedCharacter c) { return LevelCap(c.stars) + LevelsPerAwaken * Mathf.Clamp(c.awaken, 0, MaxAwaken); }
+
+        public static bool IsMaxed(OwnedCharacter c) { return c.level >= Cap(c); }
+
+        /// <summary>GOD status: every star awakened (purple) and the level maxed out.</summary>
+        public static bool IsGod(OwnedCharacter c) { return c.awaken >= MaxAwaken && IsMaxed(c); }
 
         /// <summary>XP (the currency) needed to train from this level to the next.</summary>
         public static int LevelUpXp(int level) { return ExpToNext(level) / 2; }
@@ -40,7 +50,7 @@ namespace HashiraChronicles
         public static int BuyLevels(PlayerData d, OwnedCharacter c, int count)
         {
             int gained = 0;
-            int cap = LevelCap(c.stars);
+            int cap = Cap(c);
             while (gained < count && c.level < cap && d.coins >= LevelUpCost(c.level) && d.xp >= LevelUpXp(c.level))
             {
                 d.coins -= LevelUpCost(c.level);
@@ -67,7 +77,7 @@ namespace HashiraChronicles
         /// <summary>Adds EXP, returns levels gained. EXP stops accumulating at the level cap.</summary>
         public static int AddExp(OwnedCharacter c, int amount)
         {
-            int cap = LevelCap(c.stars);
+            int cap = Cap(c);
             int start = c.level;
             if (c.level >= cap) { c.exp = 0; return 0; }
             c.exp += Mathf.Max(0, amount);

@@ -95,7 +95,7 @@ namespace HashiraChronicles
                     UIStyles.CircleTex(new Vector2(fp.x - 72f, iy + 20f), 20f, Color.Lerp(ec, Color.black, 0.25f));
                     GUI.DrawTexture(new Rect(fp.x - 86f, iy + 6f, 28f, 28f), IconFactory.Get(IconFactory.ForElement(def.element)), ScaleMode.ScaleToFit, true);
                     UIStyles.Outlined(new Rect(fp.x - 44f, iy, 140f, 40f), "Lv. " + c.level, UIStyles.Sized(UIStyles.Body, 26), Color.white, 2f);
-                    StarStrip(new Vector2(fp.x - 44f, iy + 40f), c.stars, 22f);
+                    StarStrip(new Vector2(fp.x - 44f, iy + 40f), c.stars, 22f, c.awaken);
                     UIStyles.Outlined(new Rect(fp.x - 110f, iy + 66f, 220f, 32f), def.displayName, UIStyles.Sized(UIStyles.Center, 22), Color.white, 2f);
                     UIStyles.Outlined(new Rect(fp.x - 110f, iy + 94f, 220f, 30f), "Power " + CharacterSystem.Power(d, c).ToString("N0"), UIStyles.Sized(UIStyles.Center, 20), new Color(0.9f, 0.9f, 0.9f), 2f);
                     if (GUI.Button(hit, GUIContent.none, GUIStyle.none)) { gm.Audio.Play("click", 0.5f); teamSlot = i; rosterPick = d.team[i]; gm.Home.LineupCheer(i); }
@@ -126,15 +126,24 @@ namespace HashiraChronicles
         }
 
         /// <summary>Rarity stars: 2★ Common up to 6★ Mythic, coloured by rarity.</summary>
-        void StarStrip(Vector2 at, int stars, float size)
+        void StarStrip(Vector2 at, int stars, float size, int awaken = 0)
         {
             Color col = RarityInfo.Color(stars);
+            Color purple = new Color(0.78f, 0.35f, 1f);
+            float glow = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 4f);
             for (int i = 0; i < CharacterSystem.MaxStars; i++)
             {
                 bool on = i < stars;
-                UIStyles.Outlined(new Rect(at.x + i * size, at.y, size + 4f, size + 4f), "★", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(size)), on ? Color.Lerp(col, new Color(1f, 0.85f, 0.3f), 0.5f) : new Color(0.35f, 0.35f, 0.4f), 1.5f);
+                bool awakened = i < awaken;
+                var sr = new Rect(at.x + i * size, at.y, size + 4f, size + 4f);
+                if (awakened) UIStyles.CircleTex(sr.center, size * (0.5f + 0.12f * glow), new Color(purple.r, purple.g, purple.b, 0.35f));
+                Color sc = awakened ? Color.Lerp(purple, Color.white, 0.25f * glow) : on ? Color.Lerp(col, new Color(1f, 0.85f, 0.3f), 0.5f) : new Color(0.35f, 0.35f, 0.4f);
+                UIStyles.Outlined(sr, "★", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(size)), sc, 1.5f);
             }
         }
+
+        /// <summary>GOD status: every star purple and the level maxed.</summary>
+        static readonly Color GodColor = new Color(0.8f, 0.4f, 1f);
 
         void DrawTeamEdit(PlayerData d, bool manage = false)
         {
@@ -224,32 +233,40 @@ namespace HashiraChronicles
             Color ec = ElementChart.ColorOf(def.element);
             Color rc = RarityInfo.Color(c.stars);
             bool maxed = ExperienceSystem.IsMaxed(c);
+            bool god = ExperienceSystem.IsGod(c);
+            if (god) rc = GodColor;
             Round(Offset(r, 0f, 4f), new Color(0f, 0f, 0f, 0.4f), 12f);
             Round(r, Color.Lerp(new Color(0.08f, 0.08f, 0.13f), rc, 0.22f), 12f);
             Round(new Rect(r.x, r.y, r.width, r.height * 0.55f), new Color(1f, 1f, 1f, 0.06f), 12f);
             // Face with aura.
             var face = new Rect(r.x + 8f, r.y + 8f, r.width - 16f, r.width - 16f);
-            Aura(face.center, face.width * 0.5f, ec, maxed);
+            Aura(face.center, face.width * 0.5f, god ? GodColor : ec, maxed && !god);
+            if (god) Aura(face.center, face.width * 0.62f, new Color(1f, 0.85f, 0.3f), false);
             var tex = ArtLibrary.Character(def);
             if (tex != null) GUI.DrawTexture(face, tex, ScaleMode.ScaleAndCrop, true);
             Round(new Rect(r.x + 2f, r.yMax - 64f, r.width - 4f, 62f), new Color(0f, 0f, 0f, 0.55f), 10f);
             UIStyles.CircleTex(new Vector2(r.x + 22f, r.yMax - 82f), 17f, Color.Lerp(ec, Color.black, 0.2f));
             GUI.DrawTexture(new Rect(r.x + 10f, r.yMax - 94f, 24f, 24f), IconFactory.Get(IconFactory.ForElement(def.element)), ScaleMode.ScaleToFit, true);
-            if (maxed)
+            if (god)
+            {
+                float p = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f);
+                UIStyles.Outlined(new Rect(r.x + 12f, r.yMax - 64f, r.width - 20f, 32f), "Lv. " + c.level + "  <size=17>GOD</size>", UIStyles.Sized(UIStyles.Body, 22), Color.Lerp(GodColor, new Color(1f, 0.85f, 0.3f), p), 2f);
+            }
+            else if (maxed)
             {
                 float p = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 5f);
                 UIStyles.Outlined(new Rect(r.x + 12f, r.yMax - 64f, r.width - 20f, 32f), "Lv. " + c.level + "  <size=16>MAX</size>", UIStyles.Sized(UIStyles.Body, 22), new Color(1f, 0.25f + 0.15f * p, 0.2f), 2f);
             }
             else GUI.Label(new Rect(r.x + 12f, r.yMax - 64f, r.width - 20f, 32f), "Lv. " + c.level, UIStyles.Sized(UIStyles.Body, 22));
-            StarStrip(new Vector2(r.x + 8f, r.yMax - 32f), c.stars, Mathf.Min(20f, (r.width - 16f) / 6.2f));
-            RoundFrame(r, maxed ? new Color(1f, 0.2f, 0.15f) : selected ? new Color(0.45f, 0.85f, 1f) : Color.Lerp(rc, Color.black, 0.2f), selected || maxed ? 4f : 2f, 12f);
+            StarStrip(new Vector2(r.x + 8f, r.yMax - 32f), c.stars, Mathf.Min(20f, (r.width - 16f) / 6.2f), c.awaken);
+            RoundFrame(r, god ? Color.Lerp(GodColor, new Color(1f, 0.85f, 0.3f), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f)) : maxed ? new Color(1f, 0.2f, 0.15f) : selected ? new Color(0.45f, 0.85f, 1f) : Color.Lerp(rc, Color.black, 0.2f), selected || maxed ? 4f : 2f, 12f);
             if (teamIndex >= 0)
             {
                 UIStyles.CircleTex(new Vector2(r.xMax - 20f, r.y + 20f), 16f, TileGreen);
                 GUI.Label(new Rect(r.xMax - 36f, r.y + 4f, 32f, 32f), (teamIndex + 1).ToString(), UIStyles.Sized(UIStyles.Center, 20));
             }
             // Rarity name.
-            UIStyles.Outlined(new Rect(r.x + 36f, r.yMax - 98f, r.width - 44f, 26f), RarityInfo.Name(c.stars), UIStyles.Sized(UIStyles.Right, 14), rc, 1.5f);
+            UIStyles.Outlined(new Rect(r.x + 36f, r.yMax - 98f, r.width - 44f, 26f), god ? "GOD" : RarityInfo.Name(c.stars), UIStyles.Sized(UIStyles.Right, 14), rc, 1.5f);
         }
 
         void DrawRosterDetail(Rect card, PlayerData d, bool manage = false)
@@ -271,8 +288,9 @@ namespace HashiraChronicles
             float tx = x + 150f;
             GUI.Label(new Rect(tx, y, card.xMax - tx - 16f, 40f), def.displayName, UIStyles.Sized(UIStyles.H2, 30));
             GUI.DrawTexture(new Rect(tx, y + 48f, 28f, 28f), IconFactory.Get(IconFactory.ForElement(def.element)), ScaleMode.ScaleToFit, true);
-            GUI.Label(new Rect(tx + 36f, y + 42f, 220f, 40f), "Lv. " + c.level + " / " + ExperienceSystem.LevelCap(c.stars), UIStyles.Sized(UIStyles.Body, 24));
-            StarStrip(new Vector2(tx, y + 84f), c.stars, 24f);
+            GUI.Label(new Rect(tx + 36f, y + 42f, 220f, 40f), "Lv. " + c.level + " / " + ExperienceSystem.Cap(c), UIStyles.Sized(UIStyles.Body, 24));
+            StarStrip(new Vector2(tx, y + 84f), c.stars, 24f, c.awaken);
+            if (ExperienceSystem.IsGod(c)) UIStyles.Outlined(new Rect(tx + 160f, y + 78f, 120f, 36f), "GOD", UIStyles.Sized(UIStyles.H2, 30), Color.Lerp(GodColor, new Color(1f, 0.85f, 0.3f), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f)), 2f);
             GUI.Label(new Rect(x, y + 146f, card.width - 48f, 40f), "Power  <color=#FFD36B>" + CharacterSystem.Power(d, c).ToString("N0") + "</color>", UIStyles.Sized(UIStyles.Body, 26));
             GUI.Label(new Rect(x, y + 184f, card.width - 48f, 34f), "<color=#AAAAAA>" + def.role + " · " + def.style + "</color>", UIStyles.Sized(UIStyles.Small, 20));
             UIStyles.Rect(new Rect(x, y + 224f, card.width - 48f, 1f), new Color(1f, 1f, 1f, 0.12f));
@@ -375,6 +393,7 @@ namespace HashiraChronicles
         }
 
         int dupIndex;
+        string awakenFocus;
 
         /// <summary>
         /// Level up with gold + XP (1 or 10 levels), feed XP from the pool, feed or sell duplicate slayers, and
@@ -384,7 +403,7 @@ namespace HashiraChronicles
         {
             float w = card.width - 48f;
             float y = card.yMax - 340f;
-            int cap = ExperienceSystem.LevelCap(c.stars);
+            int cap = ExperienceSystem.Cap(c);
             bool maxed = c.level >= cap;
             float hw = (w - 10f) / 2f;
 
@@ -419,7 +438,7 @@ namespace HashiraChronicles
                 {
                     gm.Save();
                     gm.Audio.Play("perfect", 0.8f);
-                    Toast(def.displayName + " is now " + RarityInfo.Name(c.stars) + " · max Lv." + ExperienceSystem.LevelCap(c.stars));
+                    Toast(def.displayName + " is now " + RarityInfo.Name(c.stars) + " · max Lv." + ExperienceSystem.Cap(c));
                     if (gm.Home != null) gm.Home.Celebrate(RarityInfo.Color(c.stars));
                 }
             }
@@ -435,6 +454,13 @@ namespace HashiraChronicles
                 return;
             }
             dupIndex = ((dupIndex % dupCount) + dupCount) % dupCount;
+            // Jump to this slayer's own duplicate first: it's the one that awakens them.
+            if (awakenFocus != c.id)
+            {
+                awakenFocus = c.id;
+                int own = d.copies.FindIndex(cs => cs.id == c.id);
+                if (own >= 0) dupIndex = own;
+            }
             var stack = d.copies[dupIndex];
             var ddef = GameDatabase.GetCharacter(stack.id);
             if (ddef == null) { d.copies.RemoveAt(dupIndex); return; }
@@ -450,6 +476,23 @@ namespace HashiraChronicles
             GUI.Label(new Rect(r.x + 150f, r.y + 8f, w - 160f, 30f), "DUPLICATE  " + (dupIndex + 1) + "/" + dupCount, UIStyles.Sized(UIStyles.Small, 15));
             GUI.Label(new Rect(r.x + 150f, r.y + 32f, w - 160f, 36f), ddef.displayName + "  <color=#FFD36B>×" + stack.count + "</color>", UIStyles.Sized(UIStyles.Body, 20));
             UIStyles.Outlined(new Rect(r.x + 8f, r.y + 72f, 136f, 20f), RarityInfo.Name(ddef.rarity), UIStyles.Sized(UIStyles.CenterSmall, 13), RarityInfo.Color(ddef.rarity), 1.2f);
+            bool sameChar = stack.id == c.id;
+            if (sameChar)
+            {
+                // A copy of this very slayer: AWAKEN (purple star, +30 max level and levels, +20% stats).
+                bool canAw = c.awaken < ExperienceSystem.MaxAwaken;
+                if (FlatBtn(new Rect(r.x + 150f, r.y + 68f, w - 160f, 42f), canAw ? "AWAKEN ★  <size=14>+30 Lv · +20% stats</size>" : "FULLY AWAKENED", new Color(0.55f, 0.2f, 0.85f), canAw, 18))
+                {
+                    if (CharacterSystem.TryAwaken(d, c))
+                    {
+                        gm.Save();
+                        gm.Audio.Play("ultimate", 0.7f);
+                        Toast(ExperienceSystem.IsGod(c) ? def.displayName + " has become a GOD!" : def.displayName + " awakened! " + c.awaken + "/6 purple stars · Lv." + c.level);
+                        if (gm.Home != null) gm.Home.Celebrate(GodColor);
+                    }
+                }
+                return;
+            }
             float bw = (w - 160f - 10f) / 2f;
             int fx = ExperienceSystem.CopyXp(ddef.rarity), fg = ExperienceSystem.CopyGold(ddef.rarity);
             if (FlatBtn(new Rect(r.x + 150f, r.y + 68f, bw, 42f), "FEED <size=14>+" + fx.ToString("N0") + " EXP</size>", new Color(0.45f, 0.3f, 0.75f), !maxed, 17))

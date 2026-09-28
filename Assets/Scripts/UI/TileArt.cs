@@ -8,7 +8,53 @@ namespace HashiraChronicles
     /// </summary>
     public static class TileArt
     {
-        static Texture2D story, play;
+        static Texture2D story, play, events;
+
+        /// <summary>EVENTS: a festival night — paper lanterns over a river, fireworks in the sky.</summary>
+        public static Texture2D Events { get { if (events == null) events = PaintEvents(); return events; } }
+
+        static Texture2D PaintEvents()
+        {
+            const int W = 420, H = 272;
+            var tex = NewTex(W, H);
+            var px = new Color[W * H];
+            var rng = new System.Random(11);
+            var lanterns = new Vector3[14];
+            for (int i = 0; i < lanterns.Length; i++) lanterns[i] = new Vector3((float)rng.NextDouble(), 0.3f + (float)rng.NextDouble() * 0.6f, 0.018f + (float)rng.NextDouble() * 0.02f);
+            Vector2[] bursts = { new Vector2(0.25f, 0.8f), new Vector2(0.72f, 0.74f), new Vector2(0.5f, 0.9f) };
+            Color[] burstCol = { new Color(1f, 0.5f, 0.7f), new Color(0.5f, 0.85f, 1f), new Color(1f, 0.85f, 0.4f) };
+            for (int y = 0; y < H; y++)
+                for (int x = 0; x < W; x++)
+                {
+                    float u = (float)x / W, v = (float)y / H;
+                    Color c = Mix(new Color(0.35f, 0.12f, 0.3f), new Color(0.08f, 0.06f, 0.22f), v);
+                    // Fireworks: rings of sparks.
+                    for (int b = 0; b < bursts.Length; b++)
+                    {
+                        Vector2 d = new Vector2((u - bursts[b].x) * 1.55f, v - bursts[b].y);
+                        float r = d.magnitude;
+                        float ang = Mathf.Atan2(d.y, d.x);
+                        float spoke = Mathf.Pow(Mathf.Abs(Mathf.Cos(ang * 8f)), 20f);
+                        if (r < 0.14f && r > 0.02f) c = Mix(c, burstCol[b], spoke * (1f - r / 0.14f) * 1.4f);
+                        c = Mix(c, burstCol[b], Mathf.Clamp01(0.05f - r) * 6f);
+                    }
+                    // River at the bottom with the lanterns' reflections.
+                    if (v < 0.22f) c = Mix(new Color(0.05f, 0.08f, 0.2f), new Color(0.15f, 0.12f, 0.3f), v / 0.22f);
+                    // Paper lanterns (warm glows with a bright core).
+                    foreach (var l in lanterns)
+                    {
+                        float d = Vector2.Distance(new Vector2(u * 1.55f, v), new Vector2(l.x * 1.55f, l.y));
+                        c = Mix(c, new Color(1f, 0.55f, 0.2f), Mathf.Clamp01(l.z * 3f - d) * 8f);
+                        if (d < l.z) c = new Color(1f, 0.82f, 0.45f);
+                        float rd = Vector2.Distance(new Vector2(u * 1.55f, v), new Vector2(l.x * 1.55f, 0.22f - (l.y - 0.22f) * 0.25f));
+                        if (v < 0.22f) c = Mix(c, new Color(1f, 0.6f, 0.25f), Mathf.Clamp01(l.z * 2f - rd) * 6f);
+                    }
+                    px[y * W + x] = c;
+                }
+            tex.SetPixels(px);
+            tex.Apply(true, true);
+            return tex;
+        }
 
         public static Texture2D Story { get { if (story == null) story = PaintStory(); return story; } }
         public static Texture2D Play { get { if (play == null) play = PaintPlay(); return play; } }

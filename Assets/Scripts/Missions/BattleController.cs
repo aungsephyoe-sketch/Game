@@ -49,6 +49,7 @@ namespace HashiraChronicles
                 p.y = 0f;
                 return p;
             }
+            if (b != null && b.Def != null && b.Def.openWorld) return OpenWorldBuilder.Clamp(p);
             float m = new Vector2(p.x, p.z).magnitude;
             if (m > ArenaRadius) p *= ArenaRadius / m;
             return p;
@@ -123,7 +124,13 @@ namespace HashiraChronicles
             PlayerCharacter.LockTarget = null;
 
             Vector3 spawn = new Vector3(0f, 0f, -6f);
-            if (def.training) ArenaBuilder.Build(def.theme, transform);
+            if (def.openWorld)
+            {
+                OpenWorldBuilder.Build(transform);
+                ArenaBuilder.ApplyLighting(def.theme);
+                spawn = new Vector3(0f, 0f, -14f);
+            }
+            else if (def.training) ArenaBuilder.Build(def.theme, transform);
             else
             {
                 // Every mission is a journey through the region toward its destination.
@@ -145,6 +152,9 @@ namespace HashiraChronicles
                 }
             }
 
+            // Tall set pieces (towers, spires, far hills) threw long jagged shadow streaks across the road.
+            foreach (var rend in GetComponentsInChildren<Renderer>(true))
+                if (rend.bounds.size.y > 5f) rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             if (GameManager.Instance != null) GameManager.Instance.Audio.SetAmbience(AmbienceFor(def.theme));
             var teamGo = new GameObject("Team");
             teamGo.transform.SetParent(transform, false);

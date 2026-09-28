@@ -25,10 +25,38 @@ namespace HashiraChronicles
             return 1f + 0.12f * Mathf.Max(0, stars - def.rarity);
         }
 
+        /// <summary>Each purple (awakened) star adds 20% to every core stat.</summary>
+        public static float AwakenMultiplier(OwnedCharacter c) { return 1f + 0.2f * Mathf.Clamp(c.awaken, 0, ExperienceSystem.MaxAwaken); }
+
+        /// <summary>Copies of this same slayer waiting to be used for awakening.</summary>
+        public static int SameCopies(PlayerData data, OwnedCharacter c)
+        {
+            if (data.copies == null) return 0;
+            var st = data.copies.Find(x => x.id == c.id);
+            return st != null ? st.count : 0;
+        }
+
+        /// <summary>
+        /// Awaken with a duplicate of the same slayer: one more star turns purple, +30 max level and +30 levels
+        /// right away, +20% stats. All six purple and maxed out = GOD.
+        /// </summary>
+        public static bool TryAwaken(PlayerData data, OwnedCharacter c)
+        {
+            if (c.awaken >= ExperienceSystem.MaxAwaken || SameCopies(data, c) <= 0) return false;
+            var st = data.copies.Find(x => x.id == c.id);
+            st.count--;
+            if (st.count <= 0) data.copies.Remove(st);
+            c.awaken++;
+            c.level = Mathf.Min(ExperienceSystem.Cap(c), c.level + ExperienceSystem.LevelsPerAwaken);
+            c.exp = 0;
+            GameEvents.RaiseCharacterUpgraded(c);
+            return true;
+        }
+
         public static StatBlock ComputeStats(PlayerData data, OwnedCharacter owned)
         {
             var def = GameDatabase.GetCharacter(owned.id);
-            var s = def.baseStats.ScaleCore(LevelMultiplier(owned.level) * AscensionMultiplier(def, owned.stars));
+            var s = def.baseStats.ScaleCore(LevelMultiplier(owned.level) * AscensionMultiplier(def, owned.stars) * AwakenMultiplier(owned));
 
             float atkPct, hpPct, crit, special;
             SkillTree.Accumulate(owned, out atkPct, out hpPct, out crit, out special);
@@ -139,7 +167,7 @@ namespace HashiraChronicles
         {
             reason = "";
             if (c.stars >= MaxStars) { reason = "Max stars"; return false; }
-            int cap = ExperienceSystem.LevelCap(c.stars);
+            int cap = ExperienceSystem.Cap(c);
             if (c.level < cap) { reason = "Reach Lv." + cap; return false; }
             if (data.xp < AscendXpCost(c.stars)) { reason = "Need " + AscendXpCost(c.stars).ToString("N0") + " XP"; return false; }
             if (data.coins < AscendCoinCost(c.stars)) { reason = "Need " + AscendCoinCost(c.stars).ToString("N0") + " gold"; return false; }

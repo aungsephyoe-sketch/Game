@@ -40,7 +40,7 @@ namespace HashiraChronicles
             foreach (var c in d.characters)
             {
                 c.stars = Mathf.Clamp(c.stars - 1, 2, CharacterSystem.MaxStars);
-                c.level = Mathf.Clamp(c.level, 1, ExperienceSystem.LevelCap(c.stars));
+                c.level = Mathf.Clamp(c.level, 1, ExperienceSystem.Cap(c));
             }
             if (d.team.Count > 3) d.team.RemoveRange(3, d.team.Count - 3);
             if (d.teamPresets != null) foreach (var p in d.teamPresets) if (p.ids.Count > 3) p.ids.RemoveRange(3, p.ids.Count - 3);
@@ -124,6 +124,8 @@ namespace HashiraChronicles
             // Teams hold three slayers.
             if (data.team.Count > 3) data.team.RemoveRange(3, data.team.Count - 3);
             if (data.copies == null) data.copies = new System.Collections.Generic.List<CopyStack>();
+            // One-time gift: 100,000 diamonds.
+            if (!data.diamondGift) { data.diamondGift = true; data.crystals += 100000; }
             GameDatabase.EnsureBuilt();
             data.characters.RemoveAll(c => GameDatabase.GetCharacter(c.id) == null);
             data.equipment.RemoveAll(e => GameDatabase.GetEquipment(e.defId) == null);

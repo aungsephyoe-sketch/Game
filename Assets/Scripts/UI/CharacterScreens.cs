@@ -106,7 +106,7 @@ namespace HashiraChronicles
             var d = gm.Data;
             var s = CharacterSystem.ComputeStats(d, c);
             float x = body.x + 40f, y = body.y + 30f;
-            int cap = ExperienceSystem.LevelCap(c.stars);
+            int cap = ExperienceSystem.Cap(c);
             GUI.Label(new Rect(x, y, 440f, 50f), "Level " + c.level + " / " + cap, UIStyles.H2);
             y += 56f;
             float need = ExperienceSystem.ExpToNext(c.level);

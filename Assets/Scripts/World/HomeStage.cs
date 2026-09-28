@@ -207,7 +207,8 @@ namespace HashiraChronicles
                         // Aura: a soft glowing column in the element colour, red and brighter at max level.
                         var owned = GameManager.Instance != null ? GameManager.Instance.Data.GetCharacter(def.id) : null;
                         bool maxed = owned != null && ExperienceSystem.IsMaxed(owned);
-                        Color ac = maxed ? new Color(1f, 0.12f, 0.08f) : ElementChart.ColorOf(def.element);
+                        bool god = owned != null && ExperienceSystem.IsGod(owned);
+                        Color ac = god ? new Color(0.8f, 0.4f, 1f) : maxed ? new Color(1f, 0.12f, 0.08f) : ElementChart.ColorOf(def.element);
                         float aa = maxed ? 0.16f : 0.08f;
                         for (int layer = 0; layer < 2; layer++)
                         {

@@ -164,7 +164,7 @@ namespace HashiraChronicles
 
             // 2. The seal: the player taps to crack it. Each crack may climb one rarity colour toward the result.
             //    Low pulls inside a ×10 break on their own so the run keeps moving.
-            SealNeeded = multi && rarity < 4 ? 0 : 3;
+            SealNeeded = multi && rarity < 5 ? 0 : 3;
             SealCracks = 0;
             Color seen = start;
             int tierShown = 2;

@@ -87,7 +87,8 @@ namespace HashiraChronicles
         public static List<CharacterDefinition> SummonPool(int rarity)
         {
             EnsureBuilt();
-            return Characters.FindAll(c => !c.storyOnly && !c.npc && c.rarity == rarity);
+            // Every slayer can be summoned (story allies too — a story copy you already own becomes a duplicate).
+            return Characters.FindAll(c => !c.npc && c.rarity == rarity);
         }
 
         // ------------------------------------------------------------------ Characters
@@ -761,6 +762,108 @@ namespace HashiraChronicles
             }
         }
 
+        public static readonly List<EventDefinition> Events = new List<EventDefinition>();
+
+        /// <summary>The open-world village: walk around freely.</summary>
+        public static MissionDefinition OpenWorld
+        {
+            get
+            {
+                EnsureBuilt();
+                if (openWorld == null)
+                {
+                    openWorld = new MissionDefinition
+                    {
+                        id = "OW", name = "Kiriha Village", type = MissionType.Training, regionId = "village", training = true, openWorld = true,
+                        storyText = "Walk around the village, talk to everyone, find the hidden chests.", theme = OpenWorldBuilder.Theme(), timeLimit = 999999f
+                    };
+                }
+                return openWorld;
+            }
+        }
+        static MissionDefinition openWorld;
+
+        public static EventDefinition GetEvent(string id) { EnsureBuilt(); return Events.Find(e => e.id == id); }
+
+        /// <summary>One event quest. Difficulty 0 Easy, 1 Medium, 2 Hard.</summary>
+        static MissionDefinition Quest(EventDefinition ev, int n, int difficulty, string name, int level, string story, params WaveDefinition[] waves)
+        {
+            var m = M(null, ev.id + "-" + n, MissionType.Event, ev.regionId, name, level, story, waves);
+            m.eventId = ev.id;
+            m.difficulty = difficulty;
+            m.firstClearRewards = new RewardBundle { crystals = difficulty == 0 ? 50 : difficulty == 1 ? 100 : 200 };
+            m.rewards.coins += difficulty * 1500;
+            if (ev.quests.Count > 0) m.requiresMissionId = ev.quests[ev.quests.Count - 1].id;
+            ev.quests.Add(m);
+            ExtraMissions.Add(m);
+            return m;
+        }
+
+        /// <summary>Five events, five quests each (Easy, Easy, Medium, Medium, Hard), each with its own little story.</summary>
+        static void BuildEvents()
+        {
+            Events.Clear();
+            // 1 — Festival of Lanterns
+            var ev = new EventDefinition { id = "E1", title = "Festival of Lanterns", subtitle = "Kiriha's summer festival — with uninvited guests", regionId = "village",
+                accent = new Color(1f, 0.55f, 0.2f), bannerEnemy = "boss_gorvath", prizeText = "Mina Kaede + 300 diamonds",
+                story = "Every summer, Kiriha floats a thousand paper lanterns down the river to thank the mountain spirits. This year the lanterns started glowing red on their own... and something in the woods is drawn to the light. Mayor Hoshi begs the slayers to keep the festival going — the village needs one happy night." };
+            Events.Add(ev);
+            Quest(ev, 1, 0, "Light the First Lantern", 4, "Imps are snuffing out the lanterns before the festival even starts. Chase them off.", Wave("grunt", 3), Wave("runner", 3));
+            Quest(ev, 2, 0, "Snack Stall Scuffle", 6, "The dumpling stand is under siege. The cook refuses to leave his dumplings.", Wave("runner", 4, "grunt", 2), Wave("grunt", 4));
+            Quest(ev, 3, 1, "The Lantern Thief", 10, "Someone is stealing red lanterns and carrying them into the forest. Follow the glow.", Wave("shadow_demon", 4), Wave("shadow_demon", 3, "spitter", 2));
+            Quest(ev, 4, 1, "Fireworks over the River", 13, "The fireworks draw every demon for miles. Hold the bridge until the finale.", Wave("grunt", 5, "runner", 3), Wave("brute", 1, "spitter", 3));
+            var q = Quest(ev, 5, 2, "The Lantern Oni", 18, "The thief is an old oni who was never invited to the festival. Now he wants all the light for himself.", Wave("brute", 2, "runner", 3));
+            q.bossId = "boss_gorvath"; q.firstClearRewards.characterId = "mina_ember"; q.firstClearRewards.crystals = 300;
+
+            // 2 — Hunt of the Silver Stag
+            ev = new EventDefinition { id = "E2", title = "Hunt of the Silver Stag", subtitle = "A legend walks the Forest of Shadows", regionId = "forest",
+                accent = new Color(0.45f, 0.9f, 0.6f), bannerEnemy = "boss_thousandarm", prizeText = "Rokuro + 400 diamonds",
+                story = "Hunters say a silver stag appears once every hundred years, and whoever sees it will never lose their way again. Rokuro has waited his whole life. But the forest demons want the stag too — its antlers hold the moonlight that keeps the woods from turning." };
+            Events.Add(ev);
+            Quest(ev, 1, 0, "Tracks in the Moss", 8, "Silver hoofprints lead off the path. So do claw marks.", Wave("shadow_demon", 3), Wave("runner", 4));
+            Quest(ev, 2, 0, "Hunter's Camp", 10, "Rokuro's camp is surrounded. Clear it so the hunt can begin.", Wave("shadow_demon", 4, "spitter", 1), Wave("shadow_demon", 4));
+            Quest(ev, 3, 1, "The Whispering Grove", 14, "The trees here move when you're not looking. Some of them aren't trees.", Wave("forest_beast", 1, "shadow_demon", 3), Wave("forest_beast", 2));
+            Quest(ev, 4, 1, "Moonlit Clearing", 17, "The stag drinks from the moon pool. Keep the hunters' traps from finding it first.", Wave("spitter", 3, "shadow_demon", 4), Wave("forest_beast", 2, "spitter", 2));
+            q = Quest(ev, 5, 2, "Heart of the Old Wood", 22, "The Thousand-Arm Demon has cornered the stag. Save it — and the forest with it.", Wave("forest_beast", 2, "shadow_demon", 3));
+            q.bossId = "boss_thousandarm"; q.firstClearRewards.characterId = "rokuro_hunter"; q.firstClearRewards.crystals = 400;
+
+            // 3 — Frostbloom Expedition
+            ev = new EventDefinition { id = "E3", title = "Frostbloom Expedition", subtitle = "A flower that only blooms in a blizzard", regionId = "mountain",
+                accent = new Color(0.55f, 0.85f, 1f), bannerEnemy = "boss_hyoga", prizeText = "Genji Hayabusa + 500 diamonds",
+                story = "Healers in Solmere need the frostbloom — a flower that cures any fever, found only at the top of Hakuro Pass during the worst storm of the year. The storm is here. So are the ice wraiths, who guard the flowers as if they were their own children." };
+            Events.Add(ev);
+            Quest(ev, 1, 0, "Base Camp", 12, "Set up camp before the storm hits. The wraiths are already circling.", Wave("ice_wraith", 3), Wave("ice_wraith", 4));
+            Quest(ev, 2, 0, "Rope Bridge", 14, "Cross the old bridge — carefully. Something is chewing on the ropes.", Wave("ice_wraith", 3, "runner", 3), Wave("frost_oni", 1, "ice_wraith", 2));
+            Quest(ev, 3, 1, "Whiteout", 18, "You can't see your own sword. You can hear the oni breathing.", Wave("frost_oni", 1, "ice_wraith", 4), Wave("frost_oni", 2));
+            Quest(ev, 4, 1, "The Frozen Garden", 21, "Rows of blue flowers under the ice — and the guardians who planted them.", Wave("frost_oni", 2, "ice_wraith", 3), Wave("brute", 2, "ice_wraith", 3));
+            q = Quest(ev, 5, 2, "Hyoga's Last Winter", 26, "Hyoga has returned to guard the final bloom. He says it is the last thing he loves.", Wave("frost_oni", 2, "ice_wraith", 3));
+            q.bossId = "boss_hyoga"; q.firstClearRewards.characterId = "genji_ronin"; q.firstClearRewards.crystals = 500;
+
+            // 4 — Grand Arena Tournament
+            ev = new EventDefinition { id = "E4", title = "Grand Arena Tournament", subtitle = "Solmere's champions, one ring, one crown", regionId = "kingdom",
+                accent = new Color(1f, 0.82f, 0.3f), bannerEnemy = "boss_chancellor", prizeText = "Sun Crest Pin + 600 diamonds",
+                story = "The king has called a tournament to lift the city's spirits. Five rounds, a golden crown, and the whole capital cheering. But the arena's gates keep opening on their own — someone is sending demons in to make sure the champion never leaves the ring." };
+            Events.Add(ev);
+            Quest(ev, 1, 0, "Opening Ceremony", 16, "The crowd is in its seats. The first challengers are not human.", Wave("grunt", 5), Wave("runner", 4, "grunt", 2));
+            Quest(ev, 2, 0, "Round of Sixteen", 18, "Your next opponents fight dirty — and in pairs.", Wave("demon_warrior", 2, "grunt", 3), Wave("spitter", 3, "runner", 3));
+            Quest(ev, 3, 1, "Quarterfinal Brawl", 22, "Brutes break down the side gate. The referee keeps counting anyway.", Wave("brute", 2, "demon_warrior", 2), Wave("brute", 2, "spitter", 3));
+            Quest(ev, 4, 1, "Semifinal Storm", 25, "The lights go out mid-match. Fight in the dark.", Wave("shadow_demon", 5, "demon_warrior", 2), Wave("corrupted_knight", 1, "shadow_demon", 3));
+            q = Quest(ev, 5, 2, "The Masked Champion", 30, "The undefeated champion wears a familiar mask. The crowd goes silent.", Wave("demon_warrior", 2, "corrupted_knight", 1));
+            q.bossId = "boss_chancellor"; q.firstClearRewards.equipmentIds.Add("acc_suncrest"); q.firstClearRewards.crystals = 600;
+
+            // 5 — Night of the Blood Moon
+            ev = new EventDefinition { id = "E5", title = "Night of the Blood Moon", subtitle = "Once a year, the wastes burn brighter", regionId = "demonland",
+                accent = new Color(1f, 0.25f, 0.35f), bannerEnemy = "boss_goken", prizeText = "Dragon Scale Amulet + 1,000 diamonds",
+                story = "When the blood moon rises over the Ashen Wastes, every demon grows stronger — and the Crimson Fist holds a tournament of his own. The winner gets a dragon's scale, the rarest treasure in the wastes. Goken has invited the slayers personally. It would be rude not to go." };
+            Events.Add(ev);
+            Quest(ev, 1, 0, "Under the Red Sky", 22, "The ground is hot enough to cook on. The imps are having a party.", Wave("lava_imp", 5), Wave("lava_imp", 4, "runner", 3));
+            Quest(ev, 2, 0, "Ember Road", 25, "Follow the road of burning stones to Goken's arena.", Wave("lava_imp", 4, "flame_beast", 1), Wave("demon_warrior", 2, "lava_imp", 3));
+            Quest(ev, 3, 1, "Trial of Flame", 29, "Goken's lieutenants test every challenger. Most don't pass.", Wave("flame_beast", 2, "lava_imp", 3), Wave("elite", 1, "flame_beast", 1));
+            Quest(ev, 4, 1, "Crescent Gauntlet", 33, "Three Crescent Hunters, one after another. No rest between.", Wave("elite", 2), Wave("elite", 1, "corrupted_knight", 2));
+            q = Quest(ev, 5, 2, "The Crimson Fist", 38, "The blood moon is at its peak. So is Goken.", Wave("elite", 1, "lava_imp", 4));
+            q.bossId = "boss_goken"; q.firstClearRewards.equipmentIds.Add("acc_dragonscale"); q.firstClearRewards.crystals = 1000;
+        }
+
         static void BuildMissions()
         {
             // ---------------- Chapter 1
@@ -904,6 +1007,7 @@ namespace HashiraChronicles
             m.preBosses.Add("boss_gorvath"); m.preBosses.Add("boss_chancellor"); m.bossId = "boss_goken"; m.timeLimit = 900f;
             m.firstClearRewards.crystals = 300; m.rewards.crystals = 20; m.requiresMissionId = "3-5";
             ExtraMissions.Add(m);
+            BuildEvents();
             m = M(null, "TR", MissionType.Training, "kingdom", "Training Grounds", 1, "Test every skill on training dummies. No rewards, no pressure.",
                 Wave("dummy", 3)); m.training = true; m.timeLimit = 9999f; m.rewards = new RewardBundle(); m.firstClearRewards = new RewardBundle();
             ExtraMissions.Add(m);

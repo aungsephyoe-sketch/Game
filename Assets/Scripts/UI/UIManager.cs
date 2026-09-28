@@ -160,6 +160,7 @@ namespace HashiraChronicles
                 case GameScreen.Results: DrawResults(); break;
                 case GameScreen.ComingSoon: DrawComingSoon(); break;
                 case GameScreen.Settings: DrawSettings(); break;
+                case GameScreen.Events: DrawEvents(); break;
             }
 
         }
