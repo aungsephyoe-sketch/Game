@@ -36,6 +36,27 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Arena PvP, living story scenes, evening look (0.22.0)
+- **Arena (3v3)** — the home **ARENA** shortcut opens a rank card (Bronze → Silver → Gold → Platinum → Diamond → Master, three divisions each below Master), trophies, a tier ladder, wins and losses, three modes and a Ranked/Casual toggle. **FIND MATCH** shows *SEARCHING FOR OPPONENT...*, then a **YOUR TEAM vs OPPONENT TEAM** screen with portraits, then the match.
+  - **3v3 Battle**: first to 10 knockouts. **Moon Crystal**: hold the centre zone alone to score, first to 60. **Boss Rush**: a boss both teams can hit, and the most damage (plus knockouts) wins.
+  - In the match you get blue and red bases, respawns after 5 s, a 2:30 clock, a scoreboard, a roster with health bars, name tags in team colours, a kill feed and a respawn countdown. Ranked wins and losses move your trophies.
+  - **Not online yet.** There is no game server, so the other five slayers are AI (`PartySlayer`, now team-aware), and the UI says so. The match rules, scoring, ranks and screens are real. A server (Photon, Unity Netcode + Relay/Lobby, or similar) would replace the bots with people.
+- **Story scenes** are now staged in the new worlds with palette lighting:
+  - speakers change expression (happy, angry, sad, surprised, determined) and their mouths move while their lines type;
+  - listeners turn to the speaker, and characters walk in and out;
+  - the camera pushes in on dramatic lines, with shake and breath effects;
+  - the dialogue box is chunky, with a portrait that pops.
+- **Village chat engine**: about 220 templates in 20 categories, filled from live context (regions, bosses, events, your recent clears, banners, time of day). It uses weights, per-category cooldowns and a recent-lines memory, so it doesn't repeat itself. Questions get answers from other players.
+- **Evening look**: dusk sky in blue and violet, a low sun, deeper toon shadows, lantern halos and glow pools, rose-stone paving, bold roofs.
+- **Banners**: element-themed promo art with light rays, glow and particles, LIMITED/NEW chips, rarity stars and a weekly countdown.
+- **Combat feel**:
+  - a comic impact star on every hit;
+  - speed streaks and dust on hard knockbacks;
+  - slightly longer hit-stop and shake;
+  - bigger, bouncier damage numbers with CRIT! tags;
+  - an element-coloured ground zone showing your charged attack's reach as it charges;
+  - a bigger ultimate finish (pillar, star, wide shockwave).
+
 ### Cartoon style, tutorials (0.21.0)
 The whole game moves to a stylised cartoon look (switch: `GameConfig.CartoonStyle`), keeping its own characters
 and world — references were used only for the level of exaggeration, colour and readability:

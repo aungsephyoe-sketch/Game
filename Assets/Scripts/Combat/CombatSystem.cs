@@ -21,7 +21,7 @@ namespace HashiraChronicles
 
         public static AttackTag Basic(float mult, Color color)
         {
-            return new AttackTag { multiplier = mult, knockback = 1.2f, stagger = 1f, hitStop = 0.035f, shake = 0.12f, color = color };
+            return new AttackTag { multiplier = mult, knockback = 1.2f, stagger = 1f, hitStop = 0.045f, shake = 0.15f, color = color };
         }
     }
 
@@ -139,7 +139,11 @@ namespace HashiraChronicles
             bool playerHit = target is PlayerCharacter;
             VFX.HitSpark(hitPos, playerHit ? new Color(1f, 0.25f, 0.2f) : tag.color, info.crit ? 22 : 12);
             if (!playerHit && attacker is PlayerCharacter) ElementFx.Impact(hitPos, attacker.Element, tag.heavy || info.crit);
-            DamageNumbers.Spawn(hitPos, info.amount, info.crit, info.elementMultiplier, playerHit);
+            bool bigHit = tag.heavy || tag.isUltimate || tag.launch;
+            // Impact star at the contact point (smaller when you are the one hit, so the screen stays readable).
+            if (!info.blocked) VFX.HitStar(hitPos, playerHit ? new Color(1f, 0.3f, 0.25f) : tag.color, playerHit ? 0.8f : bigHit ? 1.6f : info.crit ? 1.35f : 1f);
+            if (!playerHit && (bigHit || tag.knockback >= 3f)) VFX.KnockTrail(target.Position, dir, tag.color);
+            DamageNumbers.Spawn(hitPos, info.amount, info.crit, info.elementMultiplier, playerHit, bigHit && !playerHit);
             if (GameManager.Instance != null && GameManager.Instance.Audio != null)
             {
                 // Bigger targets sound heavier; every hit is slightly different.

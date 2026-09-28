@@ -378,7 +378,7 @@ namespace HashiraChronicles
         public override void OnHitReceived(DamageInfo info)
         {
             if (visual != null) { visual.Hit(info.knockback); visual.Flash(Color.white, 0.6f); }
-            transform.position = BattleController.ClampToArena(Obstacles.Sweep(transform.position, transform.position + info.knockback * 0.1f));
+            transform.position = BattleController.ClampToArena(Obstacles.Sweep(transform.position, transform.position + info.knockback * 0.25f));
             if (Health.Normalized < 0.3f && Random.value < 0.3f) Say(Pick("low hp help", "heal pls", "im dying lol", "ouch"));
         }
 

@@ -195,6 +195,8 @@ namespace HashiraChronicles
             if ((Journey == null && !(def.pvpMode >= 0 && World != null)) || (Journey != null && string.IsNullOrEmpty(WorldEnv(def)))) Obstacles.Scan(transform);
             // Scenery never hides the fighting slayer.
             CameraOcclusion.Attach(this);
+            // The active slayer's charged-attack reach on the ground.
+            RangeIndicator.Attach(this);
             // Tall set pieces (towers, spires, far hills) threw long jagged shadow streaks across the road.
             foreach (var rend in GetComponentsInChildren<Renderer>(true))
                 if (rend.bounds.size.y > 5f) rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

@@ -107,7 +107,10 @@ namespace HashiraChronicles
             VFX.Shockwave(Position, 7f * fx, color, 0.6f);
             VFX.BurstDisc(Position, 5f * fx, Color.white, 0.25f);
             VFX.ImpactLight(Position + Vector3.up * 2f, color, 14f * fx, 0.5f);
-            if (Owned.stars >= 5) VFX.Pillar(Position, Color.Lerp(color, Color.white, 0.4f), 12f, 0.7f);
+            VFX.Pillar(Position, Color.Lerp(color, Color.white, 0.4f), Owned.stars >= 5 ? 12f : 8f, 0.7f);
+            VFX.HitStar(Position + Vector3.up * 1.6f, color, 3.2f * fx, 0.22f);
+            VFX.Shockwave(Position, 10f * fx, Color.Lerp(color, Color.white, 0.6f), 0.8f);
+            VFX.Dust(Position, 14);
             if (Owned.stars >= 6)
                 for (int tier = 2; tier <= 6; tier++) VFX.Shockwave(Position, 4f + tier * 1.5f, RarityInfo.Color(tier), 0.5f + tier * 0.08f);
             if (cam != null) cam.Shake(0.7f);

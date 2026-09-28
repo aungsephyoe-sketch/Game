@@ -526,15 +526,21 @@ namespace HashiraChronicles
                 }
                 Vector3 sp = cam.WorldToScreenPoint(e.worldPos);
                 if (sp.z < 0f) continue;
-                var p = new Vector2(sp.x / s + e.xJitter, (Screen.height - sp.y) / s - age * 90f);
-                float pop = age < 0.08f ? 1.35f - age * 4f : 1f;
+                // Pops in overshooting, then arcs up and drifts sideways, shrinking as it fades.
+                float rise = age * 170f - age * age * 110f;
+                var p = new Vector2(sp.x / s + e.xJitter * (0.4f + age), (Screen.height - sp.y) / s - rise);
+                float pop = age < 0.09f ? Mathf.Lerp(0.45f, 1.6f, age / 0.09f) : 1f + 0.6f * Mathf.Exp(-(age - 0.09f) * 13f);
+                pop *= Mathf.Lerp(1f, 0.75f, Mathf.Clamp01((age - 0.6f) / 0.4f));
+                if (e.crit && age < 0.25f) p += new Vector2(Random.Range(-4f, 4f), Random.Range(-4f, 4f));
                 var col = e.color;
-                col.a = 1f - Mathf.Clamp01((age - 0.55f) / 0.35f);
+                col.a = 1f - Mathf.Clamp01((age - 0.62f) / 0.38f);
+                if (e.crit && age < 0.12f) col = Color.Lerp(Color.white, col, age / 0.12f);
                 var style = UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(e.size * pop));
-                UIStyles.Outlined(new Rect(p.x - 200f, p.y - 40f, 400f, 80f), e.text, style, col, 3f);
+                float ow = e.size >= 60f ? 5f : 4f;
+                UIStyles.Outlined(new Rect(p.x - 240f, p.y - 50f, 480f, 100f), e.text, style, col, ow);
                 if (!string.IsNullOrEmpty(e.tag))
-                    UIStyles.Outlined(new Rect(p.x - 200f, p.y - 80f, 400f, 50f), e.tag, UIStyles.Sized(UIStyles.Center, 24),
-                        e.tag == "WEAK!" ? new Color(1f, 0.6f, 0.2f, col.a) : new Color(0.6f, 0.6f, 0.7f, col.a), 2f);
+                    UIStyles.Outlined(new Rect(p.x - 240f, p.y - 50f - e.size * 0.8f, 480f, 50f), e.tag, UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(26 * Mathf.Min(pop, 1.3f))),
+                        e.tag.StartsWith("CRIT") ? new Color(1f, 0.45f, 0.15f, col.a) : e.tag == "WEAK!" ? new Color(1f, 0.6f, 0.2f, col.a) : new Color(0.6f, 0.6f, 0.7f, col.a), 3f);
             }
         }
 

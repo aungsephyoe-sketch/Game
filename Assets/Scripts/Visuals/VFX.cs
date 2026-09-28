@@ -164,6 +164,45 @@ namespace HashiraChronicles
                 new Vector3(radius * 0.3f, 1f, radius * 0.3f), new Vector3(radius, 1f, radius), color * 0.8f, duration);
         }
 
+        /// <summary>
+        /// Comic impact star facing the camera: a white-hot core and sharp spikes in the attack colour. Very short
+        /// (a few frames) so hits read instantly without cluttering the fight.
+        /// </summary>
+        public static void HitStar(Vector3 pos, Color color, float size = 1f, float duration = 0.11f)
+        {
+            var cam = Camera.main;
+            if (cam == null) return;
+            // The disc lies flat (XZ); tip it so its face looks at the camera.
+            var face = Quaternion.LookRotation(cam.transform.position - pos, cam.transform.up) * Quaternion.Euler(90f, 0f, 0f);
+            pos += (cam.transform.position - pos).normalized * 0.4f;
+            Flash(MeshFactory.Disc(), pos, face, new Vector3(0.25f, 1f, 0.25f) * size, new Vector3(0.75f, 1f, 0.75f) * size, new Color(1f, 1f, 0.95f, 1f), duration * 0.8f);
+            Color spike = Color.Lerp(color, Color.white, 0.25f);
+            int n = size > 1.3f ? 6 : 4;
+            float roll0 = Random.Range(0f, 360f);
+            for (int i = 0; i < n; i++)
+            {
+                float len = (i % 2 == 0 ? 1.5f : 1.05f) * size;
+                var rot = face * Quaternion.Euler(0f, roll0 + i * 360f / n, 0f);
+                Flash(MeshFactory.Disc(), pos, rot, new Vector3(0.06f * size, 1f, len * 0.4f), new Vector3(0.1f * size, 1f, len), spike, duration);
+            }
+        }
+
+        /// <summary>Speed streaks behind something that was knocked back hard.</summary>
+        public static void KnockTrail(Vector3 pos, Vector3 dir, Color color)
+        {
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.001f) return;
+            dir.Normalize();
+            var rot = Quaternion.LookRotation(dir);
+            for (int i = 0; i < 3; i++)
+            {
+                Vector3 side = Vector3.Cross(Vector3.up, dir) * (i - 1) * 0.35f;
+                Flash(MeshFactory.Disc(), pos + side + Vector3.up * (0.6f + i * 0.3f) - dir * 0.6f, rot, new Vector3(0.08f, 1f, 1.4f), new Vector3(0.02f, 1f, 2.4f),
+                    new Color(color.r, color.g, color.b, 0.55f), 0.22f);
+            }
+            Dust(pos, 5);
+        }
+
         public static void Pillar(Vector3 pos, Color color, float height = 6f, float duration = 0.5f)
         {
             if (cylinder == null) cylinder = Resources.GetBuiltinResource<Mesh>("Cylinder.fbx");
