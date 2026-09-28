@@ -6,12 +6,12 @@ namespace HashiraChronicles
 {
     /// <summary>
     /// Signature specials: every slayer's special has its own set piece, not just a bigger swing.
-    ///   Ren — a water dragon coils around him and breathes a torrent      Ren (Dawn) — a golden sun dragon
-    ///   Homura — a flame dragon scorches the field                          Homura (Last Flame) — a meteor storm
+    ///   Ren — a water dragon coils around him and breathes a torrent      Ren (Dawn) — Sun Wheel (see Signature2)
+    ///   Homura — Phoenix Dive (see Signature2)                              Homura (Last Flame) — a meteor storm
     ///   Sora — a zig-zag lightning dash through every demon                 Raiga — leaps into the sky and falls as a thunder spear
     ///   Tetsu — rings of stone spikes burst from the ground                 Mina — four shadow clones strike from every side
     ///   Rokuro — a rain of glowing arrows                                   Genji — time stops, one flash, every demon is cut at once
-    ///   Yui — a tidal wave rolls across the field                           Kuroe — crescents orbit, then the moon falls
+    ///   Yui — a tidal wave rolls across the field                           Kuroe — Eclipse (see Signature2)
     /// Kiba (hundred fists) and Hana (restoring light) use their fighting-style specials.
     /// </summary>
     public partial class PlayerCharacter
@@ -19,14 +19,17 @@ namespace HashiraChronicles
         IEnumerator SignatureRelease(AbilityDefinition ab, Color color, Combatant target, DamageTally tally)
         {
             var tag = AbilitySystem.MakeTag(this, ab, SkillLevelMult(3), true);
-            tag.multiplier *= 0.9f; // specials hit much harder than regular skills
+            // Specials hit much harder than regular skills (they no longer add the generic burst on top), and rarer
+            // slayers hit harder still.
+            tag.multiplier *= 1.3f * (1f + 0.08f * Mathf.Max(0, Owned.stars - 2));
             Vector3 focus = target != null ? target.Position : Position + transform.forward * 5f;
             switch (Def.id)
             {
-                case "ren_initiate":
-                case "ren_sundance":
-                case "homura_pillar":
-                    return DragonSpecial(tag, tally, focus, Def.id == "ren_initiate" ? 1f : 1.2f);
+                case "ren_initiate": return DragonSpecial(tag, tally, focus, 1f);
+                case "ren_sundance": return SunWheel(tag, tally, focus);
+                case "homura_pillar": return PhoenixDive(tag, tally, focus);
+                case "seren_starfall": return Constellation(tag, tally, focus);
+                case "garou_onyx": return BlackTornado(tag, tally, focus);
                 case "homura_lastflame": return MeteorStorm(tag, tally, focus, color, false);
                 case "sora_initiate": return ZigzagThunder(tag, tally, focus);
                 case "raiga_pillar": return ThunderSpear(tag, tally, focus);
@@ -35,7 +38,7 @@ namespace HashiraChronicles
                 case "rokuro_hunter": return ArrowRain(tag, tally, focus, color);
                 case "genji_ronin": return IaidoFlash(tag, tally);
                 case "yui_tide": return TidalSpecial(tag, tally, focus);
-                case "kuroe_moon": return MeteorStorm(tag, tally, focus, color, true);
+                case "kuroe_moon": return Eclipse(tag, tally, focus);
                 default: return StyleRelease(ab, color, target, tally);
             }
         }

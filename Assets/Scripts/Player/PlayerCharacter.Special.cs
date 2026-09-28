@@ -72,12 +72,22 @@ namespace HashiraChronicles
             PlayElementSound(1f);
             GameEvents.RaiseImpact(1f);
             var tally = new DamageTally();
-            yield return SpecialFlourish(color);
-            yield return SignatureRelease(ab, color, target, tally);
-            yield return AbilitySystem.Execute(this, ab, SkillLevelMult(3), true, tally);
+            float fx = RarityFx;
+            if (HasSignature)
+            {
+                // A set piece of their own from start to finish.
+                yield return SignatureRelease(ab, color, target, tally);
+            }
+            else
+            {
+                // Style specials (hundred fists, restoring light) keep the leap, the form and the finishing dash.
+                yield return SpecialFlourish(color);
+                yield return SignatureRelease(ab, color, target, tally);
+                yield return AbilitySystem.Execute(this, ab, SkillLevelMult(3), true, tally);
+                yield return FinalStrike(color, target, tally);
+            }
 
-            // 6. The finishing blow: a dash through the target in slow motion, then everything is thrown back.
-            yield return FinalStrike(color, target, tally);
+            // 6. Everything left standing is thrown back in slow motion.
             var blow = AttackTag.Basic(1.2f, color);
             blow.isUltimate = true;
             blow.launch = true;
@@ -86,10 +96,13 @@ namespace HashiraChronicles
             tally.Add(CombatSystem.HitRadius(this, Position, 6.5f, blow));
             TimeController.SlowMotion(0.3f, 0.8f);
 
-            // 7. Final impact.
-            VFX.Shockwave(Position, 7f, color, 0.6f);
-            VFX.BurstDisc(Position, 5f, Color.white, 0.25f);
-            VFX.ImpactLight(Position + Vector3.up * 2f, color, 14f, 0.5f);
+            // 7. Final impact — bigger and brighter the rarer the slayer; Mythics ripple through every rarity colour.
+            VFX.Shockwave(Position, 7f * fx, color, 0.6f);
+            VFX.BurstDisc(Position, 5f * fx, Color.white, 0.25f);
+            VFX.ImpactLight(Position + Vector3.up * 2f, color, 14f * fx, 0.5f);
+            if (Owned.stars >= 5) VFX.Pillar(Position, Color.Lerp(color, Color.white, 0.4f), 12f, 0.7f);
+            if (Owned.stars >= 6)
+                for (int tier = 2; tier <= 6; tier++) VFX.Shockwave(Position, 4f + tier * 1.5f, RarityInfo.Color(tier), 0.5f + tier * 0.08f);
             if (cam != null) cam.Shake(0.7f);
             if (audio != null) audio.PlayPitched("impact", 1f, 0.75f);
             GameEvents.RaiseImpact(1f);

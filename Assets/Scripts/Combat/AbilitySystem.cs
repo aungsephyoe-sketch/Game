@@ -45,7 +45,10 @@ namespace HashiraChronicles
         {
             var tag = MakeTag(pc, ab, levelMult, ultimate);
             Color color = tag.color;
-            float scale = ultimate ? 1.35f : 1f;
+            // Rarer slayers: bigger effects and harder hits.
+            int stars = pc.Owned != null ? pc.Owned.stars : 2;
+            tag.multiplier *= 1f + 0.06f * Mathf.Max(0, stars - 2);
+            float scale = (ultimate ? 1.35f : 1f) * pc.RarityFx;
             VFX.Breath(pc.Position, color, ultimate ? 70 : 30);
             ElementFlourish(pc, color, ultimate);
 

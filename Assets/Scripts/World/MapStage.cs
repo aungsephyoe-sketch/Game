@@ -183,15 +183,45 @@ namespace HashiraChronicles
             if (onArrive != null) onArrive();
         }
 
+        // ------------------------------------------------------------------ Scrolling
+
+        Vector3 pan;
+        float zoom = 1f;
+
+        /// <summary>Drag the map: a screen-space drag (UI units) moves the view across the land.</summary>
+        public void Pan(Vector2 drag)
+        {
+            if (travel != null) return;
+            float k = AreaMode ? 0.03f : 0.09f * zoom;
+            pan += new Vector3(-drag.x, 0f, drag.y) * k;
+            float limitX = AreaMode ? 14f : 120f, limitZ = AreaMode ? 10f : 80f;
+            Vector3 basePos = AreaMode ? Vector3.zero : token.position;
+            Vector3 p = basePos + pan;
+            p.x = Mathf.Clamp(p.x, -limitX, limitX);
+            p.z = Mathf.Clamp(p.z, -limitZ, limitZ);
+            pan = p - basePos;
+        }
+
+        /// <summary>Mouse wheel / pinch: zoom the world overview in and out.</summary>
+        public void Zoom(float delta)
+        {
+            zoom = Mathf.Clamp(zoom + delta, 0.45f, 1.5f);
+        }
+
+        public void ResetPan() { pan = Vector3.zero; }
+
         void Update()
         {
             if (token == null || CameraController.Instance == null) return;
+            // While walking, the view drifts back to the leader.
+            if (travel != null) pan = Vector3.Lerp(pan, Vector3.zero, Time.unscaledDeltaTime * 3f);
             if (AreaMode) { UpdateArea(); return; }
-            CameraFocus = token.position;
+            Vector3 look = token.position + pan * (1f - arriveZoom);
+            CameraFocus = look;
             float t = Time.unscaledTime;
-            Vector3 far = new Vector3(Mathf.Sin(t * 0.1f) * 1.5f + 8f, 38f, -30f);
-            Vector3 camPos = token.position + Vector3.Lerp(far, new Vector3(0f, 5f, -8f), arriveZoom);
-            CameraController.Instance.SetFixed(camPos, token.position + Vector3.Lerp(new Vector3(8f, 0f, 2f), Vector3.up, arriveZoom));
+            Vector3 far = new Vector3(Mathf.Sin(t * 0.1f) * 1.5f + 8f, 38f, -30f) * zoom;
+            Vector3 camPos = look + Vector3.Lerp(far, new Vector3(0f, 5f, -8f), arriveZoom);
+            CameraController.Instance.SetFixed(camPos, look + Vector3.Lerp(new Vector3(8f, 0f, 2f) * zoom, Vector3.up, arriveZoom));
             // Idle hop so the leader never feels static on the map.
             if (travel == null && tokenVisual != null) tokenVisual.SetMoving(0f);
             foreach (var n in nodes.Values)

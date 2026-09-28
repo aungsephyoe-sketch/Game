@@ -116,6 +116,12 @@ namespace HashiraChronicles
 
         // ---- Missions board (daily / weekly quests)
         public string dailyKey = "";
+
+        // ---- Daily login reward (rolled once per day, claimed from a popup on the home screen)
+        public string loginKey = "";
+        public int loginDays;
+        public int loginGold, loginDiamonds;
+        public bool loginPending;
         public string weeklyKey = "";
         public List<QuestState> quests = new List<QuestState>();
         public int bossesDefeated;

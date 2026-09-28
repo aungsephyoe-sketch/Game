@@ -143,7 +143,7 @@ namespace HashiraChronicles
         {
             switch (gm.CurrentScreen)
             {
-                case GameScreen.MainMenu: DrawMainMenu(); break;
+                case GameScreen.MainMenu: DrawHome(); break;
                 case GameScreen.WorldMap: DrawWorldMap(); break;
                 case GameScreen.Summon: DrawSummon(); break;
                 case GameScreen.MissionsBoard: DrawMissionsBoard(); break;
@@ -295,11 +295,9 @@ namespace HashiraChronicles
         {
             var sb = new System.Text.StringBuilder();
             if (r.exp > 0) sb.Append("EXP +" + r.exp.ToString("N0") + "    ");
-            if (r.coins > 0) sb.Append("<color=#FFD36B>Coins +" + r.coins.ToString("N0") + "</color>    ");
-            if (r.crystals > 0) sb.Append("<color=#7FD8FF>Crystals +" + r.crystals + "</color>    ");
+            if (r.coins > 0) sb.Append("<color=#FFD36B>Gold +" + r.coins.ToString("N0") + "</color>    ");
+            if (r.crystals > 0) sb.Append("<color=#7FD8FF>Diamonds +" + r.crystals + "</color>    ");
             if (r.XpValue > 0) sb.Append("XP +" + r.XpValue.ToString("N0") + "    ");
-            if (r.skillScrolls > 0) sb.Append("Skill Scroll ×" + r.skillScrolls + "    ");
-            if (r.ascensionOre > 0) sb.Append("Ore ×" + r.ascensionOre + "    ");
             foreach (var e in r.equipmentIds)
             {
                 var def = GameDatabase.GetEquipment(e);

@@ -4,8 +4,8 @@ using UnityEngine;
 namespace HashiraChronicles
 {
     /// <summary>
-    /// Summoning with published rates and pity. Every 10-pull guarantees at least one EPIC; 80 pulls without the
-    /// featured MYTHIC guarantees it. Duplicates convert into ascension ore (and a few crystals back).
+    /// Summoning with published rates and pity. Every 10-pull guarantees at least one EPIC; 80 pulls without a
+    /// featured MYTHIC guarantees one. Duplicates go to the duplicates pile (feed them as EXP or sell them).
     /// </summary>
     public static class SummonSystem
     {
@@ -13,6 +13,11 @@ namespace HashiraChronicles
         public const int MultiCost = 450;
         public const int PityLimit = 80;
         public const string FeaturedId = "kuroe_moon";
+        /// <summary>The three featured Mythics of the limited banner.</summary>
+        public static readonly string[] FeaturedIds = { "seren_starfall", "kuroe_moon", "garou_onyx" };
+        public const string BannerName = "CELESTIAL NIGHT";
+
+        public static bool IsFeatured(string id) { return System.Array.IndexOf(FeaturedIds, id) >= 0; }
 
         /// <summary>Rates for Common, Rare, Epic, Legendary, Mythic.</summary>
         public static readonly float[] Rates = { 0.45f, 0.35f, 0.14f, 0.05f, 0.01f };
@@ -41,12 +46,13 @@ namespace HashiraChronicles
                 CharacterDefinition def;
                 if (d.summonPity >= PityLimit || rarity == 6)
                 {
-                    def = GameDatabase.GetCharacter(FeaturedId);
+                    def = GameDatabase.GetCharacter(FeaturedIds[Random.Range(0, FeaturedIds.Length)]);
+                    if (def == null) def = GameDatabase.GetCharacter(FeaturedId);
                     rarity = def.rarity;
                 }
                 else def = Pick(rarity);
                 if (def == null) { def = Pick(3); rarity = def.rarity; }
-                if (def.id == FeaturedId) d.summonPity = 0;
+                if (IsFeatured(def.id)) d.summonPity = 0;
                 if (rarity >= 4) gotEpic = true;
                 bool isNew = InventorySystem.AddCharacter(d, def.id);
                 results.Add(new Result { def = def, rarity = rarity, isNew = isNew });

@@ -96,11 +96,21 @@ namespace HashiraChronicles
             UIStyles.Colored(new Rect(c.x - size * 0.5f, c.y - size * 0.5f, size, size), "<b>XP</b>", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(size * 0.36f)), Color.white);
         }
 
+        /// <summary>
+        /// Rotates later GUI drawing around a point given in the 1080-tall virtual space. (GUIUtility.RotateAroundPivot
+        /// takes the pivot in screen pixels, which put rotated icons in the wrong place under the UI scale.)
+        /// </summary>
+        public static void RotateGui(float angle, Vector2 pivot)
+        {
+            var p = new Vector3(pivot.x, pivot.y, 0f);
+            GUI.matrix = GUI.matrix * Matrix4x4.TRS(p, Quaternion.Euler(0f, 0f, angle), Vector3.one) * Matrix4x4.TRS(-p, Quaternion.identity, Vector3.one);
+        }
+
         /// <summary>Blue faceted crystal.</summary>
         public static void DiamondIcon(Vector2 c, float size)
         {
             var old = GUI.matrix;
-            GUIUtility.RotateAroundPivot(45f, c);
+            RotateGui(45f, c);
             float s = size * 0.62f;
             Round(new Rect(c.x - s * 0.5f, c.y - s * 0.5f, s, s), new Color(0.12f, 0.45f, 0.95f), s * 0.12f);
             Round(new Rect(c.x - s * 0.5f, c.y - s * 0.5f, s * 0.5f, s * 0.5f), new Color(0.55f, 0.85f, 1f), s * 0.1f);

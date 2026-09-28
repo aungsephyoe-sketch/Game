@@ -134,7 +134,7 @@ namespace HashiraChronicles
                     return "Bought 3 EXP Scrolls.";
                 case "traveler":
                     d.crystals += 20;
-                    return "She presses a small crystal charm into your hand. +20 crystals";
+                    return "She presses a small crystal charm into your hand. +20 diamonds";
                 case "chest":
                 {
                     int coins = Random.Range(2000, 6000);
@@ -147,17 +147,17 @@ namespace HashiraChronicles
                         InventorySystem.AddEquipment(d, pick.id);
                         eq = " and " + pick.displayName;
                     }
-                    return "Found " + coins.ToString("N0") + " coins" + eq + "!";
+                    return "Found " + coins.ToString("N0") + " gold" + eq + "!";
                 }
                 case "cave":
                     d.xp += 1300;
-                    return "Mined Ascension Ore ×1 and found a Skill Scroll.";
+                    return "Mined glowing crystals worth 1,300 XP.";
                 case "cart":
                     d.coins += 1500; d.xp += 1000;
                     return "The farmer insists you take something. +1,500 coins, +1 EXP Scroll";
                 default:
                     d.crystals += 10;
-                    return "\"...We will meet again, at the end of the eclipse.\" The stranger vanishes. +10 crystals";
+                    return "\"...We will meet again, at the end of the eclipse.\" The stranger vanishes. +10 diamonds";
             }
         }
 

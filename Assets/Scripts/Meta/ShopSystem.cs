@@ -18,7 +18,7 @@ namespace HashiraChronicles
 
         public static readonly List<Item> Items = new List<Item>
         {
-            new Item { id = "free_crystals", name = "Daily Gift", description = "20 crystals, free once a day.", grant = new RewardBundle { crystals = 20 }, dailyFree = true },
+            new Item { id = "free_crystals", name = "Daily Gift", description = "20 diamonds, free once a day.", grant = new RewardBundle { crystals = 20 }, dailyFree = true },
             new Item { id = "exp5", name = "XP Pack", description = "+5,000 XP for levelling slayers.", coinCost = 2000, grant = new RewardBundle { expScrolls = 5 } },
             new Item { id = "skill3", name = "Big XP Pack", description = "+15,000 XP for levels, skills and ascension.", coinCost = 5500, grant = new RewardBundle { expScrolls = 15 } },
             new Item { id = "chest4", name = "Forge Chest", description = "A random RARE+ weapon, haori or accessory.", coinCost = 12000, chestRarity = 3 },

@@ -81,8 +81,8 @@ namespace HashiraChronicles
                 // Bosses grow with the story: each chapter's boss is noticeably tougher than the last.
                 var battle = BattleController.Current;
                 int ch = battle != null && battle.Def != null ? Mathf.Max(1, battle.Def.chapter) : 1;
-                // Main bosses were too tanky: 45% of their table HP, growing gently with each chapter.
-                hpMul *= 0.45f * (1f + 0.12f * (ch - 1));
+                // Main bosses were still too tanky: 18% of their table HP, growing gently with each chapter.
+                hpMul *= 0.18f * (1f + 0.08f * (ch - 1));
                 atkMul *= 1f + 0.15f * (ch - 1);
                 defMul *= 1f + 0.08f * (ch - 1);
             }
@@ -551,7 +551,11 @@ namespace HashiraChronicles
             if (Def.form != "dummy")
             {
                 int each = 4 + Level * 2;
-                GoldCoin.Burst(Position, IsBoss ? 24 : (Def.archetype == EnemyArchetype.Elite || Def.archetype == EnemyArchetype.Tank ? 6 : 3), IsBoss ? each * 5 : each);
+                bool big = Def.archetype == EnemyArchetype.Elite || Def.archetype == EnemyArchetype.Tank;
+                GoldCoin.Burst(Position, IsBoss ? 24 : (big ? 6 : 3), IsBoss ? each * 5 : each);
+                // Sometimes a demon drops diamonds too: bosses always, elites often, others now and then.
+                if (IsBoss) GoldCoin.Diamonds(Position, 3, 5);
+                else if (Random.value < (big ? 0.3f : 0.07f)) GoldCoin.Diamonds(Position, 1, big ? 3 : 1);
             }
             if (Killed != null) Killed(this);
             GameEvents.RaiseEnemyKilled(this);

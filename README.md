@@ -97,9 +97,12 @@ Bosses keep their camera reveal and phases and now fall in a slow-motion **defea
   speaker name plates, title cards, fades, sky changes and music — skippable and replayable from the Journal.
 - **End-of-mission screen**: MISSION COMPLETE, S/A/B/C rating, counted-up EXP and gold, items,
   equipment, level-ups and new allies; NEXT MISSION / REPLAY / RETURN TO MAP / CHARACTERS.
-- **Summoning as an event**: the shrine goes dark, energy gathers, the circle "upgrades" colour through
-  the rarities, lightning for Legendary+, a portal opens, a silhouette steps out, then the reveal.
+- **Summoning as an event**: the limited banner features three Mythics (Seren, Kuroe, Garou) with their
+  art. ×10 pulls open with ten orbs rising in their rarity colours; each pull, energy spirals into a sealed
+  orb that you **tap to crack** (the colour can climb with each crack), it shatters, the braziers ignite,
+  lightning for Legendary+, a portal opens, a silhouette steps out, then the reveal.
   Common · Rare · Epic · Legendary · Mythic, published rates, ×10 Epic guarantee and pity.
+- **Daily login reward**: a random 500–5,000 gold and 50–200 diamonds every day.
 - **Collection viewer**: rotate the 3D model, test each skill, jump into the Training Grounds.
 - **Missions board** (daily/weekly with rewards, side stories, events, training) and a **shop**.
 - **Boss events**: cinematic entrance with a name card and a line of dialogue, enrage with the arena
@@ -173,7 +176,12 @@ To test on a phone, switch the platform to Android/iOS in **File → Build Setti
 - **Story**: 7 chapters, ~30 story, boss, side and treasure missions plus an event boss rush and a
   training ground, each with three objectives (defeat N demons / nobody falls / par time).
 - **Currencies**: **Gold** (levels, ascension, skills, accessories), **Diamonds** (summons; earned from
-  mission stars: 1★ = 1, 2★ = 2, 3★ = 5) and **XP** (levels, skills, ascension, the ability tree).
+  mission stars: 1★ = 1, 2★ = 2, 3★ = 5, daily login, and sometimes dropped by demons) and **XP**
+  (levels, skills, ascension, the ability tree).
+- **Strong attacks by rarity**: Common slayers have 1 strong attack + their special, Rare 2, Epic and up 3.
+  Rarer slayers hit harder and their attacks look bigger and flashier. Every slayer has their own special
+  set piece (no two share one) and their own finishing touch on every strong attack.
+- **World map**: drag to scroll, scroll to zoom, tap a land (or ‹ ›) and the leader walks there.
 - **Rarity & level caps**: ★2 Common (Lv 30), ★3 Rare (60), ★4 Epic (80), ★5 Legendary (100),
   ★6 Mythic (120). Ascending at the cap raises the rarity, the cap and all stats. Maxed slayers get a red aura.
 - **Progression**: level up with gold + XP, feed XP, feed duplicate slayers as EXP or sell them for gold,

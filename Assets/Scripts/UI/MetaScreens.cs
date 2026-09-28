@@ -20,135 +20,6 @@ namespace HashiraChronicles
             }
         }
 
-        void DrawSummonBanner(PlayerData d, SummonStage st)
-        {
-            TopBar("SUMMON", GameScreen.MainMenu);
-            var featured = GameDatabase.GetCharacter(SummonSystem.FeaturedId);
-            float k = Enter(0f, 0.45f);
-            var banner = new Rect(safe.x + 30f - (1f - k) * 300f, safe.y + 140f, 720f, H - safe.y - 170f);
-            UIStyles.PanelBox(banner, RarityInfo.Color(7));
-            GUI.Label(new Rect(banner.x + 30f, banner.y + 20f, 660f, 40f), "<color=#FF6B8A>LIMITED BANNER</color>", UIStyles.H2);
-            UIStyles.Outlined(new Rect(banner.x + 30f, banner.y + 62f, 660f, 80f), "ECLIPSE OF THE MOON", UIStyles.Sized(UIStyles.H1, 50), Color.white, 3f);
-            if (featured != null)
-            {
-                GUI.Label(new Rect(banner.x + 30f, banner.y + 150f, 660f, 44f), "Featured: <color=#FF6B8A>" + featured.FullName + "</color>  " + ElementTag(featured.element), UIStyles.Body);
-                GUI.Label(new Rect(banner.x + 30f, banner.y + 196f, 660f, 90f), "<i>" + featured.description + "</i>", UIStyles.Small);
-            }
-            float y = banner.y + 300f;
-            GUI.Label(new Rect(banner.x + 30f, y, 660f, 40f), "RATES", UIStyles.Sized(UIStyles.H2, 28));
-            y += 42f;
-            for (int i = 0; i < SummonSystem.Rates.Length; i++)
-            {
-                int rarity = 3 + i;
-                UIStyles.Colored(new Rect(banner.x + 40f, y, 300f, 34f), RarityInfo.Name(rarity) + "  " + Stars(rarity), UIStyles.Sized(UIStyles.Body, 22), RarityInfo.Color(rarity));
-                GUI.Label(new Rect(banner.x + 400f, y, 200f, 34f), (SummonSystem.Rates[i] * 100f).ToString("0.#") + "%", UIStyles.Sized(UIStyles.Body, 22));
-                y += 34f;
-            }
-            y += 14f;
-            GUI.Label(new Rect(banner.x + 30f, y, 660f, 70f), "Every ×10 summon guarantees an EPIC or better.\nPity: the featured MYTHIC is guaranteed within " + SummonSystem.PityLimit + " summons.", UIStyles.Sized(UIStyles.Small, 20));
-            y += 80f;
-            GUI.Label(new Rect(banner.x + 30f, y, 660f, 30f), "Pity  " + d.summonPity + " / " + SummonSystem.PityLimit, UIStyles.Sized(UIStyles.Body, 22));
-            UIStyles.Bar(new Rect(banner.x + 30f, y + 34f, 660f, 16f), (float)d.summonPity / SummonSystem.PityLimit, RarityInfo.Color(7));
-            GUI.Label(new Rect(banner.x + 30f, banner.yMax - 60f, 660f, 40f), "Duplicates become Ascension Ore.", UIStyles.Sized(UIStyles.Small, 20));
-
-            float bw = 420f, bx = safe.xMax - bw - 40f, by = H - 330f;
-            if (AnimBtn(new Rect(bx, by, bw, 120f), "SUMMON ×1\n<size=24>✦ " + SummonSystem.SingleCost + "</size>", UIStyles.Button, 0.2f, SummonSystem.CanAfford(d, 1), false, 60f))
-                DoSummon(1);
-            if (AnimBtn(new Rect(bx, by + 140f, bw, 140f), "SUMMON ×10\n<size=24>✦ " + SummonSystem.MultiCost + "</size>", UIStyles.ButtonBig, 0.3f, SummonSystem.CanAfford(d, 10), SummonSystem.CanAfford(d, 10), 60f))
-                DoSummon(10);
-            if (!SummonSystem.CanAfford(d, 1))
-                GUI.Label(new Rect(bx - 200f, by - 60f, bw + 200f, 50f), "<color=#FF9C7A>Earn crystals from missions, objectives, daily missions and the shop.</color>", UIStyles.Sized(UIStyles.Right, 20));
-        }
-
-        void DoSummon(int count)
-        {
-            var results = SummonSystem.Summon(gm.Data, count);
-            if (results.Count == 0) { Toast("Not enough crystals."); return; }
-            gm.Save();
-            gm.SummonHall.Play(results);
-        }
-
-        void DrawSummonReveal(SummonStage st)
-        {
-            var r = st.Current;
-            if (Btn(new Rect(safe.xMax - 250f, safe.y + 24f, 220f, 80f), "SKIP ▶▶", UIStyles.ButtonSmall)) st.SkipAll();
-            if (st.Results != null && st.Results.Count > 1)
-                GUI.Label(new Rect(safe.x + 30f, safe.y + 30f, 300f, 60f), (st.CurrentIndex + 1) + " / " + st.Results.Count, UIStyles.H2);
-            if (GUI.Button(new Rect(0f, 0f, W, H), GUIContent.none, GUIStyle.none)) st.Advance();
-            if (r == null) return;
-
-            if (st.Phase == SummonStage.SummonPhase.Charging || st.Phase == SummonStage.SummonPhase.Silhouette)
-            {
-                // Glow in the circle colour creeps in from the edges.
-                var c = st.CircleColor;
-                var old = GUI.color;
-                GUI.color = new Color(c.r, c.g, c.b, 0.35f + 0.15f * Mathf.Sin(Time.unscaledTime * 8f));
-                GUI.DrawTexture(new Rect(0f, 0f, W, H), UIStyles.Vignette);
-                GUI.color = old;
-                if (st.Phase == SummonStage.SummonPhase.Silhouette)
-                    GUI.Label(new Rect(0f, H - 200f, W, 60f), "<color=#DDDDDD>. . .</color>", UIStyles.Sized(UIStyles.Center, 48));
-                return;
-            }
-
-            // Reveal card.
-            float k = Mathf.Clamp01((Time.unscaledTime - st.PhaseStart) / 0.4f);
-            Color rc = RarityInfo.Color(r.rarity);
-            if (k < 1f) UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(1f, 1f, 1f, (1f - k) * 0.8f));
-            var card = new Rect(safe.xMax - 820f + (1f - k) * 400f, H * 0.5f - 200f, 760f, 400f);
-            UIStyles.Rect(card, new Color(0f, 0f, 0f, 0.6f * k));
-            var portrait = ArtLibrary.CharacterFull(r.def);
-            if (portrait != null)
-            {
-                // The character's master art slides in beside the name card.
-                var pr = new Rect(card.x - 330f - (1f - k) * 200f, H * 0.5f - 330f, 320f, 660f);
-                ArtLibrary.DrawFit(pr, portrait, k);
-            }
-            UIStyles.Rect(new Rect(card.x, card.y, 12f, card.height), rc);
-            UIStyles.Outlined(new Rect(card.x + 40f, card.y + 20f, 700f, 80f), RarityInfo.Name(r.rarity), UIStyles.Sized(UIStyles.Big, 64), rc, 3f);
-            UIStyles.Colored(new Rect(card.x + 40f, card.y + 100f, 700f, 50f), Stars(r.rarity), UIStyles.Sized(UIStyles.H2, 40), UIStyles.Gold);
-            UIStyles.Outlined(new Rect(card.x + 40f, card.y + 150f, 700f, 80f), r.def.displayName, UIStyles.Sized(UIStyles.H1, 60), Color.white, 3f);
-            GUI.Label(new Rect(card.x + 40f, card.y + 228f, 700f, 44f), r.def.versionTitle + "   " + ElementTag(r.def.element) + "  " + r.def.role, UIStyles.Body);
-            GUI.Label(new Rect(card.x + 40f, card.y + 276f, 700f, 80f), "<i>" + r.def.breathingStyle + "</i>", UIStyles.Small);
-            if (r.isNew) UIStyles.Outlined(new Rect(card.xMax - 200f, card.y + 20f, 180f, 70f), "NEW!", UIStyles.Sized(UIStyles.Big, 54), UIStyles.Good, 3f);
-            else GUI.Label(new Rect(card.xMax - 330f, card.y + 30f, 310f, 60f), "<color=#FF9C7A>DUPLICATE → Ore</color>", UIStyles.Sized(UIStyles.Right, 24));
-            GUI.Label(new Rect(0f, H - 90f, W, 50f), "<color=#BBBBBB>Tap to continue</color>", UIStyles.Sized(UIStyles.Center, 26));
-        }
-
-        void DrawSummonSummary(PlayerData d, SummonStage st)
-        {
-            UIStyles.Rect(new Rect(0f, 0f, W, H), new Color(0f, 0f, 0f, 0.35f));
-            UIStyles.Outlined(new Rect(0f, safe.y + 30f, W, 90f), "SUMMON RESULTS", UIStyles.Sized(UIStyles.H1, 60), UIStyles.Gold, 3f);
-            var res = st.Results;
-            if (res == null) return;
-            int cols = Mathf.Min(5, res.Count);
-            float cw = 300f, ch = 170f, gap = 20f;
-            float startX = W * 0.5f - (cols * cw + (cols - 1) * gap) * 0.5f;
-            float startY = res.Count > 5 ? 200f : 380f;
-            for (int i = 0; i < res.Count; i++)
-            {
-                var r = res[i];
-                float k = Mathf.Clamp01((Time.unscaledTime - st.PhaseStart - i * 0.06f) / 0.25f);
-                if (k <= 0f) continue;
-                var rect = new Rect(startX + (i % cols) * (cw + gap), startY + (i / cols) * (ch + gap) + (1f - k) * 40f, cw, ch);
-                Color rc = RarityInfo.Color(r.rarity);
-                Round(rect, new Color(0.08f, 0.07f, 0.13f, 0.92f * k), 14f);
-                RoundFrame(rect, rc, r.rarity >= 6 ? 4f : 2f, 14f);
-                var thumb = ArtLibrary.Character(r.def);
-                var tr = new Rect(rect.x + 10f, rect.y + 20f, 130f, 130f);
-                Round(tr, Color.Lerp(new Color(0.1f, 0.1f, 0.16f), ElementChart.ColorOf(r.def.element), 0.3f), 12f);
-                if (thumb != null) GUI.DrawTexture(tr, thumb, ScaleMode.ScaleAndCrop, true);
-                float tx = rect.x + 150f, tw = cw - 158f;
-                UIStyles.Colored(new Rect(tx, rect.y + 14f, tw, 30f), RarityInfo.Name(r.rarity), UIStyles.Sized(UIStyles.Body, 20), rc);
-                GUI.Label(new Rect(tx, rect.y + 44f, tw, 40f), r.def.displayName, UIStyles.Sized(UIStyles.H2, 26));
-                GUI.Label(new Rect(tx, rect.y + 84f, tw, 30f), "<color=#AAAAAA>" + r.def.versionTitle + "</color>", UIStyles.Sized(UIStyles.Small, 16));
-                GUI.Label(new Rect(tx, rect.y + 118f, tw, 40f), r.isNew ? "<color=#7CFF8A>NEW!</color>" : "<color=#FF9C7A>+Ore</color>", UIStyles.Sized(UIStyles.Body, 24));
-            }
-            float by = H - 150f;
-            if (Btn(new Rect(W * 0.5f - 470f, by, 440f, 100f), "OK")) st.CloseSummary();
-            if (Btn(new Rect(W * 0.5f + 30f, by, 440f, 100f), res.Count >= 10 ? "SUMMON ×10 AGAIN" : "SUMMON AGAIN", UIStyles.ButtonBig, SummonSystem.CanAfford(d, res.Count)))
-                DoSummon(res.Count);
-        }
-
         // ------------------------------------------------------------------ Missions board
 
         int boardTab;
@@ -281,7 +152,7 @@ namespace HashiraChronicles
         {
             var parts = new List<string>();
             if (r.coins > 0) parts.Add("Coins +" + r.coins.ToString("N0"));
-            if (r.crystals > 0) parts.Add("Crystals +" + r.crystals);
+            if (r.crystals > 0) parts.Add("Diamonds +" + r.crystals);
             if (r.XpValue > 0) parts.Add("XP +" + r.XpValue.ToString("N0"));
             return string.Join("    ", parts.ToArray());
         }

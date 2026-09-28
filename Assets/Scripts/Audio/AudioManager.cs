@@ -278,7 +278,23 @@ namespace HashiraChronicles
             b = Buffer(0.4f); AddTone(b, 0, 0.4f, 420f, 70f, 0.7f, 6f); AddNoise(b, 0, 0.35f, 0.6f, 8f, 0.5f); Make("enemyDeath", b, 0.55f);
             b = Buffer(0.05f); AddTone(b, 0, 0.05f, 1300f, 1300f, 0.6f, 60f); Make("click", b, 0.4f);
             // Coin pickup: two bright pings.
-            b = Buffer(0.2f); AddTone(b, 0, 0.12f, 1975f, 1975f, 0.5f, 25f); AddTone(b, 0.05f, 0.15f, 2637f, 2637f, 0.45f, 22f); Make("coin", b, 0.5f);
+            // Coin pickup: the classic bright "ka-ching" (two bell tones with metallic overtones and a tiny shimmer).
+            b = Buffer(0.5f);
+            AddTone(b, 0, 0.1f, 1976f, 1976f, 0.45f, 28f); AddTone(b, 0, 0.1f, 3952f, 3952f, 0.12f, 34f); AddTone(b, 0, 0.1f, 5588f, 5588f, 0.05f, 40f);
+            AddTone(b, 0.07f, 0.42f, 2637f, 2637f, 0.5f, 8f); AddTone(b, 0.07f, 0.42f, 5274f, 5274f, 0.12f, 11f); AddTone(b, 0.07f, 0.42f, 7458f, 7458f, 0.04f, 14f);
+            AddNoise(b, 0.07f, 0.05f, 0.08f, 60f, 1f);
+            Make("coin", b, 0.6f);
+            // Coins spilling from a defeated demon: a quick shower of little clinks.
+            b = Buffer(0.7f);
+            for (int k = 0; k < 9; k++) { float t0 = k * 0.05f + Random.Range(0f, 0.03f), f = Random.Range(2400f, 3600f); AddTone(b, t0, 0.14f, f, f, 0.22f, 26f); AddTone(b, t0, 0.14f, f * 2.4f, f * 2.4f, 0.06f, 30f); }
+            AddNoise(b, 0, 0.12f, 0.12f, 25f, 0.9f);
+            Make("coinSpill", b, 0.55f);
+            // Diamond: a sparkling rising arpeggio.
+            b = Buffer(0.9f);
+            float[] gem = { 1568f, 2093f, 2637f, 3136f, 4186f };
+            for (int k = 0; k < gem.Length; k++) { AddTone(b, k * 0.06f, 0.6f, gem[k], gem[k], 0.3f, 6f); AddTone(b, k * 0.06f, 0.4f, gem[k] * 2f, gem[k] * 2f, 0.07f, 9f); }
+            AddNoise(b, 0, 0.5f, 0.06f, 5f, 1f, 0.05f);
+            Make("gem", b, 0.6f);
             // Element swing layers (played on top of the blade sound).
             b = Buffer(0.45f); AddNoise(b, 0, 0.45f, 0.9f, 7f, 0.35f, 0.03f); for (int k = 0; k < 10; k++) AddNoise(b, Random.Range(0f, 0.35f), 0.02f, 0.5f, 90f, 1f); Make("el_flame", b, 0.7f);          // roar + crackle
             b = Buffer(0.45f); AddNoise(b, 0, 0.06f, 1.2f, 50f, 1f); AddNoise(b, 0.04f, 0.4f, 0.6f, 9f, 0.25f); AddTone(b, 0, 0.3f, 3200f, 900f, 0.2f, 14f, 0.001f, true); Make("el_thunder", b, 0.8f); // crack + rumble

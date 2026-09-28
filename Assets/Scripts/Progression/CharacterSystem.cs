@@ -11,6 +11,12 @@ namespace HashiraChronicles
         public const int MaxSkillLevel = 10;
         public const int MaxStars = 6;
 
+        /// <summary>Strong attacks (skill buttons) a slayer can use: Common 1, Rare 2, Epic and up 3.</summary>
+        public static int SkillSlots(int stars) { return stars <= 2 ? 1 : stars == 3 ? 2 : 3; }
+
+        /// <summary>The rarity a slot unlocks at, for the lock label.</summary>
+        public static int SkillSlotRarity(int slot) { return slot <= 0 ? 2 : slot == 1 ? 3 : 4; }
+
         public static float LevelMultiplier(int level) { return 1f + 0.045f * (level - 1); }
 
         /// <summary>Each star above the character's base rarity adds 12% core stats.</summary>

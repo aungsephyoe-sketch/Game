@@ -28,6 +28,7 @@ namespace HashiraChronicles
             if (area == null || AreaRegion != regionId || AreaPoints.Count != stops)
             {
                 DestroyArea();
+                pan = Vector3.zero;
                 area = AreaDiorama.Build(regionId, stops, AreaOrigin, transform);
                 AreaPoints.Clear();
                 AreaPoints.AddRange(area.nodes);
@@ -39,6 +40,7 @@ namespace HashiraChronicles
             }
             if (!AreaMode)
             {
+                pan = Vector3.zero;
                 AreaMode = true;
                 if (world != null) world.SetActive(false);
                 ApplyAreaLighting();
@@ -52,6 +54,7 @@ namespace HashiraChronicles
         {
             if (!AreaMode && area == null) return;
             AreaMode = false;
+            pan = Vector3.zero;
             DestroyArea();
             if (world != null) world.SetActive(true);
             if (token != null)
@@ -145,9 +148,9 @@ namespace HashiraChronicles
                 lookDir.y = 0f;
                 if (lookDir.sqrMagnitude < 0.01f) lookDir = Vector3.forward;
                 lookDir.Normalize();
-                CameraController.Instance.SetFixed(here - lookDir * 4.2f + Vector3.up * 2.3f, here + lookDir * 5f + Vector3.up * 1.1f);
+                CameraController.Instance.SetFixed(here - lookDir * 6.8f + Vector3.up * 3.8f, here + lookDir * 6f + Vector3.up * 0.4f);
             }
-            else CameraController.Instance.SetFixed(c + shift + new Vector3(0f, 19.5f, -15.5f) * dist, c + shift);
+            else CameraController.Instance.SetFixed(c + shift + pan + new Vector3(0f, 19.5f, -15.5f) * dist, c + shift + pan);
             CameraFocus = c;
 
             // The leader walks to the current stop.

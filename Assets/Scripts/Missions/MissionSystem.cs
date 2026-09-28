@@ -657,6 +657,10 @@ namespace HashiraChronicles
 
         public void CollectGold(int amount) { GoldCollected += amount; }
 
+        /// <summary>Diamonds picked up from defeated demons during the mission.</summary>
+        public int DiamondsCollected { get; private set; }
+        public void CollectDiamonds(int amount) { DiamondsCollected += amount; }
+
         void OnEnemyKilled(EnemyController e)
         {
             if (!alive.Remove(e)) return;
@@ -723,7 +727,8 @@ namespace HashiraChronicles
                 kills = Kills,
                 maxCombo = battle.MaxCombo,
                 totalDamage = battle.TotalDamage,
-                goldCollected = GoldCollected
+                goldCollected = GoldCollected,
+                diamondsCollected = DiamondsCollected
             };
             for (int i = 0; i < 3; i++)
             {

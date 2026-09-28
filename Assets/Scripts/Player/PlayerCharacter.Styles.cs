@@ -119,7 +119,7 @@ namespace HashiraChronicles
             Visual.transform.localPosition = Vector3.zero;
             // 3. The blow.
             Visual.HeavyAttack(0.12f);
-            var tag = AttackTag.Basic(StrongMultiplier, ElementColor);
+            var tag = AttackTag.Basic(StrongMultiplier * (1f + 0.05f * Mathf.Max(0, Owned.stars - 2)), ElementColor);
             tag.knockback = 9f;
             tag.stagger = 8f;
             tag.hitStop = 0.14f;
@@ -127,12 +127,16 @@ namespace HashiraChronicles
             tag.heavy = true;
             tag.launch = true;
             float hitDmg = CombatSystem.HitArc(this, Position, transform.forward, 4.6f, 220f, tag);
-            ElementFx.Slash(Position, transform.forward, 4.6f, 220f, 0f, Def.element, 2.6f);
-            ElementFx.Slash(Position, transform.forward, 3.8f, 200f, 35f, Def.element, 2f);
+            // Rarer slayers: bigger, brighter blows.
+            float fx = RarityFx;
+            ElementFx.Slash(Position, transform.forward, 4.6f * fx, 220f, 0f, Def.element, 2.6f * fx);
+            ElementFx.Slash(Position, transform.forward, 3.8f * fx, 200f, 35f, Def.element, 2f * fx);
             Vector3 impact = Position + transform.forward * 2f;
-            ElementFx.Finisher(impact, transform.forward, Def.element, 4f);
-            VFX.Shockwave(impact, 3f, Color.white, 0.25f);
-            VFX.Shockwave(impact, 5f, ElementColor, 0.5f);
+            ElementFx.Finisher(impact, transform.forward, Def.element, 4f * fx);
+            VFX.Shockwave(impact, 3f * fx, Color.white, 0.25f);
+            VFX.Shockwave(impact, 5f * fx, ElementColor, 0.5f);
+            if (Owned.stars >= 5) VFX.Pillar(impact, Color.Lerp(ElementColor, Color.white, 0.4f), 7f, 0.4f);
+            if (Owned.stars >= 6) VFX.Shockwave(impact, 7f, RarityInfo.Color(6), 0.6f);
             VFX.Dust(impact, 16);
             // Cracks in the ground.
             for (int i = 0; i < 5; i++)

@@ -343,7 +343,7 @@ namespace HashiraChronicles
                 string[] chatter =
                 {
                     "Fresh bread! Fresh bread!", "Did you hear? The arena champion lost!", "They say the Chancellor never sleeps...",
-                    "Demons? Inside the walls? Nonsense.", "My son joined the royal guard today.", "Crystals for summoning! Best prices!"
+                    "Demons? Inside the walls? Nonsense.", "My son joined the royal guard today.", "Diamonds for summoning! Best prices!"
                 };
                 int npcs = Mathf.RoundToInt(8 * density);
                 for (int i = 0; i < npcs; i++)

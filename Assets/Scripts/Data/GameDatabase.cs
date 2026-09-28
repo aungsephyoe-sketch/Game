@@ -321,6 +321,32 @@ namespace HashiraChronicles
             };
             kuroe.ultimate = Ab("Moon Breathing: Final Night", AbilityShape.MultiSlash, 0f, 1.6f, 14, 0f, 10f, "Night falls. Nothing survives it.", 30f, 7f);
             Characters.Add(kuroe);
+
+            // Limited-banner Mythics.
+            var seren = Hero("seren_starfall", "seren", "Seren Hoshimiya", "Starfall Oracle", "Star Breathing", 7, Element.Light, Role.Burst,
+                "A shrine oracle who reads the stars — and can pull them down.", "Seren saw the Demon Lord's return in the night sky years ago. Nobody believed her. She has been getting ready ever since.",
+                new Color(0.95f, 0.93f, 1f), new Color(0.3f, 0.3f, 0.75f), new Color(0.85f, 0.88f, 1f), new Color(1f, 0.92f, 0.55f));
+            seren.skills = new[]
+            {
+                Ab("Star Needles", AbilityShape.Wave, 5f, 1.5f, 3, 10f, 1.6f, "Three needles of starlight."),
+                Ab("Orbiting Stars", AbilityShape.Spin, 7f, 1.2f, 4, 0f, 4.2f, "Stars circle her, cutting all around."),
+                Ab("Comet Lance", AbilityShape.Dash, 9f, 3f, 1, 10f, 2.2f, "She becomes a comet for a heartbeat.")
+            };
+            seren.ultimate = Ab("Constellation: Final Verdict", AbilityShape.Burst, 0f, 2.4f, 6, 0f, 10f, "Stars mark every demon, then fall together.", 28f, 7f);
+            Characters.Add(seren);
+
+            var garou = Hero("garou_onyx", "garou", "Garou Kurogane", "Onyx Tempest", "Gale Fang Breathing", 7, Element.Beast, Role.DPS,
+                "A hooded wanderer with twin cleavers and a storm at his back.", "Garou walked out of the northern wastes alone. The storm followed him, and the demons that chased him did not come back.",
+                new Color(0.12f, 0.12f, 0.12f), new Color(0.15f, 0.35f, 0.3f), new Color(0.2f, 0.22f, 0.25f), new Color(0.55f, 1f, 0.8f));
+            garou.comboMultipliers = new[] { 0.75f, 0.8f, 0.9f, 1f, 1.8f };
+            garou.skills = new[]
+            {
+                Ab("Rending Gale", AbilityShape.MultiSlash, 5f, 0.9f, 6, 0f, 4f, "Six cleaver cuts on the wind."),
+                Ab("Cyclone Maw", AbilityShape.Spin, 7f, 1.4f, 3, 0f, 4.4f, "A spinning storm of blades."),
+                Ab("Onyx Charge", AbilityShape.Dash, 9f, 3.2f, 1, 9f, 2.4f, "Tears straight through the line.", 7f, 8f)
+            };
+            garou.ultimate = Ab("Black Tornado", AbilityShape.Burst, 0f, 2.6f, 6, 0f, 10f, "A tornado that swallows the battlefield.", 30f, 8f);
+            Characters.Add(garou);
             ApplyLooks();
         }
 
@@ -370,6 +396,10 @@ namespace HashiraChronicles
                 ink, new Color(0.95f, 0.85f, 0.2f), new Color(0.96f, 0.96f, 0.98f), new Color(1f, 0.95f, 0.45f), 1.08f, 0.95f, false, false, false, true);
             Look("kuroe_moon", HairStyle.Bob, WeaponKind.Moon, CombatStyle.Technical, MotionStyle.Sly,
                 new Color(0.1f, 0.05f, 0.1f), new Color(0.5f, 0.08f, 0.22f), new Color(0.05f, 0.05f, 0.07f), new Color(1f, 0.2f, 0.4f), 1.05f, 0.95f, false, true);
+            Look("seren_starfall", HairStyle.Bun, WeaponKind.Staff, CombatStyle.Ranged, MotionStyle.Graceful,
+                new Color(0.95f, 0.93f, 1f), new Color(0.28f, 0.3f, 0.78f), new Color(0.86f, 0.9f, 1f), new Color(1f, 0.92f, 0.55f), 1f, 0.92f, true, false, false, false, true, new Color(1f, 0.85f, 0.4f));
+            Look("garou_onyx", HairStyle.Hood, WeaponKind.Cleavers, CombatStyle.Heavy, MotionStyle.Stoic,
+                new Color(0.12f, 0.12f, 0.13f), new Color(0.14f, 0.34f, 0.3f), new Color(0.14f, 0.34f, 0.3f), new Color(0.55f, 1f, 0.8f), 1.12f, 1.1f, true, true, false, true, false, new Color(0.5f, 0.95f, 0.75f));
             // Skin tones: a varied, friendly cast.
             Color porcelain = new Color(0.99f, 0.88f, 0.8f), light = new Color(0.97f, 0.81f, 0.68f), medium = new Color(0.88f, 0.67f, 0.5f),
                 tan = new Color(0.78f, 0.56f, 0.4f), brown = new Color(0.6f, 0.41f, 0.28f), deep = new Color(0.44f, 0.29f, 0.2f);
@@ -385,6 +415,8 @@ namespace HashiraChronicles
             Skin("yui_tide", light);
             Skin("raiga_pillar", brown);
             Skin("kuroe_moon", porcelain);
+            Skin("seren_starfall", tan);
+            Skin("garou_onyx", brown);
             // Mina's blade burns violet: she fights with dark flames.
             var mina = Characters.Find(x => x.id == "mina_ember");
             if (mina != null) mina.element = Element.Dark;

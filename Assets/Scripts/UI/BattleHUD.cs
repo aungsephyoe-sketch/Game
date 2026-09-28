@@ -337,6 +337,16 @@ namespace HashiraChronicles
 
             for (int i = 0; i < 3; i++)
             {
+                if (i >= pc.SkillSlots)
+                {
+                    // Locked by rarity: ascend to unlock more strong attacks.
+                    var lc = HudLayout.Skill(i);
+                    UIStyles.CircleTex(lc.center, lc.radius, new Color(0f, 0f, 0f, 0.5f));
+                    UIStyles.CircleTex(lc.center, lc.radius, new Color(1f, 1f, 1f, 0.15f), UIStyles.Ring);
+                    LockIcon(lc.center + new Vector2(0f, -8f), lc.radius * 0.7f, new Color(1f, 1f, 1f, 0.8f));
+                    UIStyles.Outlined(new Rect(lc.center.x - lc.radius, lc.center.y + lc.radius * 0.3f, lc.radius * 2f, 24f), RarityInfo.Name(CharacterSystem.SkillSlotRarity(i)), UIStyles.Sized(UIStyles.Center, 15), RarityInfo.Color(CharacterSystem.SkillSlotRarity(i)), 1.5f);
+                    continue;
+                }
                 var ab = pc.Def.skills[i];
                 float cd = pc.Cooldowns[i];
                 string shortName = ab.name.Contains(":") ? ab.name.Substring(ab.name.IndexOf(':') + 1).Trim() : ab.name;
@@ -552,7 +562,7 @@ namespace HashiraChronicles
                 float len = H * (0.3f + (float)rng.NextDouble() * 0.5f);
                 float thick = 2f + (float)rng.NextDouble() * 5f;
                 GUI.matrix = saved;
-                GUIUtility.RotateAroundPivot(angle, center);
+                RotateGui(angle, center);
                 UIStyles.Rect(new Rect(center.x + inner, center.y - thick * 0.5f, len, thick), new Color(1f, 1f, 1f, 0.55f * a));
             }
             GUI.matrix = saved;

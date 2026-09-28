@@ -181,7 +181,18 @@ namespace HashiraChronicles
                 int lvl = c.skillLevels[i];
                 var row = new Rect(body.x + 30f, y, body.width - 60f, rowH - 12f);
                 UIStyles.Rect(row, UIStyles.PanelLight);
-                string kind = i < 3 ? "SKILL " + (i + 1) : "<color=#FFD36B>ULTIMATE</color>";
+                string kind = i < 3 ? "STRONG " + (i + 1) : "<color=#FFD36B>SPECIAL</color>";
+                if (i < 3 && i >= CharacterSystem.SkillSlots(c.stars))
+                {
+                    // Locked by rarity: Common has 1 strong attack, Rare 2, Epic and up 3.
+                    int need = CharacterSystem.SkillSlotRarity(i);
+                    Round(row, new Color(0f, 0f, 0f, 0.45f), 8f);
+                    LockIcon(new Vector2(row.x + 50f, row.center.y), 44f, new Color(1f, 1f, 1f, 0.7f));
+                    GUI.Label(new Rect(row.x + 90f, row.y + 8f, row.width - 120f, 44f), kind + "   " + ab.name, UIStyles.Sized(UIStyles.H2, 26));
+                    GUI.Label(new Rect(row.x + 90f, row.y + 50f, row.width - 120f, 40f), "<color=#FF9C7A>Unlocks at " + RarityInfo.Name(need) + " — ascend this slayer to use it.</color>", UIStyles.Sized(UIStyles.Small, 20));
+                    y += rowH;
+                    continue;
+                }
                 GUI.Label(new Rect(row.x + 20f, row.y + 8f, row.width - 330f, 44f), kind + "   " + ab.name + "   <color=#AAAAAA>Lv." + lvl + "/" + CharacterSystem.MaxSkillLevel + "</color>", UIStyles.Sized(UIStyles.H2, 26));
                 string detail = ab.description + "   <color=#AAAAAA>" + ab.hits + " hit" + (ab.hits > 1 ? "s" : "") + " × " +
                                 Mathf.RoundToInt(ab.damageMultiplier * CharacterSystem.SkillLevelMultiplier(lvl) * 100f) + "% ATK" +

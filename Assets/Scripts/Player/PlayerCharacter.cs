@@ -261,6 +261,7 @@ namespace HashiraChronicles
                 case Buffered.Skill1:
                 case Buffered.Skill2:
                     int i = buffered - Buffered.Skill0;
+                    if (i >= SkillSlots) { buffered = Buffered.None; break; }
                     if (Cooldowns[i] > 0f) { buffered = Buffered.None; break; }
                     if (CanUseAbility(false)) { buffered = Buffered.None; StartAction(SkillRoutine(i), ActionKind.Skill); }
                     break;
@@ -610,8 +611,13 @@ namespace HashiraChronicles
             Visual.Skill(index, 0.4f);
             GameEvents.RaiseSkillUsed(this, ab);
             Play("skill", 0.7f);
+            SkillMotifStart(index);
             yield return AbilitySystem.Execute(this, ab, SkillLevelMult(index), false, new DamageTally());
+            SkillMotifEnd(index);
         }
+
+        /// <summary>How many strong attacks this slayer has unlocked (by rarity).</summary>
+        public int SkillSlots { get { return CharacterSystem.SkillSlots(Owned != null ? Owned.stars : 2); } }
 
         IEnumerator UltimateRoutine()
         {

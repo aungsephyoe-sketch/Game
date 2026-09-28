@@ -28,6 +28,8 @@ namespace HashiraChronicles
         public int starDiamonds;
         /// <summary>Gold picked up from defeated demons during the mission.</summary>
         public int goldCollected;
+        /// <summary>Diamonds picked up from defeated demons.</summary>
+        public int diamondsCollected;
         public MissionDefinition mission;
         public bool victory;
         public string failReason = "";
@@ -99,6 +101,7 @@ namespace HashiraChronicles
             }
 
             total.coins += result.goldCollected;
+            total.crystals += result.diamondsCollected;
             // Half the mission EXP also goes into the XP pool for training.
             data.xp += total.exp / 2;
             InventorySystem.AddCurrencies(data, total);
