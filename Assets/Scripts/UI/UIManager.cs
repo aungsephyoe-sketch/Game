@@ -108,6 +108,9 @@ namespace HashiraChronicles
 
         bool Btn(Rect r, string label, GUIStyle style = null, bool enabled = true)
         {
+            // The standard buttons get the chunky cartoon look too.
+            if (style == null || style == UIStyles.Button || style == UIStyles.ButtonSmall)
+                return FlatBtn(r, label, new Color(0.2f, 0.42f, 0.9f), enabled && GUI.enabled, style == UIStyles.ButtonSmall ? 22 : 28);
             var old = GUI.enabled;
             GUI.enabled = enabled;
             bool clicked = GUI.Button(r, label, style ?? UIStyles.Button);
@@ -149,7 +152,17 @@ namespace HashiraChronicles
             switch (gm.CurrentScreen)
             {
                 case GameScreen.MainMenu: DrawHome(); break;
-                case GameScreen.WorldMap: DrawWorldMap(); break;
+                case GameScreen.WorldMap:
+                {
+                    // First visit: the map guide (the map waits under it).
+                    if (!gm.Data.mapTutorialDone && !gm.Map.Traveling && gm.TransitionAlpha < 0.05f) TutorialSystem.Begin(TutorialSystem.Kind.Map);
+                    bool guide = TutorialSystem.Active == TutorialSystem.Kind.Map;
+                    bool was = GUI.enabled;
+                    if (guide) GUI.enabled = false;
+                    DrawWorldMap();
+                    GUI.enabled = was;
+                    break;
+                }
                 case GameScreen.Summon: DrawSummon(); break;
                 case GameScreen.MissionsBoard: DrawMissionsBoard(); break;
                 case GameScreen.Shop: DrawShop(); break;
@@ -185,6 +198,7 @@ namespace HashiraChronicles
                     gm.GoTo(GameScreen.MainMenu);
                 }
             }
+            DrawTutorial();
             DrawAchievementPopup();
             if (Time.unscaledTime < toastUntil)
             {

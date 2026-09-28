@@ -63,6 +63,7 @@ namespace HashiraChronicles
             UI = gameObject.AddComponent<UIManager>();
 
             QuestSystem.EnsureReset(Data);
+            TutorialSystem.Migrate(Data);
             Home = MakeStage<HomeStage>("[HomeStage]");
             Map = MakeStage<MapStage>("[MapStage]");
             SummonHall = MakeStage<SummonStage>("[SummonStage]");
@@ -145,6 +146,7 @@ namespace HashiraChronicles
         void Update()
         {
             TimeController.Tick();
+            TutorialSystem.Tick();
             TransitionAlpha = Mathf.MoveTowards(TransitionAlpha, 0f, Time.unscaledDeltaTime * 2.2f);
         }
 

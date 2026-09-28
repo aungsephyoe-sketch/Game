@@ -100,7 +100,12 @@ namespace HashiraChronicles
             GameEvents.RaiseBanner(Def.type == MissionType.Event ? "EVENT" : "MISSION " + Def.id, Def.name);
             yield return new WaitForSeconds(1.6f);
             // First-time tutorial prompts on the very first mission.
-            if (Def.id == "1-1" && gm != null && !gm.Data.IsMissionCleared("1-1"))
+            if (gm != null && !gm.Data.tutorialDone && TutorialSystem.Begin(TutorialSystem.Kind.Battle))
+            {
+                // The coached tutorial: demons wait until the basics (move, attack) are done or it's skipped.
+                while (TutorialSystem.HoldEnemies) yield return null;
+            }
+            else if (Def.id == "1-1" && gm != null && !gm.Data.IsMissionCleared("1-1"))
             {
                 GameEvents.RaiseBanner("TAP ATTACK TO COMBO", "Hold to charge · attack right after a dodge for a dash strike");
                 yield return new WaitForSeconds(2.4f);

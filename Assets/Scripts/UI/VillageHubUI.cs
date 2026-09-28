@@ -30,11 +30,7 @@ namespace HashiraChronicles
         {
             var hub = VillageHub.Instance;
             if (hub == null) return;
-            if (Event.current.type == EventType.Repaint)
-            {
-                MobileControls.UiBlockers.Clear();
-                MobileControls.UiBlockersFrame = Time.frameCount;
-            }
+            if (Event.current.type == EventType.Repaint) MobileControls.UiBlockersFrame = Time.frameCount;
             if (chatLineStyle == null)
             {
                 chatLineStyle = new GUIStyle(UIStyles.Sized(UIStyles.Small, 18)) { wordWrap = false, clipping = TextClipping.Clip, richText = true };

@@ -91,6 +91,7 @@ namespace HashiraChronicles
                 if (k <= 0f) continue;
                 var c = new Vector2(x + 38f - (1f - k) * 60f, y + i * 104f + 36f);
                 var hit = new Rect(c.x - 40f, c.y - 40f, 80f, 100f);
+                if (i == 3) tutTargets["friends"] = hit;
                 bool hover = hit.Contains(Event.current.mousePosition);
                 UIStyles.CircleTex(c, 37f, new Color(0f, 0f, 0f, 0.3f));
                 UIStyles.CircleTex(c, 34f, hover ? new Color(0.2f, 0.22f, 0.34f, 0.92f) : new Color(0.08f, 0.09f, 0.16f, 0.82f));
@@ -330,59 +331,62 @@ namespace HashiraChronicles
             if (GUI.Button(panel, GUIContent.none, GUIStyle.none)) { gm.Audio.Play("click", 0.5f); teamReturn = GameScreen.MainMenu; gm.GoTo(GameScreen.Team); }
         }
 
+        /// <summary>Screen rects of buttons the tutorials point at (filled while drawing).</summary>
+        readonly System.Collections.Generic.Dictionary<string, Rect> tutTargets = new System.Collections.Generic.Dictionary<string, Rect>();
+
         void HomeNav(PlayerData d)
         {
-            float bottom = H - 26f;
-            // PLAY: the biggest and brightest button, bottom-left.
-            float pw = Mathf.Min(450f, W * 0.24f);
-            var play = new Rect(safe.x + 26f, bottom - 176f, pw, 176f);
+            float bottom = H - 22f;
+            // PLAY: huge, bright and bouncy — the first thing you see.
+            float pw = Mathf.Min(560f, W * 0.3f);
+            var play = new Rect(safe.x + 22f, bottom - 206f, pw, 206f);
             float kp = Enter(0.2f, 0.45f);
-            play = Offset(play, 0f, (1f - kp) * 120f);
-            bool hp = play.Contains(Event.current.mousePosition);
-            var pr = hp ? Grow(play, 4f) : play;
+            play = Offset(play, 0f, (1f - kp) * 140f);
             float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 2.6f);
-            Round(Grow(pr, 6f + pulse * 4f), new Color(1f, 0.4f, 0.15f, 0.18f + 0.12f * pulse), 26f);
-            Round(Offset(pr, 0f, 7f), new Color(0f, 0f, 0f, 0.4f), 22f);
-            Gradient(pr, new Color(1f, 0.42f, 0.16f), new Color(0.75f, 0.06f, 0.1f), 22f);
-            Round(new Rect(pr.x + 6f, pr.y + 6f, pr.width - 12f, pr.height * 0.4f), new Color(1f, 1f, 1f, 0.12f), 18f);
-            RoundFrame(pr, new Color(1f, 0.82f, 0.55f, 0.85f), 3f, 22f);
-            GUI.DrawTexture(new Rect(pr.x + 30f, pr.center.y - 52f, 104f, 104f), IconFactory.Get("swords"), ScaleMode.ScaleToFit, true);
-            UIStyles.Outlined(new Rect(pr.x + 150f, pr.center.y - 58f, pr.width - 160f, 84f), "PLAY", UIStyles.Sized(UIStyles.Title, 72), Color.white, 4f);
-            UIStyles.Outlined(new Rect(pr.x + 154f, pr.center.y + 22f, pr.width - 160f, 34f), "M A I N   S T O R Y", UIStyles.Sized(UIStyles.Body, 18), new Color(1f, 0.92f, 0.85f), 1.5f);
-            if (GUI.Button(pr, GUIContent.none, GUIStyle.none) && kp > 0.6f) { gm.Audio.Play("click", 0.6f); gm.GoTo(GameScreen.WorldMap); return; }
+            // Idle "breathing" so it always invites a tap.
+            float breathe = 1f + 0.018f * Mathf.Sin(Time.unscaledTime * 3.2f);
+            var pb = new Rect(play.center.x - play.width * 0.5f * breathe, play.center.y - play.height * 0.5f * breathe, play.width * breathe, play.height * breathe);
+            Round(Grow(pb, 10f + pulse * 6f), new Color(1f, 0.75f, 0.1f, 0.14f + 0.12f * pulse), 34f);
+            bool hp;
+            var face = ChunkyBody(pb, new Color(1f, 0.74f, 0.08f), true, 26f, out hp);
+            Gradient(new Rect(face.x + 4f, face.y + 4f, face.width - 8f, face.height - 8f), new Color(1f, 0.86f, 0.25f), new Color(1f, 0.55f, 0.05f), 22f);
+            Round(new Rect(face.x + 12f, face.y + 9f, face.width - 24f, face.height * 0.3f), new Color(1f, 1f, 1f, 0.3f), 16f);
+            GUI.DrawTexture(new Rect(face.x + 26f, face.center.y - 60f, 120f, 120f), IconFactory.Get("swords"), ScaleMode.ScaleToFit, true);
+            UIStyles.Outlined(new Rect(face.x + 150f, face.center.y - 66f, face.width - 160f, 100f), "PLAY", UIStyles.Sized(UIStyles.Title, 96), Color.white, 5f);
+            UIStyles.Outlined(new Rect(face.x + 156f, face.center.y + 34f, face.width - 160f, 34f), "M A I N   S T O R Y", UIStyles.Sized(UIStyles.Body, 19), new Color(1f, 0.97f, 0.85f), 2f);
+            tutTargets["play"] = pb;
+            if (GUI.Button(pb, GUIContent.none, GUIStyle.none) && kp > 0.6f) { Bounce(play); gm.Audio.Play("click", 0.6f); gm.GoTo(GameScreen.WorldMap); return; }
 
-            // Secondary buttons: same shape, their own colours.
+            // Secondary buttons: chunky, each its own bright colour, icon on top.
             string[] labels = { "SUMMON", "CHARACTERS", "TEAM", "MISSIONS", "SHOP", "INVENTORY" };
             string[] icons = { "flame", "people", "group", "scroll", "cart", "bag" };
             Color[] cols =
             {
-                new Color(0.52f, 0.26f, 0.88f), new Color(0.18f, 0.42f, 0.88f), new Color(0.14f, 0.6f, 0.38f),
-                new Color(0.75f, 0.14f, 0.18f), new Color(0.88f, 0.62f, 0.14f), new Color(0.45f, 0.3f, 0.75f)
+                new Color(0.62f, 0.3f, 1f), new Color(0.16f, 0.52f, 1f), new Color(0.12f, 0.78f, 0.38f),
+                new Color(0.95f, 0.2f, 0.26f), new Color(1f, 0.62f, 0.1f), new Color(0.42f, 0.36f, 0.95f)
             };
-            float gap = 14f;
-            float x0 = play.xMax + 24f;
-            float avail = safe.xMax - 26f - x0;
-            float bw = Mathf.Clamp((avail - gap * 5f) / 6f, 110f, 180f);
-            float bh = 148f;
+            float gap = 16f;
+            float x0 = play.xMax + 26f;
+            float avail = safe.xMax - 22f - x0;
+            float bw = Mathf.Clamp((avail - gap * 5f) / 6f, 110f, 186f);
+            float bh = 156f;
             for (int i = 0; i < labels.Length; i++)
             {
                 float k = Enter(0.28f + i * 0.04f, 0.4f);
                 if (k <= 0f) continue;
                 var r = new Rect(x0 + i * (bw + gap), bottom - bh + (1f - k) * 120f, bw, bh);
-                bool hover = r.Contains(Event.current.mousePosition);
-                var rr = hover ? Grow(r, 3f) : r;
-                Color c = cols[i];
-                Round(Offset(rr, 0f, 6f), new Color(0f, 0f, 0f, 0.4f), 18f);
-                Gradient(rr, Color.Lerp(c, Color.white, hover ? 0.28f : 0.16f), Color.Lerp(c, Color.black, 0.35f), 18f);
-                Round(new Rect(rr.x + 5f, rr.y + 5f, rr.width - 10f, rr.height * 0.38f), new Color(1f, 1f, 1f, 0.1f), 14f);
-                RoundFrame(rr, Color.Lerp(c, Color.white, 0.55f), 2.5f, 18f);
-                float ic = Mathf.Min(70f, rr.width * 0.5f);
-                GUI.DrawTexture(new Rect(rr.center.x - ic * 0.5f, rr.y + 18f, ic, ic), IconFactory.Get(icons[i]), ScaleMode.ScaleToFit, true);
-                UIStyles.Outlined(new Rect(rr.x, rr.yMax - 44f, rr.width, 34f), labels[i], UIStyles.Sized(UIStyles.Center, bw < 150f ? 17 : 21), Color.white, 2f);
+                bool hover;
+                var f = ChunkyBody(r, cols[i], true, 20f, out hover);
+                float ic = Mathf.Min(78f, f.width * 0.55f);
+                float bob = hover ? Mathf.Sin(Time.unscaledTime * 10f) * 3f : 0f;
+                GUI.DrawTexture(new Rect(f.center.x - ic * 0.5f, f.y + 14f + bob, ic, ic), IconFactory.Get(icons[i]), ScaleMode.ScaleToFit, true);
+                UIStyles.Outlined(new Rect(f.x, f.yMax - 46f, f.width, 36f), labels[i], UIStyles.Sized(UIStyles.Center, bw < 150f ? 18 : 22), Color.white, 3f);
                 int badge = MenuBadge(labels[i]);
-                if (badge > 0) Badge(new Vector2(rr.xMax - 8f, rr.y + 8f), badge > 9 ? "!" : badge.ToString(), UIStyles.Crimson, 0.8f);
-                if (GUI.Button(rr, GUIContent.none, GUIStyle.none) && k > 0.6f)
+                if (badge > 0) Badge(new Vector2(f.xMax - 8f, f.y + 8f), badge > 9 ? "!" : badge.ToString(), UIStyles.Crimson, 0.85f);
+                tutTargets[labels[i].ToLowerInvariant()] = r;
+                if (GUI.Button(r, GUIContent.none, GUIStyle.none) && k > 0.6f)
                 {
+                    Bounce(r);
                     gm.Audio.Play("click", 0.5f);
                     if (labels[i] == "INVENTORY") gm.GoTo(GameScreen.Inventory);
                     else OpenMenu(labels[i]);

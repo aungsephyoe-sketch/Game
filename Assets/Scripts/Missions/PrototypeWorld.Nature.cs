@@ -168,11 +168,12 @@ namespace HashiraChronicles
             }
             foreach (var e in ends)
             {
-                int n = 3 + rng.Next(3);
+                // Cartoon crowns: one or two big, clean blossom balls per limb (a bold, simple silhouette).
+                int n = 1 + rng.Next(2);
                 for (int k = 0; k < n; k++)
                 {
-                    Vector3 o = new Vector3(R(-1f, 1f), R(-0.4f, 0.7f), R(-1f, 1f)) * h * 0.12f;
-                    float sz = h * R(0.13f, 0.21f);
+                    Vector3 o = new Vector3(R(-1f, 1f), R(-0.2f, 0.6f), R(-1f, 1f)) * h * 0.08f;
+                    float sz = h * R(0.3f, 0.4f);
                     bool under = o.y < 0f;
                     Color c = under ? Color.Lerp(P.leafDark, P.leafMid, R(0f, 0.5f)) : Color.Lerp(P.leafMid, P.leafLight, R(0f, 0.8f));
                     b.Add(lowSphere, e + o, Quaternion.Euler(0f, R(0f, 360f), 0f), new Vector3(sz, sz * 0.72f, sz), Jitter(c, 0.04f), 0.16f, 0.5f, 0.45f);

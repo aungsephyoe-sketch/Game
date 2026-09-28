@@ -81,15 +81,19 @@ Shader "Hashira/ToonWorld"
                 float3 v = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
                 float ndl = dot(n, l);
                 float shadow = SHADOW_ATTENUATION(i);
-                float lit = smoothstep(-0.05, 0.4, ndl) * smoothstep(0.2, 0.6, shadow);
+                // Cartoon world: two flat tones with a crisp edge, bright ambient, saturated colour.
+                float hl = (ndl * 0.5 + 0.5) * lerp(0.6, 1.0, step(0.5, shadow));
+                float lit = smoothstep(0.46, 0.5, hl);
                 fixed3 baseCol = i.color.rgb * _Color.rgb;
                 fixed3 ambient = ShadeSH9(float4(n, 1.0));
-                fixed3 light = min(_LightColor0.rgb, 1.0) * 0.92;
-                fixed3 col = lerp(baseCol * _ShadowColor.rgb * 0.9, baseCol * light, lit);
-                col += baseCol * ambient * 0.3;
+                fixed3 light = min(_LightColor0.rgb, 1.0);
+                fixed3 col = lerp(baseCol * lerp(_ShadowColor.rgb, fixed3(1, 1, 1), 0.25) * 0.8, baseCol * lerp(fixed3(1, 1, 1), light, 0.6) * 1.04, lit);
+                col += baseCol * ambient * 0.34;
                 float rim = pow(1.0 - saturate(dot(n, v)), _RimPower) * saturate(ndl + 0.4);
-                col += _RimColor.rgb * smoothstep(0.4, 0.7, rim) * 0.1;
-                col = min(col, 0.97);
+                col += _RimColor.rgb * smoothstep(0.45, 0.5, rim) * 0.1;
+                float luma = dot(col, float3(0.299, 0.587, 0.114));
+                col = saturate(lerp(luma.xxx, col, 1.25));
+                col = min(col, 0.98);
                 col += _Emission.rgb + _AlphaEmit.rgb * i.color.a;
                 UNITY_APPLY_FOG(i.fogCoord, col);
                 return fixed4(col, 1.0);

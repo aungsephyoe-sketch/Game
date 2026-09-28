@@ -36,6 +36,23 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Cartoon style, tutorials (0.21.0)
+The whole game moves to a stylised cartoon look (switch: `GameConfig.CartoonStyle`), keeping its own characters
+and world — references were used only for the level of exaggeration, colour and readability:
+- **Characters** (`CharacterVisual.Cartoon.cs`): bigger heads and eyes, shorter chunkier bodies, thicker limbs,
+  oversized hands, boots and weapons, a livelier idle; demons get a milder version.
+- **Animation**: bigger wind-ups and overshoot on every swing, squash on the wind-up and stretch through the strike.
+- **Rendering** (`Toon.shader`, `ToonWorld.shader`): three flat tones with crisp edges, a hard highlight and rim,
+  strong ambient light, a saturation boost and thicker dark outlines.
+- **World**: Kiriha at a vivid twilight (blue-to-pink sky, big sunset disc), bright green grass, big warm
+  flagstones, bold roof colours on chunkier houses, simple bold cherry trees; brighter forest and a purple-red volcano.
+- **UI**: every button is chunky — thick dark outline, raised face on a darker slab, gloss, drop shadow, sinks when
+  pressed and bounces on release; bold outlined lettering; a huge breathing PLAY button.
+- **Tutorials** (`TutorialSystem`, `Tutorials.cs`), each shown once and skippable: a coached first battle (move,
+  combo, dodge, skill, special — demons wait until you've got the basics), a home tour and a world-map guide.
+- Fixed: the slayer sometimes moved slowly at the start of a battle (a quick click during a slow loading frame left
+  ATTACK "held", so the slayer was charging a heavy attack at 40% speed).
+
 ### Social, achievements and a smarter party (0.20.0)
 - **Co-op party that plays like people** (`PartySlayer`): each partner has a play style from their slayer —
   Vanguard (dives in and slams), Duelist (fast combos, flash-steps), Skirmisher (keeps distance, throws crescents)

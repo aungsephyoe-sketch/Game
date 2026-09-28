@@ -1,4 +1,4 @@
-// Cel-shaded lit shader (Built-in Render Pipeline): two-band lighting with tinted shadows, rim light,
+// Cartoon cel-shaded lit shader (Built-in Render Pipeline): three flat tones with tinted shadows, rim light,
 // inverted-hull outline, emission and a "_Flash" overlay used for hit flashes / charge glow.
 Shader "Hashira/Toon"
 {
@@ -71,30 +71,35 @@ Shader "Hashira/Toon"
                 float3 v = normalize(_WorldSpaceCameraPos.xyz - i.worldPos);
                 float ndl = dot(n, l);
                 float shadow = SHADOW_ATTENUATION(i);
-                // Soft cel shading: a smooth light-to-shadow ramp instead of a hard edge, and the light is
-                // clamped so bright surfaces (faces, white hair) keep their detail instead of blowing out.
-                // Smooth stylised shading: a wide, eased ramp (no hard terminator line), cast shadows softened
-                // and only partly darkening, and a gentle half-lambert gradient inside the lit and shadow areas
-                // so rounded shapes read as soft volumes rather than flat plastic.
-                float ramp = smoothstep(-0.3, 0.55, ndl);
-                ramp = ramp * ramp * (3.0 - 2.0 * ramp);
-                float lit = ramp * lerp(0.35, 1.0, smoothstep(0.1, 0.8, shadow));
+                // Cartoon cel shading: three flat tones (shadow, mid, lit) with crisp, anti-aliased edges,
+                // a bright hard highlight, a hard rim and strong ambient so colours stay bright and readable.
                 float hl = ndl * 0.5 + 0.5;
+                hl *= lerp(0.55, 1.0, step(0.5, shadow));
+                float aa = 0.02;
+                float toMid = smoothstep(0.42 - aa, 0.42 + aa, hl);
+                float toLit = smoothstep(0.7 - aa, 0.7 + aa, hl);
 
                 fixed3 baseCol = tex2D(_MainTex, i.uv).rgb * _Color.rgb;
                 fixed3 ambient = ShadeSH9(float4(n, 1.0));
-                fixed3 light = min(_LightColor0.rgb, 1.0) * 0.9;
-                fixed3 col = lerp(baseCol * _ShadowColor.rgb * 0.95, baseCol * light, lit);
-                col *= lerp(0.9, 1.04, hl);
-                col += baseCol * ambient * 0.22;
+                fixed3 light = min(_LightColor0.rgb, 1.0);
+                fixed3 shadowTone = baseCol * lerp(_ShadowColor.rgb, fixed3(1, 1, 1), 0.2) * 0.78;
+                fixed3 midTone = baseCol * lerp(fixed3(1, 1, 1), light, 0.5) * 0.93;
+                fixed3 litTone = baseCol * lerp(fixed3(1, 1, 1), light, 0.6) * 1.06;
+                fixed3 col = lerp(lerp(shadowTone, midTone, toMid), litTone, toLit);
+                col += baseCol * ambient * 0.3;
 
-                // A broad, faint sheen (not a plastic hotspot) where the light glances toward the camera.
+                // Bright cartoon highlight: a small hard spot.
                 float3 h = normalize(l + v);
-                col += light * pow(saturate(dot(n, h)), 18.0) * 0.045 * ramp;
+                float spec = smoothstep(0.955, 0.965, dot(n, h)) * step(0.5, shadow);
+                col += spec * 0.22;
 
-                float rim = pow(1.0 - saturate(dot(n, v)), _RimPower) * saturate(ndl + 0.4);
-                col += _RimColor.rgb * smoothstep(0.25, 0.7, rim) * 0.12;
-                col = min(col, 0.96);
+                float rim = pow(1.0 - saturate(dot(n, v)), _RimPower) * saturate(ndl + 0.5);
+                col += _RimColor.rgb * smoothstep(0.4, 0.45, rim) * 0.16;
+                // Saturated, punchy colour.
+                float luma = dot(col, float3(0.299, 0.587, 0.114));
+                col = lerp(luma.xxx, col, 1.22);
+                col = saturate(col);
+                col = min(col, 0.98);
                 col += _Emission.rgb;
                 col = lerp(col, _FlashColor.rgb, saturate(_Flash) * 0.75);
 

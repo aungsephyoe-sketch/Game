@@ -341,16 +341,57 @@ namespace HashiraChronicles
         }
 
         /// <summary>Flat colour button in the reference style (CLAIM, SELECT, TRAVEL &amp; PLAY...).</summary>
+        static readonly System.Collections.Generic.Dictionary<int, float> bounceAt = new System.Collections.Generic.Dictionary<int, float>();
+        static readonly Color Ink = new Color(0.06f, 0.05f, 0.12f, 0.96f);
+
+        static int RectKey(Rect r) { return Mathf.RoundToInt(r.x * 0.2f) * 73856093 ^ Mathf.RoundToInt(r.width) * 19349663 ^ Mathf.RoundToInt(r.height) * 83492791; }
+
+        /// <summary>
+        /// A chunky cartoon button body: thick dark outline, a raised face on a darker slab (the 3D extrusion), a
+        /// glossy top, a drop shadow; it sinks when pressed and bounces when released. Returns the face rect.
+        /// </summary>
+        Rect ChunkyBody(Rect r, Color c, bool enabled, float radius, out bool hover)
+        {
+            hover = enabled && r.Contains(Event.current.mousePosition);
+            bool pressed = hover && Input.GetMouseButton(0);
+            float depth = Mathf.Clamp(r.height * 0.1f, 5f, 12f);
+            float bounce = 1f;
+            float t0;
+            if (bounceAt.TryGetValue(RectKey(r), out t0))
+            {
+                float t = (Time.unscaledTime - t0) / 0.28f;
+                if (t < 1f) bounce = 1f + 0.07f * Mathf.Sin(t * Mathf.PI) * (1f - t);
+            }
+            if (hover && !pressed) bounce *= 1.02f;
+            Vector2 cc = r.center;
+            r = new Rect(cc.x - r.width * 0.5f * bounce, cc.y - r.height * 0.5f * bounce, r.width * bounce, r.height * bounce);
+            Color body = enabled ? c : Color.Lerp(c, new Color(0.35f, 0.36f, 0.42f), 0.65f);
+            float sink = pressed ? depth * 0.75f : 0f;
+            var face = new Rect(r.x, r.y + sink, r.width, r.height - depth);
+            var slab = new Rect(r.x, r.y + depth, r.width, r.height - depth);
+            Round(Offset(Grow(r, 3f), 0f, 6f), new Color(0f, 0f, 0f, 0.3f), radius + 3f);
+            Round(Grow(new Rect(r.x, r.y + sink, r.width, r.height - sink), 4f), Ink, radius + 4f);
+            Round(slab, Color.Lerp(body, Color.black, 0.45f), radius);
+            Round(face, hover ? Color.Lerp(body, Color.white, 0.12f) : body, radius);
+            Round(new Rect(face.x, face.y + face.height * 0.52f, face.width, face.height * 0.48f), new Color(0f, 0f, 0f, 0.12f), radius);
+            Round(new Rect(face.x + 7f, face.y + 5f, face.width - 14f, face.height * 0.34f), new Color(1f, 1f, 1f, 0.28f), Mathf.Max(4f, radius - 4f));
+            return face;
+        }
+
+        void Bounce(Rect r) { bounceAt[RectKey(r)] = Time.unscaledTime; }
+
+        /// <summary>Chunky colour button (CLAIM, SELECT, PLAY...): see <see cref="ChunkyBody"/>.</summary>
         bool FlatBtn(Rect r, string label, Color c, bool enabled = true, int size = 28)
         {
-            bool hover = enabled && r.Contains(Event.current.mousePosition);
-            var rr = hover ? Grow(r, 3f) : r;
-            Round(Offset(rr, 0f, 4f), new Color(0f, 0f, 0f, 0.35f), 12f);
-            Round(rr, enabled ? (hover ? Color.Lerp(c, Color.white, 0.15f) : c) : Color.Lerp(c, Color.gray, 0.6f), 12f);
-            Round(new Rect(rr.x, rr.y, rr.width, rr.height * 0.45f), new Color(1f, 1f, 1f, 0.12f), 12f);
-            UIStyles.Outlined(rr, label, UIStyles.Sized(UIStyles.Center, size), enabled ? Color.white : new Color(1f, 1f, 1f, 0.6f), 2f);
-            bool clicked = GUI.Button(rr, GUIContent.none, GUIStyle.none) && enabled;
-            if (clicked && gm != null) gm.Audio.Play("click", 0.5f);
+            bool hover;
+            var face = ChunkyBody(r, c, enabled, Mathf.Min(16f, r.height * 0.3f), out hover);
+            UIStyles.Outlined(face, label, UIStyles.Sized(UIStyles.Center, size), enabled ? Color.white : new Color(1f, 1f, 1f, 0.6f), size >= 24 ? 3f : 2f);
+            bool clicked = GUI.Button(r, GUIContent.none, GUIStyle.none) && enabled;
+            if (clicked)
+            {
+                Bounce(r);
+                if (gm != null) gm.Audio.Play("click", 0.5f);
+            }
             return clicked;
         }
     }

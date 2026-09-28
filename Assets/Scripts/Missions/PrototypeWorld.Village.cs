@@ -31,7 +31,7 @@ namespace HashiraChronicles
 
         static Mesh gableMesh;
 
-        static readonly Color Timber = new Color(0.24f, 0.16f, 0.12f);
+        static readonly Color Timber = new Color(0.38f, 0.22f, 0.14f);
         static readonly Color Vermilion = new Color(0.84f, 0.2f, 0.14f);
         static readonly Color PaperGlow = new Color(1f, 0.8f, 0.52f);
         static readonly Color StoneGrey = new Color(0.52f, 0.52f, 0.58f);
@@ -178,8 +178,9 @@ namespace HashiraChronicles
         static void Paving()
         {
             var cube = WorldKit.Prim(PrimitiveType.Cube);
-            Color[] stones = { new Color(0.56f, 0.55f, 0.6f), new Color(0.5f, 0.5f, 0.55f), new Color(0.62f, 0.6f, 0.62f), new Color(0.47f, 0.47f, 0.52f), new Color(0.58f, 0.56f, 0.54f) };
-            const float cell = 0.95f;
+            // Big, bright cartoon flagstones (reads cleanly from the battle camera too).
+            Color[] stones = { new Color(0.96f, 0.72f, 0.58f), new Color(0.92f, 0.64f, 0.52f), new Color(1f, 0.78f, 0.62f), new Color(0.88f, 0.6f, 0.5f), new Color(0.98f, 0.7f, 0.56f) };
+            const float cell = 1.45f;
             Vector3 mn = J.places[0].pos, mx = mn;
             foreach (var p in J.path) { mn = Vector3.Min(mn, p); mx = Vector3.Max(mx, p); }
             foreach (var pl in J.places) { mn = Vector3.Min(mn, pl.pos - Vector3.one * pl.radius); mx = Vector3.Max(mx, pl.pos + Vector3.one * pl.radius); }
@@ -206,7 +207,7 @@ namespace HashiraChronicles
                     float w = cell * R(0.84f, 0.93f), d = cell * R(0.8f, 0.92f);
                     Color c = Jitter(stones[rng.Next(stones.Length)], 0.06f);
                     var q = Quaternion.Euler(R(-0.8f, 0.8f), R(-3f, 3f), R(-0.8f, 0.8f));
-                    solid.Add(cube, at, q, new Vector3(w, 0.07f, d), c);
+                    solid.Add(cube, at, q, new Vector3(w, 0.12f, d), c);
                     laid++;
                     // Moss in some joints.
                     if (rng.NextDouble() < 0.06) solid.Add(cube, at + new Vector3(w * 0.5f, -0.01f, R(-0.3f, 0.3f)), q, new Vector3(0.1f, 0.05f, R(0.3f, 0.7f)), new Color(0.2f, 0.34f, 0.22f));
@@ -282,7 +283,7 @@ namespace HashiraChronicles
             {
                 var q = rot * Quaternion.Euler(s * pitch, 0f, 0f);
                 Vector3 center = baseCenter + Vector3.up * (ridgeY - hd * tan * 0.5f) + f * s * hd * 0.5f;
-                Box(stat, center, new Vector3(len, 0.16f, hd / cos), roof, q);
+                Box(stat, center, new Vector3(len, 0.34f, hd / cos), roof, q);
                 // The lowest course of tiles, a shade darker, reads as the eave edge.
                 Box(stat, baseCenter + Vector3.up * (ridgeY - hd * tan + 0.06f) + f * s * (hd - 0.12f), new Vector3(len + 0.05f, 0.14f, 0.3f), roof * 0.8f, q);
                 if (ribs)
@@ -295,7 +296,7 @@ namespace HashiraChronicles
                     }
                 }
             }
-            Box(stat, baseCenter + Vector3.up * (ridgeY + 0.12f), new Vector3(len + 0.1f, 0.26f, 0.36f), roof * 0.72f, rot);
+            Box(stat, baseCenter + Vector3.up * (ridgeY + 0.2f), new Vector3(len + 0.2f, 0.42f, 0.5f), roof * 0.72f, rot);
             for (int s = -1; s <= 1; s += 2)
                 Box(stat, baseCenter + Vector3.up * (ridgeY + 0.3f) + sd * s * (len * 0.5f + 0.02f), new Vector3(0.32f, 0.46f, 0.42f), roof * 0.6f, rot * Quaternion.Euler(0f, 0f, -s * 10f));
         }
@@ -306,8 +307,9 @@ namespace HashiraChronicles
             Vector3 p = OnGround(h.p);
             var rot = Quaternion.LookRotation(h.face);
             Vector3 f = h.face, sd = rot * Vector3.right;
-            Color[] walls = { new Color(0.92f, 0.88f, 0.8f), new Color(0.42f, 0.29f, 0.21f), new Color(0.86f, 0.8f, 0.7f) };
-            Color[] roofs = { new Color(0.24f, 0.26f, 0.36f), new Color(0.32f, 0.23f, 0.21f), new Color(0.2f, 0.3f, 0.34f) };
+            // Cartoon palette: cream and warm walls, bold roof colours.
+            Color[] walls = { new Color(1f, 0.93f, 0.8f), new Color(0.72f, 0.45f, 0.3f), new Color(1f, 0.86f, 0.7f) };
+            Color[] roofs = { new Color(0.2f, 0.38f, 0.85f), new Color(0.85f, 0.22f, 0.2f), new Color(0.12f, 0.6f, 0.52f) };
             Color[] norens = { new Color(0.16f, 0.22f, 0.46f), new Color(0.62f, 0.14f, 0.14f), new Color(0.2f, 0.36f, 0.3f), new Color(0.36f, 0.2f, 0.42f) };
             Color wall = walls[h.style % 3], roof = roofs[(h.style + (h.two ? 1 : 0)) % 3];
             float w = h.w, d = h.d, H1 = 2.9f, b0 = 0.4f;
@@ -391,7 +393,7 @@ namespace HashiraChronicles
                     Box(stat, uw + f * 0.04f + sd * x, new Vector3(0.09f, 0.6f, 0.05f), Timber, rot, 0.005f);
                 topY += H2;
             }
-            GableRoof(roofBase + Vector3.up * topY, rot, w, roofDepth, 27f, 0.7f, roof, wall, true);
+            GableRoof(roofBase + Vector3.up * topY, rot, w, roofDepth, 30f, 1.05f, roof, wall, false);
 
             // Life around the house.
             if (rng.Next(10) < 6 || h.mill)
@@ -642,21 +644,15 @@ namespace HashiraChronicles
             // The crown: dozens of blossom clusters spread wide over the limbs, pale on top, deeper underneath,
             // with blossom-laden sprays drooping at the edge (never a few big balls).
             Vector3 crown = p + Vector3.up * 7.2f;
-            for (int k = 0; k < 64; k++)
+            for (int k = 0; k < 20; k++)
             {
-                float a = R(0f, Mathf.PI * 2f), rr = Mathf.Sqrt(R(0.05f, 1f)) * 7f;
+                float a = R(0f, Mathf.PI * 2f), rr = Mathf.Sqrt(R(0.05f, 1f)) * 6f;
                 float hy = Mathf.Lerp(2.2f, -1.4f, rr / 7f) + R(-0.8f, 0.8f);
                 Vector3 o = new Vector3(Mathf.Cos(a) * rr, hy, Mathf.Sin(a) * rr);
-                float sz = R(1.6f, 2.8f);
+                float sz = R(3.2f, 4.6f);
                 bool under = hy < 0f;
                 Color col = under ? Color.Lerp(P.leafDark, P.leafMid, R(0f, 0.6f)) : Color.Lerp(P.leafMid, P.leafLight, R(0.1f, 1f));
                 b.Add(lowSphere, crown + o, Quaternion.Euler(0f, R(0f, 360f), 0f), new Vector3(sz, sz * 0.7f, sz), Jitter(col, 0.04f), 0.2f, 0.5f, 0.4f);
-            }
-            for (int k = 0; k < 14; k++)
-            {
-                float a = (k * 360f / 14f + R(-8f, 8f)) * Mathf.Deg2Rad;
-                Vector3 o = new Vector3(Mathf.Cos(a) * R(6f, 7.4f), R(-3f, -2f), Mathf.Sin(a) * R(6f, 7.4f));
-                b.Add(lowSphere, crown + o, Quaternion.identity, new Vector3(1.1f, 2.4f, 1.1f), Jitter(P.leafMid, 0.05f), 0.3f, 0.5f, 0.15f);
             }
             b.Flush();
             // Sacred rope with paper streamers round the trunk.

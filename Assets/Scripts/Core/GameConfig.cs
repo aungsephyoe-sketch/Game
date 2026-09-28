@@ -9,10 +9,12 @@ namespace HashiraChronicles
         public const string TitleLine1 = "BLADE LEGENDS";
         public const string TitleLine2 = "BLADE LEGENDS";
         public const string GameName = "Blade Legends";
+        /// <summary>Stylised cartoon look: chunky proportions, hard toon shading, bold outlines, saturated colour.</summary>
+        public const bool CartoonStyle = true;
         public const string Subtitle = "A story of dawn and eclipse · original characters";
         /// <summary>Every mission uses the new-standard worlds (Forest, Snow Mountain, Volcano).</summary>
         public const bool NewWorlds = true;
-        public const string Version = "0.20.0";
+        public const string Version = "0.21.0";
         /// <summary>Build every slayer on the premium jointed rig (false = the original chibi builder).</summary>
         public const bool PremiumRoster = true;
         /// <summary>The game's art direction is the simple chibi style built in code; imported models are off.</summary>

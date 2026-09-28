@@ -194,6 +194,11 @@ namespace HashiraChronicles
         public List<string> chatSlang = new List<string>();
         public List<string> chatWordCounts = new List<string>();
 
+        // ---- Tutorials (each shown once, skippable)
+        public bool tutorialDone;
+        public bool homeTourDone;
+        public bool mapTutorialDone;
+
         // ---- Achievements
         public List<AchievementState> achievements = new List<AchievementState>();
         public int chestsFound;

@@ -66,7 +66,7 @@ namespace HashiraChronicles
             RenderSettings.fogStartDistance = theme.fogStart;
             RenderSettings.fogEndDistance = theme.fogEnd;
             // Softer light overall so the characters read clearly (no washed-out faces).
-            RenderSettings.ambientLight = Color.Lerp(theme.sky, Color.white, theme.night ? 0.2f : 0.3f) * 0.8f;
+            RenderSettings.ambientLight = Color.Lerp(theme.sky, Color.white, theme.night ? 0.25f : 0.35f) * (GameConfig.CartoonStyle ? 1f : 0.8f);
             if (Camera.main != null) Camera.main.backgroundColor = theme.sky;
             var sun = RenderSettings.sun;
             if (sun != null)
@@ -76,7 +76,7 @@ namespace HashiraChronicles
                 sun.transform.rotation = theme.night ? Quaternion.Euler(55f, -35f, 0f) : Quaternion.Euler(50f, 30f, 0f);
                 // Soft, not-quite-black shadows: smooth edges and no harsh blocks on characters or ground.
                 sun.shadows = LightShadows.Soft;
-                sun.shadowStrength = 0.72f;
+                sun.shadowStrength = GameConfig.CartoonStyle ? 0.5f : 0.72f;
                 sun.shadowNormalBias = 0.6f;
             }
         }

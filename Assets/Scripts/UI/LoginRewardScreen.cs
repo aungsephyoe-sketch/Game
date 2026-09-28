@@ -20,6 +20,8 @@ namespace HashiraChronicles
                 else if (ProfileSystem.BirthdayDue(d)) modal = 2;
                 else if (LoginRewardSystem.Check(d)) modal = 3;
                 else if (SocialOpen) modal = 4;
+                else if (!d.homeTourDone && TutorialSystem.Begin(TutorialSystem.Kind.Home)) modal = 5;
+                else if (TutorialSystem.Active == TutorialSystem.Kind.Home) modal = 5;
             }
             bool old = GUI.enabled;
             if (modal != 0) GUI.enabled = false;

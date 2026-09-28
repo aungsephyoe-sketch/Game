@@ -256,11 +256,21 @@ namespace HashiraChronicles
         public static void Outlined(Rect r, string text, GUIStyle style, Color color, float outline = 3f)
         {
             var old = style.normal.textColor;
-            style.normal.textColor = new Color(0f, 0f, 0f, color.a * 0.9f);
-            GUI.Label(new Rect(r.x - outline, r.y, r.width, r.height), text, style);
-            GUI.Label(new Rect(r.x + outline, r.y, r.width, r.height), text, style);
-            GUI.Label(new Rect(r.x, r.y - outline, r.width, r.height), text, style);
-            GUI.Label(new Rect(r.x, r.y + outline, r.width, r.height), text, style);
+            // Bold cartoon lettering: a dark outline all round and a drop shadow underneath.
+            style.normal.textColor = new Color(0.04f, 0.03f, 0.1f, color.a * 0.92f);
+            if (outline > 0f)
+            {
+                GUI.Label(new Rect(r.x, r.y + outline * 1.6f, r.width, r.height), text, style);
+                float o = outline, dd = outline * 0.72f;
+                GUI.Label(new Rect(r.x - o, r.y, r.width, r.height), text, style);
+                GUI.Label(new Rect(r.x + o, r.y, r.width, r.height), text, style);
+                GUI.Label(new Rect(r.x, r.y - o, r.width, r.height), text, style);
+                GUI.Label(new Rect(r.x, r.y + o, r.width, r.height), text, style);
+                GUI.Label(new Rect(r.x - dd, r.y - dd, r.width, r.height), text, style);
+                GUI.Label(new Rect(r.x + dd, r.y - dd, r.width, r.height), text, style);
+                GUI.Label(new Rect(r.x - dd, r.y + dd, r.width, r.height), text, style);
+                GUI.Label(new Rect(r.x + dd, r.y + dd, r.width, r.height), text, style);
+            }
             style.normal.textColor = color;
             GUI.Label(r, text, style);
             style.normal.textColor = old;

@@ -10,6 +10,8 @@ namespace HashiraChronicles
             var b = BattleController.Current;
             if (b == null || b.Team == null || b.Mission == null) return;
             var cam = Camera.main;
+            // Menus over the battle re-register the areas where they eat touches every frame.
+            if (Event.current.type == EventType.Repaint) MobileControls.UiBlockers.Clear();
 
             DrawLowHealth(b);
             DrawEnemyBars(cam);

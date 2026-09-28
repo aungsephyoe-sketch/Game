@@ -89,7 +89,8 @@ namespace HashiraChronicles
         {
             var m = new Material(ToonShader);
             m.color = color;
-            if (m.HasProperty("_OutlineWidth")) m.SetFloat("_OutlineWidth", outline);
+            // Cartoon look: thicker dark outlines.
+            if (m.HasProperty("_OutlineWidth")) m.SetFloat("_OutlineWidth", GameConfig.CartoonStyle ? outline * 1.45f : outline);
             if (m.HasProperty("_Emission")) m.SetColor("_Emission", emission ?? Color.black);
             if (m.HasProperty("_EmissionColor") && emission.HasValue)
             {

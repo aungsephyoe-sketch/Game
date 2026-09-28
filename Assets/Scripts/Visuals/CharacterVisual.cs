@@ -61,6 +61,7 @@ namespace HashiraChronicles
             else if (IsDesign(def.id)) v.BuildDesign(def);
             else if (GameConfig.PremiumRoster) v.BuildRoster(def);
             else v.BuildChibi(def);
+            v.CartoonProportions(1f);
             return v;
         }
 
@@ -75,7 +76,7 @@ namespace HashiraChronicles
             v.Model = model;
             if (GameConfig.UseImportedModels && v.TryLoadModel("Enemies/" + def.id, def.accentColor, 0.6f, 2.1f)) return v;
 
-            if (v.BuildMonster(def, model)) return v;
+            if (v.BuildMonster(def, model)) { v.CartoonProportions(0.55f); return v; }
 
             var body = MaterialFactory.Toon(def.bodyColor);
             var accent = MaterialFactory.Toon(def.accentColor, 0.02f, def.accentColor * 0.8f);
@@ -350,7 +351,7 @@ namespace HashiraChronicles
         {
             if (driver != null) { driver.Trigger("Attack" + (step + 1)); TrailBurst(duration + 0.1f); return; }
             Swing(SwingFrom[step % 5], SwingTo[step % 5], duration, SwingPitch[step % 5]);
-            Punch(1.08f);
+            if (!GameConfig.CartoonStyle) Punch(1.08f);
             if (step >= 4) Spin(0.18f);
         }
 
@@ -629,15 +630,18 @@ namespace HashiraChronicles
             // Anticipation → strike → follow-through → settle, inside the same total time so hit timing is unchanged.
             float dir = Mathf.Sign(toYaw - fromYaw);
             if (dir == 0f) dir = 1f;
-            float windUp = duration * 0.22f;
+            float windUp = duration * 0.24f;
+            float pull = GameConfig.CartoonStyle ? 22f : 10f, over = GameConfig.CartoonStyle ? 18f : 8f;
             var from = SwordPivot.localRotation;
-            var cocked = Quaternion.Euler(pitch - 4f, fromYaw - dir * 10f, roll);
+            var cocked = Quaternion.Euler(pitch - 8f, fromYaw - dir * pull, roll);
             float t = 0f;
             while (t < windUp)
             {
                 t += Time.deltaTime;
                 float w = Mathf.Clamp01(t / windUp);
                 SwordPivot.localRotation = Quaternion.Slerp(from, cocked, w * w * (3f - 2f * w));
+                // Anticipation: the body squashes down as it winds up...
+                if (GameConfig.CartoonStyle && !dead) Model.localScale = baseScale * Vector3.Lerp(Vector3.one, new Vector3(1.07f, 0.9f, 1.07f), w);
                 yield return null;
             }
             if (Trail != null) { Trail.Clear(); Trail.emitting = true; }
@@ -649,10 +653,18 @@ namespace HashiraChronicles
                 float k = Mathf.Clamp01(s / strike);
                 // Ease in-out: gathers speed, whips through the middle, decelerates past the target.
                 k = k < 0.5f ? 4f * k * k * k : 1f - Mathf.Pow(-2f * k + 2f, 3f) * 0.5f;
-                float yaw = Mathf.LerpUnclamped(fromYaw - dir * 10f, toYaw + dir * 8f, k);
-                SwordPivot.localRotation = Quaternion.Euler(Mathf.Lerp(pitch - 4f, pitch, k), yaw, roll);
+                float yaw = Mathf.LerpUnclamped(fromYaw - dir * pull, toYaw + dir * over, k);
+                SwordPivot.localRotation = Quaternion.Euler(Mathf.Lerp(pitch - 8f, pitch, k), yaw, roll);
+                // ...then stretches through the strike and settles back (squash and stretch).
+                if (GameConfig.CartoonStyle && !dead)
+                {
+                    float st = Mathf.Sin(Mathf.Clamp01(s / strike) * Mathf.PI);
+                    Model.localScale = baseScale * Vector3.Lerp(new Vector3(1.07f, 0.9f, 1.07f), new Vector3(0.93f, 1.12f, 0.93f), Mathf.Clamp01(s / (strike * 0.4f))) * 1f;
+                    if (s > strike * 0.4f) Model.localScale = baseScale * Vector3.Lerp(Vector3.one, new Vector3(0.93f, 1.12f, 0.93f), st);
+                }
                 yield return null;
             }
+            if (GameConfig.CartoonStyle && !dead) Model.localScale = Vector3.one * baseScale;
             if (Trail != null) Trail.emitting = false;
             yield return new WaitForSeconds(0.1f);
             float r = 0f;

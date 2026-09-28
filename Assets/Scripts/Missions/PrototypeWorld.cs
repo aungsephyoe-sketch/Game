@@ -177,9 +177,10 @@ namespace HashiraChronicles
                     p.lantern = new Color(1f, 0.72f, 0.4f);
                     break;
                 case Kind.Volcano:
-                    p.grassA = new Color(0.16f, 0.13f, 0.13f); p.grassB = new Color(0.24f, 0.19f, 0.17f); p.grassC = new Color(0.34f, 0.3f, 0.28f);
+                    // Cartoon volcano: deep purples and reds instead of muddy grey-brown.
+                    p.grassA = new Color(0.26f, 0.14f, 0.24f); p.grassB = new Color(0.36f, 0.18f, 0.26f); p.grassC = new Color(0.48f, 0.26f, 0.3f);
                     p.path = new Color(0.36f, 0.31f, 0.28f); p.pathEdge = new Color(0.27f, 0.22f, 0.2f); p.clearing = new Color(0.3f, 0.26f, 0.24f);
-                    p.rock = new Color(0.2f, 0.17f, 0.17f); p.rockDark = new Color(0.09f, 0.07f, 0.08f); p.bank = new Color(0.12f, 0.08f, 0.07f);
+                    p.rock = new Color(0.34f, 0.2f, 0.32f); p.rockDark = new Color(0.16f, 0.08f, 0.16f); p.bank = new Color(0.2f, 0.08f, 0.14f);
                     p.leafDark = new Color(0.12f, 0.09f, 0.08f); p.leafMid = new Color(0.2f, 0.15f, 0.12f); p.leafLight = new Color(0.3f, 0.22f, 0.16f);
                     p.trunk = new Color(0.1f, 0.08f, 0.08f); p.accent = new Color(0.75f, 0.14f, 0.1f);
                     p.flowerA = new Color(1f, 0.45f, 0.1f); p.flowerB = new Color(1f, 0.75f, 0.2f); p.flowerC = new Color(0.8f, 0.2f, 0.1f);
@@ -192,28 +193,28 @@ namespace HashiraChronicles
                     p.lantern = new Color(1f, 0.5f, 0.15f);
                     break;
                 case Kind.Village:
-                    // Kiriha at night: moonlit teal grass, pale stone streets, cherry blossom, warm lanterns.
-                    p.grassA = new Color(0.22f, 0.4f, 0.36f); p.grassB = new Color(0.28f, 0.46f, 0.38f); p.grassC = new Color(0.36f, 0.54f, 0.42f);
-                    // Under the paving stones: dark grout and packed earth.
-                    p.path = new Color(0.3f, 0.29f, 0.32f); p.pathEdge = new Color(0.34f, 0.33f, 0.3f); p.clearing = new Color(0.32f, 0.31f, 0.33f);
-                    p.rock = new Color(0.5f, 0.5f, 0.58f); p.rockDark = new Color(0.32f, 0.32f, 0.4f); p.bank = new Color(0.2f, 0.34f, 0.32f);
-                    p.leafDark = new Color(0.74f, 0.47f, 0.6f); p.leafMid = new Color(0.94f, 0.72f, 0.8f); p.leafLight = new Color(1f, 0.9f, 0.93f);
-                    p.trunk = new Color(0.32f, 0.22f, 0.22f); p.accent = new Color(0.84f, 0.18f, 0.16f);
-                    p.flowerA = new Color(1f, 0.86f, 0.5f); p.flowerB = new Color(1f, 0.62f, 0.78f); p.flowerC = new Color(0.72f, 0.72f, 1f);
-                    p.water = new Color(0.22f, 0.4f, 0.66f); p.waterFoam = new Color(0.85f, 0.9f, 1f, 0.45f);
-                    p.skyTop = new Color(0.05f, 0.07f, 0.2f); p.skyHorizon = new Color(0.4f, 0.3f, 0.56f); p.sunGlow = new Color(0.88f, 0.92f, 1f);
-                    p.fog = new Color(0.28f, 0.24f, 0.42f); p.fogStart = 34f; p.fogEnd = 250f;
-                    p.amSky = new Color(0.5f, 0.54f, 0.86f); p.amEquator = new Color(0.56f, 0.48f, 0.7f); p.amGround = new Color(0.34f, 0.3f, 0.36f);
-                    // Cool moonlight from over the viewer's left shoulder, so faces stay lit.
-                    p.sun = new Color(0.74f, 0.8f, 1f); p.sunIntensity = 0.95f; p.sunEuler = new Vector3(40f, 30f, 0f);
-                    p.shadow = new Color(0.42f, 0.4f, 0.66f); p.rim = new Color(1f, 0.78f, 0.6f); p.far = new Color(0.22f, 0.22f, 0.4f);
-                    p.lantern = new Color(1f, 0.66f, 0.32f);
+                    // Kiriha at twilight, cartoon style: bright green grass, warm sandy paving, hot-pink cherry blossom,
+                    // a deep blue sky melting into a pink-orange horizon, warm low sun and bright ambient light.
+                    p.grassA = new Color(0.3f, 0.72f, 0.32f); p.grassB = new Color(0.38f, 0.8f, 0.3f); p.grassC = new Color(0.52f, 0.86f, 0.3f);
+                    p.path = new Color(0.62f, 0.44f, 0.36f); p.pathEdge = new Color(0.55f, 0.42f, 0.3f); p.clearing = new Color(0.66f, 0.48f, 0.38f);
+                    p.rock = new Color(0.62f, 0.6f, 0.72f); p.rockDark = new Color(0.42f, 0.4f, 0.55f); p.bank = new Color(0.22f, 0.58f, 0.3f);
+                    p.leafDark = new Color(0.92f, 0.38f, 0.62f); p.leafMid = new Color(1f, 0.56f, 0.76f); p.leafLight = new Color(1f, 0.78f, 0.88f);
+                    p.trunk = new Color(0.42f, 0.24f, 0.2f); p.accent = new Color(0.95f, 0.2f, 0.18f);
+                    p.flowerA = new Color(1f, 0.85f, 0.2f); p.flowerB = new Color(1f, 0.45f, 0.65f); p.flowerC = new Color(0.55f, 0.6f, 1f);
+                    p.water = new Color(0.18f, 0.55f, 0.95f); p.waterFoam = new Color(0.9f, 0.96f, 1f, 0.55f);
+                    p.skyTop = new Color(0.12f, 0.18f, 0.55f); p.skyHorizon = new Color(1f, 0.48f, 0.5f); p.sunGlow = new Color(1f, 0.8f, 0.55f);
+                    p.fog = new Color(0.62f, 0.38f, 0.62f); p.fogStart = 45f; p.fogEnd = 280f;
+                    p.amSky = new Color(0.7f, 0.66f, 1f); p.amEquator = new Color(0.95f, 0.7f, 0.8f); p.amGround = new Color(0.55f, 0.45f, 0.5f);
+                    // Warm low sun from over the viewer's left shoulder, so faces stay lit.
+                    p.sun = new Color(1f, 0.86f, 0.7f); p.sunIntensity = 1.1f; p.sunEuler = new Vector3(34f, 30f, 0f);
+                    p.shadow = new Color(0.55f, 0.42f, 0.82f); p.rim = new Color(1f, 0.8f, 0.55f); p.far = new Color(0.55f, 0.4f, 0.75f);
+                    p.lantern = new Color(1f, 0.66f, 0.28f);
                     break;
                 default:
-                    p.grassA = new Color(0.36f, 0.6f, 0.26f); p.grassB = new Color(0.48f, 0.7f, 0.3f); p.grassC = new Color(0.62f, 0.76f, 0.34f);
+                    p.grassA = new Color(0.32f, 0.72f, 0.24f); p.grassB = new Color(0.44f, 0.82f, 0.28f); p.grassC = new Color(0.62f, 0.88f, 0.3f);
                     p.path = new Color(0.66f, 0.52f, 0.34f); p.pathEdge = new Color(0.52f, 0.46f, 0.28f); p.clearing = new Color(0.6f, 0.52f, 0.36f);
                     p.rock = new Color(0.5f, 0.5f, 0.46f); p.rockDark = new Color(0.34f, 0.35f, 0.33f); p.bank = new Color(0.3f, 0.46f, 0.22f);
-                    p.leafDark = new Color(0.16f, 0.38f, 0.18f); p.leafMid = new Color(0.26f, 0.52f, 0.22f); p.leafLight = new Color(0.46f, 0.68f, 0.26f);
+                    p.leafDark = new Color(0.12f, 0.46f, 0.2f); p.leafMid = new Color(0.22f, 0.66f, 0.24f); p.leafLight = new Color(0.5f, 0.84f, 0.26f);
                     p.trunk = new Color(0.4f, 0.28f, 0.18f); p.accent = new Color(0.84f, 0.18f, 0.14f);
                     p.flowerA = new Color(1f, 0.85f, 0.3f); p.flowerB = new Color(0.95f, 0.5f, 0.6f); p.flowerC = new Color(0.6f, 0.7f, 1f);
                     p.water = new Color(0.25f, 0.6f, 0.78f); p.waterFoam = new Color(1f, 1f, 1f, 0.5f);
@@ -566,7 +567,7 @@ namespace HashiraChronicles
             sunDir.y = Mathf.Abs(sunDir.y) * 0.4f + 0.1f;
             sunDir.Normalize();
             // At night the glow belongs to the moon, which hangs ahead over the village (where the camera looks).
-            if (K == Kind.Village) sunDir = new Vector3(-0.4f, 0.29f, 0.87f).normalized;
+            if (K == Kind.Village) sunDir = new Vector3(-0.25f, 0.12f, 0.96f).normalized;
             for (int a = 0; a <= lat; a++)
             {
                 float el = Mathf.Lerp(-0.25f, 1f, a / (float)lat) * Mathf.PI * 0.5f;
@@ -608,24 +609,21 @@ namespace HashiraChronicles
             var disc = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), go.transform, sunDir * 0.92f, Vector3.one * (K == Kind.Volcano ? 0.09f : 0.06f),
                 MaterialFactory.Additive(new Color(P.sunGlow.r, P.sunGlow.g, P.sunGlow.b, 0.9f)), false);
             disc.name = "Sun";
-            if (K == Kind.Village) MoonAndStars(go.transform, sunDir);
+            if (K == Kind.Village)
+            {
+                // A big cartoon sunset disc low over the village (reads like a poster), plus the first stars.
+                disc.transform.localScale = Vector3.one * 0.16f;
+                disc.transform.localPosition = sunDir * 0.9f;
+                MoonAndStars(go.transform, sunDir);
+            }
         }
 
-        /// <summary>A soft breathing halo round the moon, a few darker maria on its face, and a field of stars (one combined mesh).</summary>
+        /// <summary>A soft breathing glow round the sun disc and a field of first stars (one combined mesh).</summary>
         static void MoonAndStars(Transform dome, Vector3 moonDir)
         {
-            var halo = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), dome, moonDir * 0.9f, Vector3.one * 0.2f, MaterialFactory.Additive(new Color(0.55f, 0.6f, 0.9f, 0.18f)), false);
+            var halo = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), dome, moonDir * 0.9f, Vector3.one * 0.2f, MaterialFactory.Additive(new Color(1f, 0.6f, 0.4f, 0.22f)), false);
             halo.name = "MoonHalo";
             halo.AddComponent<Pulse>().Speed = 0.35f;
-            // Craters: slightly darker patches on the face of the disc.
-            var crater = MaterialFactory.Transparent(new Color(0.55f, 0.6f, 0.78f, 0.35f), false);
-            Vector3 right = Vector3.Cross(Vector3.up, moonDir).normalized, up = Vector3.Cross(moonDir, right);
-            for (int k = 0; k < 4; k++)
-            {
-                Vector3 o = right * R(-0.015f, 0.015f) + up * R(-0.015f, 0.015f);
-                var c = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), dome, moonDir * 0.885f + o, Vector3.one * R(0.008f, 0.016f), crater, false);
-                c.name = "Crater";
-            }
             var verts = new List<Vector3>();
             var tris = new List<int>();
             var srand = new System.Random(77);
@@ -783,9 +781,11 @@ namespace HashiraChronicles
             RenderSettings.fogStartDistance = p.fogStart;
             RenderSettings.fogEndDistance = p.fogEnd;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = p.amSky * 0.85f;
-            RenderSettings.ambientEquatorColor = p.amEquator * 0.85f;
-            RenderSettings.ambientGroundColor = p.amGround * 0.85f;
+            // Cartoon look: strong, bright ambient so nothing sinks into murky shadow.
+            float amb = GameConfig.CartoonStyle ? 1.05f : 0.85f;
+            RenderSettings.ambientSkyColor = p.amSky * amb;
+            RenderSettings.ambientEquatorColor = p.amEquator * amb;
+            RenderSettings.ambientGroundColor = p.amGround * amb;
             var cam = Camera.main;
             if (cam != null)
             {

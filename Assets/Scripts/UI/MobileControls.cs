@@ -101,10 +101,21 @@ namespace HashiraChronicles
             else if (!Application.isMobilePlatform)
             {
                 var pos = HudLayout.ScreenToGui(Input.mousePosition);
-                if (Input.GetMouseButtonDown(0)) pointers.Add(new Pointer { id = -1, phase = TouchPhase.Began, pos = pos });
-                else if (Input.GetMouseButtonUp(0)) pointers.Add(new Pointer { id = -1, phase = TouchPhase.Ended, pos = pos });
-                else if (Input.GetMouseButton(0)) pointers.Add(new Pointer { id = -1, phase = TouchPhase.Moved, pos = pos });
+                bool down = Input.GetMouseButtonDown(0), up = Input.GetMouseButtonUp(0);
+                if (down) pointers.Add(new Pointer { id = -1, phase = TouchPhase.Began, pos = pos });
+                // A quick click during a slow frame (the first frames of a battle) comes down AND up in the same
+                // frame: the release must still count, or the button stays "held" (a stuck charge slows the slayer).
+                if (up) pointers.Add(new Pointer { id = -1, phase = TouchPhase.Ended, pos = pos });
+                else if (!down && Input.GetMouseButton(0)) pointers.Add(new Pointer { id = -1, phase = TouchPhase.Moved, pos = pos });
+                else if (!down && !Input.GetMouseButton(0))
+                {
+                    // Nothing pressed: nothing may stay held.
+                    if (joyFinger == -1) joyFinger = None;
+                    if (attackFinger == -1) attackFinger = None;
+                    if (guardFinger == -1) guardFinger = None;
+                }
             }
+            if (Input.touchCount == 0 && Application.isMobilePlatform) joyFinger = attackFinger = guardFinger = None;
         }
 
         /// <summary>Screen areas (GUI coords) where menus drawn over the battle eat touches (the village chat,
