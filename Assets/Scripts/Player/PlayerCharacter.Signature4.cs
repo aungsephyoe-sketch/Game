@@ -42,7 +42,7 @@ namespace HashiraChronicles
                 yield return new WaitForSeconds(0.08f);
             }
             // Drop through the eye of the storm with a crossing cut.
-            transform.position = center - transform.forward * 0.6f;
+            MoveTo(center - transform.forward * 0.6f);
             t = 0f;
             while (t < 0.12f)
             {
@@ -83,7 +83,7 @@ namespace HashiraChronicles
             {
                 t += Time.deltaTime;
                 float k = Mathf.Clamp01(t / 0.3f);
-                transform.position = Vector3.Lerp(start, land, k);
+                MoveTo(Vector3.Lerp(start, land, k));
                 Visual.transform.localPosition = Vector3.up * Mathf.Sin(k * Mathf.PI) * 2.5f;
                 yield return null;
             }

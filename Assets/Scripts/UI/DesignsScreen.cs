@@ -186,7 +186,8 @@ namespace HashiraChronicles
         {
             UIStyles.Rect(new Rect(0f, 106f + safe.y, W, H), new Color(0.03f, 0.04f, 0.07f, 0.72f));
             float top = safe.y + 130f;
-            GUI.Label(new Rect(safe.x + 30f, top, W - 60f, 40f), "Environment quality test — three worlds built to the new standard. Play one to see it at gameplay camera distance.", UIStyles.Sized(UIStyles.Body, 22));
+            GUI.Label(new Rect(safe.x + 30f, top, W - 380f, 40f), "Environment quality test — three worlds built to the new standard. Play one to see it at gameplay camera distance.", UIStyles.Sized(UIStyles.Body, 22));
+            if (FlatBtn(new Rect(safe.xMax - 330f, top - 12f, 300f, 54f), "COLLISION TEST ▶", new Color(0.16f, 0.17f, 0.26f), true, 20)) { gm.BeginPrototype("collision"); return; }
             float cw = (safe.width - 60f - 2f * 24f) / 3f, ch = H - top - 90f;
             if (designNoteStyle == null) designNoteStyle = new GUIStyle(UIStyles.Sized(UIStyles.Small, 18)) { wordWrap = true };
             for (int i = 0; i < 3; i++)

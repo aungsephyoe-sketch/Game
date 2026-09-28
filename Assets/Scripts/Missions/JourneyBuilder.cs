@@ -100,6 +100,8 @@ namespace HashiraChronicles
             res.weather = EnvFx.Weather(follow, Vector3.zero, WeatherKind(theme), 36f);
 
             ArenaBuilder.ApplyLighting(theme);
+            // Register solid scenery while the meshes still carry their shapes (batching renames them).
+            Obstacles.Scan(stat);
             StaticBatchingUtility.Combine(stat.gameObject);
             return res;
         }

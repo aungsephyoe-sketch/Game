@@ -129,6 +129,9 @@ namespace HashiraChronicles
             {
                 var e = OnFace(hc, hr, s * x, y);
                 e.localRotation *= Quaternion.Euler(0f, 0f, s * tilt);
+                // Kept as its own part so it can blink.
+                e.gameObject.AddComponent<EyeLid>();
+                if (head.GetComponentInParent<Blinker>() == null) gameObject.AddComponent<Blinker>();
                 Ball(e, new Vector3(0f, 0f, -0.006f), new Vector3(w, h, 0.032f), white);
                 Ball(e, new Vector3(0f, -h * 0.05f, -0.002f), new Vector3(w * 0.7f, h * 0.82f, 0.03f), mIris);
                 Ball(e, new Vector3(0f, -h * 0.22f, 0f), new Vector3(w * 0.5f, h * 0.32f, 0.028f), mLow);

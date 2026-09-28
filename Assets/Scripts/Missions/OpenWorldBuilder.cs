@@ -89,6 +89,7 @@ namespace HashiraChronicles
             CloudDrift.CreateLayer(dyn, new Vector3(0f, 0f, 30f), 8, 28f, new Color(1f, 1f, 1f, 0.6f), 90f);
             EnvFx.Weather(dyn, Vector3.zero, "leaves", 60f);
 
+            HashiraChronicles.Obstacles.Scan(root.transform);
             StaticBatchingUtility.Combine(root);
             return root;
         }

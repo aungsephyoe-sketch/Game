@@ -90,7 +90,7 @@ namespace HashiraChronicles
             cut.hitStop = 0.01f;
             int idx = 0;
             Vector3 cur = focus + Quaternion.Euler(0f, 0f, 0f) * Vector3.forward * r;
-            transform.position = BattleController.ClampToArena(cur);
+            MoveTo(cur);
             for (int i = 0; i < 12; i++)
             {
                 idx = (idx + 5) % 12;
@@ -100,7 +100,7 @@ namespace HashiraChronicles
                 FaceTo(next);
                 Visual.DashAttack(0.05f);
                 VFX.Flash(MeshFactory.Line(), cur + Vector3.up * 0.9f, Quaternion.LookRotation(d), new Vector3(0.5f * fx, 1f, d.magnitude), new Vector3(0.05f, 1f, d.magnitude), gold, 0.9f);
-                transform.position = next;
+                MoveTo(next);
                 tally.Add(CombatSystem.HitRadius(this, Vector3.Lerp(cur, next, 0.5f), 2.2f, cut));
                 ElementFx.Slash(Vector3.Lerp(cur, next, 0.5f), d, 2f, 180f, Random.Range(-40f, 40f), Element.Light, 1.2f);
                 if (Audio != null) Audio.PlayPitched("slash", 0.5f, 1.1f + i * 0.04f);
@@ -184,7 +184,7 @@ namespace HashiraChronicles
             {
                 Vector3 a = BattleController.ClampToArena(passes[p, 0]), b = BattleController.ClampToArena(passes[p, 1]);
                 // Rise, then dive along the line.
-                transform.position = a;
+                MoveTo(a);
                 FaceTo(b);
                 float t = 0f, dur = 0.42f;
                 var hitSet = new HashSet<Combatant>();
@@ -193,7 +193,7 @@ namespace HashiraChronicles
                 {
                     t += Time.deltaTime;
                     float k = t / dur;
-                    transform.position = Vector3.Lerp(a, b, k);
+                    MoveTo(Vector3.Lerp(a, b, k));
                     Visual.transform.localPosition = Vector3.up * (Mathf.Sin(k * Mathf.PI) * 2.2f + 0.3f);
                     foreach (var wg in wings) wg.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 30f) * 35f * (wg.localPosition.x > 0 ? 1f : -1f));
                     if ((Position - lastFire).sqrMagnitude > 1.2f)
@@ -417,7 +417,7 @@ namespace HashiraChronicles
                 float k = t / dur;
                 Vector3 p = Vector3.Lerp(from, to, Mathf.SmoothStep(0f, 1f, k)) + Vector3.Cross(Vector3.up, (to - from).normalized) * Mathf.Sin(k * Mathf.PI * 2f) * 2f;
                 storm.position = BattleController.ClampToArena(p);
-                transform.position = storm.position;
+                MoveTo(storm.position);
                 if (tick <= 0f)
                 {
                     tick = 0.16f;

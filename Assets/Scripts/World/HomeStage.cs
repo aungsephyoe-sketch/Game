@@ -161,6 +161,19 @@ namespace HashiraChronicles
 
         const float PodiumHeight = 0.28f;
 
+        /// <summary>Line-up camera position (see Update): each slayer is turned to face it.</summary>
+        static readonly Vector3 LineupCamera = new Vector3(0.3f, 2.2f, -6.6f);
+
+        /// <summary>Facing the camera, turned a little (three-quarter view) toward the middle of the group.</summary>
+        static float LineupYaw(int i)
+        {
+            Vector3 p = new Vector3(-1.85f + i * 2.15f, 0f, 0.4f);
+            float face = Mathf.Atan2(LineupCamera.x - p.x, LineupCamera.z - p.z) * Mathf.Rad2Deg;
+            float centre = LineupCamera.x;
+            float turn = Mathf.Abs(p.x - centre) < 0.5f ? -6f : (p.x < centre ? -14f : 14f);
+            return face + turn;
+        }
+
         /// <summary>The team stands side by side in the village, facing the camera (TEAM screen).</summary>
         public void ShowLineup(List<string> ids)
         {
@@ -197,7 +210,8 @@ namespace HashiraChronicles
                 l.color = Color.Lerp(ec, Color.white, 0.5f);
                 l.range = 3.2f;
                 l.intensity = 0.8f;
-                slot.rotation = Quaternion.Euler(0f, 180f + (i - 1.5f) * -6f, 0f);
+                // Everyone faces the camera with the same slight three-quarter turn in toward the group's centre.
+                slot.rotation = Quaternion.Euler(0f, LineupYaw(i), 0f);
                 lineupSlots.Add(slot);
                 CharacterVisual v = null;
                 if (i < ids.Count)
@@ -206,7 +220,7 @@ namespace HashiraChronicles
                     if (def != null)
                     {
                         v = CharacterVisual.BuildHero(def, slot);
-                        v.HoldSignaturePose();
+                        v.HoldTeamIdle();
                         VFX.Breath(slot.position, ElementChart.ColorOf(def.element), 12);
                         // Aura: a soft glowing column in the element colour, red and brighter at max level.
                         var owned = GameManager.Instance != null ? GameManager.Instance.Data.GetCharacter(def.id) : null;
@@ -274,9 +288,9 @@ namespace HashiraChronicles
             {
                 // After a cheer, each slayer settles back into their own pose.
                 for (int i = 0; i < lineupVisuals.Count; i++)
-                    if (lineupVisuals[i] != null && !lineupVisuals[i].Posing) lineupVisuals[i].HoldSignaturePose();
+                    if (lineupVisuals[i] != null && !lineupVisuals[i].Posing) lineupVisuals[i].HoldTeamIdle();
                 if (CameraController.Instance != null)
-                    CameraController.Instance.SetFixed(new Vector3(0.3f + Mathf.Sin(t * 0.15f) * 0.15f, 2.2f, -6.6f), new Vector3(0.3f, 1.2f, 0.4f));
+                    CameraController.Instance.SetFixed(LineupCamera + new Vector3(Mathf.Sin(t * 0.15f) * 0.15f, 0f, 0f), new Vector3(0.3f, 1.2f, 0.4f));
                 return;
             }
             if (viewer)

@@ -286,6 +286,8 @@ namespace HashiraChronicles
         public string trialCharacterId;
         /// <summary>Environment quality-test world ("forest", "snow", "volcano"); null for the normal builder.</summary>
         public string prototypeEnv;
+        /// <summary>The collision test yard (tree, pole, rock, wall, fence, narrow and wide gaps).</summary>
+        public bool collisionTest;
         /// <summary>Custom name for the destination arena (otherwise chosen from the boss).</summary>
         public string arenaName;
         /// <summary>Free-roam village (no enemies, talk to villagers, find chests).</summary>

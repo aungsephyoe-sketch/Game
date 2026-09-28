@@ -476,6 +476,7 @@ namespace HashiraChronicles
         void StartPose(IEnumerator routine)
         {
             if (poseRoutine != null) StopCoroutine(poseRoutine);
+            showcase = false;
             poseRoutine = StartCoroutine(PoseWrapper(routine));
         }
 
@@ -718,6 +719,7 @@ namespace HashiraChronicles
         {
             dead = false;
             posing = false;
+            showcase = false;
             guarding = false;
             StopAllCoroutines();
             swingRoutine = null;

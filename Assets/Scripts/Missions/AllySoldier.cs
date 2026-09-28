@@ -54,7 +54,7 @@ namespace HashiraChronicles
             float stop = target != null ? target.Radius + 1.3f : 0.5f;
             if (to.magnitude > stop)
             {
-                transform.position = BattleController.ClampToArena(transform.position + to.normalized * Stats.speed * dt);
+                transform.position = BattleController.ClampToArena(Obstacles.Sweep(transform.position, transform.position + to.normalized * Stats.speed * dt));
                 visual.SetMoving(1f);
             }
             else visual.SetMoving(0f);
@@ -77,7 +77,7 @@ namespace HashiraChronicles
         public override void OnHitReceived(DamageInfo info)
         {
             if (visual != null) { visual.Hit(info.knockback); visual.Flash(Color.white, 0.6f); }
-            transform.position = BattleController.ClampToArena(transform.position + info.knockback * 0.1f);
+            transform.position = BattleController.ClampToArena(Obstacles.Sweep(transform.position, transform.position + info.knockback * 0.1f));
         }
 
         void OnDied()

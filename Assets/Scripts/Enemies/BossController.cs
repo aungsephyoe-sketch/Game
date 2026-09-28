@@ -386,7 +386,7 @@ namespace HashiraChronicles
                 while (t < 0.22f)
                 {
                     t += Time.deltaTime;
-                    transform.position = BattleController.ClampToArena(start + dir * length * Mathf.Clamp01(t / 0.22f));
+                    transform.position = BattleController.ClampToArena(Obstacles.Sweep(transform.position, start + dir * length * Mathf.Clamp01(t / 0.22f)));
                     CombatSystem.HitRadius(this, Position, 1.2f, EnemyTag(1.5f, 5f, 3f), hit);
                     yield return null;
                 }

@@ -978,6 +978,20 @@ namespace HashiraChronicles
             EnsureBuilt();
             level = Mathf.Clamp(level, 3, 80);
             MissionDefinition m;
+            if (env == "collision")
+            {
+                m = M(null, "PROTO_COLLISION", MissionType.Training, null, "Collision Test", 1,
+                    "Walk into the tree, the pole, the rock, the wall and the fence, then around them, and try the narrow gap. The checklist ticks each one off.",
+                    Wave("dummy", 2));
+                m.training = true;
+                m.collisionTest = true;
+                m.theme = Theme(EnvironmentKind.Forest);
+                m.regionId = null;
+                m.timeLimit = 9999f;
+                m.rewards = new RewardBundle();
+                m.firstClearRewards = new RewardBundle();
+                return m;
+            }
             switch (env)
             {
                 case "snow":

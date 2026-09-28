@@ -149,7 +149,8 @@ namespace HashiraChronicles
             {
                 t += Time.deltaTime;
                 Vector3 target = BattleController.ClampToArena(start + dir * ab.range * Mathf.Clamp01(t / duration));
-                pc.transform.position = target;
+                pc.MoveTo(target);
+                target = pc.transform.position;
                 // Sweep the segment travelled this frame so fast dashes never skip enemies.
                 int steps = Mathf.Max(1, Mathf.CeilToInt(Vector3.Distance(last, target) / 0.5f));
                 for (int s = 1; s <= steps; s++)

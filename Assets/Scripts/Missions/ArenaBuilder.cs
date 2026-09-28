@@ -51,6 +51,8 @@ namespace HashiraChronicles
 
             ApplyLighting(theme);
             // Merge the hundreds of static set pieces into a few draw calls (big win on mobile).
+            // Register solid scenery while the meshes still carry their shapes (batching renames them).
+            if (combatArena) Obstacles.Scan(root.transform);
             StaticBatchingUtility.Combine(root);
             return root;
         }

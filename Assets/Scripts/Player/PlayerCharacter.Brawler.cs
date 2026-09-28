@@ -36,7 +36,7 @@ namespace HashiraChronicles
                 while (t < windup)
                 {
                     t += Time.deltaTime;
-                    transform.position = BattleController.ClampToArena(start + transform.forward * lunge * Mathf.Clamp01(t / windup));
+                    MoveTo(start + transform.forward * lunge * Mathf.Clamp01(t / windup));
                     yield return null;
                 }
 
@@ -107,10 +107,10 @@ namespace HashiraChronicles
             {
                 t += Time.deltaTime;
                 float k = t / 0.22f;
-                transform.position = Vector3.Lerp(start, end, k) + Vector3.up * Mathf.Sin(k * Mathf.PI) * 1.6f;
+                MoveTo(Vector3.Lerp(start, end, k) + Vector3.up * Mathf.Sin(k * Mathf.PI) * 1.6f);
                 yield return null;
             }
-            transform.position = end;
+            MoveTo(end);
             var tag = AttackTag.Basic(StrongMultiplier, ElementColor);
             tag.heavy = true;
             tag.launch = true;
@@ -138,7 +138,7 @@ namespace HashiraChronicles
                 Vector3 to = target.Position - Position;
                 to.y = 0f;
                 if (to.sqrMagnitude > 0.01f) Face(to, 1f);
-                transform.position = BattleController.ClampToArena(target.Position - to.normalized * (target.Radius + 1f));
+                MoveTo(target.Position - to.normalized * (target.Radius + 1f));
             }
             var hit = tag;
             hit.multiplier *= 0.35f;

@@ -217,7 +217,7 @@ namespace HashiraChronicles
             }
             wasSprinting = Sprinting || (wasSprinting && moving);
             if (velocity.sqrMagnitude > 0.0004f)
-                transform.position = BattleController.ClampToArena(transform.position + velocity * dt);
+                MoveTo(transform.position + velocity * dt);
             if (moving)
             {
                 if (!Guarding) Face(LockTarget != null && !Sprinting ? Vector3.Lerp(moveInput, LockTarget.Position - Position, 0.35f) : moveInput, 16f * dt);
@@ -318,7 +318,7 @@ namespace HashiraChronicles
         {
             if (knockVelocity.sqrMagnitude > 0.01f)
             {
-                transform.position = BattleController.ClampToArena(transform.position + knockVelocity * Time.deltaTime);
+                MoveTo(transform.position + knockVelocity * Time.deltaTime);
                 knockVelocity = Vector3.Lerp(knockVelocity, Vector3.zero, 1f - Mathf.Exp(-Time.deltaTime * 10f));
             }
         }
@@ -423,7 +423,7 @@ namespace HashiraChronicles
                 while (t < windup)
                 {
                     t += Time.deltaTime;
-                    transform.position = BattleController.ClampToArena(start + transform.forward * lunge * Mathf.Clamp01(t / windup));
+                    MoveTo(start + transform.forward * lunge * Mathf.Clamp01(t / windup));
                     yield return null;
                 }
 
@@ -491,7 +491,7 @@ namespace HashiraChronicles
             while (t < 0.14f)
             {
                 t += Time.deltaTime;
-                transform.position = BattleController.ClampToArena(start + dir * (Def.style == CombatStyle.Swift ? 6f : 4.2f) * Mathf.Clamp01(t / 0.14f));
+                MoveTo(start + dir * (Def.style == CombatStyle.Swift ? 6f : 4.2f) * Mathf.Clamp01(t / 0.14f));
                 CombatSystem.HitRadius(this, Position, 1.6f, tag, hit);
                 yield return null;
             }
@@ -537,7 +537,7 @@ namespace HashiraChronicles
             {
                 t += Time.deltaTime;
                 float k = 1f - Mathf.Pow(1f - Mathf.Clamp01(t / duration), 2f);
-                transform.position = BattleController.ClampToArena(start + dir * 4.5f * k);
+                MoveTo(start + dir * 4.5f * k);
                 yield return null;
             }
             if (moveInput.sqrMagnitude > 0.05f) Face(moveInput, 1f);

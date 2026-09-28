@@ -4,10 +4,12 @@ using UnityEngine;
 namespace HashiraChronicles
 {
     /// <summary>
-    /// Invisible collision for solid scenery (trees, poles, rocks, walls, fences, buildings, bridge rails). The game
-    /// has no physics engine, so every obstacle is a flat circle or an oriented box on the ground, kept in a spatial
-    /// grid. Anything moving through <see cref="BattleController.ClampToArena"/> is pushed back out of them; the
-    /// push is repeated a few times, so a gap narrower than a character simply can't be squeezed through.
+    /// Collision for solid scenery (trees, poles, rocks, walls, fences, buildings, bridge rails). Every obstacle exists
+    /// twice, with the same shape: as a real Unity collider (a <see cref="CapsuleCollider"/> for trunks, poles and
+    /// rocks, a <see cref="BoxCollider"/> for walls, fences and buildings) that the slayers' CharacterController sweeps
+    /// against, and as a flat circle / oriented box in a spatial grid that <see cref="BattleController.ClampToArena"/>
+    /// uses for demons, allies and as the final safety pass. A gap narrower than a body can't be squeezed through
+    /// because both the capsule and the analytic pass include the body radius.
     /// </summary>
     public static class Obstacles
     {
@@ -27,10 +29,66 @@ namespace HashiraChronicles
 
         public static int Count { get { return all.Count; } }
 
+        /// <summary>Layer the slayers' capsules live on ("Ignore Raycast"): they collide with scenery, not each other.</summary>
+        public const int CharacterLayer = 2;
+        /// <summary>How tall the generated colliders are: well above any slayer, so nothing can hop over a wall.</summary>
+        const float ColliderHeight = 4f;
+        static Transform colliderRoot;
+        static readonly HashSet<int> scanned = new HashSet<int>();
+
+        /// <summary>True while the game runs: real colliders are generated and CharacterControllers can sweep.</summary>
+        public static bool PhysicsReady { get { return Application.isPlaying; } }
+
         public static void Clear()
         {
             all.Clear();
             grid.Clear();
+            scanned.Clear();
+            if (colliderRoot != null) Object.Destroy(colliderRoot.gameObject);
+            colliderRoot = null;
+        }
+
+        public static void SetupCharacterLayer(GameObject go)
+        {
+            go.layer = CharacterLayer;
+            Physics.IgnoreLayerCollision(CharacterLayer, CharacterLayer, true);
+        }
+
+        static Transform Root()
+        {
+            if (!PhysicsReady) return null;
+            if (colliderRoot == null)
+            {
+                var go = new GameObject("SceneryColliders");
+                colliderRoot = go.transform;
+            }
+            return colliderRoot;
+        }
+
+        static void AddCapsule(Vector2 c, float radius)
+        {
+            var root = Root();
+            if (root == null) return;
+            var go = new GameObject("Solid");
+            go.transform.SetParent(root, false);
+            go.transform.position = new Vector3(c.x, 0f, c.y);
+            var cap = go.AddComponent<CapsuleCollider>();
+            cap.direction = 1;
+            cap.radius = radius;
+            cap.height = Mathf.Max(ColliderHeight, radius * 2f + 0.1f);
+            cap.center = new Vector3(0f, cap.height * 0.5f, 0f);
+        }
+
+        static void AddBoxCollider(Vector2 c, Vector2 half, float yaw)
+        {
+            var root = Root();
+            if (root == null) return;
+            var go = new GameObject("Solid");
+            go.transform.SetParent(root, false);
+            go.transform.SetPositionAndRotation(new Vector3(c.x, 0f, c.y), Quaternion.Euler(0f, yaw, 0f));
+            var box = go.AddComponent<BoxCollider>();
+            box.size = new Vector3(half.x * 2f, ColliderHeight, half.y * 2f);
+            box.center = new Vector3(0f, ColliderHeight * 0.5f, 0f);
         }
 
         static long Key(int x, int z) { return ((long)x << 32) ^ (uint)z; }
@@ -55,6 +113,7 @@ namespace HashiraChronicles
             var o = new Ob { c = new Vector2(p.x, p.z), r = radius };
             all.Add(o);
             Insert(all.Count - 1, o.c, radius + BodyRadius);
+            AddCapsule(o.c, radius);
         }
 
         /// <summary>A box on the ground: centre, half size along its own x/z, and its yaw in degrees.</summary>
@@ -65,6 +124,23 @@ namespace HashiraChronicles
             var o = new Ob { c = new Vector2(center.x, center.z), half = half, cos = Mathf.Cos(a), sin = Mathf.Sin(a) };
             all.Add(o);
             Insert(all.Count - 1, o.c, half.magnitude + BodyRadius);
+            AddBoxCollider(o.c, half, yaw);
+        }
+
+        /// <summary>
+        /// Moves from <paramref name="from"/> toward <paramref name="to"/> in short steps, pushing out of solids after
+        /// each one, so a fast dash can't skip clean over a thin pole (the analytic twin of a capsule sweep).
+        /// </summary>
+        public static Vector3 Sweep(Vector3 from, Vector3 to, float radius = BodyRadius)
+        {
+            if (all.Count == 0) return to;
+            Vector3 d = to - from;
+            d.y = 0f;
+            int n = Mathf.Clamp(Mathf.CeilToInt(d.magnitude / (radius * 0.5f)), 1, 64);
+            Vector3 p = from;
+            for (int i = 1; i <= n; i++) p = Resolve(p + d / n, radius);
+            p.y = to.y;
+            return p;
         }
 
         /// <summary>Pushes a position out of every obstacle it overlaps.</summary>
@@ -115,14 +191,19 @@ namespace HashiraChronicles
         static readonly string[] SkipNames = { "Road", "Ground", "Terrain", "Water", "Flow", "Ring", "Foliage", "Rocks", "FarTrees", "Glow", "Ranges", "SkyDome", "Cloud", "Glow", "Pool", "Disc", "Sector", "Merged" };
 
         /// <summary>
-        /// Registers the solid set pieces under <paramref name="root"/>: anything standing on the ground, at least
-        /// knee high and no bigger than a building. Cubes become oriented boxes; everything else a circle.
+        /// Registers the solid set pieces under <paramref name="root"/>: anything standing on the ground that reaches
+        /// into a slayer's body. The shape follows the mesh: cubes (walls, fences, rails, house bodies) become
+        /// oriented boxes, cylinders and capsules (trunks, poles, pillars) circles of their true radius, anything else
+        /// (rocks, statues, stumps) a circle that fits its footprint. Builders call this before static batching,
+        /// which renames every mesh; renderers already batched or scanned are skipped.
         /// </summary>
         public static void Scan(Transform root, float minHeight = 0.7f)
         {
             if (root == null) return;
             foreach (var mr in root.GetComponentsInChildren<MeshRenderer>(true))
             {
+                if (!scanned.Add(mr.GetInstanceID())) continue;
+                if (mr.isPartOfStaticBatch) continue;
                 if (mr.GetComponentInParent<NoCollision>() != null || mr.GetComponentInParent<Breakable>() != null || mr.GetComponentInParent<NpcWalker>() != null) continue;
                 var mf = mr.GetComponent<MeshFilter>();
                 if (mf == null || mf.sharedMesh == null) continue;
@@ -133,22 +214,60 @@ namespace HashiraChronicles
                 var mat = mr.sharedMaterial;
                 if (mat != null && mat.shader != null && (mat.shader.name.Contains("Additive") || mat.shader.name.Contains("Transparent"))) continue;
                 Bounds b = mr.bounds;
-                if (b.min.y > 0.6f || b.size.y < minHeight) continue;
-                if (b.size.x > 16f || b.size.z > 16f) continue;
                 var t = mr.transform;
                 string mesh = mf.sharedMesh.name;
-                if (mesh.StartsWith("Cube") && Mathf.Abs(Vector3.Dot(t.up, Vector3.up)) > 0.9f)
+                bool upright = Mathf.Abs(Vector3.Dot(t.up, Vector3.up)) > 0.9f;
+                if (mesh.StartsWith("Cube") && upright)
+                {
+                    // Walls, fence rails, low garden walls and house bodies: anything from knee height up blocks.
+                    if (b.min.y > 1f || b.max.y < 0.5f) continue;
+                    if (b.size.x > 40f || b.size.z > 40f) continue;
+                    Vector3 s = t.lossyScale;
+                    AddBox(new Vector3(b.center.x, 0f, b.center.z), new Vector2(Mathf.Abs(s.x) * 0.5f, Mathf.Abs(s.z) * 0.5f), t.eulerAngles.y);
+                    continue;
+                }
+                if (b.min.y > 0.6f || b.size.y < minHeight) continue;
+                if (b.size.x > 16f || b.size.z > 16f) continue;
+                float r;
+                if ((mesh.StartsWith("Cylinder") || mesh.StartsWith("Capsule")) && upright)
                 {
                     Vector3 s = t.lossyScale;
-                    float yaw = t.eulerAngles.y;
-                    AddBox(t.position, new Vector2(Mathf.Abs(s.x) * 0.5f, Mathf.Abs(s.z) * 0.5f), yaw);
+                    r = Mathf.Max(Mathf.Abs(s.x), Mathf.Abs(s.z)) * 0.5f;
+                }
+                else if (mesh.StartsWith("Sphere") && upright)
+                {
+                    // Boulders and bushes: an ellipse footprint, covered by a row of circles along its long axis.
+                    Vector3 s = t.lossyScale;
+                    float ax = Mathf.Abs(s.x) * 0.5f, az = Mathf.Abs(s.z) * 0.5f;
+                    Vector3 dir = ax >= az ? t.right : t.forward;
+                    dir.y = 0f;
+                    dir = dir.sqrMagnitude > 0.0001f ? dir.normalized : Vector3.right;
+                    float lo = Mathf.Min(ax, az) * 0.95f, reach = Mathf.Max(ax, az) * 0.95f - lo;
+                    Vector3 c = new Vector3(b.center.x, 0f, b.center.z);
+                    if (lo < 0.08f) continue;
+                    lo = Mathf.Min(lo, 4f);
+                    AddCircle(c, lo);
+                    if (reach > 0.05f)
+                    {
+                        AddCircle(c + dir * reach, lo);
+                        AddCircle(c - dir * reach, lo);
+                    }
+                    continue;
                 }
                 else
                 {
-                    float r = Mathf.Min(b.extents.x, b.extents.z);
-                    if (r < 0.08f) continue;
-                    AddCircle(b.center, Mathf.Min(r * 0.92f, 4f));
+                    float ex = b.extents.x, ez = b.extents.z;
+                    // Long and thin (a log, a bench, a cart): a box of its footprint instead of a huge circle.
+                    if (Mathf.Max(ex, ez) > Mathf.Min(ex, ez) * 1.8f)
+                    {
+                        AddBox(new Vector3(b.center.x, 0f, b.center.z), new Vector2(ex * 0.9f, ez * 0.9f), 0f);
+                        continue;
+                    }
+                    // Rounded silhouettes don't fill their bounding square: use the mean extent, slightly inset.
+                    r = (ex + ez) * 0.5f * 0.88f;
                 }
+                if (r < 0.08f) continue;
+                AddCircle(new Vector3(b.center.x, 0f, b.center.z), Mathf.Min(r, 4f));
             }
         }
     }

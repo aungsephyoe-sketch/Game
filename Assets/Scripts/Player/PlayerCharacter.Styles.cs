@@ -125,7 +125,7 @@ namespace HashiraChronicles
             {
                 t += Time.deltaTime;
                 float k = t / 0.2f;
-                transform.position = BattleController.ClampToArena(start + dir * dist * k);
+                MoveTo(start + dir * dist * k);
                 Visual.transform.localPosition = Vector3.up * Mathf.Sin(k * Mathf.PI) * 1.1f;
                 yield return null;
             }
@@ -392,7 +392,7 @@ namespace HashiraChronicles
             while (t < 0.1f)
             {
                 t += Time.deltaTime;
-                transform.position = Vector3.Lerp(start, end, t / 0.1f);
+                MoveTo(Vector3.Lerp(start, end, t / 0.1f));
                 yield return null;
             }
             var tag = AttackTag.Basic(3f, ElementColor);

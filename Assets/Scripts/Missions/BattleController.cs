@@ -53,6 +53,10 @@ namespace HashiraChronicles
             if (b != null && b.Def != null && b.Def.openWorld) return Obstacles.Resolve(OpenWorldBuilder.Clamp(p));
             float m = new Vector2(p.x, p.z).magnitude;
             if (m > ArenaRadius) p *= ArenaRadius / m;
+            p = Obstacles.Resolve(p);
+            m = new Vector2(p.x, p.z).magnitude;
+            if (m > ArenaRadius) p *= ArenaRadius / m;
+            p.y = 0f;
             return p;
         }
 
@@ -132,6 +136,7 @@ namespace HashiraChronicles
                 ArenaBuilder.ApplyLighting(def.theme);
                 spawn = new Vector3(0f, 0f, -14f);
             }
+            else if (def.collisionTest) CollisionTestArena.Build(def.theme, transform);
             else if (def.training) ArenaBuilder.Build(def.theme, transform);
             else
             {
@@ -150,6 +155,7 @@ namespace HashiraChronicles
                     foreach (Transform c in transform) Destroy(c.gameObject);
                     Journey = null;
                     World = null;
+                    Obstacles.Clear();
                     ArenaBuilder.Build(def.theme, transform);
                 }
             }

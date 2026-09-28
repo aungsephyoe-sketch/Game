@@ -186,11 +186,17 @@ namespace HashiraChronicles
             if (state != State.Airborne) Separate();
             if (state != State.Spawning)
             {
-                var p = BattleController.ClampToArena(transform.position);
+                // Sweep from where the demon stood last frame, so a fast lunge can't skip through a pole or wall.
+                var p = BattleController.ClampToArena(hasSettled && (transform.position - settledAt).sqrMagnitude < 36f ? Obstacles.Sweep(settledAt, transform.position) : transform.position);
                 p.y = height;
                 transform.position = p;
+                settledAt = p;
+                hasSettled = true;
             }
         }
+
+        Vector3 settledAt;
+        bool hasSettled;
 
         /// <summary>Default brain: approach, keep spacing, attack when in range and a token is free.</summary>
         protected virtual void Think(float dt)

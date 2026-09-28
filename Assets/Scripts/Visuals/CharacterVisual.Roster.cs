@@ -273,12 +273,16 @@ namespace HashiraChronicles
             for (int s = -1; s <= 1; s += 2) Ball(head, hc + new Vector3(s * (hr.x - 0.01f), -0.03f, -0.01f), new Vector3(0.07f, 0.12f, 0.08f), mSkin);
             RosterFace(def, hc, hr, mSkin, elem);
             var realHead = head;
-            var hairRoot = J("HairRoot", head, hc);
-            hairRoot.localScale = Vector3.one * (hr.x / 0.4f);
-            head = hairRoot;
-            BuildHair(def.hair, PM(def.hairColor, 0.014f), PM(Color.Lerp(accent, gold, rarity >= 5 ? 0.5f : 0f), 0.01f));
-            HairDetail(def);
-            head = realHead;
+            // The sculpted hair (quality standard: Ren, Mina, Sora); everyone else keeps their current hair for now.
+            if (!SculptedHair(def, hc, hr))
+            {
+                var hairRoot = J("HairRoot", head, hc);
+                hairRoot.localScale = Vector3.one * (hr.x / 0.4f);
+                head = hairRoot;
+                BuildHair(def.hair, PM(def.hairColor, 0.014f), PM(Color.Lerp(accent, gold, rarity >= 5 ? 0.5f : 0f), 0.01f));
+                HairDetail(def);
+                head = realHead;
+            }
             HeadY = (r.hipY + r.hover + 0.02f + r.neck.y + hc.y) * frameScale;
 
             // ---- Accessories
@@ -665,6 +669,8 @@ namespace HashiraChronicles
                 case WeaponKind.Fans:
                 {
                     r.grip = PremiumRig.Grip.Twin;
+                    r.twinLeft = Quaternion.Euler(-60f, 0f, 0f);
+                    r.twinLeftPos = new Vector3(0f, -0.06f, 0f);
                     sp.localRotation = swordRest;
                     var paper = PM(Color.Lerp(bc, new Color(0.96f, 0.94f, 0.9f), 0.55f), 0.008f);
                     for (int side = 0; side < 2; side++)
@@ -687,6 +693,8 @@ namespace HashiraChronicles
                 case WeaponKind.Cleavers:
                 {
                     r.grip = PremiumRig.Grip.Twin;
+                    r.twinLeft = Quaternion.Euler(80f, 0f, 0f);
+                    r.twinLeftPos = new Vector3(0f, -0.055f, 0f);
                     sp.localRotation = swordRest;
                     for (int side = 0; side < 2; side++)
                     {

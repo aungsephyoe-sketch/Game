@@ -150,7 +150,7 @@ namespace HashiraChronicles
             TimeController.SlowMotion(0.25f, 0.7f);
             Visual.DashAttack(0.1f);
             VFX.Flash(MeshFactory.Line(), Position + Vector3.up, Quaternion.LookRotation(dir), new Vector3(2f, 1f, (end - Position).magnitude), new Vector3(0.05f, 1f, (end - Position).magnitude), color, 0.4f);
-            transform.position = end;
+            MoveTo(end);
             if (Audio != null) Audio.PlayPitched("whoosh", 1f, 0.8f);
             yield return new WaitForSeconds(0.12f);
             var hit = AbilitySystem.MakeTag(this, Def.ultimate, SkillLevelMult(3), true);
@@ -225,7 +225,7 @@ namespace HashiraChronicles
                         Vector3 from = Position;
                         Vector3 dir = to - from; dir.y = 0f;
                         if (dir.sqrMagnitude > 0.01f) Face(dir, 1f);
-                        transform.position = BattleController.ClampToArena(to + dir.normalized * 1.2f);
+                        MoveTo(to + dir.normalized * 1.2f);
                         VFX.Flash(MeshFactory.Line(), from + Vector3.up, Quaternion.LookRotation(dir.sqrMagnitude > 0.01f ? dir : Vector3.forward), new Vector3(1.2f, 1f, dir.magnitude), new Vector3(0.05f, 1f, dir.magnitude), color, 0.3f);
                         VFX.Pillar(to, color, 6f, 0.15f);
                         tally.Add(CombatSystem.HitRadius(this, to, 2f, tag));

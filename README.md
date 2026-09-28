@@ -59,6 +59,34 @@ drifting fog, clouds and birds, per-world lighting and a gradient sky. Scenery i
 vertex-coloured meshes (`WorldKit`, `ToonWorld.shader`) so it stays cheap on mobile. The rest of the world
 will move to this standard once the prototypes are approved.
 
+**Collision.** Solid scenery has real Unity colliders: capsules for trunks, poles and rocks (rocks get a row of
+capsules along their long axis), boxes for walls, fences, rails and buildings, sized from each prop's own mesh
+before static batching renames it (`Obstacles.cs`). Slayers move with a `CharacterController`
+(`PlayerCharacter.Collision.cs`). Walking, sprinting, dodges, lunges, knockback and every special-move dash or blink
+go through `MoveTo`, which sweeps the capsule, so nothing can tunnel through a thin pole, and a gap narrower than a
+body can't be squeezed through. Demons and allies use the same shapes analytically, with swept steps. The training
+arena is included. **WORLDS → COLLISION TEST** opens a yard with a tree, a pole, a rock, a wall, a fence, a 0.6 m
+gap and a 1.6 m gap. A live checklist ticks each test off.
+
+**Team screen.** The line-up uses its own TEAM idle state (`CharacterVisual.Showcase.cs` + `PremiumRig`). It is
+separate from combat idle, attacks, specials, victory and defeat. Each slayer:
+- stands upright with nearly straight legs and feet flat on the podium;
+- has relaxed arms, and carries the weapon naturally for its kind: a sword lowered at the side, a greatsword on the
+  shoulder, a spear or staff upright with its butt on the ground, a cane planted, twin weapons mirrored;
+- breathes, shifts weight, glances around and blinks.
+
+Personality shows only in the head angle and which leg takes the weight. Everyone faces the camera with the same
+slight three-quarter turn toward the group.
+
+**Hair (quality standard).** A new sculpted hair system (`HairGeometry`, `HairStyles`). Each style has:
+- a scalp shell cut along a real hairline;
+- tapered, flattened locks that grow from the scalp, hug the head and then fall with weight;
+- bangs that always stop above the brows;
+- shade and highlight colours, and per-section secondary motion (`HairSway`).
+
+Three reference styles: Ren (short and messy), Mina (long and flowing, side part) and Sora (controlled, grouped
+spikes). The rest of the roster keeps its current hair until these are approved.
+
 **Collision.** Solid scenery (trees, poles, rocks, walls, fences, buildings, bridge rails, gates, tents) blocks
 movement through invisible circles and boxes (`Obstacles`), including gaps too narrow to pass. Set pieces hide and
 show as a whole when they come between the camera and the slayer (`OcclusionGroup`).

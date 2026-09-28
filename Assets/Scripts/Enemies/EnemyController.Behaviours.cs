@@ -133,7 +133,7 @@ namespace HashiraChronicles
             while (t < dur)
             {
                 t += Time.deltaTime;
-                transform.position = BattleController.ClampToArena(start + fwd * dist * Mathf.Clamp01(t / dur));
+                transform.position = BattleController.ClampToArena(Obstacles.Sweep(transform.position, start + fwd * dist * Mathf.Clamp01(t / dur)));
                 if (Random.value < 0.5f) VFX.Dust(Position, 2);
                 CombatSystem.HitRadius(this, Position, Radius + 0.7f, EnemyTag(1.5f, 9f, 5f), hit);
                 yield return null;

@@ -191,7 +191,7 @@ namespace HashiraChronicles
                 Visual.DashAttack(0.06f);
                 BoltFx.Strike(cur + Vector3.up, next + Vector3.up, bolt, 0.25f, 0.35f, 0.45f);
                 VFX.Flash(MeshFactory.Line(), cur + Vector3.up, Quaternion.LookRotation((next - cur).sqrMagnitude > 0.01f ? next - cur : dir), new Vector3(1.2f, 1f, (next - cur).magnitude), new Vector3(0.05f, 1f, (next - cur).magnitude), bolt, 0.25f);
-                transform.position = next;
+                MoveTo(next);
                 tally.Add(CombatSystem.HitRadius(this, next, 2.2f, zig));
                 ElementFx.Impact(next + Vector3.up, Element.Thunder, true);
                 if (Audio != null) Audio.PlayPitched("dash", 0.6f, 1.3f + i * 0.05f);
@@ -231,7 +231,7 @@ namespace HashiraChronicles
                 yield return new WaitForSeconds(0.06f);
             }
             // ...then fall on the target like a thunderbolt.
-            transform.position = BattleController.ClampToArena(focus - transform.forward * 0.8f);
+            MoveTo(focus - transform.forward * 0.8f);
             t = 0f;
             while (t < 0.12f)
             {
@@ -371,7 +371,7 @@ namespace HashiraChronicles
                 if (f == null) continue;
                 Vector3 to = BattleController.ClampToArena(f.Position + (f.Position - cur).normalized * 1.4f);
                 VFX.Flash(MeshFactory.Line(), cur + Vector3.up, Quaternion.LookRotation((to - cur).sqrMagnitude > 0.01f ? to - cur : transform.forward), new Vector3(0.6f, 1f, (to - cur).magnitude), new Vector3(0.02f, 1f, (to - cur).magnitude), Color.white, 0.5f);
-                transform.position = to;
+                MoveTo(to);
                 FaceTo(f.Position + (f.Position - cur));
                 cur = to;
                 if (Audio != null) Audio.PlayPitched("whoosh", 0.5f, 1.6f);

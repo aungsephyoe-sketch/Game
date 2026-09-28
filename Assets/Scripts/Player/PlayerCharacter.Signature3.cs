@@ -288,7 +288,7 @@ namespace HashiraChronicles
             Vector3 back = BattleController.ClampToArena(Position - dir * 2f);
             float e = 0f;
             Vector3 from = Position;
-            while (e < 0.2f) { e += Time.deltaTime; transform.position = Vector3.Lerp(from, back, e / 0.2f); Visual.transform.localPosition = Vector3.up * Mathf.Sin(e / 0.2f * Mathf.PI) * 1f; yield return null; }
+            while (e < 0.2f) { e += Time.deltaTime; MoveTo(Vector3.Lerp(from, back, e / 0.2f)); Visual.transform.localPosition = Vector3.up * Mathf.Sin(e / 0.2f * Mathf.PI) * 1f; yield return null; }
             Visual.transform.localPosition = Vector3.zero;
             for (int i = 0; i < 4; i++) BoltFx.Strike(Position + Vector3.up * 2.5f + Random.onUnitSphere, Position + Vector3.up * 1.6f, bolt, 0.12f, 0.15f);
             Visual.Attack(2, 0.08f);
