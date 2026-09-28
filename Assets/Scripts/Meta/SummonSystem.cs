@@ -21,14 +21,24 @@ namespace HashiraChronicles
         public static int MultiCost { get { return 450; } }
         public const int PityLimit = 80;
         public const string FeaturedId = "kuroe_moon";
-        /// <summary>The three featured Mythics of the limited banner.</summary>
+        /// <summary>Three Mythic banners, one featured Mythic each.</summary>
         public static readonly string[] FeaturedIds = { "seren_starfall", "kuroe_moon", "garou_onyx" };
+        public static readonly string[] BannerNames = { "STARFALL ORACLE", "CRIMSON MOON", "ONYX TEMPEST" };
         public const string BannerName = "CELESTIAL NIGHT";
 
         public static bool IsFeatured(string id) { return System.Array.IndexOf(FeaturedIds, id) >= 0; }
 
         /// <summary>Rates for Common, Rare, Epic, Legendary, Mythic.</summary>
-        public static readonly float[] Rates = { 0f, 0f, 0.80f, 0.15f, 0.05f };
+        public static readonly float[] Rates = { 0.50f, 0.30f, 0.14f, 0.04f, 0.02f };
+
+        /// <summary>This step's chance for a rarity (the ×2 Mythic step takes the extra from Common).</summary>
+        public static float RateFor(int rarity, PlayerData d)
+        {
+            float mythic = MythicRate(d);
+            if (rarity == 6) return mythic;
+            if (rarity == 2) return Rates[0] - (mythic - Rates[4]);
+            return Rates[Mathf.Clamp(rarity - 2, 0, 4)];
+        }
 
         public class Result
         {
@@ -39,8 +49,12 @@ namespace HashiraChronicles
 
         public static bool CanAfford(PlayerData d, int count) { return d.crystals >= (count >= 10 ? MultiCostFor(d) : SingleCost * count); }
 
-        public static List<Result> Summon(PlayerData d, int count)
+        public static List<Result> Summon(PlayerData d, int count) { return Summon(d, count, 1); }
+
+        /// <summary>Summons on one of the three Mythic banners: a Mythic pull is always that banner's Mythic.</summary>
+        public static List<Result> Summon(PlayerData d, int count, int banner)
         {
+            banner = Mathf.Clamp(banner, 0, FeaturedIds.Length - 1);
             var results = new List<Result>();
             if (!CanAfford(d, count)) return results;
             float mythicMul = 1f;
@@ -64,7 +78,7 @@ namespace HashiraChronicles
                 CharacterDefinition def;
                 if (d.summonPity >= PityLimit || rarity == 6)
                 {
-                    def = GameDatabase.GetCharacter(FeaturedIds[Random.Range(0, FeaturedIds.Length)]);
+                    def = GameDatabase.GetCharacter(FeaturedIds[banner]);
                     if (def == null) def = GameDatabase.GetCharacter(FeaturedId);
                     rarity = def.rarity;
                 }
@@ -89,7 +103,11 @@ namespace HashiraChronicles
             if (r < mythic) return 6;
             r -= mythic;
             if (r < Rates[3]) return 5;
-            return 4;
+            r -= Rates[3];
+            if (r < Rates[2]) return 4;
+            r -= Rates[2];
+            if (r < Rates[1]) return 3;
+            return 2;
         }
 
         /// <summary>Trade 30 tokens for a featured Mythic of your choice (a duplicate goes to the awakening pile).</summary>

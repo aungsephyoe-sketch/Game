@@ -26,7 +26,7 @@ namespace HashiraChronicles
                 switch (Def.id)
                 {
                     case "kiba_initiate": case "hana_healer": return false;
-                    default: return SignatureIds.Contains(Def.id);
+                    default: return SignatureIds.Contains(Def.id) || NewcomerIds.Contains(Def.id);
                 }
             }
         }

@@ -16,123 +16,109 @@ namespace HashiraChronicles
             float top = safe.y + 124f;
             float k = Enter(0f, 0.45f);
 
-            // ---- The banner: a night sky with a huge moon and the three featured Mythics.
+            // ---- Three Mythic banners, one Mythic each: tabs across the top, the chosen banner below.
+            int n = SummonSystem.FeaturedIds.Length;
+            bannerPick = Mathf.Clamp(bannerPick, 0, n - 1);
             float bw = Mathf.Min(1260f, safe.width - 560f);
-            var banner = new Rect(safe.x + 24f - (1f - k) * 200f, top, bw, H - top - 24f);
+            float tabW = (bw - (n - 1) * 12f) / n;
+            for (int i = 0; i < n; i++)
+            {
+                var td = GameDatabase.GetCharacter(SummonSystem.FeaturedIds[i]);
+                if (td == null) continue;
+                Color tc = BannerColor(i);
+                var tr = new Rect(safe.x + 24f + i * (tabW + 12f) - (1f - k) * 200f, top, tabW, 78f);
+                bool on = i == bannerPick;
+                Round(tr, on ? Color.Lerp(tc, Color.black, 0.35f) : new Color(0.07f, 0.07f, 0.12f, 0.9f), 14f);
+                if (on) RoundFrame(tr, tc, 3f, 14f);
+                var face = new Rect(tr.x + 8f, tr.y + 6f, 66f, 66f);
+                var ft = ArtLibrary.Character(td);
+                if (ft != null) GUI.DrawTexture(face, ft, ScaleMode.ScaleAndCrop, true, 0f, Color.white, 0f, 33f);
+                GUI.Label(new Rect(face.xMax + 10f, tr.y + 8f, tr.width - 90f, 30f), "<b>" + SummonSystem.BannerNames[i] + "</b>", UIStyles.Sized(UIStyles.Body, 20));
+                GUI.Label(new Rect(face.xMax + 10f, tr.y + 40f, tr.width - 90f, 28f), "<color=#BBBBBB>" + td.displayName + "</color>", UIStyles.Sized(UIStyles.Small, 17));
+                if (!on && GUI.Button(tr, GUIContent.none, GUIStyle.none)) { bannerPick = i; gm.Audio.Play("switch", 0.5f); }
+            }
+            float btop = top + 92f;
+            var def0 = GameDatabase.GetCharacter(SummonSystem.FeaturedIds[bannerPick]);
+            Color bc = BannerColor(bannerPick);
+            var banner = new Rect(safe.x + 24f - (1f - k) * 200f, btop, bw, H - btop - 24f);
             Round(Offset(banner, 0f, 6f), new Color(0f, 0f, 0f, 0.45f), 22f);
-            // Vertical gradient: deep navy to violet.
             for (int i = 0; i < 10; i++)
             {
                 float f = i / 10f;
                 Round(new Rect(banner.x, banner.y + banner.height * f, banner.width, banner.height * 0.1f + 22f),
-                    Color.Lerp(new Color(0.05f, 0.05f, 0.16f), new Color(0.22f, 0.07f, 0.28f), f), i == 0 ? 22f : 0f);
+                    Color.Lerp(new Color(0.04f, 0.04f, 0.12f), Color.Lerp(bc, Color.black, 0.55f), f), i == 0 ? 22f : 0f);
             }
-            Round(new Rect(banner.x, banner.yMax - 60f, banner.width, 60f), new Color(0.22f, 0.07f, 0.28f), 22f);
-            // Twinkling stars.
-            var rng = new System.Random(7);
+            Round(new Rect(banner.x, banner.yMax - 60f, banner.width, 60f), Color.Lerp(bc, Color.black, 0.55f), 22f);
+            var rng = new System.Random(7 + bannerPick);
             for (int i = 0; i < 70; i++)
             {
                 float sx = banner.x + 20f + (float)rng.NextDouble() * (banner.width - 40f);
                 float sy = banner.y + 20f + (float)rng.NextDouble() * (banner.height * 0.6f);
                 float tw = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * (1.5f + (float)rng.NextDouble() * 3f) + i);
-                float sz = 1.5f + (float)rng.NextDouble() * 2.5f;
-                UIStyles.CircleTex(new Vector2(sx, sy), sz, new Color(1f, 1f, 1f, 0.25f + 0.6f * tw));
+                UIStyles.CircleTex(new Vector2(sx, sy), 1.5f + (float)rng.NextDouble() * 2.5f, new Color(1f, 1f, 1f, 0.25f + 0.6f * tw));
             }
-            // The moon.
-            Vector2 moon = new Vector2(banner.xMax - 190f, banner.y + 170f);
-            for (int i = 4; i >= 1; i--) UIStyles.CircleTex(moon, 110f + i * 22f, new Color(1f, 0.55f, 0.65f, 0.05f));
-            UIStyles.CircleTex(moon, 110f, new Color(1f, 0.86f, 0.88f, 0.9f));
-            UIStyles.CircleTex(moon + new Vector2(-30f, -20f), 26f, new Color(0.95f, 0.72f, 0.78f, 0.6f));
-            UIStyles.CircleTex(moon + new Vector2(34f, 30f), 18f, new Color(0.95f, 0.72f, 0.78f, 0.6f));
-
-            // Title block.
-            var tag = new Rect(banner.x + 30f, banner.y + 26f, 230f, 42f);
-            Round(tag, new Color(0.95f, 0.25f, 0.45f), 21f);
-            GUI.Label(tag, "<b>LIMITED BANNER</b>", UIStyles.Sized(UIStyles.Center, 20));
-            UIStyles.Outlined(new Rect(banner.x + 30f, banner.y + 74f, bw - 60f, 80f), SummonSystem.BannerName, UIStyles.Sized(UIStyles.H1, 64), Color.white, 4f);
-            GUI.Label(new Rect(banner.x + 34f, banner.y + 150f, bw - 60f, 36f), "<color=#FFB3C6>3 featured MYTHIC slayers · rate up</color>", UIStyles.Sized(UIStyles.Body, 24));
-
-            // Three featured Mythics: the picked one stands in front, larger.
-            int n = SummonSystem.FeaturedIds.Length;
-            float slotW = (bw - 40f) / n;
-            float baseY = banner.yMax - 150f;
-            for (int pass = 0; pass < 2; pass++)
-                for (int i = 0; i < n; i++)
+            if (def0 != null)
+            {
+                Color ec = ElementChart.ColorOf(def0.element);
+                // The Mythic on the right: rays, aura, full art.
+                float h = banner.height - 40f;
+                Vector2 auraC = new Vector2(banner.xMax - bw * 0.27f, banner.y + h * 0.52f);
+                float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 2.4f);
+                var saved = GUI.matrix;
+                for (int r = 0; r < 10; r++)
                 {
-                    bool picked = i == bannerPick;
-                    if ((pass == 0) == picked) continue; // draw the picked one last so it sits on top
-                    var def = GameDatabase.GetCharacter(SummonSystem.FeaturedIds[i]);
-                    if (def == null) continue;
-                    float ek = Enter(0.15f + i * 0.12f, 0.5f);
-                    if (ek <= 0f) continue;
-                    Color ec = ElementChart.ColorOf(def.element);
-                    float cx = banner.x + 20f + slotW * (i + 0.5f);
-                    float h = picked ? 560f : 460f;
-                    float bob = Mathf.Sin(Time.unscaledTime * 1.6f + i * 1.3f) * 6f;
-                    // Aura and rays.
-                    Vector2 auraC = new Vector2(cx, baseY - h * 0.45f);
-                    float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 2.4f + i);
-                    var saved = GUI.matrix;
-                    for (int r = 0; r < 8; r++)
-                    {
-                        GUI.matrix = saved;
-                        RotateGui(r * 45f + Time.unscaledTime * (picked ? 18f : 8f) * (i % 2 == 0 ? 1f : -1f), auraC);
-                        UIStyles.Rect(new Rect(auraC.x, auraC.y - 10f, h * 0.55f * ek, 20f), new Color(ec.r, ec.g, ec.b, picked ? 0.1f : 0.05f));
-                    }
                     GUI.matrix = saved;
-                    for (int r = 4; r >= 1; r--)
-                        UIStyles.CircleTex(auraC, h * (0.18f + r * 0.06f + pulse * 0.01f), new Color(ec.r, ec.g, ec.b, (picked ? 0.09f : 0.05f)));
-                    // Full-body art.
-                    var art = ArtLibrary.CharacterFull(def);
-                    var ar = new Rect(cx - h * 0.3f, baseY - h + bob + (1f - ek) * 80f, h * 0.6f, h);
-                    if (art != null)
-                    {
-                        var oc = GUI.color;
-                        GUI.color = new Color(picked ? 1f : 0.7f, picked ? 1f : 0.7f, picked ? 1f : 0.78f, ek);
-                        GUI.DrawTexture(ar, art, ScaleMode.ScaleToFit, true);
-                        GUI.color = oc;
-                    }
-                    // Name plate.
-                    var np = new Rect(cx - slotW * 0.46f, baseY + 6f, slotW * 0.92f, 128f);
-                    Round(np, new Color(0.04f, 0.03f, 0.08f, picked ? 0.9f : 0.75f), 14f);
-                    RoundFrame(np, picked ? RarityInfo.Color(6) : new Color(1f, 1f, 1f, 0.15f), picked ? 3f : 2f, 14f);
-                    UIStyles.CircleTex(new Vector2(np.x + 28f, np.y + 30f), 18f, Color.Lerp(ec, Color.black, 0.2f));
-                    GUI.DrawTexture(new Rect(np.x + 15f, np.y + 17f, 26f, 26f), IconFactory.Get(IconFactory.ForElement(def.element)), ScaleMode.ScaleToFit, true);
-                    GUI.Label(new Rect(np.x + 54f, np.y + 8f, np.width - 60f, 40f), def.displayName, UIStyles.Sized(UIStyles.H2, picked ? 26 : 22));
-                    GUI.Label(new Rect(np.x + 14f, np.y + 46f, np.width - 20f, 28f), "<color=#BBBBBB>" + def.versionTitle + "</color>", UIStyles.Sized(UIStyles.Small, 17));
-                    UIStyles.Outlined(new Rect(np.x + 14f, np.y + 72f, np.width - 20f, 26f), "MYTHIC  " + Stars(6), UIStyles.Sized(UIStyles.Small, 17), RarityInfo.Color(6), 1.2f);
-                    GUI.Label(new Rect(np.x + 14f, np.y + 98f, np.width - 20f, 26f), "<color=#FFD36B>✦ " + def.ultimate.name + "</color>", UIStyles.Sized(UIStyles.Small, 15));
-                    // Tap to feature.
-                    var hit = new Rect(cx - slotW * 0.46f, baseY - h, slotW * 0.92f, h + 134f);
-                    if (!picked && GUI.Button(hit, GUIContent.none, GUIStyle.none)) { bannerPick = i; gm.Audio.Play("switch", 0.5f); }
+                    RotateGui(r * 36f + Time.unscaledTime * 14f, auraC);
+                    UIStyles.Rect(new Rect(auraC.x, auraC.y - 12f, h * 0.55f, 24f), new Color(bc.r, bc.g, bc.b, 0.09f));
                 }
-            var pd = GameDatabase.GetCharacter(SummonSystem.FeaturedIds[Mathf.Clamp(bannerPick, 0, n - 1)]);
-            if (pd != null)
-                GUI.Label(new Rect(banner.x + 34f, banner.y + 186f, bw * 0.62f, 60f), "<i><color=#DDDDEE>" + pd.description + "</color></i>", UIStyles.Sized(UIStyles.Small, 19));
+                GUI.matrix = saved;
+                for (int r = 4; r >= 1; r--) UIStyles.CircleTex(auraC, h * (0.16f + r * 0.06f + pulse * 0.01f), new Color(ec.r, ec.g, ec.b, 0.08f));
+                var art = ArtLibrary.CharacterFull(def0);
+                float bob = Mathf.Sin(Time.unscaledTime * 1.6f) * 6f;
+                if (art != null)
+                {
+                    var ar = new Rect(auraC.x - h * 0.31f, banner.y + 20f + bob, h * 0.62f, h);
+                    GUI.DrawTexture(ar, art, ScaleMode.ScaleToFit, true);
+                }
+                // Text on the left.
+                float tx = banner.x + 32f, tw2 = bw * 0.5f;
+                var tag = new Rect(tx, banner.y + 26f, 250f, 42f);
+                Round(tag, bc, 21f);
+                GUI.Label(tag, "<b>MYTHIC BANNER</b>", UIStyles.Sized(UIStyles.Center, 20));
+                UIStyles.Outlined(new Rect(tx, banner.y + 76f, tw2 + 80f, 74f), SummonSystem.BannerNames[bannerPick], UIStyles.Sized(UIStyles.H1, 54), Color.white, 4f);
+                GUI.Label(new Rect(tx, banner.y + 150f, tw2, 40f), def0.FullName + "  " + ElementTag(def0.element), UIStyles.Sized(UIStyles.Body, 26));
+                UIStyles.Outlined(new Rect(tx, banner.y + 190f, tw2, 30f), "MYTHIC  " + Stars(6), UIStyles.Sized(UIStyles.Body, 22), RarityInfo.Color(6), 1.5f);
+                GUI.Label(new Rect(tx, banner.y + 226f, tw2, 90f), "<i><color=#DDDDEE>" + def0.description + "</color></i>", UIStyles.Sized(UIStyles.Small, 20));
+                GUI.Label(new Rect(tx, banner.y + 312f, tw2, 34f), "<color=#FFD36B>✦ Special: " + def0.ultimate.name + "</color>", UIStyles.Sized(UIStyles.Body, 22));
+                GUI.Label(new Rect(tx, banner.y + 350f, tw2, 60f), "<color=#FFB3C6>Every MYTHIC pulled on this banner is " + def0.displayName + ".</color>", UIStyles.Sized(UIStyles.Small, 19));
+                // 60-second trial at full power.
+                var trial = new Rect(tx, banner.yMax - 130f, 360f, 96f);
+                float g = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f);
+                RoundFrame(Grow(trial, 4f + 2f * g), new Color(bc.r, bc.g, bc.b, 0.5f + 0.3f * g), 3f, 18f);
+                if (FlatBtn(trial, "TRY IT! <size=20>60s at max power</size>", Color.Lerp(bc, Color.black, 0.15f), true, 30))
+                    gm.BeginTrial(def0.id);
+            }
 
             // ---- Right column: rates, pity and the summon buttons.
             float rx = banner.xMax + 24f, rw = safe.xMax - 24f - rx;
             float rk = Enter(0.2f, 0.4f);
-            var rates = new Rect(rx + (1f - rk) * 200f, top, rw, 330f);
+            var rates = new Rect(rx + (1f - rk) * 200f, top, rw, 340f);
             Round(Offset(rates, 0f, 5f), new Color(0f, 0f, 0f, 0.4f), 18f);
             Round(rates, new Color(0.05f, 0.06f, 0.11f, 0.94f), 18f);
             GUI.Label(new Rect(rates.x + 24f, rates.y + 16f, rw - 48f, 40f), "RATES", UIStyles.Sized(UIStyles.H2, 28));
             float y = rates.y + 62f;
             for (int i = SummonSystem.Rates.Length - 1; i >= 0; i--)
             {
-                if (SummonSystem.Rates[i] <= 0f) continue;
                 int rarity = 2 + i;
                 Color rc = RarityInfo.Color(rarity);
-                Round(new Rect(rates.x + 18f, y, rw - 36f, 44f), new Color(rc.r, rc.g, rc.b, 0.1f), 10f);
-                UIStyles.Colored(new Rect(rates.x + 32f, y, 200f, 44f), RarityInfo.Name(rarity), UIStyles.Sized(UIStyles.Body, 21), rc);
-                UIStyles.Colored(new Rect(rates.x + 170f, y, 200f, 44f), Stars(rarity), UIStyles.Sized(UIStyles.Body, 18), Color.Lerp(rc, new Color(1f, 0.85f, 0.3f), 0.5f));
-                float rate = SummonSystem.Rates[i];
-                if (rarity == 6) rate = SummonSystem.MythicRate(d);
-                else if (rarity == 4) rate = 1f - SummonSystem.MythicRate(d) - SummonSystem.Rates[3];
-                GUI.Label(new Rect(rates.x + 24f, y, rw - 60f, 44f), (rate * 100f).ToString("0.#") + "%" + (rarity == 6 && SummonSystem.Step(d) == SummonSystem.DoubleMythicStep ? " <color=#FF7AD9>×2!</color>" : ""), UIStyles.Sized(UIStyles.Right, 22));
-                y += 50f;
+                Round(new Rect(rates.x + 18f, y, rw - 36f, 38f), new Color(rc.r, rc.g, rc.b, 0.1f), 10f);
+                UIStyles.Colored(new Rect(rates.x + 32f, y, 200f, 38f), RarityInfo.Name(rarity), UIStyles.Sized(UIStyles.Body, 20), rc);
+                UIStyles.Colored(new Rect(rates.x + 170f, y, 200f, 38f), Stars(rarity), UIStyles.Sized(UIStyles.Body, 16), Color.Lerp(rc, new Color(1f, 0.85f, 0.3f), 0.5f));
+                float rate = SummonSystem.RateFor(rarity, d);
+                GUI.Label(new Rect(rates.x + 24f, y, rw - 60f, 38f), (rate * 100f).ToString("0.#") + "%" + (rarity == 6 && SummonSystem.Step(d) == SummonSystem.DoubleMythicStep ? " <color=#FF7AD9>×2!</color>" : ""), UIStyles.Sized(UIStyles.Right, 20));
+                y += 42f;
             }
-            GUI.Label(new Rect(rates.x + 24f, y + 6f, rw - 48f, 90f), "<color=#AAAAAA>Every summon is EPIC or better.\nPity: a featured MYTHIC within " + SummonSystem.PityLimit + " summons.\nDuplicates awaken a slayer: +30 levels, a purple star.</color>", UIStyles.Sized(UIStyles.Small, 17));
+            GUI.Label(new Rect(rates.x + 24f, y + 2f, rw - 48f, 60f), "<color=#AAAAAA>Every ×10 guarantees EPIC or better. Pity: this banner's MYTHIC within " + SummonSystem.PityLimit + ".</color>", UIStyles.Sized(UIStyles.Small, 16));
 
             var pity = new Rect(rates.x, rates.yMax + 18f, rw, 96f);
             Round(pity, new Color(0.05f, 0.06f, 0.11f, 0.94f), 18f);
@@ -169,6 +155,11 @@ namespace HashiraChronicles
                 GUI.Label(new Rect(rx, by - 64f, rw, 56f), "<color=#FF9C7A>Earn diamonds from mission stars, daily login and demons.</color>", UIStyles.Sized(UIStyles.CenterSmall, 18));
         }
 
+        static Color BannerColor(int i)
+        {
+            switch (i) { case 0: return new Color(0.95f, 0.75f, 0.3f); case 1: return new Color(0.95f, 0.22f, 0.4f); default: return new Color(0.3f, 0.85f, 0.6f); }
+        }
+
         void SummonButton(Rect r, string label, int cost, Color c, bool can, int count, float delay)
         {
             float k = Enter(delay, 0.35f);
@@ -190,7 +181,7 @@ namespace HashiraChronicles
 
         void DoSummon(int count)
         {
-            var results = SummonSystem.Summon(gm.Data, count);
+            var results = SummonSystem.Summon(gm.Data, count, bannerPick);
             if (results.Count == 0) { Toast("Not enough diamonds."); return; }
             gm.Save();
             gm.SummonHall.Play(results);

@@ -45,8 +45,8 @@ namespace HashiraChronicles
             // Angry slant: the eyes tilt down toward the middle.
             P(PrimitiveType.Sphere, new Vector3(spread, y, z), new Vector3(size * 1.2f, size * 0.55f, size * 0.5f), m, new Vector3(0f, 0f, 18f));
             P(PrimitiveType.Sphere, new Vector3(-spread, y, z), new Vector3(size * 1.2f, size * 0.55f, size * 0.5f), m, new Vector3(0f, 0f, -18f));
-            P(PrimitiveType.Sphere, new Vector3(spread, y, z), new Vector3(size, size * 0.7f, size * 0.4f) * 2.6f, halo);
-            P(PrimitiveType.Sphere, new Vector3(-spread, y, z), new Vector3(size, size * 0.7f, size * 0.4f) * 2.6f, halo);
+            P(PrimitiveType.Sphere, new Vector3(spread, y, z), new Vector3(size, size * 0.7f, size * 0.4f) * 2.6f, halo).AddComponent<Pulse>().Speed = 7f;
+            P(PrimitiveType.Sphere, new Vector3(-spread, y, z), new Vector3(size, size * 0.7f, size * 0.4f) * 2.6f, halo).AddComponent<Pulse>().Speed = 7f;
             if (!mNoTeeth)
             {
                 // A jagged grin under the eyes.
@@ -76,6 +76,103 @@ namespace HashiraChronicles
             Add(disc);
             var pulse = disc.AddComponent<Pulse>();
             pulse.Speed = 2.2f + Random.value;
+        }
+
+        /// <summary>
+        /// Extra menace on every demon (PG — spooky, not gory): horns, a ridge of back spikes, glowing cracks in the
+        /// skin, a pulsing ember heart, flickering eye glow and rising motes. Bosses and elites get a crown of horns,
+        /// shoulder spikes and a slowly turning sigil under their feet.
+        /// </summary>
+        void Scarify(EnemyDefinition def)
+        {
+            if (def.form == "dummy") return;
+            // Measure the body in model space.
+            bool any = false;
+            Vector3 mn = Vector3.zero, mx = Vector3.zero;
+            foreach (var r in mRoot.GetComponentsInChildren<Renderer>())
+            {
+                if (r is ParticleSystemRenderer || r is TrailRenderer) continue;
+                Vector3 a = mRoot.InverseTransformPoint(r.bounds.min), b = mRoot.InverseTransformPoint(r.bounds.max);
+                Vector3 lo = Vector3.Min(a, b), hi = Vector3.Max(a, b);
+                if (!any) { mn = lo; mx = hi; any = true; } else { mn = Vector3.Min(mn, lo); mx = Vector3.Max(mx, hi); }
+            }
+            if (!any) return;
+            float h = mx.y - mn.y, w = mx.x - mn.x;
+            bool big = def.archetype == EnemyArchetype.Boss || def.archetype == EnemyArchetype.Elite;
+            Color ac = def.accentColor;
+            var hornMat = MaterialFactory.Toon(Color.Lerp(new Color(0.12f, 0.08f, 0.1f), ac, 0.15f), 0.02f);
+            var crackMat = MaterialFactory.Toon(ac, 0f, ac * 1.2f);
+            float top = mx.y, frontZ = mx.z * 0.6f, backZ = mn.z;
+
+            // Horns sweeping back from the top of the head.
+            int pairs = big ? 2 : 1;
+            for (int p = 0; p < pairs; p++)
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    float x = s * w * (0.14f + p * 0.12f);
+                    var horn = Cone(new Vector3(x, top - h * 0.06f - p * h * 0.05f, frontZ * 0.3f), new Vector3(h * 0.06f, h * (0.2f - p * 0.05f), h * 0.06f), hornMat, new Vector3(-35f - p * 15f, 0f, s * (-20f - p * 18f)));
+                    horn.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                }
+
+            // A ridge of spikes down the back.
+            int spikes = big ? 6 : 4;
+            for (int i = 0; i < spikes; i++)
+            {
+                float t = (i + 0.5f) / spikes;
+                Cone(new Vector3(0f, mn.y + h * (0.82f - t * 0.45f), backZ + 0.02f), new Vector3(h * 0.05f, h * (0.12f - t * 0.04f), h * 0.05f), hornMat, new Vector3(-120f, 0f, 0f));
+            }
+
+            // Glowing cracks across the chest and a pulsing ember heart.
+            for (int i = 0; i < 5; i++)
+            {
+                var c = P(PrimitiveType.Cube, new Vector3(Random.Range(-w * 0.18f, w * 0.18f), mn.y + h * Random.Range(0.4f, 0.7f), frontZ * 0.85f),
+                    new Vector3(h * 0.012f, h * Random.Range(0.08f, 0.16f), h * 0.012f), crackMat, new Vector3(0f, 0f, Random.Range(-40f, 40f)));
+                c.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+            var heart = P(PrimitiveType.Sphere, new Vector3(0f, mn.y + h * 0.55f, frontZ * 0.8f), Vector3.one * h * 0.08f, MaterialFactory.Additive(new Color(ac.r, ac.g, ac.b, 0.8f)));
+            heart.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            var hp = heart.AddComponent<Pulse>();
+            hp.Speed = 5f;
+            hp.Amount = 0.35f;
+
+            // Rising motes in the accent colour.
+            var motes = new GameObject("Motes");
+            motes.transform.SetParent(mRoot, false);
+            motes.transform.localPosition = new Vector3(0f, mn.y + h * 0.3f, 0f);
+            var ps = motes.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main;
+            main.loop = true;
+            main.startLifetime = 1.4f;
+            main.startSpeed = 0.4f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.12f);
+            main.startColor = new ParticleSystem.MinMaxGradient(ac, Color.Lerp(ac, Color.white, 0.4f));
+            main.gravityModifier = -0.15f;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 40;
+            var em = ps.emission;
+            em.rateOverTime = (big ? 14f : 6f) * GameSettings.ParticleScale;
+            var sh = ps.shape;
+            sh.shapeType = ParticleSystemShapeType.Sphere;
+            sh.radius = w * 0.4f;
+            motes.GetComponent<ParticleSystemRenderer>().material = MaterialFactory.Additive(Color.white, true);
+            ps.Play();
+
+            if (big)
+            {
+                // Shoulder spikes and a turning sigil on the ground.
+                for (int s = -1; s <= 1; s += 2)
+                    for (int k = 0; k < 2; k++)
+                        Cone(new Vector3(s * w * 0.42f, mn.y + h * (0.72f - k * 0.06f), -k * 0.1f), new Vector3(h * 0.05f, h * 0.14f, h * 0.05f), hornMat, new Vector3(0f, 0f, s * -55f));
+                var sigil = MeshFactory.MeshObject(MeshFactory.Ring(0.85f), mRoot, Vector3.up * 0.05f, new Vector3(1.4f, 1f, 1.4f), MaterialFactory.Additive(new Color(ac.r, ac.g, ac.b, 0.55f)), false);
+                Add(sigil);
+                sigil.AddComponent<Spinner>().DegreesPerSecond = new Vector3(0f, 25f, 0f);
+                for (int i = 0; i < 6; i++)
+                {
+                    var rune = MeshFactory.MeshObject(MeshFactory.Sector(12f, 0.7f), sigil.transform, Vector3.zero, Vector3.one * 1.1f, MaterialFactory.Additive(new Color(ac.r, ac.g, ac.b, 0.7f)), false);
+                    rune.transform.localRotation = Quaternion.Euler(0f, i * 60f, 0f);
+                }
+            }
         }
 
         /// <summary>Returns false for unknown forms so the legacy generic demon is built instead.</summary>
@@ -111,6 +208,7 @@ namespace HashiraChronicles
                 case "lord": Lord(def); break;
                 default: return false;
             }
+            Scarify(def);
             AddMenace(def);
             if (Trail != null && def.archetype != EnemyArchetype.Boss && def.archetype != EnemyArchetype.Elite) Trail.widthMultiplier = 0.25f;
             return true;

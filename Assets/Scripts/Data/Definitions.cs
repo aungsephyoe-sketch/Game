@@ -282,6 +282,8 @@ namespace HashiraChronicles
         public string investigate;
         /// <summary>What Ren says when investigating.</summary>
         public string investigateLine;
+        /// <summary>Summon-banner trial: this slayer alone at max power for 60 seconds.</summary>
+        public string trialCharacterId;
         /// <summary>Free-roam village (no enemies, talk to villagers, find chests).</summary>
         public bool openWorld;
         /// <summary>The event this quest belongs to (null for story missions).</summary>

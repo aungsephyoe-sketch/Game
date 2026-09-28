@@ -26,6 +26,12 @@ namespace HashiraChronicles
 
         public void Setup(PlayerData data, Vector3 spawnPos)
         {
+            var b = BattleController.Current;
+            if (b != null && b.Def != null && !string.IsNullOrEmpty(b.Def.trialCharacterId))
+            {
+                SetupTrial(data, b.Def.trialCharacterId, spawnPos);
+                return;
+            }
             foreach (var id in data.team)
             {
                 var owned = data.GetCharacter(id);
@@ -42,6 +48,26 @@ namespace HashiraChronicles
             }
             ActiveIndex = 0;
             if (Members.Count > 0) Members[0].gameObject.SetActive(true);
+            GameEvents.PlayerMemberDown += OnMemberDown;
+        }
+
+        /// <summary>Trial: a borrowed copy of the slayer at max power — every star purple, max level, max skills, special ready.</summary>
+        void SetupTrial(PlayerData data, string id, Vector3 spawnPos)
+        {
+            var def = GameDatabase.GetCharacter(id);
+            if (def == null) return;
+            var owned = new OwnedCharacter { id = id, stars = CharacterSystem.MaxStars, awaken = ExperienceSystem.MaxAwaken, treeNodes = ~0 };
+            owned.level = ExperienceSystem.Cap(owned);
+            owned.skillLevels = new[] { CharacterSystem.MaxSkillLevel, CharacterSystem.MaxSkillLevel, CharacterSystem.MaxSkillLevel, CharacterSystem.MaxSkillLevel };
+            var go = new GameObject("Trial_" + def.displayName);
+            go.transform.SetParent(transform, false);
+            go.transform.position = spawnPos;
+            go.AddComponent<HealthSystem>();
+            var pc = go.AddComponent<PlayerCharacter>();
+            pc.Init(def, owned, CharacterSystem.ComputeStats(new PlayerData(), owned));
+            pc.UltGauge = PlayerCharacter.UltMax;
+            Members.Add(pc);
+            ActiveIndex = 0;
             GameEvents.PlayerMemberDown += OnMemberDown;
         }
 

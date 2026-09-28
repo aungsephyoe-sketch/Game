@@ -367,16 +367,17 @@ namespace HashiraChronicles
         /// <summary>Two rings of low hills and far mountains around the whole route, fading into the fog.</summary>
         static void BackgroundLayers(Journey j, ArenaTheme theme, Transform stat, Vector3 center, float extent)
         {
-            Color near = Color.Lerp(theme.ground, theme.fog, 0.35f);
+            Color near = Color.Lerp(theme.ground, theme.fog, 0.55f);
             Color far = Color.Lerp(theme.ground, theme.fog, 0.7f);
             var nearM = MaterialFactory.Toon(near, 0f);
             var farM = MaterialFactory.Toon(far, 0f);
-            float r1 = Mathf.Max(55f, extent * 0.75f);
+            float r1 = Mathf.Max(75f, extent * 0.8f);
             for (int i = 0; i < 18; i++)
             {
                 float a = i * Mathf.PI * 2f / 18f + R(-0.1f, 0.1f);
                 Vector3 p = center + new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * (r1 + R(-6f, 6f));
-                if (j.DistanceToPath(p) < 30f) continue;
+                // Keep the hills well back from the road: close up they read as big black blobs from above.
+                if (j.DistanceToPath(p) < 50f) continue;
                 float w = R(16f, 28f);
                 Prim(PrimitiveType.Sphere, stat, p, new Vector3(w, R(6f, 12f), w * 0.8f), nearM, new Vector3(0f, R(0f, 360f), 0f));
             }

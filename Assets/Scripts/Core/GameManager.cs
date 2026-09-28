@@ -306,6 +306,21 @@ namespace HashiraChronicles
             EnterMission(m);
         }
 
+        /// <summary>Summon-banner trial: play this Mythic at max power for 60 seconds against waves of demons.</summary>
+        public void BeginTrial(string characterId)
+        {
+            var def = GameDatabase.GetCharacter(characterId);
+            if (def == null) return;
+            var region = GameDatabase.GetRegion("kingdom");
+            var trial = new MissionDefinition
+            {
+                id = "TRIAL", name = "Trial: " + def.displayName, type = MissionType.Training, training = true, trialCharacterId = characterId,
+                regionId = "kingdom", enemyLevel = 30, timeLimit = 60f, storyText = "Try " + def.displayName + " at full power.",
+                theme = region != null ? region.theme : new ArenaTheme()
+            };
+            StartMission(trial);
+        }
+
         /// <summary>Walks the leader to a region without starting anything (map exploration).</summary>
         public void TravelTo(string regionId)
         {
@@ -393,6 +408,7 @@ namespace HashiraChronicles
                 LastResult = null;
                 TimeController.ResetAll();
                 if (m.openWorld) { Save(); GoTo(GameScreen.MainMenu); return; }
+                if (!string.IsNullOrEmpty(m.trialCharacterId)) { GoTo(GameScreen.Summon); return; }
                 GoTo(GameScreen.Characters);
                 return;
             }

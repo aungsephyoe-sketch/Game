@@ -102,6 +102,14 @@ namespace HashiraChronicles
             int secs = Mathf.FloorToInt(m.Elapsed);
             GUI.Label(new Rect(r.x + 18f, r.y + 8f, r.width - 36f, 30f), "<color=#FFD36B>CURRENT OBJECTIVE</color>   <color=#999999>" + m.Def.id + "  " + secs / 60 + ":" + (secs % 60).ToString("00") + "</color>",
                 UIStyles.Sized(UIStyles.Small, 20));
+            if (!string.IsNullOrEmpty(m.Def.trialCharacterId))
+            {
+                int left = Mathf.CeilToInt(m.TrialLeft);
+                GUI.Label(new Rect(r.x + 18f, r.y + 42f, r.width - 36f, 44f), "MYTHIC TRIAL", UIStyles.Sized(UIStyles.H2, 30));
+                UIStyles.Outlined(new Rect(r.x + 18f, r.y + 84f, r.width - 36f, 60f), left + "s", UIStyles.Sized(UIStyles.H1, 52), left <= 10 ? new Color(1f, 0.4f, 0.35f) : Color.white, 2f);
+                GUI.Label(new Rect(r.x + 18f, r.y + 146f, r.width - 36f, 30f), "<color=#AAAAAA>Demons defeated " + m.Kills + "</color>", UIStyles.Sized(UIStyles.Body, 20));
+                return;
+            }
             if (m.Def.openWorld)
             {
                 GUI.Label(new Rect(r.x + 18f, r.y + 42f, r.width - 36f, 44f), "Explore Kiriha Village", UIStyles.Sized(UIStyles.H2, 30));

@@ -171,13 +171,21 @@ namespace HashiraChronicles
                 if (rosterFilter >= 0 && (int)def.element != rosterFilter) continue;
                 list.Add(c);
             }
+            // Every slayer in the game is shown: the ones you don't have yet are greyed out with a lock.
+            var locked = new List<CharacterDefinition>();
+            foreach (var def in GameDatabase.Characters)
+            {
+                if (def.npc || d.GetCharacter(def.id) != null) continue;
+                if (rosterFilter >= 0 && (int)def.element != rosterFilter) continue;
+                locked.Add(def);
+            }
+            locked.Sort((a, b) => b.rarity.CompareTo(a.rarity));
             var area = new Rect(x0 + 216f, top, detail.x - x0 - 236f, H - top - 30f);
             Round(area, new Color(0.05f, 0.06f, 0.1f, 0.82f), 16f);
             float gw = 168f, gh = 222f, gg = 16f;
             var view = new Rect(area.x + 16f, area.y + 16f, area.width - 32f, area.height - 32f);
             int cols = Mathf.Max(1, Mathf.FloorToInt((view.width - 20f + gg) / (gw + gg)));
-            int shown = Mathf.Max(list.Count, Mathf.CeilToInt(list.Count / (float)cols + 0.01f) * cols);
-            if (shown == list.Count) shown += cols - (list.Count % cols == 0 ? 0 : list.Count % cols);
+            int shown = list.Count + locked.Count;
             var content = new Rect(0f, 0f, view.width - 20f, Mathf.CeilToInt(shown / (float)cols) * (gh + gg));
             rosterScroll = GUI.BeginScrollView(view, rosterScroll, content);
             for (int i = 0; i < shown; i++)
@@ -185,15 +193,7 @@ namespace HashiraChronicles
                 var r = new Rect((i % cols) * (gw + gg), (i / cols) * (gh + gg), gw, gh);
                 if (i >= list.Count)
                 {
-                    // Locked slot: undiscovered slayers.
-                    Round(r, new Color(0.08f, 0.08f, 0.12f, 0.9f), 12f);
-                    RoundFrame(r, new Color(1f, 1f, 1f, 0.06f), 2f, 12f);
-                    var o = GUI.color;
-                    GUI.color = new Color(1f, 1f, 1f, 0.25f);
-                    GUI.DrawTexture(new Rect(r.center.x - 40f, r.y + 50f, 80f, 80f), IconFactory.Get("person"), ScaleMode.ScaleToFit, true);
-                    GUI.color = new Color(1f, 1f, 1f, 0.5f);
-                    GUI.DrawTexture(new Rect(r.xMax - 42f, r.yMax - 42f, 30f, 30f), IconFactory.Get("lock"), ScaleMode.ScaleToFit, true);
-                    GUI.color = o;
+                    LockedCard(r, locked[i - list.Count]);
                     continue;
                 }
                 var c = list[i];
@@ -202,6 +202,34 @@ namespace HashiraChronicles
                 if (GUI.Button(r, GUIContent.none, GUIStyle.none)) { rosterPick = c.id; gm.Audio.Play("click", 0.4f); }
             }
             GUI.EndScrollView();
+        }
+
+        /// <summary>A slayer you haven't unlocked: grey portrait, name, rarity and a big grey lock.</summary>
+        void LockedCard(Rect r, CharacterDefinition def)
+        {
+            Color rc = RarityInfo.Color(def.rarity);
+            Round(Offset(r, 0f, 4f), new Color(0f, 0f, 0f, 0.4f), 12f);
+            Round(r, new Color(0.1f, 0.1f, 0.13f, 0.95f), 12f);
+            var face = new Rect(r.x + 8f, r.y + 8f, r.width - 16f, r.width - 16f);
+            var tex = ArtLibrary.Character(def);
+            var o = GUI.color;
+            if (tex != null)
+            {
+                GUI.color = new Color(0.32f, 0.32f, 0.36f, 1f);
+                GUI.DrawTexture(face, tex, ScaleMode.ScaleAndCrop, true);
+            }
+            GUI.color = o;
+            Round(face, new Color(0.15f, 0.15f, 0.2f, 0.45f), 10f);
+            LockIcon(new Vector2(face.center.x, face.center.y + 6f), 56f, new Color(0.62f, 0.62f, 0.66f));
+            Round(new Rect(r.x + 2f, r.yMax - 64f, r.width - 4f, 62f), new Color(0f, 0f, 0f, 0.55f), 10f);
+            GUI.Label(new Rect(r.x + 10f, r.yMax - 64f, r.width - 20f, 30f), "<color=#9A9AA2>" + def.displayName + "</color>", UIStyles.Sized(UIStyles.Small, 17));
+            UIStyles.Colored(new Rect(r.x + 10f, r.yMax - 34f, r.width - 20f, 26f), RarityInfo.Name(def.rarity), UIStyles.Sized(UIStyles.Small, 15), Color.Lerp(rc, Color.gray, 0.5f));
+            RoundFrame(r, new Color(1f, 1f, 1f, 0.08f), 2f, 12f);
+            if (GUI.Button(r, GUIContent.none, GUIStyle.none))
+            {
+                gm.Audio.Play("click", 0.4f);
+                Toast(def.displayName + " is locked — find them in Summon" + (def.storyOnly ? ", the story" : "") + " or Events.");
+            }
         }
 
         bool FilterButton(Rect r, string label, Texture2D icon, Color ic, bool on)

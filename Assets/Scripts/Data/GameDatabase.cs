@@ -348,7 +348,74 @@ namespace HashiraChronicles
             };
             garou.ultimate = Ab("Black Tornado", AbilityShape.Burst, 0f, 2.6f, 6, 0f, 10f, "A tornado that swallows the battlefield.", 30f, 8f);
             Characters.Add(garou);
+            BuildNewcomers();
             ApplyLooks();
+        }
+
+        /// <summary>More slayers to collect: four Common, four Rare and three Legendary, each with their own special.</summary>
+        static void BuildNewcomers()
+        {
+            var C = new Color(0.1f, 0.1f, 0.12f);
+            // ---- Common
+            var h = Hero("taro_rock", "taro", "Taro Ishida", "Village Strongman", "Boulder Breathing", 3, Element.Beast, Role.Tank,
+                "The strongest man in Kiriha. He carries the festival drum by himself.", "Taro has never been in a real fight. He has lifted every rock in the valley, though.", C, C, C, C);
+            h.skills = new[] { Ab("Shoulder Bash", AbilityShape.Dash, 6f, 1.8f, 1, 6f, 2f, "A heavy running bash.", 5f, 7f), Ab("Ground Pound", AbilityShape.Burst, 8f, 1.6f, 1, 0f, 4f, "Pounds the ground.", 7f, 5f), Ab("Windmill", AbilityShape.Spin, 9f, 1f, 3, 0f, 3.5f, "Spins with fists out.") };
+            h.ultimate = Ab("Boulder Toss", AbilityShape.Burst, 0f, 2f, 1, 0f, 5f, "Lifts a boulder and throws it.", 20f, 8f);
+            Characters.Add(h);
+            h = Hero("nami_bubble", "nami", "Nami Kawase", "River Dancer", "Bubble Breathing", 3, Element.Water, Role.Support,
+                "A cheerful river girl who fights with paper fans and a lot of bubbles.", "Nami ferries travellers across the river. The demons learned not to board her boat.", C, C, C, C);
+            h.skills = new[] { Ab("Splash Fan", AbilityShape.Wave, 5f, 1.4f, 2, 8f, 1.6f, "Two fans of water."), Ab("Soap Swirl", AbilityShape.Spin, 7f, 0.9f, 3, 0f, 3.5f, "A swirl of bubbles."), Ab("River Rest", AbilityShape.Heal, 12f, 0.15f, 1, 0f, 5f, "Heals the team a little.") };
+            h.ultimate = Ab("Bubble Barrage", AbilityShape.Burst, 0f, 1.8f, 1, 0f, 7f, "A flurry of bubbles that pop on every demon.", 15f, 5f);
+            Characters.Add(h);
+            h = Hero("koji_ember", "koji", "Koji Hinode", "Cook's Apprentice", "Hearth Breathing", 3, Element.Flame, Role.DPS,
+                "Learned swordplay from chopping vegetables very, very fast.", "Koji's kitchen burned down during the attack. He's been angry and hungry ever since.", C, C, C, C);
+            h.skills = new[] { Ab("Quick Chop", AbilityShape.MultiSlash, 5f, 0.7f, 4, 0f, 3.5f, "Four quick cuts."), Ab("Sizzle Dash", AbilityShape.Dash, 7f, 2f, 1, 7f, 1.8f, "A flaming dash."), Ab("Wok Toss", AbilityShape.Burst, 9f, 1.6f, 1, 0f, 4f, "A burst of flame.") };
+            h.ultimate = Ab("Ember Spin", AbilityShape.Burst, 0f, 2f, 1, 0f, 5f, "A spinning tornado of flame.", 15f, 6f);
+            Characters.Add(h);
+            h = Hero("yuna_gale", "yuna", "Yuna Kaze", "Shrine Archer", "Gale Breathing", 3, Element.Beast, Role.DPS,
+                "The shrine's archer. She can hit a falling leaf from the top of the steps.", "Yuna guards the shrine alone since the priests left. She talks to the wind. It answers.", C, C, C, C);
+            h.skills = new[] { Ab("Twin Shot", AbilityShape.Wave, 5f, 1.3f, 2, 10f, 1.4f, "Two quick arrows."), Ab("Leaf Step", AbilityShape.Dash, 7f, 1.5f, 1, 6f, 1.6f, "Dashes through, loosing arrows."), Ab("Whirlwind", AbilityShape.Spin, 9f, 0.9f, 3, 0f, 3.8f, "A ring of wind.") };
+            h.ultimate = Ab("Gale Arrow", AbilityShape.Wave, 0f, 3f, 1, 18f, 2.5f, "One great arrow wrapped in a storm.", 20f, 6f);
+            Characters.Add(h);
+
+            // ---- Rare
+            h = Hero("daigo_stone", "daigo", "Daigo Iwakura", "Quarry Guard", "Mountain Breathing", 4, Element.Beast, Role.Tank,
+                "A quiet giant who guards the stone quarry with a sword as big as a door.", "Daigo speaks one sentence a day. Usually it's 'Move.'", C, C, C, C);
+            h.skills = new[] { Ab("Stone Cleave", AbilityShape.Wave, 6f, 2.2f, 1, 8f, 2.2f, "A cleaving wave of rock.", 6f, 5f), Ab("Quake", AbilityShape.Burst, 8f, 1.8f, 1, 0f, 4.5f, "Shakes the ground.", 8f, 6f), Ab("Boulder Rush", AbilityShape.Dash, 9f, 2f, 1, 7f, 2.4f, "Charges like a rockslide.", 6f, 8f) };
+            h.ultimate = Ab("Landslide", AbilityShape.Burst, 0f, 2.2f, 1, 0f, 6f, "Boulders tumble down on the demons.", 22f, 8f);
+            Characters.Add(h);
+            h = Hero("hotaru_light", "hotaru", "Hotaru Sen", "Firefly Keeper", "Glow Breathing", 4, Element.Light, Role.Support,
+                "A gentle healer followed everywhere by fireflies.", "Hotaru's fireflies found her lost in the forest as a child and never left.", C, C, C, C);
+            h.skills = new[] { Ab("Glow Mend", AbilityShape.Heal, 11f, 0.2f, 1, 0f, 6f, "Heals the whole team."), Ab("Light Needles", AbilityShape.Wave, 6f, 1.3f, 3, 9f, 1.4f, "Three needles of light."), Ab("Lantern Ring", AbilityShape.Burst, 9f, 1.4f, 2, 0f, 4.5f, "A ring of light.") };
+            h.ultimate = Ab("Firefly Swarm", AbilityShape.Heal, 0f, 0.3f, 1, 0f, 8f, "A swarm of fireflies heals friends and stings demons.", 15f, 4f);
+            Characters.Add(h);
+            h = Hero("kenta_spear", "kenta", "Kenta Arashi", "Storm Lancer", "Spark Breathing", 4, Element.Thunder, Role.DPS,
+                "A lancer who charges first and asks questions never.", "Kenta was a royal guard until he charged the wrong way at a parade. He regrets nothing.", C, C, C, C);
+            h.skills = new[] { Ab("Thrust", AbilityShape.Dash, 5f, 2.2f, 1, 7f, 1.6f, "A lightning thrust."), Ab("Spark Wheel", AbilityShape.Spin, 7f, 1.1f, 3, 0f, 3.6f, "Twirls the spear."), Ab("Static Field", AbilityShape.Burst, 9f, 1.5f, 3, 0f, 4.5f, "Crackling sparks.") };
+            h.ultimate = Ab("Lightning Lance", AbilityShape.Wave, 0f, 3f, 1, 16f, 2f, "Throws the spear as a bolt of lightning.", 20f, 6f);
+            Characters.Add(h);
+            h = Hero("rin_shadow", "rin", "Rin Kurosawa", "Night Blade", "Shade Breathing", 4, Element.Dark, Role.Burst,
+                "A quiet swordswoman who walks in shadows — literally.", "Rin was raised in the palace's secret guard. She left when the Chancellor gave the orders.", C, C, C, C);
+            h.skills = new[] { Ab("Shade Cut", AbilityShape.MultiSlash, 5f, 0.8f, 5, 0f, 4f, "Cuts from the shadows."), Ab("Night Step", AbilityShape.Dash, 7f, 2f, 2, 7f, 1.8f, "Steps through the dark."), Ab("Gloom", AbilityShape.Burst, 9f, 1.5f, 2, 0f, 4.5f, "A burst of darkness.") };
+            h.ultimate = Ab("Shadow Snare", AbilityShape.Burst, 0f, 2.2f, 1, 0f, 8f, "Shadow hands rise, grab and crush.", 20f, 7f);
+            Characters.Add(h);
+
+            // ---- Legendary
+            h = Hero("akane_fire", "akane", "Akane Hibana", "Firework Dancer", "Festival Breathing", 6, Element.Flame, Role.Burst,
+                "The festival's star dancer. Her fans throw fireworks.", "Akane dances for the dead at every festival. This year, she decided to dance for the living by burning every demon in the valley.", C, C, C, C);
+            h.skills = new[] { Ab("Sparkler Fan", AbilityShape.Wave, 5f, 1.6f, 3, 9f, 1.8f, "Three sparkling waves."), Ab("Pinwheel", AbilityShape.Spin, 7f, 1.3f, 4, 0f, 4.2f, "A spinning pinwheel of fire."), Ab("Rocket Step", AbilityShape.Dash, 8f, 2.6f, 1, 9f, 2f, "A rocket-powered dash.") };
+            h.ultimate = Ab("Firework Finale", AbilityShape.Burst, 0f, 2.6f, 1, 0f, 9f, "Fireworks burst over the demons and rain down.", 25f, 7f);
+            Characters.Add(h);
+            h = Hero("tsukasa_storm", "tsukasa", "Tsukasa Raikou", "Thunder Archer", "Thunder Bow Breathing", 6, Element.Thunder, Role.DPS,
+                "An archer whose arrows turn into lightning in flight.", "Tsukasa was struck by lightning twice as a boy. The third time, he caught it.", C, C, C, C);
+            h.skills = new[] { Ab("Volt Arrow", AbilityShape.Wave, 5f, 1.8f, 2, 11f, 1.6f, "Two charged arrows."), Ab("Thunder Step", AbilityShape.Dash, 7f, 2.2f, 1, 8f, 1.8f, "A lightning step."), Ab("Storm Nest", AbilityShape.Burst, 9f, 1.4f, 4, 0f, 5f, "Four bolts around him.") };
+            h.ultimate = Ab("Chain Storm Volley", AbilityShape.Burst, 0f, 2.6f, 1, 0f, 10f, "Arrows find every demon; lightning jumps between them.", 25f, 7f);
+            Characters.Add(h);
+            h = Hero("mizuki_tide", "mizuki", "Mizuki Shiun", "Maelstrom Blade", "Whirlpool Breathing", 6, Element.Water, Role.DPS,
+                "Twin blades and a temper like a storm at sea.", "Mizuki was a pirate hunter on the southern coast. Pirates were boring. Demons are not.", C, C, C, C);
+            h.skills = new[] { Ab("Riptide", AbilityShape.MultiSlash, 5f, 0.85f, 6, 0f, 4f, "Six cuts like crashing waves."), Ab("Undertow", AbilityShape.Dash, 7f, 2.2f, 2, 8f, 2f, "Drags through the enemy line."), Ab("Whirlpool", AbilityShape.Spin, 9f, 1.2f, 4, 0f, 4.5f, "A spinning whirlpool.") };
+            h.ultimate = Ab("Maelstrom Waltz", AbilityShape.Burst, 0f, 2.6f, 1, 0f, 10f, "Rings of water geysers spread from her dance.", 25f, 7f);
+            Characters.Add(h);
         }
 
         static void Look(string id, HairStyle hair, WeaponKind weapon, CombatStyle style, MotionStyle motion, Color body, Color outfit, Color hairC, Color blade,
@@ -401,6 +468,29 @@ namespace HashiraChronicles
                 new Color(0.95f, 0.93f, 1f), new Color(0.28f, 0.3f, 0.78f), new Color(0.86f, 0.9f, 1f), new Color(1f, 0.92f, 0.55f), 1f, 0.92f, true, false, false, false, true, new Color(1f, 0.85f, 0.4f));
             Look("garou_onyx", HairStyle.Hood, WeaponKind.Cleavers, CombatStyle.Heavy, MotionStyle.Stoic,
                 new Color(0.12f, 0.12f, 0.13f), new Color(0.14f, 0.34f, 0.3f), new Color(0.14f, 0.34f, 0.3f), new Color(0.55f, 1f, 0.8f), 1.12f, 1.1f, true, true, false, true, false, new Color(0.5f, 0.95f, 0.75f));
+            // Newcomers.
+            Look("taro_rock", HairStyle.Bun, WeaponKind.Fists, CombatStyle.Brawler, MotionStyle.Steady,
+                new Color(0.4f, 0.3f, 0.2f), new Color(0.55f, 0.4f, 0.25f), new Color(0.12f, 0.08f, 0.05f), new Color(0.8f, 0.6f, 0.35f), 1.12f, 1.3f, false, false, true);
+            Look("nami_bubble", HairStyle.Curly, WeaponKind.Fans, CombatStyle.Ranged, MotionStyle.Light,
+                new Color(0.2f, 0.3f, 0.5f), new Color(0.45f, 0.75f, 0.95f), new Color(0.3f, 0.55f, 0.9f), new Color(0.6f, 0.9f, 1f), 0.92f, 0.9f);
+            Look("koji_ember", HairStyle.Spiky, WeaponKind.Katana, CombatStyle.Balanced, MotionStyle.Aggressive,
+                new Color(0.95f, 0.93f, 0.88f), new Color(0.85f, 0.35f, 0.12f), new Color(0.95f, 0.5f, 0.1f), new Color(1f, 0.5f, 0.15f), 0.98f, 1f, true);
+            Look("yuna_gale", HairStyle.Ponytail, WeaponKind.Bow, CombatStyle.Ranged, MotionStyle.Graceful,
+                new Color(0.95f, 0.95f, 0.97f), new Color(0.8f, 0.15f, 0.2f), new Color(0.55f, 0.35f, 0.2f), new Color(0.6f, 1f, 0.7f), 0.96f, 0.9f);
+            Look("daigo_stone", HairStyle.Short, WeaponKind.Greatsword, CombatStyle.Heavy, MotionStyle.Stoic,
+                new Color(0.3f, 0.3f, 0.32f), new Color(0.45f, 0.42f, 0.38f), new Color(0.2f, 0.2f, 0.2f), new Color(0.75f, 0.7f, 0.6f), 1.2f, 1.35f, false, true, false, true);
+            Look("hotaru_light", HairStyle.Long, WeaponKind.Staff, CombatStyle.Healer, MotionStyle.Graceful,
+                new Color(0.97f, 0.96f, 0.9f), new Color(0.95f, 0.85f, 0.45f), new Color(0.3f, 0.22f, 0.15f), new Color(1f, 0.95f, 0.5f), 0.94f, 0.9f, false, false, false, false, true);
+            Look("kenta_spear", HairStyle.Crest, WeaponKind.Spear, CombatStyle.Swift, MotionStyle.Confident,
+                new Color(0.2f, 0.25f, 0.45f), new Color(0.3f, 0.4f, 0.8f), new Color(0.95f, 0.8f, 0.2f), new Color(1f, 0.95f, 0.45f), 1.05f, 1f, true, false, false, true);
+            Look("rin_shadow", HairStyle.Bob, WeaponKind.TwinBlades, CombatStyle.Swift, MotionStyle.Sly,
+                new Color(0.08f, 0.08f, 0.12f), new Color(0.25f, 0.18f, 0.4f), new Color(0.55f, 0.55f, 0.62f), new Color(0.75f, 0.45f, 1f), 0.97f, 0.9f, true);
+            Look("akane_fire", HairStyle.Twintails, WeaponKind.Fans, CombatStyle.Technical, MotionStyle.Light,
+                new Color(0.95f, 0.9f, 0.9f), new Color(0.9f, 0.2f, 0.3f), new Color(0.95f, 0.35f, 0.25f), new Color(1f, 0.6f, 0.2f), 0.98f, 0.92f, false, true, false, false, true, new Color(1f, 0.8f, 0.3f));
+            Look("tsukasa_storm", HairStyle.Messy, WeaponKind.Bow, CombatStyle.Ranged, MotionStyle.Stoic,
+                new Color(0.15f, 0.15f, 0.2f), new Color(0.55f, 0.5f, 0.2f), new Color(0.85f, 0.85f, 0.9f), new Color(1f, 0.95f, 0.4f), 1.08f, 1f, false, true);
+            Look("mizuki_tide", HairStyle.Long, WeaponKind.TwinBlades, CombatStyle.Swift, MotionStyle.Aggressive,
+                new Color(0.1f, 0.15f, 0.25f), new Color(0.1f, 0.45f, 0.6f), new Color(0.1f, 0.3f, 0.45f), new Color(0.4f, 0.9f, 1f), 1f, 0.94f, true, true);
             // Skin tones: a varied, friendly cast.
             Color porcelain = new Color(0.99f, 0.88f, 0.8f), light = new Color(0.97f, 0.81f, 0.68f), medium = new Color(0.88f, 0.67f, 0.5f),
                 tan = new Color(0.78f, 0.56f, 0.4f), brown = new Color(0.6f, 0.41f, 0.28f), deep = new Color(0.44f, 0.29f, 0.2f);
@@ -417,6 +507,9 @@ namespace HashiraChronicles
             Skin("raiga_pillar", brown);
             Skin("kuroe_moon", porcelain);
             Skin("seren_starfall", tan);
+            Skin("taro_rock", brown); Skin("nami_bubble", light); Skin("koji_ember", medium); Skin("yuna_gale", porcelain);
+            Skin("daigo_stone", deep); Skin("hotaru_light", light); Skin("kenta_spear", tan); Skin("rin_shadow", porcelain);
+            Skin("akane_fire", light); Skin("tsukasa_storm", brown); Skin("mizuki_tide", medium);
             Skin("garou_onyx", brown);
             // Mina's blade burns violet: she fights with dark flames.
             var mina = Characters.Find(x => x.id == "mina_ember");
@@ -790,6 +883,7 @@ namespace HashiraChronicles
         {
             var m = M(null, ev.id + "-" + n, MissionType.Event, ev.regionId, name, level, story, waves);
             m.eventId = ev.id;
+            m.theme = EventTheme(ev);
             m.difficulty = difficulty;
             m.firstClearRewards = new RewardBundle { crystals = difficulty == 0 ? 50 : difficulty == 1 ? 100 : 200 };
             m.rewards.coins += difficulty * 1500;
@@ -797,6 +891,40 @@ namespace HashiraChronicles
             ev.quests.Add(m);
             ExtraMissions.Add(m);
             return m;
+        }
+
+        /// <summary>
+        /// Each event's own look (a copy of its region's, so it never touches the story): the village festival is a
+        /// calm lantern-lit dusk instead of the burning night raid, the others keep their region's mood.
+        /// </summary>
+        static ArenaTheme EventTheme(EventDefinition ev)
+        {
+            var src = GetRegion(ev.regionId) != null ? GetRegion(ev.regionId).theme : new ArenaTheme();
+            var t = new ArenaTheme
+            {
+                ground = src.ground, groundAccent = src.groundAccent, sky = src.sky, fog = src.fog, lantern = src.lantern, foliage = src.foliage,
+                petals = src.petals, kind = src.kind, night = src.night, sun = src.sun, sunIntensity = src.sunIntensity, fogStart = src.fogStart, fogEnd = src.fogEnd,
+                burning = false
+            };
+            switch (ev.id)
+            {
+                case "E1": // Festival dusk: green fields, warm lanterns, a violet sky.
+                    t.ground = new Color(0.34f, 0.5f, 0.28f); t.groundAccent = new Color(0.55f, 0.45f, 0.32f);
+                    t.sky = new Color(0.32f, 0.22f, 0.45f); t.fog = new Color(0.45f, 0.35f, 0.55f); t.fogStart = 35f; t.fogEnd = 95f;
+                    t.lantern = new Color(1f, 0.6f, 0.25f); t.foliage = new Color(1f, 0.7f, 0.8f); t.petals = true;
+                    t.sun = new Color(1f, 0.75f, 0.6f); t.sunIntensity = 1f; t.night = true;
+                    break;
+                case "E4": // Tournament day in the capital.
+                    t.night = false; t.sky = new Color(0.5f, 0.72f, 0.95f); t.fog = new Color(0.7f, 0.8f, 0.92f); t.sunIntensity = 1.15f; t.sun = new Color(1f, 0.96f, 0.88f);
+                    break;
+                case "E5":
+                    t.burning = src.burning;
+                    break;
+            }
+            // Keep the far fog from swallowing everything into black.
+            t.fogStart = Mathf.Max(t.fogStart, 30f);
+            t.fogEnd = Mathf.Max(t.fogEnd, 85f);
+            return t;
         }
 
         /// <summary>Five events, five quests each (Easy, Easy, Medium, Medium, Hard), each with its own little story.</summary>

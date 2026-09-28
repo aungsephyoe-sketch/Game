@@ -103,11 +103,19 @@ Bosses keep their camera reveal and phases and now fall in a slow-motion **defea
   lightning for Legendary+, a portal opens, a silhouette steps out, then the reveal.
   Common · Rare · Epic · Legendary · Mythic, published rates, ×10 Epic guarantee and pity.
 - **Daily login reward**: a random 500–5,000 gold and 50–200 diamonds every day.
+- **Three Mythic banners** (Starfall Oracle · Crimson Moon · Onyx Tempest), one Mythic each, with a
+  **60-second trial**: play that Mythic at max power (all stars purple, max level and skills, special ready)
+  against endless demons.
 - **Step-up summons**: ×10 costs FREE → 250 → 500 → 500 (double Mythic rate) → 400, then repeats. Rates are
-  Epic 80% · Legendary 15% · Mythic 5%. Each paid ×10 gives a token; 30 tokens buy a featured Mythic in the
+  Common 50% · Rare 30% · Epic 14% · Legendary 4% · Mythic 2%. Each paid ×10 gives a token; 30 tokens buy a featured Mythic in the
   Shop's **Mythic Exchange**.
 - **Awakening**: a duplicate of the same slayer awakens them — one star turns bright purple, +30 max level
   and +30 levels, +20% stats per purple star. All six purple and maxed out = **GOD** status.
+- **27 slayers**: newcomers Taro, Nami, Koji, Yuna (Common), Daigo, Hotaru, Kenta, Rin (Rare) and Akane,
+  Tsukasa, Mizuki (Legendary), each with their own special. The Characters screen shows every slayer —
+  the ones you don't have yet are greyed out with a lock.
+- **Scarier demons**: horns, back spikes, glowing cracks, an ember heart, flickering eyes and rising motes;
+  bosses and elites add shoulder spikes and a turning sigil.
 - **Events** (home screen): five events, each with its own mini story and five quests from Easy to Hard,
   with an event prize for the Hard quest.
 - **Open world**: walk around a peaceful Kiriha Village — houses, market, dojo, shrine, river, pond, farms,

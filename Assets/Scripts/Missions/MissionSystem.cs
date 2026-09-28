@@ -83,6 +83,13 @@ namespace HashiraChronicles
                 yield return OpenWorldLoop();
                 yield break;
             }
+            if (!string.IsNullOrEmpty(Def.trialCharacterId))
+            {
+                GameEvents.RaiseBanner("MYTHIC TRIAL", "60 seconds at max power · the special is ready — use it!");
+                started = true;
+                yield return TrialLoop();
+                yield break;
+            }
             if (Def.training)
             {
                 GameEvents.RaiseBanner("TRAINING GROUNDS", "Try every skill · PAUSE → Retreat to leave");
@@ -637,6 +644,36 @@ namespace HashiraChronicles
                         GameEvents.RaiseBanner("TREASURE!", gem ? "+" + amount + " diamonds" : "+" + amount + " gold");
                     }
                 }
+                yield return null;
+            }
+        }
+
+        // ------------------------------------------------------------------ Trial
+
+        /// <summary>Seconds left in a summon-banner trial.</summary>
+        public float TrialLeft { get { return Mathf.Max(0f, Def.timeLimit - Elapsed); } }
+
+        IEnumerator TrialLoop()
+        {
+            string[] pool = { "grunt", "runner", "shadow_demon", "brute", "demon_warrior", "spitter", "elite", "corrupted_knight" };
+            var foes = new List<EnemyController>();
+            float bigTimer = 12f;
+            while (!Finished)
+            {
+                foes.RemoveAll(e => e == null || !e.IsAlive);
+                while (foes.Count < 8)
+                {
+                    var e = SpawnEnemy(pool[Random.Range(0, pool.Length)], RandomSpawnPoint(), true);
+                    if (e == null) break;
+                    foes.Add(e);
+                }
+                // A big one every so often, to try the special on.
+                bigTimer -= Time.deltaTime;
+                if (bigTimer <= 0f) { bigTimer = 15f; var big = SpawnEnemy("castle_sentinel", RandomSpawnPoint(), true); if (big != null) foes.Add(big); }
+                // Keep the special coming: it refills fast during the trial.
+                var pc = battle.Team.Active;
+                if (pc != null) pc.UltGauge = Mathf.Min(PlayerCharacter.UltMax, pc.UltGauge + Time.deltaTime * 14f);
+                if (Elapsed >= Def.timeLimit) { End(true, "Trial over"); yield break; }
                 yield return null;
             }
         }
