@@ -179,8 +179,9 @@ namespace HashiraChronicles
             switch (k)
             {
                 case Kind.Snow:
-                    p.grassA = new Color(0.93f, 0.96f, 1f); p.grassB = new Color(0.84f, 0.9f, 0.98f); p.grassC = new Color(0.97f, 0.98f, 1f);
-                    p.path = new Color(0.66f, 0.72f, 0.84f); p.pathEdge = new Color(0.78f, 0.84f, 0.93f); p.clearing = new Color(0.72f, 0.78f, 0.88f);
+                    // Soft blue-grey snow, not paper white: glowing attacks have to stand out against it.
+                    p.grassA = new Color(0.72f, 0.78f, 0.88f); p.grassB = new Color(0.66f, 0.73f, 0.85f); p.grassC = new Color(0.79f, 0.84f, 0.92f);
+                    p.path = new Color(0.58f, 0.63f, 0.75f); p.pathEdge = new Color(0.78f, 0.84f, 0.93f); p.clearing = new Color(0.72f, 0.78f, 0.88f);
                     p.rock = new Color(0.42f, 0.47f, 0.58f); p.rockDark = new Color(0.26f, 0.3f, 0.4f); p.bank = new Color(0.75f, 0.83f, 0.95f);
                     p.leafDark = new Color(0.08f, 0.26f, 0.28f); p.leafMid = new Color(0.12f, 0.36f, 0.36f); p.leafLight = new Color(0.2f, 0.46f, 0.44f);
                     p.trunk = new Color(0.32f, 0.22f, 0.18f); p.accent = new Color(0.82f, 0.16f, 0.16f);
@@ -189,7 +190,7 @@ namespace HashiraChronicles
                     p.skyTop = new Color(0.36f, 0.56f, 0.86f); p.skyHorizon = new Color(0.82f, 0.9f, 0.98f); p.sunGlow = new Color(1f, 0.97f, 0.9f);
                     p.fog = new Color(0.8f, 0.87f, 0.96f); p.fogStart = 30f; p.fogEnd = 280f;
                     p.amSky = new Color(0.62f, 0.72f, 0.95f); p.amEquator = new Color(0.7f, 0.78f, 0.92f); p.amGround = new Color(0.62f, 0.68f, 0.82f);
-                    p.sun = new Color(0.95f, 0.97f, 1f); p.sunIntensity = 1.05f; p.sunEuler = new Vector3(32f, 150f, 0f);
+                    p.sun = new Color(0.92f, 0.94f, 1f); p.sunIntensity = 0.82f; p.sunEuler = new Vector3(58f, 150f, 0f); // high sun: short shadows, no long streaks
                     p.shadow = new Color(0.55f, 0.62f, 0.85f); p.rim = new Color(0.85f, 0.95f, 1f); p.far = new Color(0.62f, 0.72f, 0.88f);
                     p.lantern = new Color(1f, 0.72f, 0.4f);
                     break;
@@ -800,6 +801,13 @@ namespace HashiraChronicles
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
             // Cartoon look: strong, bright ambient so nothing sinks into murky shadow.
             float amb = GameConfig.CartoonStyle ? 0.92f : 0.85f;
+            if (k == Kind.Snow) amb = 0.78f;
+            // Bright snow glowed under bloom and washed out the attacks; only real highlights bloom there.
+            if (PostFX.Instance != null)
+            {
+                PostFX.Instance.Threshold = k == Kind.Snow ? 1.2f : 0.85f;
+                PostFX.Instance.BloomIntensity = k == Kind.Snow ? 0.28f : 0.45f;
+            }
             RenderSettings.ambientSkyColor = p.amSky * amb;
             RenderSettings.ambientEquatorColor = p.amEquator * amb;
             RenderSettings.ambientGroundColor = p.amGround * amb;
@@ -816,7 +824,7 @@ namespace HashiraChronicles
                 sun.intensity = p.sunIntensity;
                 sun.transform.rotation = Quaternion.Euler(p.sunEuler);
                 sun.shadows = LightShadows.Soft;
-                sun.shadowStrength = k == Kind.Snow ? 0.55f : k == Kind.Village ? 0.6f : 0.7f;
+                sun.shadowStrength = k == Kind.Snow ? 0.4f : k == Kind.Village ? 0.6f : 0.7f;
             }
         }
 

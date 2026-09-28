@@ -32,11 +32,11 @@ namespace HashiraChronicles
                 SetupTrial(data, b.Def.trialCharacterId, spawnPos);
                 return;
             }
-            // PvP is a true 3v3: you bring only your leader (the other two are teammates).
-            bool pvp = b != null && b.Def != null && b.Def.pvpMode >= 0;
+            // PvP and co-op are parties of three players: you bring only your leader (the others are teammates).
+            bool party = b != null && b.Def != null && (b.Def.pvpMode >= 0 || b.Def.coopAllyIds.Count > 0);
             foreach (var id in data.team)
             {
-                if (pvp && Members.Count >= 1) break;
+                if (party && Members.Count >= 1) break;
                 var owned = data.GetCharacter(id);
                 var def = GameDatabase.GetCharacter(id);
                 if (owned == null || def == null) continue;

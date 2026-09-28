@@ -53,6 +53,13 @@ namespace HashiraChronicles
         /// <summary>The co-op gate the active slayer is standing at (-1 = none).</summary>
         public int NearGate { get; private set; }
         public bool Searching { get; private set; }
+        /// <summary>The gate asking "join a co-op game?" right now (-1 = none).</summary>
+        public int PromptGate { get; private set; }
+        /// <summary>The gate you said yes to: players are being gathered and the game starts on its own when all are in.</summary>
+        public int QueuedGate { get; private set; }
+        public float LaunchAt { get; private set; }
+        int promptedGate = -1;
+        float queuedAt, retryFindAt;
         public int ChatVersion { get; private set; }
 
         readonly List<Transform> portals = new List<Transform>();
@@ -84,6 +91,9 @@ namespace HashiraChronicles
         void Start()
         {
             NearGate = -1;
+            PromptGate = -1;
+            QueuedGate = -1;
+            LaunchAt = -1f;
             VillageOnline.Refresh();
             var pool = GameDatabase.Characters.FindAll(c => !c.npc && !c.designTest);
             int want = Mathf.RoundToInt(9 * Mathf.Clamp(GameSettings.SceneryDensity, 0.5f, 1.5f));
@@ -223,6 +233,39 @@ namespace HashiraChronicles
             if (a != null)
                 for (int i = 0; i < PrototypeWorld.CoopGateSpots.Count; i++)
                     if ((Journey.Flat(PrototypeWorld.CoopGateSpots[i]) - Journey.Flat(a.Position)).magnitude < 3.4f) NearGate = i;
+
+            // Walking up to a gate asks once whether you want to join a game there.
+            if (NearGate < 0) { promptedGate = -1; if (PromptGate >= 0) PromptGate = -1; }
+            else if (NearGate != promptedGate && QueuedGate < 0) { promptedGate = NearGate; PromptGate = NearGate; }
+
+            // Said yes: gather players, then start automatically once everyone is in.
+            if (QueuedGate >= 0)
+            {
+                if (Party.Count >= PartySize - 1)
+                {
+                    if (LaunchAt < 0f)
+                    {
+                        LaunchAt = now + 2f;
+                        Notice("All players gathered! Starting " + GateName(QueuedGate) + "...");
+                        if (GameManager.Instance != null) GameManager.Instance.Audio.Play("perfect", 0.6f);
+                    }
+                    else if (now >= LaunchAt)
+                    {
+                        int g = QueuedGate;
+                        QueuedGate = -1;
+                        LaunchAt = -1f;
+                        EnterGate(g);
+                        return;
+                    }
+                }
+                else if (now >= retryFindAt)
+                {
+                    // Nobody answered yet: ask more players.
+                    retryFindAt = now + 6f;
+                    Searching = false;
+                    FindParty();
+                }
+            }
         }
 
         SimPlayer RandomPlayer(bool mayBeInParty)
@@ -259,6 +302,33 @@ namespace HashiraChronicles
         }
 
         /// <summary>Matchmaking: fills the free party slots with players looking for a group.</summary>
+        static string GateName(int g) { return g >= 0 && g < GameDatabase.CoopGateNames.Length ? GameDatabase.CoopGateNames[g] : "the gate"; }
+
+        /// <summary>Yes to "join a co-op game?": find players for the gate; the game starts by itself when the party is full.</summary>
+        public void AcceptJoin()
+        {
+            if (PromptGate < 0) return;
+            QueuedGate = PromptGate;
+            PromptGate = -1;
+            LaunchAt = -1f;
+            queuedAt = Time.time;
+            retryFindAt = Time.time + 6f;
+            Notice("Gathering players for " + GateName(QueuedGate) + "...");
+            FindParty();
+        }
+
+        public void DeclineJoin() { PromptGate = -1; }
+
+        public void CancelJoin()
+        {
+            QueuedGate = -1;
+            LaunchAt = -1f;
+            Searching = false;
+            Notice("Stopped gathering players.");
+        }
+
+        public float GatherSeconds { get { return QueuedGate >= 0 ? Time.time - queuedAt : 0f; } }
+
         public void FindParty()
         {
             if (Party.Count >= PartySize - 1) return;

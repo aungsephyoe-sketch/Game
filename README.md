@@ -36,6 +36,16 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Co-op and snow fixes (0.22.2)
+- **Co-op teammates play to clear fast.** They hunt demons up to 45 m away instead of staying near you. They sprint everywhere, dash-lunge to close gaps, and run ahead to the next objective when nothing is in sight.
+- **Co-op is leader-only.** You bring just your leader, with no switching; the other two slots are your teammates.
+- **Co-op gates ask "JOIN A CO-OP GAME?"** when you walk up. **YES** gathers players, fills three portrait slots as they join, shows "ALL PLAYERS READY!" and starts the game by itself. CANCEL stops the search.
+- **Snow is toned down.** The ground is blue-grey instead of paper white. The sun is softer and higher, the ambient light is lower, bloom only catches real highlights, and shadows are lighter, so attacks read against the snow.
+- **Line glitch:**
+  - The high sun keeps shadows short.
+  - Tall, thin props (poles, posts, banners) no longer cast long line shadows.
+  - The ranged teammate's throw shows three short crescents instead of a 9 m line flash.
+
 ### Sound and fixes (0.22.1)
 - The home screen no longer shows speech boxes. Villagers still stroll through the village.
 - **Blade swings** are rebuilt in layers: a whoosh that rises and falls as the blade passes, an airy low body, a bright steel ring and a short room tail. Each weapon has its own tuning.

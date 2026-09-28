@@ -39,7 +39,9 @@ namespace HashiraChronicles
         Color tint;
         Combatant target;
         Vector3 roam;
-        float roamTimer, retarget, swingTimer, specialTimer, ultTimer, dodgeTimer, idleTalk, downTimer, reaction;
+        float roamTimer, retarget, swingTimer, specialTimer, ultTimer, dodgeTimer, idleTalk, downTimer, reaction, dashTimer;
+        /// <summary>Co-op teammates play to clear fast: they hunt demons across the stage instead of staying by you.</summary>
+        bool hunt;
         int comboStep;
         float slotAngle;
         float aggression, skill;
@@ -127,6 +129,9 @@ namespace HashiraChronicles
             }
             if (!IsAlive) return;
             var lead = Lead;
+            var bc = BattleController.Current;
+            hunt = Team == CombatTeam.Player && bc != null && bc.Def != null && bc.Def.pvpMode < 0;
+            dashTimer -= dt;
             retarget -= dt; swingTimer -= dt; specialTimer -= dt; ultTimer -= dt; dodgeTimer -= dt; idleTalk -= dt; reaction -= dt;
 
             // 1. Danger first: step out of a red zone (better players react sooner).
@@ -149,10 +154,10 @@ namespace HashiraChronicles
             // 2. Choose a fight.
             if (target == null || !target.IsAlive || retarget <= 0f)
             {
-                retarget = Random.Range(1.2f, 2.4f);
+                retarget = hunt ? Random.Range(0.6f, 1.2f) : Random.Range(1.2f, 2.4f);
                 target = ChooseTarget(lead);
             }
-            if (target != null && lead != null && Vector3.Distance(target.Position, lead.Position) > 22f) target = null;
+            if (!hunt && target != null && lead != null && Vector3.Distance(target.Position, lead.Position) > 22f) target = null;
 
             // 3. Support: heal when the team is hurt.
             if (PlayStyle == Style.Support && specialTimer <= 0f && TeamHurt(lead)) { Heal(false); return; }
@@ -169,6 +174,15 @@ namespace HashiraChronicles
                 Vector3 slot = Quaternion.Euler(0f, slotAngle * 0.35f, 0f) * fromT.normalized;
                 goal = target.Position + slot * want;
                 stop = 0.35f;
+            }
+            else if (hunt)
+            {
+                // Nothing in sight: run ahead toward the next objective to find the next pack.
+                var ms = bc.Mission;
+                Vector3 ahead = ms != null && ms.ObjectiveTarget.HasValue ? ms.ObjectiveTarget.Value
+                    : lead != null ? lead.Position + lead.transform.forward * 10f : Position;
+                goal = ahead + Quaternion.Euler(0f, slotAngle, 0f) * Vector3.forward * 2.5f;
+                stop = 1.2f;
             }
             else
             {
@@ -215,11 +229,25 @@ namespace HashiraChronicles
             }
             float dist = to.magnitude;
             bool far = lead != null && (Position - lead.Position).magnitude > 12f;
+            if (hunt && dist > 6f && dashTimer <= 0f && dist > stop)
+            {
+                // Dash in: a quick lunge that closes the gap, with a streak and dust.
+                dashTimer = Random.Range(1.4f, 2.6f) * (1.3f - skill * 0.5f);
+                Vector3 from = transform.position;
+                Vector3 dashTo = from + to.normalized * Mathf.Min(dist - 2f, 5.5f);
+                transform.position = BattleController.ClampToArena(Obstacles.Sweep(from, dashTo));
+                VFX.KnockTrail(Position, to, tint);
+                visual.SetMoving(1f);
+                if (GameManager.Instance != null && Random.value < 0.5f) GameManager.Instance.Audio.PlayVaried("dash", 0.25f, 0.1f);
+                return;
+            }
             if (dist > stop)
             {
-                float speed = Stats.speed * (target == null && !far ? 0.55f : 1f) * (far ? 1.35f : 1f);
+                // Co-op teammates sprint everywhere; elsewhere they stroll when idle.
+                float speed = hunt ? Stats.speed * (dist > 5f ? 1.55f : 1.1f)
+                    : Stats.speed * (target == null && !far ? 0.55f : 1f) * (far ? 1.35f : 1f);
                 transform.position = BattleController.ClampToArena(Obstacles.Sweep(transform.position, transform.position + to.normalized * Mathf.Min(dist, speed * dt)));
-                visual.SetMoving(target == null && !far ? 0.5f : 1f);
+                visual.SetMoving(hunt || target != null || far ? 1f : 0.5f);
             }
             else visual.SetMoving(0f);
             Vector3 face = target != null ? target.Position - Position : to;
@@ -243,14 +271,14 @@ namespace HashiraChronicles
             {
                 if (c == null || c == this || !c.IsAlive || (c.Team == Team && !c.Neutral)) continue;
                 float dSelf = (c.Position - Position).magnitude;
-                if (dSelf > (Objective.HasValue ? 30f : 18f)) continue;
+                if (dSelf > (hunt ? 45f : Objective.HasValue ? 30f : 18f)) continue;
                 float score = dSelf;
                 if (lead != null)
                 {
                     float dLead = (c.Position - lead.Position).magnitude;
                     // Vanguards and supports protect the player; duelists go for the weakest.
                     if (PlayStyle == Style.Vanguard || PlayStyle == Style.Support) score = Mathf.Min(score, dLead * 0.8f);
-                    if (dLead > 20f) continue;
+                    if (!hunt && dLead > 20f) continue;
                 }
                 if (PlayStyle == Style.Duelist && c.Health != null) score *= 0.5f + c.Health.Normalized;
                 score += Random.Range(0f, 2.5f) * (1f - skill);
@@ -281,7 +309,8 @@ namespace HashiraChronicles
                 var tag = AttackTag.Basic(finisher ? 1.3f : 0.9f, tint);
                 tag.hitStop = 0f; tag.shake = 0f; tag.stagger = 1f;
                 CombatSystem.HitArc(this, Position, fwd, 9f, 16f, tag);
-                VFX.Flash(MeshFactory.Line(), Position + Vector3.up, Quaternion.LookRotation(fwd), new Vector3(0.6f, 1f, 1f), new Vector3(0.2f, 1f, 9f), tint, 0.25f);
+                // Three short crescents flying out (a single long line flash read as a glitchy streak across the map).
+                for (int i = 0; i < 3; i++) VFX.Slash(Position + fwd * (1.8f + i * 2.4f) + Vector3.down * 0.2f, fwd, 1.1f, 80f, i * 20f - 20f, tint, 0.12f + i * 0.04f);
                 return;
             }
             if (finisher && PlayStyle == Style.Vanguard) visual.HeavyAttack(0.28f);

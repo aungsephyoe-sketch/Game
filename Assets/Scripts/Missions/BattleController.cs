@@ -199,7 +199,11 @@ namespace HashiraChronicles
             RangeIndicator.Attach(this);
             // Tall set pieces (towers, spires, far hills) threw long jagged shadow streaks across the road.
             foreach (var rend in GetComponentsInChildren<Renderer>(true))
-                if (rend.bounds.size.y > 5f) rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            {
+                var bs = rend.bounds.size;
+                // Poles, posts and banners (tall and thin) drew long dark lines across the ground as well.
+                if (bs.y > 5f || (bs.y > 1.8f && Mathf.Max(bs.x, bs.z) < 0.7f)) rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
             if (GameManager.Instance != null) GameManager.Instance.Audio.SetAmbience(AmbienceFor(def.theme));
             var teamGo = new GameObject("Team");
             teamGo.transform.SetParent(transform, false);

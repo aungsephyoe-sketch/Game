@@ -42,7 +42,9 @@ namespace HashiraChronicles
             DrawGateLabels(cam, a);
             Rect chat = DrawHubChat(hub);
             DrawHubParty(hub, b, new Rect(chat.x, chat.yMax + 10f, chat.width, 92f));
-            if (hub.NearGate >= 0) DrawGatePanel(hub, hub.NearGate);
+            if (hub.QueuedGate >= 0) DrawGathering(hub);
+            else if (hub.PromptGate >= 0) DrawJoinPrompt(hub, hub.PromptGate);
+            else if (hub.NearGate >= 0) DrawGatePanel(hub, hub.NearGate);
         }
 
         void DrawHubTags(VillageHub hub, Camera cam, PlayerCharacter a)
@@ -197,6 +199,65 @@ namespace HashiraChronicles
                 if (FlatBtn(br, "LEAVE PARTY", new Color(0.5f, 0.24f, 0.26f), true, 19)) hub.LeaveParty();
             }
             else if (FlatBtn(br, hub.Searching ? "SEARCHING" : "FIND PARTY", TileGreen, !hub.Searching, 20)) hub.FindParty();
+        }
+
+        /// <summary>"Join a co-op game?" when you walk up to a gate.</summary>
+        void DrawJoinPrompt(VillageHub hub, int gate)
+        {
+            if (gate >= GameDatabase.CoopGateNames.Length) return;
+            Color gc = VillageHub.GateColor(gate);
+            var r = new Rect(W * 0.5f - 360f, H * 0.36f, 720f, 280f);
+            HubBlock(r);
+            Round(Offset(r, 0f, 6f), new Color(0f, 0f, 0f, 0.4f), 22f);
+            Round(r, new Color(0.05f, 0.05f, 0.1f, 0.95f), 22f);
+            RoundFrame(r, gc, 3f, 22f);
+            UIStyles.Outlined(new Rect(r.x, r.y + 18f, r.width, 50f), "JOIN A CO-OP GAME?", UIStyles.Sized(UIStyles.Center, 40), Color.white, 3f);
+            UIStyles.Outlined(new Rect(r.x, r.y + 70f, r.width, 40f), GameDatabase.CoopGateNames[gate], UIStyles.Sized(UIStyles.Center, 30), gc, 2f);
+            GUI.Label(new Rect(r.x + 30f, r.y + 112f, r.width - 60f, 30f), "<color=#CCCCCC>Demons " + GameDatabase.CoopGatePower[gate].ToString("0.#") + "x stronger · Rewards x" + (2 + gate) + " · the game starts when 3 players are in</color>", UIStyles.Sized(UIStyles.Center, 19));
+            if (FlatBtn(new Rect(r.x + 60f, r.yMax - 110f, 280f, 84f), "YES", TileGreen, true, 34)) hub.AcceptJoin();
+            if (FlatBtn(new Rect(r.xMax - 340f, r.yMax - 110f, 280f, 84f), "NO", new Color(0.35f, 0.36f, 0.46f), true, 34)) hub.DeclineJoin();
+        }
+
+        /// <summary>Gathering players: three slots fill in, then the game starts automatically.</summary>
+        void DrawGathering(VillageHub hub)
+        {
+            int gate = hub.QueuedGate;
+            Color gc = VillageHub.GateColor(gate);
+            var r = new Rect(W * 0.5f - 380f, H * 0.34f, 760f, 330f);
+            HubBlock(r);
+            Round(Offset(r, 0f, 6f), new Color(0f, 0f, 0f, 0.4f), 22f);
+            Round(r, new Color(0.05f, 0.05f, 0.1f, 0.95f), 22f);
+            RoundFrame(r, gc, 3f, 22f);
+            bool ready = hub.LaunchAt >= 0f;
+            string dots = new string('.', 1 + Mathf.FloorToInt(Time.unscaledTime * 2.5f) % 3);
+            UIStyles.Outlined(new Rect(r.x, r.y + 16f, r.width, 50f), ready ? "ALL PLAYERS READY!" : "GATHERING PLAYERS" + dots, UIStyles.Sized(UIStyles.Center, 38), ready ? new Color(0.5f, 1f, 0.6f) : Color.white, 3f);
+            if (gate < GameDatabase.CoopGateNames.Length)
+                UIStyles.Outlined(new Rect(r.x, r.y + 64f, r.width, 34f), GameDatabase.CoopGateNames[gate], UIStyles.Sized(UIStyles.Center, 26), gc, 2f);
+            for (int i = 0; i < VillageHub.PartySize; i++)
+            {
+                var c = new Vector2(r.x + r.width * (i + 1) / 4f, r.y + 170f);
+                bool filled = i == 0 || i - 1 < hub.Party.Count;
+                float pulse = filled ? 1f : 0.85f + 0.15f * Mathf.Sin(Time.unscaledTime * 5f + i);
+                UIStyles.CircleTex(c, 52f * pulse, filled ? gc : new Color(1f, 1f, 1f, 0.1f));
+                UIStyles.CircleTex(c, 44f * pulse, new Color(0.08f, 0.08f, 0.14f));
+                string nm = i == 0 ? VillageHub.YourName : filled ? hub.Party[i - 1].name : "…";
+                if (filled)
+                {
+                    var def = GameDatabase.GetCharacter(i == 0 ? (gm.Data.team.Count > 0 ? gm.Data.team[0] : GameDatabase.Protagonist) : hub.Party[i - 1].charId);
+                    if (def != null) FaceCircle(c, 42f, def, gc);
+                }
+                UIStyles.Outlined(new Rect(c.x - 110f, c.y + 56f, 220f, 30f), nm.Replace("<", "‹"), UIStyles.Sized(UIStyles.Center, 20), filled ? Color.white : new Color(0.6f, 0.6f, 0.7f), 2f);
+            }
+            if (ready)
+            {
+                int left = Mathf.Max(1, Mathf.CeilToInt(hub.LaunchAt - Time.time));
+                UIStyles.Outlined(new Rect(r.x, r.yMax - 64f, r.width, 40f), "Starting in " + left + "...", UIStyles.Sized(UIStyles.Center, 28), UIStyles.Gold, 2f);
+            }
+            else
+            {
+                GUI.Label(new Rect(r.x + 30f, r.yMax - 70f, r.width - 330f, 40f), "<color=#AAAAAA>" + Mathf.FloorToInt(hub.GatherSeconds) + "s · the game starts automatically</color>", UIStyles.Sized(UIStyles.Body, 20));
+                if (FlatBtn(new Rect(r.xMax - 250f, r.yMax - 88f, 220f, 68f), "CANCEL", new Color(0.7f, 0.22f, 0.26f), true, 26)) hub.CancelJoin();
+            }
         }
 
         void DrawGatePanel(VillageHub hub, int gate)
