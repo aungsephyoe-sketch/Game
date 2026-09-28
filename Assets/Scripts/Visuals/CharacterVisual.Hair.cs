@@ -9,7 +9,7 @@ namespace HashiraChronicles
     public partial class CharacterVisual
     {
         /// <summary>Sculpted hair for this character, if it has a recipe. Returns false to fall back to the old hair.</summary>
-        bool SculptedHair(CharacterDefinition def, Vector3 hc, Vector3 hr)
+        bool SculptedHair(CharacterDefinition def, Vector3 hc, Vector3 hr, Material cloth = null)
         {
             if (!HairStyles.Has(def.id) || head == null) return false;
             var g = new HairGeometry(hc, hr, def.id.Length * 7919);
@@ -22,7 +22,8 @@ namespace HashiraChronicles
             Color shadeC = light ? Color.Lerp(c, new Color(0.72f, 0.7f, 0.86f), 0.35f)
                 : dark ? Color.Lerp(c, new Color(0.02f, 0.02f, 0.05f), 0.4f) : Color.Lerp(c, Color.black, 0.2f);
             Color shineC = dark ? Color.Lerp(c, new Color(0.45f, 0.5f, 0.7f), 0.35f) : Color.Lerp(c, Color.white, 0.4f);
-            var mats = new Material[3];
+            var mats = new Material[4];
+            mats[HairGeometry.Cloth] = cloth != null ? cloth : PM(new Color(0.2f, 0.18f, 0.24f), 0.01f);
             mats[HairGeometry.Base] = PM(c, 0.009f);
             mats[HairGeometry.Shade] = PM(shadeC, 0.009f);
             mats[HairGeometry.Shine] = PM(shineC, 0f);

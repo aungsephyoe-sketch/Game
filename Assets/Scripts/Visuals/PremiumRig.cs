@@ -204,6 +204,12 @@ namespace HashiraChronicles
 
         /// <summary>How the left-hand weapon sits in the hand (twin blades, fans, cleavers), so the right one can mirror it.</summary>
         public Quaternion twinLeft = Quaternion.Euler(-90f, 0f, 0f);
+
+        /// <summary>A designed showcase stance on top of the weapon's natural hold (natural, never an action pose).</summary>
+        public enum ShowPose { Natural, WeaponShoulder, HandOnHipL, HandOnHipR, StaffBothHands, OrbHand }
+        public ShowPose showPose = ShowPose.Natural;
+        /// <summary>How far the weapon reaches behind the grip to the ground (staff or spear butt), metres in body space.</summary>
+        public float showButt = -1f;
         public Vector3 twinLeftPos = new Vector3(-0.05f, -0.055f, 0f);
 
         /// <summary>A small, constant weight shift onto one leg: part of each fighter's own stance.</summary>
@@ -278,6 +284,41 @@ namespace HashiraChronicles
                     break;
                 case WeaponKind.TwinBlades: case WeaponKind.Fans: case WeaponKind.Cleavers:
                     twin = true;
+                    break;
+            }
+            if (showButt > 0f && (cv.Weapon == WeaponKind.Spear || cv.Weapon == WeaponKind.Staff)) tR.y = showButt * dir.y + 0.01f;
+            float hipH = pelvis.localPosition.y + 0.05f;
+            switch (showPose)
+            {
+                case ShowPose.WeaponShoulder:
+                    // Blade resting back over the shoulder, hand in front of the chest.
+                    tR = sR + new Vector3(0.07f, -0.19f, 0.16f);
+                    dir = new Vector3(0.22f, 0.6f, -0.77f);
+                    upHint = Vector3.right;
+                    twin = false;
+                    break;
+                case ShowPose.HandOnHipL:
+                    tL = new Vector3(-(hipW + 0.17f), hipH, -0.01f);
+                    break;
+                case ShowPose.HandOnHipR:
+                    tR = new Vector3(hipW + 0.17f, hipH, -0.01f);
+                    break;
+                case ShowPose.StaffBothHands:
+                    // The staff stands in front, a little to the right; both hands rest on it, one above the other.
+                    dir = new Vector3(0.04f, 0.97f, 0.22f).normalized;
+                    float buttLen = showButt > 0f ? showButt : 0.6f;
+                    Vector3 butt = new Vector3(0.1f, 0.01f, 0.3f);
+                    tR = butt + dir * (buttLen + 0.02f);
+                    tR.y = Mathf.Min(tR.y, sR.y - 0.12f);
+                    tR = butt + dir * ((tR.y - butt.y) / dir.y);
+                    tL = tR + dir * 0.09f + new Vector3(-0.03f, 0f, 0.02f);
+                    tR -= dir * 0.02f;
+                    upHint = Vector3.forward;
+                    // Keep the staff where the hands are: the butt is found from the grip.
+                    break;
+                case ShowPose.OrbHand:
+                    // The free hand held out a little, palm up, as if weighing a sphere of the element.
+                    tL = sL + new Vector3(-0.12f, -0.22f, 0.2f);
                     break;
             }
             tR.y = Mathf.Max(tR.y, ankle + 0.3f);

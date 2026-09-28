@@ -17,7 +17,7 @@ namespace HashiraChronicles
     /// </summary>
     public class HairGeometry
     {
-        public const int Base = 0, Shade = 1, Shine = 2;
+        public const int Base = 0, Shade = 1, Shine = 2, Cloth = 3;
 
         public class Part
         {

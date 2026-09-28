@@ -13,7 +13,13 @@ namespace HashiraChronicles
         /// <summary>True for the characters that use the new sculpted hair (the quality standard).</summary>
         public static bool Has(string id)
         {
-            return id == "ren_initiate" || id == "mina_ember" || id == "sora_initiate";
+            switch (id)
+            {
+                case "ren_initiate": case "mina_ember": case "sora_initiate":
+                case "tobi_kazami": case "bunta_okuyama": case "sayo_mikage": case "nene_hanabusa": case "nagi_kurokiri": case "seiran_mizuchi":
+                    return true;
+            }
+            return false;
         }
 
         public static void Build(string id, HairGeometry g)
@@ -22,6 +28,12 @@ namespace HashiraChronicles
             {
                 case "mina_ember": LongFlowing(g); break;
                 case "sora_initiate": ControlledSpiky(g); break;
+                case "tobi_kazami": SweptBack(g); break;
+                case "bunta_okuyama": Cropped(g); break;
+                case "sayo_mikage": HighPonytail(g); break;
+                case "nene_hanabusa": RoundBob(g); break;
+                case "nagi_kurokiri": Hooded(g); break;
+                case "seiran_mizuchi": SleekLong(g); break;
                 default: ShortMessy(g); break;
             }
         }
@@ -203,6 +215,156 @@ namespace HashiraChronicles
             g.pivots["Back"] = g.hc + new Vector3(0f, g.hr.y * 0.2f, -g.hr.z * 0.85f);
             g.pivots["SideL"] = g.hc + new Vector3(-g.hr.x * 0.8f, g.hr.y * 0.45f, 0.05f);
             g.pivots["SideR"] = g.hc + new Vector3(g.hr.x * 0.8f, g.hr.y * 0.45f, 0.05f);
+        }
+
+        static void StdPivots(HairGeometry g)
+        {
+            if (!g.pivots.ContainsKey("Bangs")) g.pivots["Bangs"] = g.hc + new Vector3(0f, g.hr.y * 0.75f, g.hr.z * 0.45f);
+            if (!g.pivots.ContainsKey("Back")) g.pivots["Back"] = g.hc + new Vector3(0f, g.hr.y * 0.3f, -g.hr.z * 0.85f);
+            if (!g.pivots.ContainsKey("SideL")) g.pivots["SideL"] = g.hc + new Vector3(-g.hr.x * 0.8f, g.hr.y * 0.45f, 0.05f);
+            if (!g.pivots.ContainsKey("SideR")) g.pivots["SideR"] = g.hc + new Vector3(g.hr.x * 0.8f, g.hr.y * 0.45f, 0.05f);
+        }
+
+        /// <summary>Tobi — short and swept back by the wind: locks run from the hairline over the top and flick up at the back; two loose strands at the temples.</summary>
+        static void SweptBack(HairGeometry g)
+        {
+            g.Cap("Top", HairGeometry.Shade, 0.035f, 60f, 100f, 138f, 5f);
+            for (int i = 0; i < 13; i++)
+            {
+                float az = -84f + i * 14f + g.R(-4f, 4f);
+                float pol = g.R(48f, 60f) - Mathf.Abs(az) * 0.05f;
+                Vector3 flow = HairGeometry.V(Mathf.Sin(az * Mathf.Deg2Rad) * 0.25f, 0.35f, -1f);
+                g.Lock("Back", i % 3 == 1 ? HairGeometry.Shade : HairGeometry.Base, az, pol, g.R(0.07f, 0.1f), flow,
+                    g.R(0.42f, 0.52f), g.R(0.16f, 0.2f), 0.05f, 0.3f, 0.2f, g.R(-35f, -18f), 11, -9f, -0.35f, 0.25f);
+            }
+            for (int i = 0; i < 7; i++)
+            {
+                float az = 125f + i * 18f + g.R(-4f, 4f);
+                g.Lock("Back", HairGeometry.Base, az, g.R(70f, 88f), 0.05f, HairGeometry.V(0f, -1f, -0.3f), g.R(0.16f, 0.22f), 0.15f, 0.045f, 0.5f, 0.3f, -35f, 8, -9f, -0.95f, 0.35f);
+            }
+            for (int s = -1; s <= 1; s += 2)
+                g.Lock(s < 0 ? "SideL" : "SideR", HairGeometry.Base, s * 40f, 56f, 0.07f, HairGeometry.V(s * 0.3f, -1f, 0.4f), 0.24f, 0.08f, 0.03f, 0.9f, 0.05f, 20f, 9, 0.08f, -1f, 0.3f);
+            g.Highlight("Back", -10f, 45f, 0.11f, HairGeometry.V(0f, 0.4f, -1f), 0.2f, 0.04f);
+            g.Highlight("Back", 30f, 50f, 0.11f, HairGeometry.V(0f, 0.4f, -1f), 0.16f, 0.035f);
+            g.pivots["Back"] = g.hc + new Vector3(0f, g.hr.y * 0.8f, 0f);
+            StdPivots(g);
+        }
+
+        /// <summary>Bunta — close-cropped sides, the top combed back to a top-knot (the knot itself is built with the head).</summary>
+        static void Cropped(HairGeometry g)
+        {
+            g.Cap("Top", HairGeometry.Shade, 0.02f, 58f, 96f, 132f, 8f);
+            for (int i = 0; i < 9; i++)
+            {
+                float az = -48f + i * 12f;
+                g.Lock("Top", i % 2 == 0 ? HairGeometry.Base : HairGeometry.Shade, az, 52f - Mathf.Abs(az) * 0.1f, 0.045f, HairGeometry.V(az * -0.004f, 0.3f, -1f),
+                    0.36f, 0.14f, 0.035f, 0.1f, 0f, 0f, 10, -9f, -1f, 0f);
+            }
+            g.Highlight("Top", 0f, 40f, 0.07f, HairGeometry.V(0f, 0.3f, -1f), 0.2f, 0.04f);
+            StdPivots(g);
+        }
+
+        /// <summary>Sayo — a high ponytail: the top gathers back to a tie at the crown and the tail falls down the back; light parted bangs and long face-framing strands.</summary>
+        static void HighPonytail(HairGeometry g)
+        {
+            g.Cap("Top", HairGeometry.Shade, 0.03f, 62f, 100f, 140f, 3f, 0f);
+            Vector3 tie = g.Surf(180f, 52f, 0.05f);
+            // Gathered: everything flows toward the tie.
+            for (int i = 0; i < 16; i++)
+            {
+                float az = -150f + i * 20f + g.R(-4f, 4f);
+                float pol = Mathf.Abs(Mathf.DeltaAngle(az, 0f)) < 60f ? g.R(52f, 60f) : g.R(70f, 95f);
+                Vector3 flow = (tie - g.Surf(az, pol, 0f)).normalized;
+                g.Lock("Top", i % 3 == 0 ? HairGeometry.Shade : HairGeometry.Base, az, pol, 0.05f, flow, 0.4f, 0.17f, 0.04f, 0f, 0f, 0f, 10, -9f, -1f, 0f);
+            }
+            // The tail: up out of the tie, then falling with weight.
+            g.taperStart = 0.5f;
+            g.tipWidth = 0.1f;
+            for (int i = 0; i < 9; i++)
+            {
+                float az = 180f + (i - 4f) * 2.5f;
+                g.Lock("Fall", i % 3 == 1 ? HairGeometry.Shade : HairGeometry.Base, az, 52f + (i % 3) * 2f, 0.1f + (i % 2) * 0.03f, HairGeometry.V((i - 4f) * 0.08f, 0.35f, -1f),
+                    g.R(0.95f, 1.1f), g.R(0.15f, 0.18f), 0.055f, 1.2f, 0.4f, g.R(10f, 25f), 16, -9f, 0.95f, 0.85f);
+            }
+            g.taperStart = 0.12f;
+            g.tipWidth = 0f;
+            float[] bangAz = { -30f, -12f, 14f, 32f };
+            for (int i = 0; i < bangAz.Length; i++)
+            {
+                float az = bangAz[i];
+                g.Lock("Bangs", HairGeometry.Base, az, 40f, 0.07f, HairGeometry.V(az < 0f ? -0.5f : 0.5f, -0.4f, 1f), g.R(0.22f, 0.28f), 0.12f, 0.035f, 0.5f, 0.02f, 18f, 9, 0.11f, -1f, 0.2f);
+            }
+            for (int s = -1; s <= 1; s += 2)
+                g.Lock(s < 0 ? "SideL" : "SideR", HairGeometry.Base, s * 58f, 50f, 0.07f, HairGeometry.V(s * 0.2f, -1f, 0.3f), 0.55f, 0.08f, 0.03f, 1.2f, 0.02f, 15f, 12, -9f, -0.1f, 0f);
+            g.Highlight("Top", 20f, 40f, 0.09f, (tie - g.Surf(20f, 40f, 0f)).normalized, 0.22f, 0.04f);
+            g.Highlight("Top", -40f, 44f, 0.09f, (tie - g.Surf(-40f, 44f, 0f)).normalized, 0.2f, 0.035f);
+            g.pivots["Fall"] = tie;
+            StdPivots(g);
+        }
+
+        /// <summary>Nene — a round bob that curls under at the jaw, with a blunt straight fringe.</summary>
+        static void RoundBob(HairGeometry g)
+        {
+            g.Cap("Top", HairGeometry.Shade, 0.03f, 60f, 102f, 142f, 0f);
+            g.taperStart = 0.6f;
+            g.tipWidth = 0.35f;
+            for (int i = 0; i < 18; i++)
+            {
+                float az = 55f + i * 14f + g.R(-3f, 3f);
+                Vector3 d = HairGeometry.Dir(az, 90f);
+                g.Lock(Mathf.Abs(Mathf.DeltaAngle(az, 180f)) < 60f ? "Back" : az < 180f ? "SideR" : "SideL", i % 3 == 1 ? HairGeometry.Shade : HairGeometry.Base,
+                    az, g.R(10f, 22f), g.R(0.09f, 0.11f), new Vector3(d.x, -0.6f, d.z), g.R(0.62f, 0.68f), 0.22f, 0.06f, 1f, 0.05f, 45f, 13, -9f, -0.1f, 0f);
+            }
+            // Blunt fringe: straight across, ending just above the brows.
+            for (int i = 0; i < 7; i++)
+            {
+                float az = -45f + i * 15f;
+                g.tipWidth = 0.75f;
+                g.Lock("Bangs", i % 2 == 0 ? HairGeometry.Base : HairGeometry.Shade, az, 18f, 0.1f, HairGeometry.V(az * 0.004f, -0.2f, 1f), 0.55f, 0.2f, 0.05f, 0.5f, 0f, 10f, 12, 0.095f, -1f, 0.05f);
+            }
+            g.taperStart = 0.12f;
+            g.tipWidth = 0f;
+            g.Highlight("Top", 30f, 26f, 0.13f, HairGeometry.V(0.6f, -0.4f, 0.5f), 0.18f, 0.045f);
+            g.Highlight("Top", -35f, 28f, 0.13f, HairGeometry.V(-0.6f, -0.4f, 0.5f), 0.15f, 0.04f);
+            StdPivots(g);
+        }
+
+        /// <summary>Nagi — a deep hood with a hanging point (cloth), a few dark bangs under its rim and one long lock at the side of the face.</summary>
+        static void Hooded(HairGeometry g)
+        {
+            g.Cap("Top", HairGeometry.Shade, 0.03f, 62f, 100f, 140f, 0f);
+            for (int i = 0; i < 4; i++)
+            {
+                float az = -30f + i * 20f;
+                g.Lock("Bangs", HairGeometry.Base, az, 50f, 0.06f, HairGeometry.V(0.4f, -0.4f, 1f), 0.22f, 0.12f, 0.035f, 0.6f, 0f, 20f, 8, 0.1f, -1f, 0.25f);
+            }
+            g.Lock("SideL", HairGeometry.Base, -55f, 55f, 0.07f, HairGeometry.V(-0.2f, -1f, 0.3f), 0.5f, 0.1f, 0.035f, 1.2f, 0.02f, 12f, 11, -9f, -0.1f, 0f);
+            // The hood: a thick cloth shell framing the face.
+            g.Cap("Hood", HairGeometry.Cloth, 0.2f, 70f, 110f, 165f, 0f);
+            g.taperStart = 0.35f;
+            g.Lock("Back", HairGeometry.Cloth, 180f, 30f, 0.2f, HairGeometry.V(0f, 0.2f, -1f), 0.55f, 0.34f, 0.07f, 0.45f, 0.1f, -10f, 10, -9f, -0.2f, 0.6f);
+            g.taperStart = 0.12f;
+            g.pivots["Back"] = g.hc + new Vector3(0f, g.hr.y * 0.6f, -g.hr.z * 0.9f);
+            StdPivots(g);
+        }
+
+        /// <summary>Seiran — long hair combed sleekly back from a centre part (the long braid is built with the head), with two long strands framing the face.</summary>
+        static void SleekLong(HairGeometry g)
+        {
+            g.Cap("Top", HairGeometry.Shade, 0.03f, 58f, 100f, 145f, 2f, 0f);
+            for (int s = -1; s <= 1; s += 2)
+                for (int i = 0; i < 8; i++)
+                {
+                    float az = s * (6f + i * 20f);
+                    g.Lock("Top", i % 3 == 1 ? HairGeometry.Shade : HairGeometry.Base, az, 8f + i * 2f, 0.08f + (i % 2) * 0.02f, HairGeometry.V(s * 0.5f, -0.4f, -1f), 0.6f, 0.2f, 0.06f, 0.3f, 0f, 0f, 12, -9f, -1f, 0f);
+                }
+            g.taperStart = 0.5f;
+            for (int s = -1; s <= 1; s += 2)
+                g.Lock(s < 0 ? "SideL" : "SideR", HairGeometry.Base, s * 34f, 40f, 0.1f, HairGeometry.V(s * 1f, -0.3f, 0.2f), 0.9f, 0.11f, 0.04f, 1.2f, 0.02f, 12f, 16, -9f, -0.1f, 0f);
+            g.taperStart = 0.12f;
+            g.Highlight("Top", 20f, 25f, 0.08f, HairGeometry.V(0.5f, -0.3f, -1f), 0.22f, 0.04f);
+            g.Highlight("Top", -20f, 25f, 0.08f, HairGeometry.V(-0.5f, -0.3f, -1f), 0.22f, 0.04f);
+            StdPivots(g);
         }
     }
 }

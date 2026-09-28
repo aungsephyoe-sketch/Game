@@ -52,6 +52,8 @@ namespace HashiraChronicles
         public string story = "";
         /// <summary>Only obtainable through the story (never from summons).</summary>
         public bool storyOnly;
+        /// <summary>Roster design test (the six Design Bible reference characters): playable, never in summons.</summary>
+        public bool designTest;
         /// <summary>Not a playable character (villagers, mentors, soldiers in cutscenes).</summary>
         public bool npc;
         public float scale = 1f;

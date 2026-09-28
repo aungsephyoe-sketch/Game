@@ -78,6 +78,26 @@ separate from combat idle, attacks, specials, victory and defeat. Each slayer:
 Personality shows only in the head angle and which leg takes the weight. Everyone faces the camera with the same
 slight three-quarter turn toward the group.
 
+**Roster design system.** `docs/CHARACTER_DESIGN_BIBLE.md` is the visual standard for every slayer. It covers:
+- silhouette drivers
+- proportions by type
+- faces, hair, clothing by role, weapons and colour rules
+- element colours and rarity presentation
+- personality in the body, animation states and presentation
+
+Six original reference characters are built to it (`CharacterVisual.Designs.cs`), each with their own proportions,
+head shape, face, sculpted hairstyle, outfit, weapon, palette, movement personality and natural showcase pose:
+- **Tobi** — fast melee, short blade
+- **Bunta** — heavy, war hammer
+- **Sayo** — ranged, tall longbow
+- **Nene** — support, lantern staff
+- **Nagi** — assassin, hooded and masked, twin sickles
+- **Seiran** — elemental power, water glaive and orb
+
+**Designs → ROSTER** shows all six in a promotional line-up with design sheets. **SILHOUETTE** turns them into black
+shapes to check they read apart. **VIEW 3D** and **TRY** open the viewer or a trial. They are playable but never
+appear in summons.
+
 **Hair (quality standard).** A new sculpted hair system (`HairGeometry`, `HairStyles`). Each style has:
 - a scalp shell cut along a real hairline;
 - tapered, flattened locks that grow from the scalp, hug the head and then fall with weight;

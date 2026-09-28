@@ -88,7 +88,7 @@ namespace HashiraChronicles
         {
             EnsureBuilt();
             // Every slayer can be summoned (story allies too — a story copy you already own becomes a duplicate).
-            return Characters.FindAll(c => !c.npc && c.rarity == rarity);
+            return Characters.FindAll(c => !c.npc && !c.designTest && c.rarity == rarity);
         }
 
         // ------------------------------------------------------------------ Characters
@@ -439,6 +439,50 @@ namespace HashiraChronicles
             h.skills = new[] { Ab("Charm Volley", AbilityShape.Wave, 5f, 1.7f, 3, 11f, 1.6f, "Three charms fly out and burst into sparks."), Ab("Thunder Seal", AbilityShape.Burst, 7f, 1.6f, 3, 0f, 4.5f, "A seal on the ground that strikes three times."), Ab("Storm Veil", AbilityShape.Spin, 9f, 1.2f, 4, 0f, 4.5f, "Lightning circles around her.") };
             h.ultimate = Ab("Heavenly Thunder Array", AbilityShape.Burst, 0f, 2.7f, 1, 0f, 10f, "Charms form a six-point seal; lightning strikes every point, then the heavens strike the center.", 25f, 7f);
             Characters.Add(h);
+
+            // ---- Roster design test: six originals built to the Character Design Bible.
+            h = Hero("tobi_kazami", "tobi", "Tobi Kazami", "Tailwind Runner", "Tailwind Breathing", 4, Element.Beast, Role.DPS,
+                "A cocky courier who fights at full sprint with a short straight blade.",
+                "Tobi delivered letters across three mountain passes a day and never lost one. He says demons are just slower letters.", C, C, C, C);
+            h.skills = new[] { Ab("Quick Draw", AbilityShape.MultiSlash, 4f, 0.7f, 5, 0f, 3.4f, "Five cuts before the blade is even seen."), Ab("Tailwind Dash", AbilityShape.Dash, 5.5f, 1.8f, 2, 8.5f, 1.7f, "Rides the wind straight through the line."), Ab("Gust Spin", AbilityShape.Spin, 8f, 1.1f, 4, 0f, 3.8f, "A spinning cut that throws up a whirlwind.") };
+            h.ultimate = Ab("Hundred-Mile Relay", AbilityShape.Burst, 0f, 2.3f, 1, 0f, 8f, "Blurs between every demon on the field in one breath.", 20f, 6f);
+            h.attackSpeed = 1.25f; h.designTest = true;
+            Characters.Add(h);
+            h = Hero("bunta_okuyama", "bunta", "Bunta Okuyama", "Mountain Anvil", "Kiln Breathing", 5, Element.Flame, Role.Tank,
+                "A huge, easygoing quarryman with a war hammer that glows like a kiln.",
+                "Bunta split stone for forty temples before a demon split his quarry. He has been politely returning the favour ever since.", C, C, C, C);
+            h.skills = new[] { Ab("Kiln Drop", AbilityShape.Burst, 6f, 2.3f, 1, 0f, 4.4f, "Brings the hammer down like a falling boulder."), Ab("Rockslide", AbilityShape.Dash, 8f, 2f, 1, 6.5f, 2.4f, "A shoulder-first charge that bowls demons over."), Ab("Ember Quake", AbilityShape.Spin, 9f, 1.5f, 3, 0f, 5f, "A wide swing that cracks the ground into embers.") };
+            h.ultimate = Ab("Mountain's Weight", AbilityShape.Burst, 0f, 2.7f, 1, 0f, 9f, "Leaps and lands with the weight of a mountain; the ground erupts in rings of fire.", 30f, 8f);
+            h.attackSpeed = 0.82f; h.designTest = true;
+            Characters.Add(h);
+            h = Hero("sayo_mikage", "sayo", "Sayo Mikage", "Storm Sight", "Thunderhead Breathing", 5, Element.Thunder, Role.DPS,
+                "A cool-headed archer whose tall bow fires arrows that split into lightning.",
+                "Sayo guarded the high watchtower of Mikage alone for six winters. She can see a demon's shadow move from two valleys away.", C, C, C, C);
+            h.skills = new[] { Ab("Split Bolt", AbilityShape.Wave, 5f, 1.7f, 3, 12f, 1.5f, "One arrow that splits into three bolts."), Ab("Step Back", AbilityShape.Dash, 6f, 1.5f, 1, 6f, 1.6f, "Leaps back, firing as she lands."), Ab("Thunderhead", AbilityShape.Burst, 9f, 1.4f, 4, 0f, 5f, "Arrows rain from a gathering storm cloud.") };
+            h.ultimate = Ab("Heaven's Watchtower", AbilityShape.Burst, 0f, 2.6f, 1, 0f, 10f, "Draws the bow to the sky; a lightning arrow falls on every demon in sight.", 25f, 7f);
+            h.designTest = true;
+            Characters.Add(h);
+            h = Hero("nene_hanabusa", "nene", "Nene Hanabusa", "Lantern Keeper", "Lamplight Breathing", 4, Element.Light, Role.Support,
+                "A tiny, cheerful shrine keeper whose lantern heals friends and dazzles demons.",
+                "Nene lit the thousand lanterns of Hanabusa shrine every night since she was five. Demons hate the light. She thinks that's very rude of them.", C, C, C, C);
+            h.skills = new[] { Ab("Lantern Swing", AbilityShape.Wave, 5f, 1.4f, 2, 9f, 1.8f, "Two balls of lantern light."), Ab("Warm Glow", AbilityShape.Heal, 10f, 0.5f, 1, 0f, 5f, "Mends the team in a circle of light."), Ab("Festival Ring", AbilityShape.Spin, 8f, 1.1f, 4, 0f, 4.2f, "Paper lanterns circle her and burst.") };
+            h.ultimate = Ab("Thousand Lanterns", AbilityShape.Burst, 0f, 2.1f, 1, 0f, 9f, "A thousand lanterns rise and fall as healing light and dazzling sparks.", 20f, 6f);
+            h.designTest = true;
+            Characters.Add(h);
+            h = Hero("nagi_kurokiri", "nagi", "Nagi Kurokiri", "Black Fog", "Mist Veil Breathing", 6, Element.Dark, Role.Burst,
+                "A silent hooded hunter with twin sickles, gone before the demons turn around.",
+                "No one knows Nagi's face. The Corps knows only that the worst demon nests go quiet a night after the hooded one is sent.", C, C, C, C);
+            h.skills = new[] { Ab("Twin Reap", AbilityShape.MultiSlash, 4.5f, 0.85f, 6, 0f, 3.2f, "Six hooking cuts from both sickles."), Ab("Fog Step", AbilityShape.Dash, 6f, 2.2f, 2, 8f, 1.6f, "Vanishes into fog and reappears behind the target."), Ab("Chain Whirl", AbilityShape.Spin, 8.5f, 1.3f, 4, 0f, 4f, "The sickles spin out on their chains.") };
+            h.ultimate = Ab("Moonless Harvest", AbilityShape.Burst, 0f, 2.6f, 1, 0f, 8f, "Black fog covers the field; every demon is cut from the dark at once.", 25f, 6f);
+            h.attackSpeed = 1.15f; h.designTest = true;
+            Characters.Add(h);
+            h = Hero("seiran_mizuchi", "seiran", "Seiran Mizuchi", "Tidal Sovereign", "Deep Current Breathing", 7, Element.Water, Role.Burst,
+                "A towering, serene warrior who commands the tide with a water glaive.",
+                "Seiran is the last heir of the river-dragon clan. The rivers still bow when she passes, and so, sooner or later, do demons.", C, C, C, C);
+            h.skills = new[] { Ab("Current Arc", AbilityShape.Wave, 5f, 1.9f, 2, 10f, 2f, "Two sweeping arcs of water."), Ab("Riverbed Charge", AbilityShape.Dash, 7f, 2.2f, 1, 8f, 2.2f, "Drives forward on a wave."), Ab("Maelstrom Guard", AbilityShape.Spin, 9f, 1.4f, 4, 0f, 5f, "The glaive spins inside a ring of water.") };
+            h.ultimate = Ab("River Dragon's Descent", AbilityShape.Burst, 0f, 2.9f, 1, 0f, 11f, "A dragon of water rises behind her and crashes down across the field.", 30f, 8f);
+            h.designTest = true;
+            Characters.Add(h);
         }
 
         static void Look(string id, HairStyle hair, WeaponKind weapon, CombatStyle style, MotionStyle motion, Color body, Color outfit, Color hairC, Color blade,
@@ -521,6 +565,19 @@ namespace HashiraChronicles
                 new Color(0.1f, 0.08f, 0.09f), new Color(0.66f, 0.08f, 0.09f), new Color(0.12f, 0.08f, 0.08f), new Color(1f, 0.5f, 0.12f), 1.1f, 1.2f, false, true, false, true, false, new Color(1f, 0.5f, 0.12f));
             Look("shion_storm", HairStyle.Long, WeaponKind.Staff, CombatStyle.Ranged, MotionStyle.Graceful,
                 new Color(0.1f, 0.12f, 0.32f), new Color(0.6f, 0.32f, 1f), new Color(0.85f, 0.8f, 0.97f), new Color(1f, 0.88f, 0.35f), 1f, 0.92f, false, false, false, false, false, new Color(1f, 0.84f, 0.22f));
+            // The six Design Bible reference characters.
+            Look("tobi_kazami", HairStyle.Spiky, WeaponKind.Katana, CombatStyle.Swift, MotionStyle.Light,
+                new Color(0.2f, 0.25f, 0.3f), new Color(0.62f, 0.86f, 0.2f), new Color(0.95f, 0.62f, 0.22f), new Color(0.5f, 1f, 0.45f), 0.92f, 0.95f, true, false, false, false, false, new Color(1f, 0.52f, 0.12f));
+            Look("bunta_okuyama", HairStyle.Short, WeaponKind.Greatsword, CombatStyle.Heavy, MotionStyle.Confident,
+                new Color(0.34f, 0.22f, 0.14f), new Color(0.72f, 0.32f, 0.16f), new Color(0.2f, 0.14f, 0.1f), new Color(1f, 0.55f, 0.15f), 1.28f, 1.35f, false, false, false, true, false, new Color(0.86f, 0.66f, 0.28f));
+            Look("sayo_mikage", HairStyle.Ponytail, WeaponKind.Bow, CombatStyle.Ranged, MotionStyle.Steady,
+                new Color(0.94f, 0.9f, 0.8f), new Color(0.14f, 0.42f, 0.28f), new Color(0.36f, 0.2f, 0.14f), new Color(1f, 0.9f, 0.3f), 1.08f, 0.92f, false, true, false, false, false, new Color(0.78f, 0.12f, 0.2f));
+            Look("nene_hanabusa", HairStyle.Bob, WeaponKind.Staff, CombatStyle.Healer, MotionStyle.Graceful,
+                new Color(0.98f, 0.95f, 0.88f), new Color(0.72f, 0.62f, 0.92f), new Color(0.98f, 0.78f, 0.55f), new Color(1f, 0.85f, 0.5f), 0.84f, 1f, false, false, false, false, true, new Color(1f, 0.66f, 0.55f));
+            Look("nagi_kurokiri", HairStyle.Hood, WeaponKind.TwinBlades, CombatStyle.Technical, MotionStyle.Sly,
+                new Color(0.17f, 0.17f, 0.21f), new Color(0.4f, 0.2f, 0.42f), new Color(0.62f, 0.66f, 0.72f), new Color(0.72f, 1f, 0.3f), 0.9f, 0.9f, true, false, false, false, false, new Color(0.7f, 1f, 0.25f));
+            Look("seiran_mizuchi", HairStyle.Long, WeaponKind.Spear, CombatStyle.Balanced, MotionStyle.Stoic,
+                new Color(0.84f, 0.87f, 0.92f), new Color(0.1f, 0.2f, 0.45f), new Color(0.14f, 0.3f, 0.55f), new Color(0.3f, 0.9f, 0.95f), 1.18f, 1f, false, true, false, false, false, new Color(0.3f, 0.9f, 0.95f));
             // Skin tones: a varied, friendly cast.
             Color porcelain = new Color(0.99f, 0.88f, 0.8f), light = new Color(0.97f, 0.81f, 0.68f), medium = new Color(0.88f, 0.67f, 0.5f),
                 tan = new Color(0.78f, 0.56f, 0.4f), brown = new Color(0.6f, 0.41f, 0.28f), deep = new Color(0.44f, 0.29f, 0.2f);
@@ -542,6 +599,8 @@ namespace HashiraChronicles
             Skin("akane_fire", light); Skin("tsukasa_storm", brown); Skin("mizuki_tide", medium);
             Skin("garou_onyx", brown);
             Skin("kaito_gale", light); Skin("oboro_iron", tan); Skin("shion_storm", porcelain);
+            Skin("tobi_kazami", light); Skin("bunta_okuyama", brown); Skin("sayo_mikage", medium);
+            Skin("nene_hanabusa", porcelain); Skin("nagi_kurokiri", tan); Skin("seiran_mizuchi", light);
             // Mina's blade burns violet: she fights with dark flames.
             var mina = Characters.Find(x => x.id == "mina_ember");
             if (mina != null) mina.element = Element.Dark;

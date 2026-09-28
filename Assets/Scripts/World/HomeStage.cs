@@ -157,19 +157,81 @@ namespace HashiraChronicles
         public bool LineupActive { get { return lineupRoot != null; } }
 
         /// <summary>Where slot i stands (feet), for the UI to place names and stats under each slayer.</summary>
-        public Vector3 LineupSlot(int i) { return new Vector3(-1.85f + i * 2.15f, PodiumHeight, 0.4f); }
+        public Vector3 LineupSlot(int i)
+        {
+            if (lineupCount <= 3) return new Vector3(-1.85f + i * 2.15f, PodiumHeight, 0.4f);
+            // Roster line-up: a shallow arc, the ends a little closer to the camera, like a promotional group shot.
+            float x = LineupCamera.x + (i - (lineupCount - 1) * 0.5f) * 1.8f;
+            float dx = x - LineupCamera.x;
+            return new Vector3(x, PodiumHeight, 0.6f - dx * dx * 0.045f);
+        }
+
+        int lineupCount = 3;
+        bool silhouette;
+        readonly Dictionary<Renderer, Material[]> silhouetteSaved = new Dictionary<Renderer, Material[]>();
+        Material silhouetteMat;
+
+        /// <summary>Roster check: every slayer drawn as a flat black shape (can you still tell them apart?).</summary>
+        public bool Silhouette
+        {
+            get { return silhouette; }
+            set
+            {
+                if (silhouette == value) return;
+                silhouette = value;
+                if (silhouetteMat == null)
+                {
+                    silhouetteMat = MaterialFactory.Toon(new Color(0.02f, 0.02f, 0.03f), 0f, new Color(0.02f, 0.02f, 0.03f));
+                    if (silhouetteMat.HasProperty("_RimColor")) silhouetteMat.SetColor("_RimColor", Color.black);
+                    if (silhouetteMat.HasProperty("_ShadowColor")) silhouetteMat.SetColor("_ShadowColor", Color.black);
+                }
+                if (value)
+                {
+                    foreach (var v in lineupVisuals)
+                    {
+                        if (v == null) continue;
+                        foreach (var rend in v.GetComponentsInChildren<Renderer>(true))
+                        {
+                            silhouetteSaved[rend] = rend.sharedMaterials;
+                            var m0 = rend.sharedMaterial;
+                            bool glow = !(rend is MeshRenderer) || (m0 != null && m0.shader != null && (m0.shader.name.Contains("Additive") || m0.shader.name.Contains("Transparent")));
+                            if (glow) { rend.enabled = false; continue; }
+                            var mats = new Material[rend.sharedMaterials.Length];
+                            for (int k = 0; k < mats.Length; k++) mats[k] = silhouetteMat;
+                            rend.sharedMaterials = mats;
+                        }
+                    }
+                }
+                else RestoreSilhouette();
+            }
+        }
+
+        void RestoreSilhouette()
+        {
+            foreach (var kv in silhouetteSaved)
+            {
+                if (kv.Key == null) continue;
+                kv.Key.sharedMaterials = kv.Value;
+                kv.Key.enabled = true;
+            }
+            silhouetteSaved.Clear();
+            silhouette = false;
+        }
 
         const float PodiumHeight = 0.28f;
 
         /// <summary>Line-up camera position (see Update): each slayer is turned to face it.</summary>
         static readonly Vector3 LineupCamera = new Vector3(0.3f, 2.2f, -6.6f);
+        static readonly Vector3 RosterCamera = new Vector3(0.3f, 2.7f, -11f);
+        Vector3 CurrentLineupCamera { get { return lineupCount > 3 ? RosterCamera : LineupCamera; } }
 
         /// <summary>Facing the camera, turned a little (three-quarter view) toward the middle of the group.</summary>
-        static float LineupYaw(int i)
+        float LineupYaw(int i)
         {
-            Vector3 p = new Vector3(-1.85f + i * 2.15f, 0f, 0.4f);
-            float face = Mathf.Atan2(LineupCamera.x - p.x, LineupCamera.z - p.z) * Mathf.Rad2Deg;
-            float centre = LineupCamera.x;
+            Vector3 p = LineupSlot(i);
+            Vector3 cam = CurrentLineupCamera;
+            float face = Mathf.Atan2(cam.x - p.x, cam.z - p.z) * Mathf.Rad2Deg;
+            float centre = cam.x;
             float turn = Mathf.Abs(p.x - centre) < 0.5f ? -6f : (p.x < centre ? -14f : 14f);
             return face + turn;
         }
@@ -182,10 +244,11 @@ namespace HashiraChronicles
             ClearLineup();
             EnsureWorld();
             lineupKey = key;
+            lineupCount = Mathf.Max(3, ids.Count);
             lineupRoot = new GameObject("Lineup");
             lineupRoot.transform.SetParent(transform, false);
             if (heroHolder != null) heroHolder.gameObject.SetActive(false);
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < lineupCount; i++)
             {
                 var slot = new GameObject("Slot" + i).transform;
                 slot.SetParent(lineupRoot.transform, false);
@@ -248,6 +311,7 @@ namespace HashiraChronicles
 
         public void ClearLineup()
         {
+            RestoreSilhouette();
             if (lineupRoot != null) Destroy(lineupRoot);
             lineupRoot = null;
             lineupKey = "";
@@ -290,7 +354,7 @@ namespace HashiraChronicles
                 for (int i = 0; i < lineupVisuals.Count; i++)
                     if (lineupVisuals[i] != null && !lineupVisuals[i].Posing) lineupVisuals[i].HoldTeamIdle();
                 if (CameraController.Instance != null)
-                    CameraController.Instance.SetFixed(LineupCamera + new Vector3(Mathf.Sin(t * 0.15f) * 0.15f, 0f, 0f), new Vector3(0.3f, 1.2f, 0.4f));
+                    CameraController.Instance.SetFixed(CurrentLineupCamera + new Vector3(Mathf.Sin(t * 0.15f) * 0.15f, 0f, 0f), new Vector3(0.3f, lineupCount > 3 ? 1.3f : 1.2f, 0.4f));
                 return;
             }
             if (viewer)

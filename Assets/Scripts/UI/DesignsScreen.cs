@@ -49,17 +49,21 @@ namespace HashiraChronicles
             }
         };
 
-        bool designWorlds;
+        /// <summary>0 = the six-slayer roster test, 1 = the first premium trio, 2 = world prototypes.</summary>
+        int designTab;
 
         void DrawDesigns()
         {
             var d = gm.Data;
-            gm.Home.ShowLineup(DesignIds);
             TopBar("NEW DESIGNS", GameScreen.Characters);
-            // Tabs: the character quality test and the environment quality test.
-            if (FlatBtn(new Rect(safe.x + 560f, safe.y + 26f, 220f, 54f), "CHARACTERS", !designWorlds ? TileRed : new Color(0.16f, 0.17f, 0.26f), true, 20)) designWorlds = false;
-            if (FlatBtn(new Rect(safe.x + 790f, safe.y + 26f, 200f, 54f), "WORLDS", designWorlds ? TileRed : new Color(0.16f, 0.17f, 0.26f), true, 20)) designWorlds = true;
-            if (designWorlds) { DrawWorldPrototypes(); return; }
+            // Tabs: the roster test, the first character quality test, and the environment quality test.
+            Color off = new Color(0.16f, 0.17f, 0.26f);
+            if (FlatBtn(new Rect(safe.x + 520f, safe.y + 26f, 190f, 54f), "ROSTER", designTab == 0 ? TileRed : off, true, 20)) { designTab = 0; gm.Home.Silhouette = false; }
+            if (FlatBtn(new Rect(safe.x + 720f, safe.y + 26f, 160f, 54f), "TRIO", designTab == 1 ? TileRed : off, true, 20)) { designTab = 1; gm.Home.Silhouette = false; }
+            if (FlatBtn(new Rect(safe.x + 890f, safe.y + 26f, 180f, 54f), "WORLDS", designTab == 2 ? TileRed : off, true, 20)) { designTab = 2; gm.Home.Silhouette = false; }
+            if (designTab == 2) { DrawWorldPrototypes(); return; }
+            if (designTab == 0) { DrawRosterDesigns(); return; }
+            gm.Home.ShowLineup(DesignIds);
             designPick = Mathf.Clamp(designPick, 0, DesignIds.Count - 1);
 
             // The three fighters in the village: a card under each.
