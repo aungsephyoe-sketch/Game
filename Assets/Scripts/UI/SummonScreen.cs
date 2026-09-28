@@ -105,20 +105,25 @@ namespace HashiraChronicles
             var rates = new Rect(rx + (1f - rk) * 200f, top, rw, 340f);
             Round(Offset(rates, 0f, 5f), new Color(0f, 0f, 0f, 0.4f), 18f);
             Round(rates, new Color(0.05f, 0.06f, 0.11f, 0.94f), 18f);
-            GUI.Label(new Rect(rates.x + 24f, rates.y + 16f, rw - 48f, 40f), "RATES", UIStyles.Sized(UIStyles.H2, 28));
-            float y = rates.y + 62f;
-            for (int i = SummonSystem.Rates.Length - 1; i >= 0; i--)
+            // Featured legendaries on this banner (the drop rates are not shown).
+            GUI.Label(new Rect(rates.x + 24f, rates.y + 14f, rw - 48f, 40f), "FEATURED LEGENDARIES", UIStyles.Sized(UIStyles.H2, 26));
+            var legends = GameDatabase.SummonPool(5);
+            legends.Sort((p, q) => (SummonSystem.IsFeatured(q.id) ? 1 : 0) - (SummonSystem.IsFeatured(p.id) ? 1 : 0));
+            float y = rates.y + 60f;
+            Color lc = RarityInfo.Color(5);
+            int shownLegends = 0;
+            for (int i = 0; i < legends.Count && shownLegends < 5; i++, shownLegends++)
             {
-                int rarity = 2 + i;
-                Color rc = RarityInfo.Color(rarity);
-                Round(new Rect(rates.x + 18f, y, rw - 36f, 38f), new Color(rc.r, rc.g, rc.b, 0.1f), 10f);
-                UIStyles.Colored(new Rect(rates.x + 32f, y, 200f, 38f), RarityInfo.Name(rarity), UIStyles.Sized(UIStyles.Body, 20), rc);
-                UIStyles.Colored(new Rect(rates.x + 170f, y, 200f, 38f), Stars(rarity), UIStyles.Sized(UIStyles.Body, 16), Color.Lerp(rc, new Color(1f, 0.85f, 0.3f), 0.5f));
-                float rate = SummonSystem.RateFor(rarity, d);
-                GUI.Label(new Rect(rates.x + 24f, y, rw - 60f, 38f), (rate * 100f).ToString("0.#") + "%" + (rarity == 6 && SummonSystem.Step(d) == SummonSystem.DoubleMythicStep ? " <color=#FF7AD9>×2!</color>" : ""), UIStyles.Sized(UIStyles.Right, 20));
-                y += 42f;
+                var ld = legends[(i + Mathf.FloorToInt(Time.unscaledTime / 4f) * 5) % legends.Count];
+                var row = new Rect(rates.x + 18f, y, rw - 36f, 48f);
+                float pulse = 0.08f + 0.05f * Mathf.Sin(Time.unscaledTime * 3f + i);
+                Round(row, new Color(lc.r, lc.g, lc.b, pulse), 10f);
+                FaceCircle(new Vector2(row.x + 26f, row.center.y), 20f, ld, lc);
+                UIStyles.Colored(new Rect(row.x + 56f, row.y, rw - 200f, 48f), ld.displayName, UIStyles.Sized(UIStyles.Body, 21), Color.white);
+                GUI.Label(new Rect(row.x + 56f, row.y, row.width - 70f, 48f), ElementTag(ld.element) + "  <color=#FFD36B>" + Stars(5) + "</color>", UIStyles.Sized(UIStyles.Right, 15));
+                y += 52f;
             }
-            GUI.Label(new Rect(rates.x + 24f, y + 2f, rw - 48f, 60f), "<color=#AAAAAA>Every ×10 guarantees EPIC or better. Pity: this banner's MYTHIC within " + SummonSystem.PityLimit + ".</color>", UIStyles.Sized(UIStyles.Small, 16));
+            if (legends.Count == 0) GUI.Label(new Rect(rates.x + 24f, y, rw - 48f, 40f), "<color=#AAAAAA>Coming soon</color>", UIStyles.Sized(UIStyles.Small, 18));
 
             var pity = new Rect(rates.x, rates.yMax + 18f, rw, 96f);
             Round(pity, new Color(0.05f, 0.06f, 0.11f, 0.94f), 18f);
@@ -193,7 +198,8 @@ namespace HashiraChronicles
         {
             var r = st.Current;
             if (Btn(new Rect(safe.xMax - 250f, safe.y + 24f, 220f, 80f), "SKIP ▶▶", UIStyles.ButtonSmall)) st.SkipAll();
-            if (st.Results != null && st.Results.Count > 1 && st.Phase != SummonStage.SummonPhase.Gather)
+            bool landing = st.Phase == SummonStage.SummonPhase.Silhouette || st.Phase == SummonStage.SummonPhase.Reveal || st.Phase == SummonStage.SummonPhase.Charging;
+            if (st.Results != null && st.Results.Count > 1 && landing && r != null)
                 GUI.Label(new Rect(safe.x + 30f, safe.y + 30f, 300f, 60f), (st.CurrentIndex + 1) + " / " + st.Results.Count, UIStyles.H2);
 
             if (st.Phase == SummonStage.SummonPhase.Intro)
@@ -229,7 +235,8 @@ namespace HashiraChronicles
                 return;
             }
             if (GUI.Button(new Rect(0f, 0f, W, H), GUIContent.none, GUIStyle.none)) st.Advance();
-            if (r == null) return;
+            // The shrine rite and the flying cards have no card of their own (never the previous pull's).
+            if (r == null || !landing) return;
 
             if (st.Phase == SummonStage.SummonPhase.Charging || st.Phase == SummonStage.SummonPhase.Silhouette)
             {

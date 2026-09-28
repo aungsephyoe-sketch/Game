@@ -194,9 +194,10 @@ namespace HashiraChronicles
                 case Kind.Village:
                     // Kiriha at night: moonlit teal grass, pale stone streets, cherry blossom, warm lanterns.
                     p.grassA = new Color(0.22f, 0.4f, 0.36f); p.grassB = new Color(0.28f, 0.46f, 0.38f); p.grassC = new Color(0.36f, 0.54f, 0.42f);
-                    p.path = new Color(0.6f, 0.58f, 0.64f); p.pathEdge = new Color(0.46f, 0.46f, 0.52f); p.clearing = new Color(0.64f, 0.62f, 0.66f);
+                    // Under the paving stones: dark grout and packed earth.
+                    p.path = new Color(0.3f, 0.29f, 0.32f); p.pathEdge = new Color(0.34f, 0.33f, 0.3f); p.clearing = new Color(0.32f, 0.31f, 0.33f);
                     p.rock = new Color(0.5f, 0.5f, 0.58f); p.rockDark = new Color(0.32f, 0.32f, 0.4f); p.bank = new Color(0.2f, 0.34f, 0.32f);
-                    p.leafDark = new Color(0.72f, 0.36f, 0.56f); p.leafMid = new Color(0.96f, 0.62f, 0.78f); p.leafLight = new Color(1f, 0.84f, 0.92f);
+                    p.leafDark = new Color(0.74f, 0.47f, 0.6f); p.leafMid = new Color(0.94f, 0.72f, 0.8f); p.leafLight = new Color(1f, 0.9f, 0.93f);
                     p.trunk = new Color(0.32f, 0.22f, 0.22f); p.accent = new Color(0.84f, 0.18f, 0.16f);
                     p.flowerA = new Color(1f, 0.86f, 0.5f); p.flowerB = new Color(1f, 0.62f, 0.78f); p.flowerC = new Color(0.72f, 0.72f, 1f);
                     p.water = new Color(0.22f, 0.4f, 0.66f); p.waterFoam = new Color(0.85f, 0.9f, 1f, 0.45f);

@@ -19,6 +19,7 @@ namespace HashiraChronicles
                 if (!d.profileDone) modal = 1;
                 else if (ProfileSystem.BirthdayDue(d)) modal = 2;
                 else if (LoginRewardSystem.Check(d)) modal = 3;
+                else if (SocialOpen) modal = 4;
             }
             bool old = GUI.enabled;
             if (modal != 0) GUI.enabled = false;
@@ -27,6 +28,7 @@ namespace HashiraChronicles
             if (modal == 1) DrawProfileSetup(d);
             else if (modal == 2) DrawBirthday(d);
             else if (modal == 3) DrawLoginReward(d);
+            else if (modal == 4) DrawSocial(d);
             else
             {
                 loginShownAt = -1f;

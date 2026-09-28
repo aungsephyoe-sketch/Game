@@ -49,16 +49,22 @@ namespace HashiraChronicles
         {
             if (cam == null) return;
             float s = HudLayout.Scale;
-            foreach (var c in Combatant.All)
+            foreach (var ally in PartySlayer.Party)
             {
-                var ally = c as AllySoldier;
-                if (ally == null || !ally.IsSlayer || !ally.IsAlive) continue;
+                if (ally == null) continue;
                 Vector3 sp = cam.WorldToScreenPoint(ally.Position + Vector3.up * 2.3f);
                 if (sp.z < 0f) continue;
                 var p = new Vector2(sp.x / s, (Screen.height - sp.y) / s);
                 Color el = ElementChart.ColorOf(ally.Element);
-                UIStyles.Outlined(new Rect(p.x - 120f, p.y - 40f, 240f, 28f), ally.DisplayName, UIStyles.Sized(UIStyles.Center, 20), Color.Lerp(el, Color.white, 0.5f), 2f);
-                UIStyles.Bar(new Rect(p.x - 60f, p.y - 10f, 120f, 9f), ally.Health.Current / Mathf.Max(1f, ally.Stats.hp), new Color(0.4f, 0.95f, 0.5f));
+                UIStyles.Outlined(new Rect(p.x - 120f, p.y - 40f, 240f, 28f), ally.DisplayName + (ally.Down ? "  <size=16>DOWN</size>" : ""), UIStyles.Sized(UIStyles.Center, 20), Color.Lerp(el, Color.white, 0.5f), 2f);
+                UIStyles.Bar(new Rect(p.x - 60f, p.y - 10f, 120f, 9f), ally.Down ? 0f : ally.Health.Normalized, new Color(0.4f, 0.95f, 0.5f));
+                if (!string.IsNullOrEmpty(ally.Bubble) && Time.time < ally.BubbleUntil)
+                {
+                    float w = Mathf.Clamp(ally.Bubble.Length * 12f + 30f, 120f, 360f);
+                    var r = new Rect(p.x - w * 0.5f, p.y - 86f, w, 40f);
+                    Round(r, new Color(1f, 0.98f, 0.92f, 0.94f), 12f);
+                    GUI.Label(new Rect(r.x + 10f, r.y + 6f, r.width - 20f, 30f), "<color=#222222>" + ally.Bubble.Replace("<", "‹") + "</color>", UIStyles.Sized(UIStyles.Center, 18));
+                }
             }
         }
 

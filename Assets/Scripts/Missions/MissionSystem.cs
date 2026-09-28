@@ -524,12 +524,15 @@ namespace HashiraChronicles
         {
             Vector3 origin = battle.Team.Active != null ? battle.Team.Active.Position : Vector3.zero;
             var names = new List<string>();
+            PartySlayer.Style? first = null;
             for (int i = 0; i < Def.coopAllyIds.Count; i++)
             {
                 string nm = i < Def.coopAllyNames.Count ? Def.coopAllyNames[i] : "Ally";
-                Vector3 at = origin + new Vector3(i == 0 ? -2.2f : 2.2f, 0f, -1.5f);
-                AllySoldier.SpawnSlayer(battle.transform, at, Def.enemyLevel, Def.coopAllyIds[i], nm);
-                names.Add(nm);
+                Vector3 at = origin + new Vector3(i == 0 ? -2.6f : 2.6f, 0f, -1.8f);
+                var ps = PartySlayer.Spawn(battle.transform, at, Def.enemyLevel, Def.coopAllyIds[i], nm, i, first);
+                if (ps == null) continue;
+                if (!first.HasValue) first = ps.PlayStyle;
+                names.Add(nm + " (" + ps.PlayStyle + ")");
             }
             GameEvents.RaiseBanner("CO-OP GATE · PARTY OF 3", string.Join(" · ", names.ToArray()) + " fight with you — the demons here are " + Def.coopPower.ToString("0.#") + "x stronger");
         }
@@ -651,6 +654,7 @@ namespace HashiraChronicles
                         if ((c.position - a.Position).magnitude > 1.8f) continue;
                         opened.Add(c);
                         ChestsFound++;
+                        if (GameManager.Instance != null) GameManager.Instance.Data.chestsFound++;
                         var lid = c.Find("Lid");
                         if (lid != null) { lid.localRotation = Quaternion.Euler(-70f, 0f, 0f); lid.localPosition += new Vector3(0f, 0.3f, -0.3f); }
                         bool gem = Random.value < 0.35f;

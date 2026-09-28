@@ -160,6 +160,7 @@ namespace HashiraChronicles
                     }
                 }
             foreach (var h in houses) House(h);
+            Paving();
             StreetStrings();
             if (hasBridge)
             {
@@ -167,6 +168,68 @@ namespace HashiraChronicles
                 MillWheel();
             }
             RoadGuides();
+        }
+
+        /// <summary>
+        /// Real paving: irregular flagstones laid over the streets, the market and the plaza, each a slightly
+        /// different grey with a worn top, with dark joints and moss between them and a kerb along the street
+        /// edge. Built into the combined rock mesh, so thousands of stones cost a couple of draw calls.
+        /// </summary>
+        static void Paving()
+        {
+            var cube = WorldKit.Prim(PrimitiveType.Cube);
+            Color[] stones = { new Color(0.56f, 0.55f, 0.6f), new Color(0.5f, 0.5f, 0.55f), new Color(0.62f, 0.6f, 0.62f), new Color(0.47f, 0.47f, 0.52f), new Color(0.58f, 0.56f, 0.54f) };
+            const float cell = 0.95f;
+            Vector3 mn = J.places[0].pos, mx = mn;
+            foreach (var p in J.path) { mn = Vector3.Min(mn, p); mx = Vector3.Max(mx, p); }
+            foreach (var pl in J.places) { mn = Vector3.Min(mn, pl.pos - Vector3.one * pl.radius); mx = Vector3.Max(mx, pl.pos + Vector3.one * pl.radius); }
+            int laid = 0;
+            for (float z = mn.z - 2f; z < mx.z + 2f; z += cell)
+            {
+                // Running bond: every other row shifted by half a stone.
+                float shift = (Mathf.FloorToInt(z / cell) & 1) == 0 ? 0f : cell * 0.5f;
+                for (float x = mn.x - 8f + shift; x < mx.x + 8f; x += cell)
+                {
+                    float jx = x + R(-0.06f, 0.06f), jz = z + R(-0.06f, 0.06f);
+                    float pd = PathDist(jx, jz);
+                    JourneyPlace pl;
+                    float cd = PlaceDist(jx, jz, out pl);
+                    bool street = pd < J.halfWidth - 0.35f;
+                    bool square = cd < -0.6f && pl != null && !pl.isBridge && pl != J.places[J.places.Count - 1];
+                    if (!street && !square) continue;
+                    if (NearChannel(jx, jz, 0.5f)) continue;
+                    if (hasBridge && (new Vector3(jx, 0f, jz) - bridgeCenter).magnitude < 6f) continue;
+                    // Worn gaps where a stone is missing and grass creeps in.
+                    if (rng.NextDouble() < 0.03) { Tuft(new Vector3(jx, Ground(new Vector3(jx, 0f, jz)), jz), R(0.3f, 0.45f), P.grassA); continue; }
+                    Vector3 at = new Vector3(jx, 0f, jz);
+                    at.y = Ground(at) + 0.02f;
+                    float w = cell * R(0.84f, 0.93f), d = cell * R(0.8f, 0.92f);
+                    Color c = Jitter(stones[rng.Next(stones.Length)], 0.06f);
+                    var q = Quaternion.Euler(R(-0.8f, 0.8f), R(-3f, 3f), R(-0.8f, 0.8f));
+                    solid.Add(cube, at, q, new Vector3(w, 0.07f, d), c);
+                    laid++;
+                    // Moss in some joints.
+                    if (rng.NextDouble() < 0.06) solid.Add(cube, at + new Vector3(w * 0.5f, -0.01f, R(-0.3f, 0.3f)), q, new Vector3(0.1f, 0.05f, R(0.3f, 0.7f)), new Color(0.2f, 0.34f, 0.22f));
+                }
+            }
+            // Kerb stones along both edges of the street (not through the squares).
+            for (float s = 0f; s < J.Length; s += 1.1f)
+            {
+                Vector3 p = Journey.Flat(J.PointAt(s));
+                Vector3 dr = Journey.Flat(J.PointAt(s + 0.5f)) - p;
+                if (dr.sqrMagnitude < 0.0001f) continue;
+                dr.Normalize();
+                Vector3 side = Vector3.Cross(Vector3.up, dr);
+                for (int sg = -1; sg <= 1; sg += 2)
+                {
+                    Vector3 at = p + side * sg * (J.halfWidth - 0.15f);
+                    JourneyPlace pl;
+                    if (PlaceDist(at.x, at.z, out pl) < 0.5f || NearChannel(at.x, at.z, 0.5f)) continue;
+                    if (hasBridge && (at - bridgeCenter).magnitude < 6f) continue;
+                    at.y = Ground(at) + 0.05f;
+                    solid.Add(cube, at, Quaternion.LookRotation(dr), new Vector3(0.28f, 0.14f, 1.02f), Jitter(new Color(0.44f, 0.44f, 0.48f), 0.05f));
+                }
+            }
         }
 
         static GameObject Glow(Vector3 pos, Vector3 scale, Quaternion rot, Color c)
@@ -576,21 +639,24 @@ namespace HashiraChronicles
                 var q = Quaternion.Euler(0f, k * 60f + R(-15f, 15f), 0f) * Quaternion.Euler(0f, 0f, R(48f, 62f));
                 b.Add(trunkMesh, p + Vector3.up * R(3.2f, 4.2f), q, new Vector3(0.5f, R(5f, 6.5f), 0.5f), bark * 0.92f);
             }
-            Vector3 crown = p + Vector3.up * 7.4f;
-            b.Add(lowSphere, crown, Quaternion.identity, new Vector3(11f, 5.5f, 11f), P.leafMid, 0.2f, 0.5f, 0.4f);
-            for (int k = 0; k < 12; k++)
+            // The crown: dozens of blossom clusters spread wide over the limbs, pale on top, deeper underneath,
+            // with blossom-laden sprays drooping at the edge (never a few big balls).
+            Vector3 crown = p + Vector3.up * 7.2f;
+            for (int k = 0; k < 64; k++)
             {
-                float a = (k * 30f + R(0f, 20f)) * Mathf.Deg2Rad, rr = R(4.2f, 6.2f);
-                Vector3 o = new Vector3(Mathf.Cos(a) * rr, R(-1.6f, 1.2f), Mathf.Sin(a) * rr);
-                float sz = R(3.8f, 5.2f);
-                Color col = k % 3 == 0 ? P.leafDark : k % 3 == 1 ? P.leafMid : P.leafLight;
-                b.Add(lowSphere, crown + o, Quaternion.identity, new Vector3(sz, sz * 0.75f, sz), Jitter(col, 0.05f), 0.22f, 0.5f, 0.4f);
+                float a = R(0f, Mathf.PI * 2f), rr = Mathf.Sqrt(R(0.05f, 1f)) * 7f;
+                float hy = Mathf.Lerp(2.2f, -1.4f, rr / 7f) + R(-0.8f, 0.8f);
+                Vector3 o = new Vector3(Mathf.Cos(a) * rr, hy, Mathf.Sin(a) * rr);
+                float sz = R(1.6f, 2.8f);
+                bool under = hy < 0f;
+                Color col = under ? Color.Lerp(P.leafDark, P.leafMid, R(0f, 0.6f)) : Color.Lerp(P.leafMid, P.leafLight, R(0.1f, 1f));
+                b.Add(lowSphere, crown + o, Quaternion.Euler(0f, R(0f, 360f), 0f), new Vector3(sz, sz * 0.7f, sz), Jitter(col, 0.04f), 0.2f, 0.5f, 0.4f);
             }
-            b.Add(lowSphere, crown + Vector3.up * 2.2f, Quaternion.identity, new Vector3(8f, 4.5f, 8f), P.leafLight, 0.24f, 0.5f, 0.5f);
-            for (int k = 0; k < 8; k++)
+            for (int k = 0; k < 14; k++)
             {
-                float a = (k * 45f + 20f) * Mathf.Deg2Rad;
-                b.Add(lowSphere, crown + new Vector3(Mathf.Cos(a) * 6.3f, -2.5f, Mathf.Sin(a) * 6.3f), Quaternion.identity, new Vector3(2.2f, 3.2f, 2.2f), Jitter(P.leafMid, 0.06f), 0.3f, 0.5f, 0.2f);
+                float a = (k * 360f / 14f + R(-8f, 8f)) * Mathf.Deg2Rad;
+                Vector3 o = new Vector3(Mathf.Cos(a) * R(6f, 7.4f), R(-3f, -2f), Mathf.Sin(a) * R(6f, 7.4f));
+                b.Add(lowSphere, crown + o, Quaternion.identity, new Vector3(1.1f, 2.4f, 1.1f), Jitter(P.leafMid, 0.05f), 0.3f, 0.5f, 0.15f);
             }
             b.Flush();
             // Sacred rope with paper streamers round the trunk.

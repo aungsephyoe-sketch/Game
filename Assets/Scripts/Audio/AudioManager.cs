@@ -179,6 +179,8 @@ namespace HashiraChronicles
 
         AudioClip Make(string id, float[] data, float gain = 1f)
         {
+            // Every one-shot effect gets the same finishing pass; loops (ambience, heartbeat) stay as they are.
+            if (!id.StartsWith("amb_") && id != "heartbeat") data = Polish(data, id == "click" || id == "step" ? 0.05f : 0.14f);
             float peak = 0.0001f;
             foreach (var s in data) peak = Mathf.Max(peak, Mathf.Abs(s));
             float norm = gain / peak;
@@ -187,6 +189,70 @@ namespace HashiraChronicles
             clip.SetData(data, 0);
             clips[id] = clip;
             return clip;
+        }
+
+        /// <summary>
+        /// The finishing pass that makes the synthesised effects sound produced rather than raw: DC removed, the
+        /// harsh digital top smoothed, a soft tape-like saturation that rounds peaks and adds weight, a small warm
+        /// room (Schroeder reverb) so hits and chimes have space, and click-free fades at both ends.
+        /// </summary>
+        static float[] Polish(float[] src, float wet)
+        {
+            int tail = Mathf.RoundToInt(0.22f * Rate * Mathf.Clamp01(wet * 8f));
+            var d = new float[src.Length + tail];
+            // DC blocker + gentle low-pass.
+            float prevX = 0f, prevY = 0f, lp = 0f, peak = 0.0001f;
+            for (int i = 0; i < src.Length; i++)
+            {
+                float x = src[i];
+                float y = x - prevX + 0.995f * prevY;
+                prevX = x; prevY = y;
+                lp += (y - lp) * 0.72f;
+                d[i] = lp;
+                peak = Mathf.Max(peak, Mathf.Abs(lp));
+            }
+            // Soft saturation on the normalised signal.
+            const float drive = 1.7f;
+            float norm = 1f / (float)System.Math.Tanh(drive);
+            for (int i = 0; i < src.Length; i++) d[i] = (float)System.Math.Tanh(d[i] / peak * drive) * norm * peak;
+            if (wet > 0f)
+            {
+                int[] combs = { 797, 863, 941, 1013 };
+                var outR = new float[d.Length];
+                foreach (int len in combs)
+                {
+                    var buf = new float[len];
+                    int idx = 0;
+                    float store = 0f;
+                    for (int i = 0; i < d.Length; i++)
+                    {
+                        float o = buf[idx];
+                        store = o * 0.7f + store * 0.3f;
+                        buf[idx] = d[i] + store * 0.74f;
+                        idx = (idx + 1) % len;
+                        outR[i] += o * 0.25f;
+                    }
+                }
+                int[] allpass = { 225, 341 };
+                foreach (int len in allpass)
+                {
+                    var buf = new float[len];
+                    int idx = 0;
+                    for (int i = 0; i < outR.Length; i++)
+                    {
+                        float bo = buf[idx];
+                        float o = -outR[i] + bo;
+                        buf[idx] = outR[i] + bo * 0.5f;
+                        idx = (idx + 1) % len;
+                        outR[i] = o;
+                    }
+                }
+                for (int i = 0; i < d.Length; i++) d[i] += outR[i] * wet;
+            }
+            int fin = Mathf.Min(d.Length, 32), fout = Mathf.Min(d.Length, Rate / 100);
+            for (int i = 0; i < fin; i++) d[i] *= i / (float)fin;
+            for (int i = 0; i < fout; i++) d[d.Length - 1 - i] *= i / (float)fout;
+            return d;
         }
 
         /// <summary>Filtered noise with exponential decay. brightness 0..1 (1 = hiss, 0 = rumble).</summary>
@@ -255,7 +321,17 @@ namespace HashiraChronicles
             b = Buffer(0.3f); AddTone(b, 0, 0.14f, 180f, 60f, 1f, 20f); AddTone(b, 0.01f, 0.3f, 1760f, 1760f, 0.35f, 12f); AddNoise(b, 0, 0.06f, 0.6f, 50f, 0.9f); Make("crit", b, 0.85f);
             b = Buffer(0.35f); AddNoise(b, 0, 0.3f, 1f, 12f, 0.8f, 0.02f); AddTone(b, 0.02f, 0.3f, 120f, 40f, 0.9f, 10f); Make("heavy", b, 0.9f);
             b = Buffer(0.22f); AddNoise(b, 0, 0.22f, 1f, 10f, 0.6f, 0.08f); Make("dodge", b, 0.5f);
-            b = Buffer(0.7f); AddTone(b, 0, 0.7f, 880f, 880f, 0.6f, 5f); AddTone(b, 0.05f, 0.65f, 1320f, 1320f, 0.4f, 5f); AddTone(b, 0.1f, 0.6f, 1760f, 1760f, 0.3f, 6f); Make("perfect", b, 0.6f);
+            // Reward chime: three struck bells (inharmonic partials) rising, with a sparkle.
+            b = Buffer(1.3f);
+            float[] bells = { 1046.5f, 1318.5f, 1568f };
+            for (int k = 0; k < bells.Length; k++)
+            {
+                float f = bells[k], t0 = k * 0.07f;
+                AddTone(b, t0, 1.1f, f, f, 0.45f, 3.2f, 0.002f); AddTone(b, t0, 0.8f, f * 2.76f, f * 2.76f, 0.14f, 5f, 0.002f);
+                AddTone(b, t0, 0.5f, f * 5.4f, f * 5.4f, 0.05f, 8f, 0.002f); AddTone(b, t0, 1.1f, f * 0.5f, f * 0.5f, 0.12f, 3f, 0.004f);
+            }
+            AddNoise(b, 0.14f, 0.35f, 0.05f, 9f, 1f, 0.02f);
+            Make("perfect", b, 0.6f);
             b = Buffer(0.4f); AddTone(b, 0, 0.3f, 300f, 1200f, 0.5f, 6f, 0.02f); AddNoise(b, 0.05f, 0.35f, 0.7f, 8f, 0.9f, 0.05f); Make("skill", b, 0.6f);
             b = Buffer(1.6f); AddTone(b, 0, 1.6f, 55f, 55f, 0.8f, 1.5f, 0.05f); AddTone(b, 0, 0.9f, 200f, 1600f, 0.4f, 2f, 0.3f); AddNoise(b, 0.8f, 0.8f, 1f, 4f, 0.8f, 0.01f); AddTaiko(b, 0.85f, 1f); Make("ultimate", b, 0.9f);
             b = Buffer(0.35f); AddNoise(b, 0, 0.35f, 1f, 7f, 0.75f, 0.05f); AddTone(b, 0, 0.3f, 900f, 300f, 0.2f, 8f); Make("wave", b, 0.6f);
@@ -276,7 +352,8 @@ namespace HashiraChronicles
             AddNoise(b, 0, 1.3f, 0.5f, 2.5f, 0.3f, 0.1f);
             Make("roar", b, 0.8f);
             b = Buffer(0.4f); AddTone(b, 0, 0.4f, 420f, 70f, 0.7f, 6f); AddNoise(b, 0, 0.35f, 0.6f, 8f, 0.5f); Make("enemyDeath", b, 0.55f);
-            b = Buffer(0.05f); AddTone(b, 0, 0.05f, 1300f, 1300f, 0.6f, 60f); Make("click", b, 0.4f);
+            // UI tap: a soft wooden "tok" instead of a beep.
+            b = Buffer(0.09f); AddTone(b, 0, 0.08f, 1150f, 720f, 0.55f, 55f, 0.001f); AddTone(b, 0, 0.04f, 2400f, 1900f, 0.12f, 80f, 0.001f); AddNoise(b, 0, 0.01f, 0.25f, 300f, 0.9f, 0.0005f); Make("click", b, 0.4f);
             // Coin pickup: two bright pings.
             // Coin pickup: the classic bright "ka-ching" (two bell tones with metallic overtones and a tiny shimmer).
             b = Buffer(0.5f);

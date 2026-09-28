@@ -74,6 +74,10 @@ namespace HashiraChronicles
             Round(bar, new Color(0f, 0f, 0f, 0.55f), 6f);
             if (frac > 0.01f) Round(new Rect(bar.x, bar.y, Mathf.Max(11f, bar.width * frac), bar.height), new Color(0.35f, 0.75f, 1f), 6f);
             Round(new Rect(bar.x, bar.y, Mathf.Max(11f, bar.width * frac), bar.height * 0.45f), new Color(1f, 1f, 1f, 0.3f), 6f);
+            // Tap the profile to open it (name, gamer code, medals).
+            var hit = new Rect(x0, y0, 380f, 104f);
+            if (hit.Contains(Event.current.mousePosition)) RoundFrame(hit, new Color(1f, 1f, 1f, 0.15f), 2f, 16f);
+            if (GUI.Button(hit, GUIContent.none, GUIStyle.none)) OpenSocial(SocialPanel.Profile);
         }
 
         void HomeShortcuts(PlayerData d)
@@ -93,6 +97,11 @@ namespace HashiraChronicles
                 if (i == 0) UIStyles.CircleTex(c, 34f, new Color(1f, 0.55f, 0.2f, 0.18f + 0.1f * Mathf.Sin(Time.unscaledTime * 3f)));
                 GUI.DrawTexture(new Rect(c.x - 20f, c.y - 20f, 40f, 40f), IconFactory.Get(icons[i]), ScaleMode.ScaleToFit, true);
                 UIStyles.Outlined(new Rect(c.x - 60f, c.y + 36f, 120f, 24f), labels[i], UIStyles.Sized(UIStyles.Center, 16), Color.white, 1.5f);
+                if (i == 3)
+                {
+                    int unread = SocialSystem.Unread(d);
+                    if (unread > 0) Badge(new Vector2(c.x + 26f, c.y - 26f), unread > 9 ? "9+" : unread.ToString(), UIStyles.Crimson, 0.8f);
+                }
                 if (i == 0)
                 {
                     int badge = EventBadge(d);
@@ -106,7 +115,7 @@ namespace HashiraChronicles
                         case 0: gm.GoTo(GameScreen.Events); break;
                         case 1: gm.GoTo(GameScreen.Story); break;
                         case 2: Toast("Rankings open with the next season."); break;
-                        default: Toast("Friends arrive with online play."); break;
+                        default: OpenSocial(SocialPanel.Friends); break;
                     }
                 }
             }
@@ -183,7 +192,7 @@ namespace HashiraChronicles
 
             // Swipe: drag the banner left or right to change events; a tap opens the one showing.
             var ev = Event.current;
-            if (ev.type == EventType.MouseDown && r.Contains(ev.mousePosition)) { bannerDragging = true; bannerDrag = 0f; bannerDragLast = ev.mousePosition.x; ev.Use(); }
+            if (GUI.enabled && ev.type == EventType.MouseDown && r.Contains(ev.mousePosition)) { bannerDragging = true; bannerDrag = 0f; bannerDragLast = ev.mousePosition.x; ev.Use(); }
             else if (bannerDragging && ev.type == EventType.MouseDrag) { bannerDrag += ev.mousePosition.x - bannerDragLast; bannerDragLast = ev.mousePosition.x; bannerSince = Time.unscaledTime; ev.Use(); }
             else if (bannerDragging && ev.type == EventType.MouseUp)
             {
@@ -389,6 +398,7 @@ namespace HashiraChronicles
         void HomeHeroDrag()
         {
             var cam = Camera.main;
+            if (!GUI.enabled) { heroDragging = false; return; }
             if (cam == null || gm.Home == null || !gm.Home.LeaderVisible) return;
             float s = HudLayout.Scale;
             Vector3 feet = cam.WorldToScreenPoint(gm.Home.LeaderFeet);

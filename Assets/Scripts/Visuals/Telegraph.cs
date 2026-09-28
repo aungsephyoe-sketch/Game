@@ -16,29 +16,53 @@ namespace HashiraChronicles
 
         static readonly Color DangerColor = new Color(1f, 0.12f, 0.1f, 1f);
 
+        /// <summary>Every warning on the ground right now (the co-op party's AI reads them to dodge).</summary>
+        public static readonly System.Collections.Generic.List<Telegraph> Active = new System.Collections.Generic.List<Telegraph>();
+        /// <summary>A rough circle covering the danger zone.</summary>
+        public Vector3 DangerCenter { get; private set; }
+        public float DangerRadius { get; private set; }
+
+        void OnEnable() { Active.Add(this); }
+        void OnDisable() { Active.Remove(this); }
+
+        public bool Threatens(Vector3 p, float pad)
+        {
+            Vector3 d = p - DangerCenter;
+            d.y = 0f;
+            return d.magnitude < DangerRadius + pad;
+        }
+
         public static Telegraph Circle(Vector3 center, float radius, float duration)
         {
-            return Create(MeshFactory.Disc(), center, Quaternion.identity, new Vector3(radius, 1f, radius), duration, false);
+            var t = Create(MeshFactory.Disc(), center, Quaternion.identity, new Vector3(radius, 1f, radius), duration, false);
+            t.DangerCenter = center; t.DangerRadius = radius;
+            return t;
         }
 
         public static Telegraph Sector(Vector3 origin, Vector3 forward, float range, float arcDegrees, float duration)
         {
             forward.y = 0f;
             if (forward.sqrMagnitude < 0.001f) forward = Vector3.forward;
-            return Create(MeshFactory.Sector(arcDegrees, 0f), origin, Quaternion.LookRotation(forward), new Vector3(range, 1f, range), duration, false);
+            var t = Create(MeshFactory.Sector(arcDegrees, 0f), origin, Quaternion.LookRotation(forward), new Vector3(range, 1f, range), duration, false);
+            t.DangerCenter = origin + forward.normalized * range * 0.5f; t.DangerRadius = range * 0.6f;
+            return t;
         }
 
         public static Telegraph Line(Vector3 origin, Vector3 forward, float width, float length, float duration)
         {
             forward.y = 0f;
             if (forward.sqrMagnitude < 0.001f) forward = Vector3.forward;
-            return Create(MeshFactory.Line(), origin, Quaternion.LookRotation(forward), new Vector3(width, 1f, length), duration, true);
+            var t = Create(MeshFactory.Line(), origin, Quaternion.LookRotation(forward), new Vector3(width, 1f, length), duration, true);
+            t.DangerCenter = origin + forward.normalized * length * 0.5f; t.DangerRadius = Mathf.Max(width, length * 0.5f);
+            return t;
         }
 
         public static Telegraph Ring(Vector3 center, float innerRadius, float outerRadius, float duration)
         {
-            return Create(MeshFactory.Ring(innerRadius / outerRadius), center, Quaternion.identity,
+            var t = Create(MeshFactory.Ring(innerRadius / outerRadius), center, Quaternion.identity,
                 new Vector3(outerRadius, 1f, outerRadius), duration, false, true);
+            t.DangerCenter = center; t.DangerRadius = outerRadius;
+            return t;
         }
 
         static Telegraph Create(Mesh mesh, Vector3 pos, Quaternion rot, Vector3 scale, float duration, bool lengthOnly, bool pulseOnly = false)

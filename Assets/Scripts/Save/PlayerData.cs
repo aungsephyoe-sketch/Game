@@ -82,6 +82,43 @@ namespace HashiraChronicles
 
     /// <summary>Everything persisted between sessions. Serialized with JsonUtility.</summary>
     [System.Serializable]
+    public class FriendEntry
+    {
+        public string code;
+        public string name;
+        public string charId;
+        public int level;
+        /// <summary>Chat personality seed (the simulated friend's typing style).</summary>
+        public int seed;
+        public long since;
+        public int unread;
+    }
+
+    [System.Serializable]
+    public class DmLine
+    {
+        public bool mine;
+        public string text;
+        public long time;
+    }
+
+    [System.Serializable]
+    public class DmThread
+    {
+        public string code;
+        public List<DmLine> lines = new List<DmLine>();
+    }
+
+    [System.Serializable]
+    public class AchievementState
+    {
+        public string id;
+        public bool unlocked;
+        public bool claimed;
+        public long when;
+    }
+
+    [System.Serializable]
     public class PlayerData
     {
         public const int CurrentVersion = 3;
@@ -143,6 +180,26 @@ namespace HashiraChronicles
         public string weeklyKey = "";
         public List<QuestState> quests = new List<QuestState>();
         public int bossesDefeated;
+
+        // ---- Social (0.20.0)
+        /// <summary>Unique gamer code other players type to add you as a friend (BL-XXXX-XXXX).</summary>
+        public string gamerCode = "";
+        /// <summary>When the name was last changed (DateTime ticks); a change is allowed once a week.</summary>
+        public long nameChangedTicks;
+        public List<FriendEntry> friends = new List<FriendEntry>();
+        public List<FriendEntry> friendRequests = new List<FriendEntry>();
+        public List<DmThread> dms = new List<DmThread>();
+        /// <summary>What the chat has learned from you: word pairs ("a b") and your own slang.</summary>
+        public List<string> chatPairs = new List<string>();
+        public List<string> chatSlang = new List<string>();
+        public List<string> chatWordCounts = new List<string>();
+
+        // ---- Achievements
+        public List<AchievementState> achievements = new List<AchievementState>();
+        public int chestsFound;
+        public int coopClears;
+        public int messagesSent;
+        public int partiesFormed;
 
         public bool HasSeen(string cutsceneId) { return seenCutscenes.Contains(cutsceneId); }
         public void MarkSeen(string cutsceneId) { if (!seenCutscenes.Contains(cutsceneId)) seenCutscenes.Add(cutsceneId); }

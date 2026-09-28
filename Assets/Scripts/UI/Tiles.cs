@@ -268,10 +268,30 @@ namespace HashiraChronicles
             RoundFrame(r, new Color(1f, 1f, 1f, 0.1f), 2f, 12f);
             Vector2 ic = new Vector2(r.x + r.height * 0.55f, r.center.y);
             if (kind == 0) CoinIcon(ic, r.height * 0.62f); else if (kind == 1) DiamondIcon(ic, r.height * 0.7f); else XpIcon(ic, r.height * 0.66f);
-            GUI.Label(new Rect(r.x + r.height, r.y, r.width - r.height * 2f, r.height), value, UIStyles.Sized(UIStyles.Body, 30));
+            // The bigger the number, the smaller the text, so it always fits on one line.
+            var vr = new Rect(r.x + r.height, r.y, r.width - r.height * 2f + 6f, r.height);
+            GUI.Label(vr, value, FitStyle(value, vr.width, 30, 14));
             var pr = new Rect(r.xMax - r.height, r.y, r.height, r.height);
             GUI.Label(pr, "+", UIStyles.Sized(UIStyles.Center, 34));
             if (GUI.Button(pr, GUIContent.none, GUIStyle.none) && onPlus != null) { gm.Audio.Play("click", 0.5f); onPlus(); }
+        }
+
+        static readonly System.Collections.Generic.Dictionary<int, GUIStyle> fitStyles = new System.Collections.Generic.Dictionary<int, GUIStyle>();
+
+        /// <summary>A one-line style whose font shrinks (from max down to min) until the text fits the width.</summary>
+        static GUIStyle FitStyle(string text, float width, int max, int min)
+        {
+            GUIStyle st = null;
+            for (int size = max; size >= min; size -= 2)
+            {
+                if (!fitStyles.TryGetValue(size, out st))
+                {
+                    st = new GUIStyle(UIStyles.Sized(UIStyles.Body, size)) { wordWrap = false, clipping = TextClipping.Overflow, alignment = TextAnchor.MiddleLeft };
+                    fitStyles[size] = st;
+                }
+                if (st.CalcSize(new GUIContent(text)).x <= width) return st;
+            }
+            return st;
         }
 
         bool IconButton(Rect r, Texture2D icon)
@@ -291,7 +311,9 @@ namespace HashiraChronicles
             Round(r, new Color(0.05f, 0.05f, 0.1f, 0.78f), r.height * 0.5f);
             UIStyles.CircleTex(new Vector2(r.x + r.height * 0.5f, r.center.y), r.height * 0.5f - 3f, c);
             GUI.Label(new Rect(r.x, r.y, r.height, r.height), icon, UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(r.height * 0.5f)));
-            GUI.Label(new Rect(r.x + r.height + 6f, r.y, r.width - r.height - 16f, r.height), value, UIStyles.Sized(UIStyles.Right, Mathf.RoundToInt(r.height * 0.5f)));
+            var vr = new Rect(r.x + r.height + 6f, r.y, r.width - r.height - 16f, r.height);
+            var st = new GUIStyle(FitStyle(value, vr.width, Mathf.RoundToInt(r.height * 0.5f), 12)) { alignment = TextAnchor.MiddleRight };
+            GUI.Label(vr, value, st);
         }
 
         /// <summary>A portrait card: element-coloured frame, rendered portrait, optional level tag.</summary>

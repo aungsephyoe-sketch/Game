@@ -36,6 +36,24 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Social, achievements and a smarter party (0.20.0)
+- **Co-op party that plays like people** (`PartySlayer`): each partner has a play style from their slayer —
+  Vanguard (dives in and slams), Duelist (fast combos, flash-steps), Skirmisher (keeps distance, throws crescents)
+  or Support (heals) — and two partners never share one. They pick their own targets, keep their own space (no more
+  stacking on each other), dodge out of red zones, use specials and a big ultimate, chat while they fight, go down
+  and get back up. In the village they hang around you instead of glued to your back.
+- **Chat that sounds like players** (`ChatBrain`): lowercase, slang (u, rn, ngl), typos with "*corrections",
+  text faces (:D ^_^ T_T), replies to what you actually say, asks back, remembers the slayer you like, and learns
+  your own words and slang (saved with your profile) — all local, no server or AI model. Bad words are blurred.
+- **Profile** (tap your name, top-left): change your name once every 7 days, your unique gamer code with COPY,
+  stats and medals. **Friends** (FRIENDS on the left): add by code or from suggestions, requests, who's online, and
+  private chats. Friends and their messages are simulated until there's a server.
+- **Achievements**: 30 goals with Bronze/Silver/Gold/Platinum medals, rewards paid instantly, and a popup.
+- Summon: the previous pull's card no longer flashes during a new pull; the banner shows featured Legendaries
+  instead of drop rates. Currency numbers shrink to fit. Test play (TRY) happens in the forest.
+- Sound: every effect gets a finishing pass (soft saturation, a small room reverb, click-free fades); new UI tap
+  and reward chime. Home: flagstone paving, fuller cherry trees, villagers who stop and chat to each other.
+
 ### Kiriha Village hub (0.19.0)
 **The village, rebuilt.** Kiriha is now built on the same standard as the forest, snow and volcano worlds
 (`PrototypeWorld.Village.cs`, `Kind.Village`): a moonlit night with stars and a haloed moon, a timber village gate

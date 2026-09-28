@@ -44,25 +44,38 @@ namespace HashiraChronicles
         }
 
         /// <summary>Villagers' chatter floats above their heads.</summary>
+        /// <summary>
+        /// Home screen: at most one villager speaks at a time (the latest), in a rounded bubble kept in the open
+        /// middle of the screen so it never covers the logo, the banner or the team panel.
+        /// </summary>
         void DrawNpcBubbles()
         {
             var cam = Camera.main;
             if (cam == null) return;
             float s = HudLayout.Scale;
+            NpcWalker speaker = null;
             foreach (var n in NpcWalker.All)
             {
                 if (n == null || !n.gameObject.activeInHierarchy || string.IsNullOrEmpty(n.CurrentLine) || Time.time > n.LineUntil) continue;
-                Vector3 sp = cam.WorldToScreenPoint(n.transform.position + Vector3.up * 2.3f);
-                if (sp.z < 0f) continue;
-                var p = new Vector2(sp.x / s, (Screen.height - sp.y) / s);
-                if (p.x < 640f + safe.x) continue; // keep the menu column clear
-                float w = Mathf.Clamp(n.CurrentLine.Length * 13f, 220f, 520f);
-                var r = new Rect(p.x - w * 0.5f, p.y - 86f, w, 76f);
-                UIStyles.Rect(r, new Color(1f, 0.98f, 0.92f, 0.92f));
-                UIStyles.Rect(new Rect(p.x - 8f, r.yMax, 16f, 10f), new Color(1f, 0.98f, 0.92f, 0.92f));
-                GUI.Label(new Rect(r.x + 10f, r.y + 4f, r.width - 20f, 26f), "<color=#8A4B2A><b>" + n.SpeakerName + "</b></color>", UIStyles.Sized(UIStyles.Small, 18));
-                GUI.Label(new Rect(r.x + 10f, r.y + 28f, r.width - 20f, 46f), "<color=#222222>" + n.CurrentLine + "</color>", UIStyles.Sized(UIStyles.Small, 19));
+                if (speaker == null || n.LineUntil > speaker.LineUntil) speaker = n;
             }
+            if (speaker == null) return;
+            Vector3 sp = cam.WorldToScreenPoint(speaker.transform.position + Vector3.up * 2.3f);
+            if (sp.z < 0f) return;
+            var p = new Vector2(sp.x / s, (Screen.height - sp.y) / s);
+            float w = Mathf.Clamp(speaker.CurrentLine.Length * 11f + 30f, 220f, 440f);
+            float minX = safe.x + 960f, maxX = W - safe.x - 470f;
+            if (maxX - minX < w) return;
+            float bx = Mathf.Clamp(p.x - w * 0.5f, minX, maxX - w);
+            float by = Mathf.Clamp(p.y - 96f, H * 0.52f, H - 330f);
+            var r = new Rect(bx, by, w, 74f);
+            float fade = Mathf.Clamp01((speaker.LineUntil - Time.time) / 0.4f);
+            Round(Offset(r, 0f, 3f), new Color(0f, 0f, 0f, 0.25f * fade), 16f);
+            Round(r, new Color(1f, 0.98f, 0.93f, 0.95f * fade), 16f);
+            float tx = Mathf.Clamp(p.x, r.x + 20f, r.xMax - 20f);
+            UIStyles.Rect(new Rect(tx - 7f, r.yMax - 2f, 14f, 10f), new Color(1f, 0.98f, 0.93f, 0.95f * fade));
+            GUI.Label(new Rect(r.x + 14f, r.y + 4f, r.width - 28f, 26f), "<color=#8A4B2A><b>" + speaker.SpeakerName + "</b></color>", UIStyles.Sized(UIStyles.Small, 17));
+            GUI.Label(new Rect(r.x + 14f, r.y + 28f, r.width - 28f, 44f), "<color=#222222>" + speaker.CurrentLine + "</color>", UIStyles.Sized(UIStyles.Small, 18));
         }
 
         static string RegionName(string id)

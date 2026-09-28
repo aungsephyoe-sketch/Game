@@ -140,6 +140,53 @@ namespace HashiraChronicles
             b.Add(lowSphere, top + new Vector3(h * 0.12f, h * 0.1f, h * 0.14f), Quaternion.identity, Vector3.one * h * 0.24f, Jitter(Color.Lerp(light, Color.white, 0.12f), 0.04f), 0.16f, 0.5f, 0.5f);
         }
 
+        /// <summary>
+        /// A cherry tree in bloom: a leaning, forked trunk with limbs that spread wide, and a crown made of many
+        /// small blossom clusters at the limb ends (paler on top, deeper pink underneath) instead of a few big balls.
+        /// </summary>
+        static void CherryTree(WorldMeshBuilder b, Vector3 p, float h)
+        {
+            Color bark = Jitter(new Color(0.3f, 0.21f, 0.21f), 0.06f);
+            var lean = Quaternion.Euler(R(-6f, 6f), R(0f, 360f), R(-6f, 6f));
+            b.Add(trunkMesh, p + Vector3.down * 0.2f, lean, new Vector3(h * 0.055f, h * 0.42f, h * 0.055f), bark);
+            Vector3 fork = p + lean * Vector3.up * h * 0.36f;
+            int limbs = 3 + rng.Next(2);
+            var ends = new System.Collections.Generic.List<Vector3>();
+            for (int k = 0; k < limbs; k++)
+            {
+                float yaw = k * 360f / limbs + R(-25f, 25f);
+                var q = Quaternion.Euler(0f, yaw, 0f) * Quaternion.Euler(0f, 0f, R(32f, 55f));
+                float len = h * R(0.36f, 0.48f);
+                b.Add(trunkMesh, fork, q, new Vector3(h * 0.026f, len, h * 0.026f), bark * 0.95f);
+                Vector3 end = fork + q * Vector3.up * len;
+                ends.Add(end);
+                // A side branch off each limb.
+                var q2 = q * Quaternion.Euler(0f, R(-60f, 60f), R(20f, 35f));
+                Vector3 mid = fork + q * Vector3.up * len * 0.55f;
+                b.Add(trunkMesh, mid, q2, new Vector3(h * 0.014f, len * 0.5f, h * 0.014f), bark * 0.9f);
+                ends.Add(mid + q2 * Vector3.up * len * 0.5f);
+            }
+            foreach (var e in ends)
+            {
+                int n = 3 + rng.Next(3);
+                for (int k = 0; k < n; k++)
+                {
+                    Vector3 o = new Vector3(R(-1f, 1f), R(-0.4f, 0.7f), R(-1f, 1f)) * h * 0.12f;
+                    float sz = h * R(0.13f, 0.21f);
+                    bool under = o.y < 0f;
+                    Color c = under ? Color.Lerp(P.leafDark, P.leafMid, R(0f, 0.5f)) : Color.Lerp(P.leafMid, P.leafLight, R(0f, 0.8f));
+                    b.Add(lowSphere, e + o, Quaternion.Euler(0f, R(0f, 360f), 0f), new Vector3(sz, sz * 0.72f, sz), Jitter(c, 0.04f), 0.16f, 0.5f, 0.45f);
+                }
+            }
+            // A few pale highlights on top and petals drooping below the outer clusters.
+            for (int k = 0; k < 4; k++)
+            {
+                Vector3 e = ends[rng.Next(ends.Count)];
+                b.Add(lowSphere, e + Vector3.up * h * 0.1f, Quaternion.identity, Vector3.one * h * R(0.07f, 0.1f), Jitter(P.leafLight, 0.03f), 0.18f, 0.5f, 0.5f);
+                b.Add(lowSphere, e + Vector3.down * h * 0.12f, Quaternion.identity, new Vector3(h * 0.06f, h * 0.1f, h * 0.06f), Jitter(P.leafMid, 0.04f), 0.25f, 0.5f, 0.2f);
+            }
+        }
+
         static void Cedar(WorldMeshBuilder b, Vector3 p, float h, Color leaf)
         {
             b.Add(trunkMesh, p + Vector3.down * 0.2f, Quaternion.Euler(0f, R(0f, 360f), 0f), new Vector3(h * 0.045f, h * 0.5f, h * 0.045f), P.trunk);
@@ -211,7 +258,7 @@ namespace HashiraChronicles
                     // Cherry trees in blossom among dark cedars and a few evergreen oaks.
                     if (type == 1) Cedar(b, p, h * 1.25f, VillageGreen);
                     else if (type == 2) BroadTree(b, p, h, VillageGreen * 1.15f);
-                    else BroadTree(b, p, h * 0.85f, Color.Lerp(P.leafMid, P.leafLight, R(0f, 0.5f)));
+                    else CherryTree(b, p, h * 0.85f);
                     break;
                 default:
                     if (type == 1) Cedar(b, p, h * 1.25f, P.leafMid);

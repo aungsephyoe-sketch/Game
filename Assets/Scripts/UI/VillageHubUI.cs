@@ -67,11 +67,23 @@ namespace HashiraChronicles
                 Round(r, new Color(0.03f, 0.04f, 0.08f, 0.66f), 12f);
                 Round(new Rect(r.x + 8f, r.y + 10f, 10f, 10f), p.color, 5f);
                 GUI.Label(new Rect(r.x + 24f, r.y + 1f, r.width - 28f, 28f), label, chatLineStyle);
-                if (a != null && hub.CanInvite(p) && (wp - a.Position).magnitude < 4.5f)
+                if (a != null && (wp - a.Position).magnitude < 4.5f)
                 {
-                    var br = new Rect(c.x - 70f, r.yMax + 6f, 140f, 44f);
-                    HubBlock(br);
-                    if (FlatBtn(br, "INVITE", TileGreen, true, 20)) hub.Invite(p);
+                    bool inv = hub.CanInvite(p), fr = !hub.IsFriend(p);
+                    float bx = c.x - (inv && fr ? 146f : 70f);
+                    if (inv)
+                    {
+                        var br = new Rect(bx, r.yMax + 6f, 140f, 44f);
+                        HubBlock(br);
+                        if (FlatBtn(br, "INVITE", TileGreen, true, 20)) hub.Invite(p);
+                        bx += 152f;
+                    }
+                    if (fr)
+                    {
+                        var fb = new Rect(bx, r.yMax + 6f, 140f, 44f);
+                        HubBlock(fb);
+                        if (FlatBtn(fb, "+ FRIEND", TileBlue, true, 19)) hub.AddFriend(p);
+                    }
                 }
             }
         }
@@ -150,7 +162,7 @@ namespace HashiraChronicles
         static string ChatText(VillageHub.ChatLine l)
         {
             // Player text is shown as plain text (no rich-text tags from what people type).
-            string t = l.text.Replace("<", "‹").Replace(">", "›");
+            string t = ChatSafe(l.text);
             if (l.system) return "<color=#" + UIStyles.Hex(l.color) + "><i>" + t + "</i></color>";
             return "<color=#" + UIStyles.Hex(l.color) + "><b>" + l.who.Replace("<", "‹") + "</b></color><color=#EEEEEE>: " + t + "</color>";
         }

@@ -119,6 +119,9 @@ namespace HashiraChronicles
             Color best = RarityInfo.Color(BestRarity);
             ClearShown();
             ClearCards();
+            // Nothing from the previous pull may show while this one plays.
+            Current = null;
+            CurrentIndex = 0;
 
             // 1–4. The blade (drawn by the UI over a black screen), timed with its sounds. Behind the black, the
             // shrine shot is already set up so the slice opens straight onto it.

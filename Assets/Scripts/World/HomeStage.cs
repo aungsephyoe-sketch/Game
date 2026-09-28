@@ -138,7 +138,14 @@ namespace HashiraChronicles
             };
             // Villagers stroll in the lane behind the leader, short of the tree.
             for (int i = 0; i < Mathf.RoundToInt(5 * GameSettings.SceneryDensity) + 1; i++)
-                walkers.Add(NpcWalker.Spawn(world.transform, i % 2 == 0 ? "npc_villager" : "npc_villager2", new Vector3(0f, 0f, 8.5f), 2.8f, 5.5f, lines));
+            {
+                string[] kinds = { "npc_villager", "npc_villager2", "npc_merchant", "npc_villager2", "npc_villager", "npc_soldier" };
+                var w = NpcWalker.Spawn(world.transform, kinds[i % kinds.Length], new Vector3(0f, 0f, 8.5f), 2.8f, 5.5f, lines);
+                if (w == null) continue;
+                // Everyone walks at their own pace (the soldier on patrol a little faster).
+                w.Speed = kinds[i % kinds.Length] == "npc_soldier" ? 1.7f : Random.Range(0.9f, 1.4f);
+                walkers.Add(w);
+            }
             heroHolder = new GameObject("HeroHolder").transform;
             heroHolder.SetParent(transform, false);
             heroHolder.position = HeroPos;

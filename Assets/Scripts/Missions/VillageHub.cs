@@ -25,7 +25,17 @@ namespace HashiraChronicles
             public NpcWalker walker;
             public bool inParty;
             public float answerAt = -1f;
+            public ChatPersona persona;
         }
+
+        struct Queued
+        {
+            public SimPlayer who;
+            public string text;
+            public float at;
+        }
+
+        readonly List<Queued> queued = new List<Queued>();
 
         public struct ChatLine
         {
@@ -47,23 +57,12 @@ namespace HashiraChronicles
 
         readonly List<Transform> portals = new List<Transform>();
         float nextChatter, nextJoinLeave;
-        string replyTo;
-        float replyAt = -1f;
         System.Random rng;
 
         static readonly string[] Names =
         {
             "Kaede", "Haruto", "MoonlitRiver", "Sumi", "TsubakiBlade", "Riku_07", "Hotaru", "Asagi", "Kuro", "YuzuTea",
             "Botan", "Shin", "Akari", "Nagisa", "Ryo", "Hinata", "Komorebi", "Sora_Kaze", "Minato", "Tomoe"
-        };
-
-        static readonly string[] Chatter =
-        {
-            "anyone for the Gate of Frost?", "LF2M Gate of Embers, all welcome!", "just pulled a new slayer at the shrine :D",
-            "the cherry tree looks so pretty tonight", "gg everyone, that abyss run was wild", "need one more for the Abyss gate",
-            "how do you parry the frost oni?", "tip: dodge through the red zone right before it hits", "brb, dinner",
-            "anyone found the chest by the mill?", "go in as three or the gate demons flatten you lol", "o/ hi all",
-            "the gates hit SO hard, bring healers", "who wants to run embers a few times?", "love the lanterns in the market"
         };
 
         static readonly string[] Greetings = { "Hey there!", "Want to team up?", "Going to the gates?", "Nice blade!", "Hi! Party of three?", "The Abyss gate is no joke." };
@@ -100,6 +99,7 @@ namespace HashiraChronicles
                 if (p.walker == null) continue;
                 p.walker.SpeakerName = p.name;
                 p.walker.Speed = R(1.4f, 2.2f);
+                p.persona = ChatPersona.From(p.name, rng.Next(), def.displayName);
                 Players.Add(p);
             }
             BuildPortals();
@@ -158,23 +158,34 @@ namespace HashiraChronicles
             var b = BattleController.Current;
             var a = b != null && b.Team != null ? b.Team.Active : null;
 
-            // Chatter from the other players.
+            // Chatter from the other players, sometimes turning into a little conversation.
             if (now > nextChatter)
             {
-                nextChatter = now + R(4f, 9f);
-                var sp = RandomPlayer(false);
-                if (sp != null) Say(sp, Chatter[rng.Next(Chatter.Length)]);
+                nextChatter = now + R(5f, 11f);
+                var sp = RandomPlayer(true);
+                if (sp != null)
+                {
+                    string line = ChatBrain.Chatter(sp.persona);
+                    Say(sp, line);
+                    if (rng.NextDouble() < 0.45)
+                    {
+                        var other = RandomPlayer(true);
+                        if (other != null && other != sp) Answer(other, line, R(2f, 4.5f));
+                    }
+                }
+            }
+            for (int i = queued.Count - 1; i >= 0; i--)
+            {
+                if (now < queued[i].at) continue;
+                var q = queued[i];
+                queued.RemoveAt(i);
+                Say(q.who, q.text);
             }
             // Players come and go.
             if (now > nextJoinLeave)
             {
                 nextJoinLeave = now + R(25f, 45f);
                 Notice(Names[rng.Next(Names.Length)] + (rng.Next(2) == 0 ? " arrived in the village." : " left the village."));
-            }
-            if (replyAt > 0f && now > replyAt)
-            {
-                replyAt = -1f;
-                AnswerChat(replyTo);
             }
 
             // Invitations answer after a moment.
@@ -185,7 +196,7 @@ namespace HashiraChronicles
                 if (Party.Count >= PartySize - 1) continue;
                 bool yes = Searching || rng.NextDouble() < 0.8;
                 if (yes) Join(p, a);
-                else Say(p, rng.Next(2) == 0 ? "sorry, doing dailies right now!" : "maybe later, afk for a bit");
+                else Say(p, StyleLine(p, rng.Next(2) == 0 ? "sorry, doing dailies right now!" : "maybe later, afk for a bit"));
             }
             if (Searching && Party.Count >= PartySize - 1)
             {
@@ -224,7 +235,8 @@ namespace HashiraChronicles
                 p.walker.FollowTarget = a.transform;
             }
             Notice(p.name + " joined your party (" + (Party.Count + 1) + "/" + PartySize + ").");
-            Say(p, rng.Next(2) == 0 ? "let's go!" : "ready when you are");
+            Say(p, StyleLine(p, rng.Next(2) == 0 ? "let's go!" : "ready when you are"));
+            if (Party.Count >= PartySize - 1 && GameManager.Instance != null) GameManager.Instance.Data.partiesFormed++;
             if (GameManager.Instance != null) GameManager.Instance.Audio.Play("click", 0.6f);
         }
 
@@ -273,35 +285,70 @@ namespace HashiraChronicles
             text = text.Trim();
             if (text.Length == 0) return;
             if (text.Length > 120) text = text.Substring(0, 120);
-            Add(new ChatLine { who = YourName, text = text, color = UIStyles.Gold });
-            replyTo = text.ToLowerInvariant();
-            replyAt = Time.time + R(1.2f, 2.8f);
-        }
-
-        void AnswerChat(string said)
-        {
-            if (said == null) return;
-            var p = RandomPlayer(true);
-            if (p == null) return;
-            if (said.Contains("party") || said.Contains("team") || said.Contains("join") || said.Contains("group") || said.Contains("lfg") || said.Contains("gate"))
+            Add(new ChatLine { who = YourName, text = ProfileSystem.MaskChat(text), color = UIStyles.Gold });
+            ChatBrain.Learn(text);
+            if (GameManager.Instance != null) GameManager.Instance.Data.messagesSent++;
+            // Whoever is named answers; otherwise one or two people (or nobody, like real chat).
+            SimPlayer named = null;
+            string lower = text.ToLowerInvariant();
+            foreach (var p in Players) if (lower.Contains(p.name.ToLowerInvariant())) named = p;
+            if (named != null) { Answer(named, text, R(1.5f, 3.5f)); return; }
+            if (ChatBrain.Detect(text) == ChatBrain.Intent.Party && Party.Count < PartySize - 1)
             {
                 var free = RandomPlayer(false);
-                if (free != null && Party.Count < PartySize - 1)
+                if (free != null)
                 {
-                    Say(free, "I'll come! invite me");
-                    free.answerAt = Time.time + R(1.5f, 2.5f);
+                    Say(free, StyleLine(free, "I'll come! invite me"));
+                    free.answerAt = Time.time + R(2f, 3.5f);
+                    return;
                 }
-                else Say(p, "your party's full already :)");
             }
-            else if (said.Contains("hi") || said.Contains("hello") || said.Contains("hey") || said.Contains("yo"))
-                Say(p, "hey " + YourName + "!");
-            else if (said.Contains("gg") || said.Contains("thanks") || said.Contains("ty"))
-                Say(p, "gg!");
-            else if (rng.NextDouble() < 0.5)
+            int n = rng.NextDouble() < 0.15 ? 0 : rng.NextDouble() < 0.7 ? 1 : 2;
+            float delay = R(1.5f, 3f);
+            for (int i = 0; i < n; i++)
             {
-                string[] generic = { "lol", "nice", "same here", "good luck out there!", "haha true", "see you at the gates" };
-                Say(p, generic[rng.Next(generic.Length)]);
+                var p = RandomPlayer(true);
+                if (p == null) break;
+                Answer(p, text, delay);
+                delay += R(1.5f, 3f);
             }
+        }
+
+        /// <summary>A reply (maybe two messages, maybe a typo correction) arriving after typing time.</summary>
+        void Answer(SimPlayer p, string said, float delay)
+        {
+            foreach (var line in ChatBrain.Reply(p.persona, said))
+            {
+                queued.Add(new Queued { who = p, text = line, at = Time.time + delay });
+                delay += 0.7f + line.Length * 0.05f;
+            }
+        }
+
+        string StyleLine(SimPlayer p, string text)
+        {
+            string corr;
+            return ProfileSystem.MaskChat(ChatBrain.Style(p.persona, text, out corr));
+        }
+
+        /// <summary>Befriend another player in the village.</summary>
+        public void AddFriend(SimPlayer p)
+        {
+            var gm = GameManager.Instance;
+            if (gm == null || p == null) return;
+            var e = SocialSystem.ForName(p.name, p.charId, p.level);
+            string reason;
+            if (SocialSystem.AddFriend(gm.Data, e, out reason))
+            {
+                Notice("You and " + p.name + " are now friends!");
+                gm.Save();
+            }
+            else Notice(reason);
+        }
+
+        public bool IsFriend(SimPlayer p)
+        {
+            var gm = GameManager.Instance;
+            return gm != null && SocialSystem.IsFriend(gm.Data, SocialSystem.ForName(p.name, p.charId, p.level).code);
         }
 
         /// <summary>Steps through a gate with the party (a co-op mission with the party as AI slayers).</summary>

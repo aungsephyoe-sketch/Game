@@ -127,6 +127,11 @@ namespace HashiraChronicles
             H = HudLayout.Height;
             safe = HudLayout.Safe;
 
+            if (Event.current.type == EventType.Layout && gm.Data != null)
+            {
+                SocialSystem.Tick(gm.Data);
+                if (AchievementSystem.Check(gm.Data)) gm.Save();
+            }
             try { DrawScreen(); }
             catch (System.Exception ex)
             {
@@ -180,6 +185,7 @@ namespace HashiraChronicles
                     gm.GoTo(GameScreen.MainMenu);
                 }
             }
+            DrawAchievementPopup();
             if (Time.unscaledTime < toastUntil)
             {
                 var r = new Rect(W * 0.5f - 450f, H - 170f, 900f, 80f);

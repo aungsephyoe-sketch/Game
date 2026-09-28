@@ -311,11 +311,12 @@ namespace HashiraChronicles
         {
             var def = GameDatabase.GetCharacter(characterId);
             if (def == null) return;
-            var region = GameDatabase.GetRegion("kingdom");
+            // Test play happens in the forest.
+            var region = GameDatabase.GetRegion("forest");
             var trial = new MissionDefinition
             {
                 id = "TRIAL", name = "Trial: " + def.displayName, type = MissionType.Training, training = true, trialCharacterId = characterId,
-                regionId = "kingdom", enemyLevel = 30, timeLimit = 60f, storyText = "Try " + def.displayName + " at full power.",
+                regionId = "forest", enemyLevel = 30, timeLimit = 60f, storyText = "Try " + def.displayName + " at full power.",
                 theme = region != null ? region.theme : new ArenaTheme()
             };
             StartMission(trial);
@@ -427,6 +428,13 @@ namespace HashiraChronicles
             }
             RewardSystem.Grant(Data, result);
             QuestSystem.Report("kill", result.kills);
+            if (m.coopTier >= 0)
+            {
+                if (result.victory) Data.coopClears++;
+                // People you just played with may want to stay in touch.
+                for (int i = 0; i < m.coopAllyNames.Count && i < m.coopAllyIds.Count; i++)
+                    SocialSystem.MaybeRequest(Data, m.coopAllyNames[i], m.coopAllyIds[i], m.enemyLevel + Random.Range(-3, 6));
+            }
             if (result.victory)
             {
                 QuestSystem.Report("clear", 1);

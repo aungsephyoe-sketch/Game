@@ -20,6 +20,9 @@ namespace HashiraChronicles
         /// <summary>When set, the walker keeps close behind this (a party member following you round the village).</summary>
         public Transform FollowTarget;
         public Vector3 FollowOffset = new Vector3(0f, 0f, -2f);
+        bool catchingUp;
+        float looseTimer;
+        Vector3 looseGoal;
 
         public string CurrentLine { get; private set; }
         public float LineUntil { get; private set; }
@@ -103,13 +106,30 @@ namespace HashiraChronicles
 
             if (FollowTarget != null)
             {
-                Vector3 goal = FollowTarget.position + FollowTarget.rotation * FollowOffset;
+                // A party member hangs around you rather than glued to your back: they potter about nearby,
+                // stop to look around, and only jog over when you've walked off.
+                Vector3 me = FollowTarget.position;
+                float fromYou = new Vector2(transform.position.x - me.x, transform.position.z - me.z).magnitude;
+                if (fromYou > 7f) catchingUp = true;
+                else if (fromYou < 3.5f) catchingUp = false;
+                if (!catchingUp)
+                {
+                    looseTimer -= Time.deltaTime;
+                    if (looseTimer <= 0f || (looseGoal - me).magnitude > 6f)
+                    {
+                        looseTimer = Random.Range(2.5f, 6f);
+                        float ang = Random.Range(0f, Mathf.PI * 2f);
+                        looseGoal = me + new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang)) * Random.Range(2.2f, 4.5f);
+                        looseGoal.y = me.y;
+                    }
+                }
+                Vector3 goal = catchingUp ? me + FollowTarget.rotation * FollowOffset : looseGoal;
                 Vector3 d = goal - transform.position;
                 d.y = 0f;
                 float dist = d.magnitude;
-                if (dist > 0.35f)
+                if (dist > 0.35f && (catchingUp || looseTimer < 4.2f))
                 {
-                    float sp = Mathf.Clamp(dist * 2.2f, 1.5f, 7f);
+                    float sp = catchingUp ? Mathf.Clamp(dist * 2.2f, 2.5f, 7f) : Speed;
                     Vector3 next = transform.position + d / dist * Mathf.Min(dist, sp * Time.deltaTime);
                     var bc = BattleController.Current;
                     if (bc != null && bc.Def != null && bc.Def.openWorld) next = OpenWorldBuilder.Clamp(next);
@@ -120,7 +140,9 @@ namespace HashiraChronicles
                 else
                 {
                     visual.SetMoving(0f);
-                    transform.rotation = Quaternion.Slerp(transform.rotation, FollowTarget.rotation, Time.deltaTime * 4f);
+                    Vector3 look = me - transform.position;
+                    look.y = 0f;
+                    if (look.sqrMagnitude > 0.01f && Random.value < 0.5f) transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(look), Time.deltaTime * 1.5f);
                 }
                 if (dist > 14f) transform.position = goal;
                 return;
@@ -129,7 +151,23 @@ namespace HashiraChronicles
             {
                 wait -= Time.deltaTime;
                 visual.SetMoving(0f);
-                transform.rotation = Quaternion.Slerp(transform.rotation, transform.rotation * Quaternion.Euler(0f, Mathf.Sin(Time.time) * 30f * Time.deltaTime, 0f), 1f);
+                // Stopped next to someone: turn to them and chat, like neighbours meeting in the street.
+                NpcWalker near = null;
+                float best = 2.8f;
+                foreach (var o in All)
+                {
+                    if (o == this || o == null) continue;
+                    float dd = (o.transform.position - transform.position).magnitude;
+                    if (dd < best) { best = dd; near = o; }
+                }
+                if (near != null)
+                {
+                    Vector3 look = near.transform.position - transform.position;
+                    look.y = 0f;
+                    if (look.sqrMagnitude > 0.01f) transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(look), Time.deltaTime * 3f);
+                    if (near.wait <= 0f && Random.value < 0.01f) near.wait = Random.Range(2f, 4f);
+                }
+                else transform.rotation = Quaternion.Slerp(transform.rotation, transform.rotation * Quaternion.Euler(0f, Mathf.Sin(Time.time) * 30f * Time.deltaTime, 0f), 1f);
                 return;
             }
             Vector3 to = target - transform.position;

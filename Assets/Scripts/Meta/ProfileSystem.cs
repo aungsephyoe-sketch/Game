@@ -59,6 +59,47 @@ namespace HashiraChronicles
             return true;
         }
 
+        // Blocked in chat when they stand alone (words like "kill" or "dead" are part of the game, so they stay).
+        static readonly string[] ChatWords = { "ass", "sex", "cum", "tit", "tits", "dick", "fag", "kys", "piss", "hoe", "xxx", "nsfw", "damn", "crap", "stfu", "wtf", "af" };
+
+        /// <summary>
+        /// The chat filter: every bad word (also when spelt with look-alike characters, stretched or spaced
+        /// out) is replaced by dots, which the chat draws as a blurred smudge.
+        /// </summary>
+        public static string MaskChat(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            var sb = new System.Text.StringBuilder();
+            int i = 0;
+            while (i < text.Length)
+            {
+                if (!char.IsLetterOrDigit(text[i]) && text[i] != '@' && text[i] != '$')
+                {
+                    sb.Append(text[i]);
+                    i++;
+                    continue;
+                }
+                int j = i;
+                while (j < text.Length && (char.IsLetterOrDigit(text[j]) || text[j] == '@' || text[j] == '$' || text[j] == '*')) j++;
+                string word = text.Substring(i, j - i);
+                sb.Append(IsBadWord(word) ? new string('\u2022', word.Length) : word);
+                i = j;
+            }
+            return sb.ToString();
+        }
+
+        static bool IsBadWord(string word)
+        {
+            string n = Normalise(word).Replace("*", "");
+            var dedup = new System.Text.StringBuilder();
+            foreach (char ch in n) if (dedup.Length == 0 || dedup[dedup.Length - 1] != ch) dedup.Append(ch);
+            string dd = dedup.ToString();
+            foreach (var b in Banned)
+                if (b.Length >= 4 ? (n.Contains(b) || dd.Contains(b)) : (n == b || dd == b)) return true;
+            foreach (var b in ChatWords) if (n == b || dd == b) return true;
+            return false;
+        }
+
         public static void Save(PlayerData d, string name, int age, int month, int day)
         {
             d.playerName = name.Trim();
