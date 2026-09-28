@@ -12,6 +12,10 @@ namespace HashiraChronicles
     {
         GameObject world;
         Transform heroHolder;
+
+        /// <summary>World position just above the home leader's head (for the greeting bubble).</summary>
+        public Vector3 LeaderHead { get { return heroHolder != null ? heroHolder.position + Vector3.up * 2.4f : Vector3.up * 2.4f; } }
+        public bool LeaderVisible { get { return heroHolder != null && heroHolder.gameObject.activeInHierarchy; } }
         CharacterVisual hero;
         CharacterDefinition heroDef;
         string shownId = "";

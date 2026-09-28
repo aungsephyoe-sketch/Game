@@ -269,7 +269,10 @@ namespace HashiraChronicles
                 var eq = item != null ? GameDatabase.GetEquipment(item.defId) : null;
                 var r = new Rect(x, y, body.width * 0.45f, 130f);
                 string label = "<size=24>" + slot.ToString().ToUpper() + "</size>\n" + (eq != null ? eq.displayName + "  +" + item.level + "\n<size=22>" + BonusText(eq.BonusAt(item.level)) + "</size>" : "(empty — tap to equip)");
-                if (Btn(r, label, pickingSlot == slot ? UIStyles.ButtonBig : UIStyles.Button)) { pickingSlot = slot; pickerScroll = Vector2.zero; }
+                var bs = new GUIStyle(pickingSlot == slot ? UIStyles.ButtonBig : UIStyles.Button) { alignment = TextAnchor.MiddleLeft };
+                bs.padding.left = eq != null ? 132 : 24;
+                if (Btn(r, label, bs)) { pickingSlot = slot; pickerScroll = Vector2.zero; }
+                if (eq != null) GUI.DrawTexture(new Rect(r.x + 12f, r.y + 10f, 110f, 110f), GearArt.Get(eq), ScaleMode.ScaleToFit, true);
                 y += 146f;
             }
 
@@ -297,7 +300,12 @@ namespace HashiraChronicles
                 var owner = d.WhoEquipped(item.uid);
                 string ownerText = owner == null ? "" : "  <color=#FFD36B>[" + GameDatabase.GetCharacter(owner.id).displayName + "]</color>";
                 string label = def.displayName + " +" + item.level + "  " + Stars(def.rarity) + ownerText + "\n<size=22>" + BonusText(def.BonusAt(item.level)) + "</size>";
-                if (Btn(new Rect(0f, (i + 1) * 116f, content.width, 100f), label))
+                var ps = new GUIStyle(UIStyles.Button) { alignment = TextAnchor.MiddleLeft };
+                ps.padding.left = 112;
+                var pr = new Rect(0f, (i + 1) * 116f, content.width, 100f);
+                bool pick = Btn(pr, label, ps);
+                GUI.DrawTexture(new Rect(pr.x + 10f, pr.y + 6f, 88f, 88f), GearArt.Get(def), ScaleMode.ScaleToFit, true);
+                if (pick)
                 {
                     EquipmentSystem.Equip(d, c, item);
                     gm.Save();

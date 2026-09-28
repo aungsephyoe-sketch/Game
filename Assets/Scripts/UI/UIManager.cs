@@ -161,6 +161,7 @@ namespace HashiraChronicles
                 case GameScreen.ComingSoon: DrawComingSoon(); break;
                 case GameScreen.Settings: DrawSettings(); break;
                 case GameScreen.Events: DrawEvents(); break;
+                case GameScreen.Inventory: DrawInventory(); break;
             }
 
         }
@@ -219,10 +220,10 @@ namespace HashiraChronicles
             return clicked && k > 0.6f;
         }
 
-        void Badge(Vector2 at, string text, Color c)
+        void Badge(Vector2 at, string text, Color c, float scale = 1f)
         {
             var r = new Rect(at.x - 22f, at.y - 22f, 44f, 44f);
-            UIStyles.CircleTex(r.center, 22f, c);
+            UIStyles.CircleTex(r.center, 22f * scale, c);
             GUI.Label(r, text, UIStyles.Sized(UIStyles.Center, 24));
         }
 

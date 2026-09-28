@@ -133,68 +133,117 @@ namespace HashiraChronicles
         /// </summary>
         bool HomeTile(Rect r, string label, Texture2D icon, Color c, float delay, Texture2D art = null, Texture portrait = null, int badge = 0, bool glow = false)
         {
-            float k = Enter(delay);
+            float k = Enter(delay, 0.5f);
             if (k <= 0f) return false;
-            var rr = Offset(r, 0f, (1f - k) * 40f);
+            float t = Time.unscaledTime;
+            float seed = r.x * 0.013f + r.y * 0.007f;
+            // Entrance: rise and pop in; idle: a gentle float, each tile on its own rhythm.
+            float pop = k < 1f ? Mathf.Lerp(0.85f, 1f, k) + Mathf.Sin(k * Mathf.PI) * 0.05f : 1f;
+            var rr = Offset(r, 0f, (1f - k) * 50f + Mathf.Sin(t * 1.4f + seed * 7f) * 3f);
             bool hover = rr.Contains(Event.current.mousePosition);
-            if (hover) rr = Grow(rr, 4f);
+            bool pressed = hover && Input.GetMouseButton(0);
+            float scale = pop * (hover ? 1.035f : 1f) * (pressed ? 0.96f : 1f);
+            rr = new Rect(rr.center.x - rr.width * scale * 0.5f, rr.center.y - rr.height * scale * 0.5f, rr.width * scale, rr.height * scale);
             var old = GUI.color;
             GUI.color = new Color(1f, 1f, 1f, k);
-            if (glow)
-            {
-                float g = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f);
-                for (int i = 3; i >= 1; i--) Round(Grow(rr, i * 5f), new Color(c.r, c.g, c.b, 0.07f + 0.05f * g), 16f + i * 5f);
-            }
-            Round(Offset(rr, 0f, 6f), new Color(0f, 0f, 0f, 0.4f), 14f);
+            // Soft coloured glow behind (always a little, stronger for the featured tile and on hover).
+            float g = 0.5f + 0.5f * Mathf.Sin(t * 2.2f + seed * 5f);
+            int rings = glow ? 4 : hover ? 3 : 2;
+            for (int i = rings; i >= 1; i--) Round(Grow(rr, i * 5f), new Color(c.r, c.g, c.b, (glow || hover ? 0.08f : 0.04f) + 0.04f * g), 16f + i * 5f);
+            Round(Offset(rr, 0f, 7f), new Color(0f, 0f, 0f, 0.45f), 16f);
             if (art != null)
             {
-                if (Event.current.type == EventType.Repaint) GUI.DrawTexture(rr, art, ScaleMode.ScaleAndCrop, false, 0f, Color.white, 0f, 14f);
+                if (Event.current.type == EventType.Repaint) GUI.DrawTexture(rr, art, ScaleMode.ScaleAndCrop, false, 0f, Color.white, 0f, 16f);
+                // Dark gradient at the bottom so the label reads.
+                for (int i = 0; i < 5; i++) Round(new Rect(rr.x, rr.yMax - rr.height * (0.12f + i * 0.07f), rr.width, rr.height * (0.12f + i * 0.07f)), new Color(0f, 0f, 0f, 0.1f), 16f);
             }
             else
             {
-                Color bottom = Color.Lerp(c, Color.black, 0.35f);
-                Round(rr, bottom, 14f);
+                Color bottom = Color.Lerp(c, Color.black, 0.4f);
+                Round(rr, bottom, 16f);
                 for (int i = 0; i < 6; i++)
                 {
                     float f = i / 6f;
-                    Round(new Rect(rr.x, rr.y, rr.width, rr.height * (1f - f)), new Color(c.r, c.g, c.b, 0.22f), 14f);
+                    Round(new Rect(rr.x, rr.y, rr.width, rr.height * (1f - f)), new Color(c.r, c.g, c.b, 0.22f), 16f);
                 }
-                Round(new Rect(rr.x + 3f, rr.y + 3f, rr.width - 6f, rr.height * 0.42f), new Color(1f, 1f, 1f, hover ? 0.12f : 0.07f), 12f);
+                // Big faint emblem in the corner.
+                if (icon != null)
+                {
+                    var o3 = GUI.color;
+                    GUI.color = new Color(1f, 1f, 1f, 0.08f * k);
+                    float es = rr.height * 0.9f;
+                    GUI.DrawTexture(new Rect(rr.xMax - es * 0.75f, rr.yMax - es * 0.8f, es, es), icon, ScaleMode.ScaleToFit, true);
+                    GUI.color = o3;
+                }
             }
+            Round(new Rect(rr.x + 3f, rr.y + 3f, rr.width - 6f, rr.height * 0.4f), new Color(1f, 1f, 1f, hover ? 0.13f : 0.07f), 14f);
             if (portrait != null)
             {
-                // A dark silhouette of the leader against the glow.
-                float h = rr.height * 0.98f, w = h * portrait.width / Mathf.Max(1f, portrait.height);
-                var pr = new Rect(rr.x + rr.width * 0.46f - w * 0.5f, rr.yMax - h, w, h);
+                // The leader in full colour, breathing, with a warm rim light behind.
+                float breathe = 1f + Mathf.Sin(t * 1.8f) * 0.012f;
+                float h = rr.height * 1.02f * breathe, w = h * portrait.width / Mathf.Max(1f, portrait.height);
+                var pr = new Rect(rr.x + rr.width * 0.66f - w * 0.5f, rr.yMax - h, w, h);
+                UIStyles.CircleTex(new Vector2(pr.center.x, pr.center.y - h * 0.08f), h * 0.36f, new Color(1f, 0.85f, 0.5f, 0.18f + 0.06f * g));
+                GUI.BeginGroup(rr);
                 var o2 = GUI.color;
-                GUI.color = new Color(0.12f, 0.01f, 0.03f, 0.92f * k);
-                GUI.DrawTexture(Offset(pr, 6f, 0f), portrait, ScaleMode.ScaleToFit, true);
-                GUI.color = new Color(0.25f, 0.02f, 0.05f, k);
-                GUI.DrawTexture(pr, portrait, ScaleMode.ScaleToFit, true);
+                GUI.color = new Color(0f, 0f, 0f, 0.35f * k);
+                GUI.DrawTexture(new Rect(pr.x - rr.x + 8f, pr.y - rr.y + 4f, pr.width, pr.height), portrait, ScaleMode.ScaleToFit, true);
+                GUI.color = new Color(1f, 1f, 1f, k);
+                GUI.DrawTexture(new Rect(pr.x - rr.x, pr.y - rr.y, pr.width, pr.height), portrait, ScaleMode.ScaleToFit, true);
                 GUI.color = o2;
+                GUI.EndGroup();
             }
-            RoundFrame(rr, Color.Lerp(c, Color.white, hover ? 0.6f : 0.4f), glow ? 3f : 2f, 14f);
+            // A band of light sweeps across every few seconds (clipped to the tile).
+            float period = 4.5f;
+            float ph = Mathf.Repeat(t + seed * 3f, period) / period;
+            if (ph < 0.35f)
+            {
+                float bx = Mathf.Lerp(-rr.width * 0.4f, rr.width * 1.2f, ph / 0.35f);
+                GUI.BeginGroup(rr);
+                int slices = 14;
+                float sh = rr.height / slices;
+                for (int i = 0; i < slices; i++)
+                    UIStyles.Rect(new Rect(bx - i * sh * 0.45f, i * sh, rr.width * 0.12f, sh + 1f), new Color(1f, 1f, 1f, 0.16f));
+                GUI.EndGroup();
+            }
+            // Twinkles.
+            for (int i = 0; i < 3; i++)
+            {
+                float tw = Mathf.Repeat(t * 0.6f + i * 0.37f + seed, 1f);
+                float a = Mathf.Sin(tw * Mathf.PI);
+                var sp = new Vector2(rr.x + rr.width * Mathf.Repeat(0.2f + i * 0.31f + seed, 0.9f) + 10f, rr.y + rr.height * (0.15f + 0.2f * i));
+                UIStyles.CircleTex(sp, 2.5f + 3f * a, new Color(1f, 1f, 1f, 0.55f * a));
+            }
+            // Animated border: the tile colour breathing toward white.
+            RoundFrame(rr, Color.Lerp(c, Color.white, (hover ? 0.7f : 0.35f) + 0.25f * g), glow ? 3.5f : 2.5f, 16f);
             if (art != null || portrait != null)
             {
-                UIStyles.Outlined(new Rect(rr.x + 26f, rr.yMax - 76f, rr.width - 60f, 60f), label, UIStyles.Sized(UIStyles.H1, 46), Color.white, 2f);
-                UIStyles.Outlined(new Rect(rr.xMax - 56f, rr.yMax - 76f, 40f, 60f), "›", UIStyles.Sized(UIStyles.H1, 52), Color.white, 2f);
+                UIStyles.Outlined(new Rect(rr.x + 26f, rr.yMax - 78f, rr.width - 60f, 62f), label, UIStyles.Sized(UIStyles.H1, 46), Color.white, 2.5f);
+                float nudge = Mathf.Sin(t * 4f + seed) * 4f;
+                UIStyles.Outlined(new Rect(rr.xMax - 56f + nudge, rr.yMax - 78f, 40f, 62f), "›", UIStyles.Sized(UIStyles.H1, 52), Color.white, 2f);
             }
             else
             {
-                float isz = Mathf.Min(rr.height * 0.42f, 86f);
+                float isz = Mathf.Min(rr.height * 0.42f, 86f) * (hover ? 1.1f : 1f);
                 if (icon != null)
                 {
-                    var ir = new Rect(rr.center.x - isz * 0.5f, rr.y + rr.height * 0.18f, isz, isz);
+                    float bob = Mathf.Sin(t * 2.4f + seed * 4f) * 4f;
+                    var ir = new Rect(rr.center.x - isz * 0.5f, rr.y + rr.height * 0.18f + bob, isz, isz);
                     var o2 = GUI.color;
+                    UIStyles.CircleTex(ir.center, isz * 0.62f, new Color(1f, 1f, 1f, 0.1f + 0.05f * g));
                     GUI.color = new Color(0f, 0f, 0f, 0.35f * k);
-                    GUI.DrawTexture(Offset(ir, 2f, 3f), icon, ScaleMode.ScaleToFit, true);
+                    GUI.DrawTexture(Offset(ir, 2f, 4f), icon, ScaleMode.ScaleToFit, true);
                     GUI.color = new Color(1f, 1f, 1f, k);
                     GUI.DrawTexture(ir, icon, ScaleMode.ScaleToFit, true);
                     GUI.color = o2;
                 }
-                UIStyles.Outlined(new Rect(rr.x, rr.yMax - 58f, rr.width, 44f), label, UIStyles.Sized(UIStyles.Center, 28), Color.white, 2f);
+                UIStyles.Outlined(new Rect(rr.x, rr.yMax - 60f, rr.width, 46f), label, UIStyles.Sized(UIStyles.Center, 28), Color.white, 2f);
             }
-            if (badge > 0) Badge(new Vector2(rr.xMax - 8f, rr.y + 8f), badge > 9 ? "!" : badge.ToString(), UIStyles.Crimson);
+            if (badge > 0)
+            {
+                float bp = 1f + 0.12f * Mathf.Abs(Mathf.Sin(t * 3f));
+                Badge(new Vector2(rr.xMax - 8f, rr.y + 8f), badge > 9 ? "!" : badge.ToString(), UIStyles.Crimson, bp);
+            }
             bool clicked = GUI.Button(rr, GUIContent.none, GUIStyle.none);
             GUI.color = old;
             if (clicked && k > 0.6f && gm != null) gm.Audio.Play("click", 0.5f);

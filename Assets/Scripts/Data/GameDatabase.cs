@@ -730,6 +730,12 @@ namespace HashiraChronicles
             Eq("acc_beads", "Jade Bead Bracelet", EquipSlot.Accessory, 4, new StatBlock(500, 60, 120), new StatBlock(50, 6, 12), "A sturdy guard charm.");
             Eq("acc_ribbon", "Swift Ribbon", EquipSlot.Accessory, 4, new StatBlock(0, 110, 0, 0.03f, 0f, 0.5f), new StatBlock(0, 12, 0, 0.001f, 0f, 0.02f), "SPD +0.5, CRIT +3%.");
             Eq("acc_suncrest", "Sun Crest Pin", EquipSlot.Accessory, 6, new StatBlock(600, 260, 120, 0.06f, 0.25f, 0f, 0.2f), new StatBlock(55, 22, 10, 0.002f, 0.01f, 0f, 0.01f), "Special damage +20%, CRIT DMG +25%.");
+            Eq("sword_bamboo", "Bamboo Practice Blade", EquipSlot.Sword, 3, new StatBlock(0, 120, 0, 0.01f), new StatBlock(0, 16, 0), "Light, quick and a little splintery.");
+            Eq("haori_ember", "Flameguard Haori", EquipSlot.Haori, 6, new StatBlock(1800, 120, 380, 0.03f), new StatBlock(180, 12, 34, 0.001f), "Woven with fire-thread. Burns demons that grab it.");
+            // Mythic gear.
+            Eq("sword_moonfall", "Moonfall Edge", EquipSlot.Sword, 7, new StatBlock(600, 1300, 150, 0.1f, 0.4f, 0.2f, 0.2f), new StatBlock(50, 95, 12, 0.003f, 0.015f, 0.01f, 0.01f), "Mythic. A blade forged from a fallen piece of the moon.");
+            Eq("haori_starweave", "Starweave Mantle", EquipSlot.Haori, 7, new StatBlock(3200, 260, 620, 0.05f, 0.1f, 0.3f, 0.1f), new StatBlock(260, 20, 50, 0.002f, 0.005f, 0.01f, 0.005f), "Mythic. Stitched from starlight; it glows softly in the dark.");
+            Eq("acc_phoenixheart", "Phoenix Heart", EquipSlot.Accessory, 7, new StatBlock(1500, 500, 260, 0.08f, 0.3f, 0.2f, 0.3f), new StatBlock(110, 38, 20, 0.003f, 0.012f, 0.01f, 0.015f), "Mythic. Still warm. Specials hit 30% harder.");
             Eq("acc_dragonscale", "Dragon Scale Amulet", EquipSlot.Accessory, 7, new StatBlock(1200, 420, 240, 0.08f, 0.35f, 0.3f, 0.25f), new StatBlock(90, 34, 18, 0.003f, 0.015f, 0.01f, 0.012f), "Mythic. Every stat, all at once.");
         }
 

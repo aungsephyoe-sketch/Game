@@ -128,7 +128,11 @@ namespace HashiraChronicles
             cam.transform.position = focus + new Vector3(0f, full ? 0.2f : 0.1f, dist);
             cam.transform.LookAt(focus);
 
-            var rt = new RenderTexture(full ? 384 : 256, full ? 576 : 256, 16, RenderTextureFormat.ARGB32) { name = "Portrait_" + key, antiAliasing = 4 };
+            // High-resolution, 8× anti-aliased portraits with mipmaps so they stay crisp at every size on screen.
+            var rt = new RenderTexture(full ? 800 : 512, full ? 1200 : 512, 24, RenderTextureFormat.ARGB32)
+            {
+                name = "Portrait_" + key, antiAliasing = 8, useMipMap = true, autoGenerateMips = true, filterMode = FilterMode.Trilinear, anisoLevel = 4
+            };
             rt.Create();
             cam.targetTexture = rt;
 

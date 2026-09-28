@@ -54,10 +54,11 @@ namespace HashiraChronicles
             float px = safe.xMax - 40f;
             if (IconButton(new Rect(px - 72f, safe.y + 24f, 72f, 64f), IconFactory.Get("menu"))) OpenMenu("JOURNAL");
             if (IconButton(new Rect(px - 154f, safe.y + 24f, 72f, 64f), IconFactory.Get("mail"))) OpenMenu("MISSIONS");
+            if (IconButton(new Rect(px - 236f, safe.y + 24f, 72f, 64f), IconFactory.Get("bag"))) gm.GoTo(GameScreen.Inventory);
             // Three currencies: gold, diamonds and XP.
-            PlusPill(new Rect(px - 430f, safe.y + 24f, 250f, 64f), 2, d.xp.ToString("N0"), () => OpenMenu("SHOP"));
-            PlusPill(new Rect(px - 696f, safe.y + 24f, 250f, 64f), 1, d.crystals.ToString("N0"), () => OpenMenu("SHOP"));
-            PlusPill(new Rect(px - 992f, safe.y + 24f, 280f, 64f), 0, d.coins.ToString("N0"), () => OpenMenu("SHOP"));
+            PlusPill(new Rect(px - 506f, safe.y + 24f, 250f, 64f), 2, d.xp.ToString("N0"), () => OpenMenu("SHOP"));
+            PlusPill(new Rect(px - 772f, safe.y + 24f, 250f, 64f), 1, d.crystals.ToString("N0"), () => OpenMenu("SHOP"));
+            PlusPill(new Rect(px - 1068f, safe.y + 24f, 280f, 64f), 0, d.coins.ToString("N0"), () => OpenMenu("SHOP"));
 
             // Team power panel, bottom right.
             float tk = Enter(0.5f, 0.5f);

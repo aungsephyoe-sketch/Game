@@ -115,6 +115,12 @@ Bosses keep their camera reveal and phases and now fall in a slow-motion **defea
 - **Shop**: diamond packs (250 $2.99 … 10,000 $74.99), supplies, accessories and the Mythic exchange. Store
   billing isn't connected in this build, so pack buttons grant the diamonds directly for testing.
 - Slayers go by their first names only.
+- **Player profile**: on first launch the game asks your name (a filter blocks inappropriate names), age and
+  birthday. Every year once your birthday passes you get 500 diamonds and 10,000 gold. Each time you open the
+  game your leader greets you by name.
+- **Inventory** (bag button on the home screen): all your gear with painted icons, rarity, level and who wears
+  it — upgrade it or equip it on a team member. The **Gear Shop** sells gear from Common to Legendary plus
+  three featured Mythic pieces (Moonfall Edge, Starweave Mantle, Phoenix Heart).
 - **27 slayers**: newcomers Taro, Nami, Koji, Yuna (Common), Daigo, Hotaru, Kenta, Rin (Rare) and Akane,
   Tsukasa, Mizuki (Legendary), each with their own special. The Characters screen shows every slayer —
   the ones you don't have yet are greyed out with a lock.

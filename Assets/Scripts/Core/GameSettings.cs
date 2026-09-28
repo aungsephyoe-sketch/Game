@@ -109,7 +109,7 @@ namespace HashiraChronicles
                     QualitySettings.shadowDistance = 26f;
                     QualitySettings.shadowCascades = 2;
                     QualitySettings.shadowProjection = ShadowProjection.StableFit;
-                    QualitySettings.antiAliasing = 0;
+                    QualitySettings.antiAliasing = 4;
                     Application.targetFrameRate = 60;
                     break;
                 case GraphicsTier.High:

@@ -259,7 +259,7 @@ namespace HashiraChronicles
         public static Mesh SmoothSphere()
         {
             if (smoothSphere != null) return smoothSphere;
-            const int lat = 28, lon = 44;
+            const int lat = 36, lon = 56;
             var v = new List<Vector3>();
             var n = new List<Vector3>();
             var t = new List<int>();

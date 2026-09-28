@@ -119,6 +119,16 @@ namespace HashiraChronicles
         // ---- Missions board (daily / weekly quests)
         public string dailyKey = "";
 
+        // ---- Player profile
+        public bool profileDone;
+        public string playerName = "";
+        public int playerAge;
+        public int birthMonth = 1, birthDay = 1;
+        /// <summary>The last year the birthday gift was given.</summary>
+        public int birthdayRewardYear;
+        /// <summary>The year the profile was made (the age entered then is already correct that year).</summary>
+        public int profileYear;
+
         // ---- Step-up summons: which step of the ×10 ladder is next, and exchange tokens earned from paid ×10s.
         public int summonStep;
         public int summonTokens;

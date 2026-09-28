@@ -82,18 +82,29 @@ namespace HashiraChronicles
         void Scarify(EnemyDefinition def)
         {
             if (def.form == "dummy") return;
-            // Measure the body in model space.
+            // Measure the body in model space from the meshes themselves (a renderer's bounds can still be empty
+            // at the world origin on the frame it's created, which made the measured body — and the horns, spikes
+            // and heart sized from it — enormous).
             bool any = false;
             Vector3 mn = Vector3.zero, mx = Vector3.zero;
-            foreach (var r in mRoot.GetComponentsInChildren<Renderer>())
+            foreach (var mf in mRoot.GetComponentsInChildren<MeshFilter>())
             {
-                if (r is ParticleSystemRenderer || r is TrailRenderer) continue;
-                Vector3 a = mRoot.InverseTransformPoint(r.bounds.min), b = mRoot.InverseTransformPoint(r.bounds.max);
-                Vector3 lo = Vector3.Min(a, b), hi = Vector3.Max(a, b);
-                if (!any) { mn = lo; mx = hi; any = true; } else { mn = Vector3.Min(mn, lo); mx = Vector3.Max(mx, hi); }
+                if (mf.sharedMesh == null) continue;
+                var mb = mf.sharedMesh.bounds;
+                for (int cx = 0; cx < 2; cx++)
+                    for (int cy = 0; cy < 2; cy++)
+                        for (int cz = 0; cz < 2; cz++)
+                        {
+                            Vector3 corner = new Vector3(cx == 0 ? mb.min.x : mb.max.x, cy == 0 ? mb.min.y : mb.max.y, cz == 0 ? mb.min.z : mb.max.z);
+                            Vector3 lp = mRoot.InverseTransformPoint(mf.transform.TransformPoint(corner));
+                            if (!any) { mn = lp; mx = lp; any = true; } else { mn = Vector3.Min(mn, lp); mx = Vector3.Max(mx, lp); }
+                        }
             }
             if (!any) return;
-            float h = mx.y - mn.y, w = mx.x - mn.x;
+            // Hard limits: a demon's model space is ~2 m tall, so nothing sized from it can ever get huge.
+            mn = new Vector3(Mathf.Max(mn.x, -2.5f), Mathf.Max(mn.y, -0.2f), Mathf.Max(mn.z, -2.5f));
+            mx = new Vector3(Mathf.Min(mx.x, 2.5f), Mathf.Clamp(mx.y, 0.8f, 4.5f), Mathf.Min(mx.z, 2.5f));
+            float h = Mathf.Clamp(mx.y - mn.y, 0.8f, 4.5f), w = Mathf.Clamp(mx.x - mn.x, 0.4f, 4f);
             bool big = def.archetype == EnemyArchetype.Boss || def.archetype == EnemyArchetype.Elite;
             Color ac = def.accentColor;
             var hornMat = MaterialFactory.Toon(Color.Lerp(new Color(0.12f, 0.08f, 0.1f), ac, 0.15f), 0.02f);

@@ -11,13 +11,27 @@ namespace HashiraChronicles
         void DrawHome()
         {
             var d = gm.Data;
-            bool modal = gm.TransitionAlpha < 0.05f && LoginRewardSystem.Check(d);
+            bool ready = gm.TransitionAlpha < 0.05f;
+            // One modal at a time: profile first, then the birthday gift, then today's login reward.
+            int modal = 0;
+            if (ready)
+            {
+                if (!d.profileDone) modal = 1;
+                else if (ProfileSystem.BirthdayDue(d)) modal = 2;
+                else if (LoginRewardSystem.Check(d)) modal = 3;
+            }
             bool old = GUI.enabled;
-            if (modal) GUI.enabled = false;
+            if (modal != 0) GUI.enabled = false;
             DrawMainMenu();
             GUI.enabled = old;
-            if (modal) DrawLoginReward(d);
-            else loginShownAt = -1f;
+            if (modal == 1) DrawProfileSetup(d);
+            else if (modal == 2) DrawBirthday(d);
+            else if (modal == 3) DrawLoginReward(d);
+            else
+            {
+                loginShownAt = -1f;
+                if (ready) DrawGreeting(d);
+            }
         }
 
         void DrawLoginReward(PlayerData d)

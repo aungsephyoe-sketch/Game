@@ -52,6 +52,7 @@ namespace HashiraChronicles
         Shop,
         Cutscene,
         Credits,
-        Events
+        Events,
+        Inventory
     }
 }
