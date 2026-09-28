@@ -22,6 +22,34 @@ namespace HashiraChronicles
             return false;
         }
 
+        /// <summary>
+        /// Every slayer gets sculpted hair: the reference characters have their own recipe, everyone else the recipe
+        /// for their hairstyle (varied by their own seed). Hats and caps keep their hat.
+        /// </summary>
+        public static bool Has(CharacterDefinition def)
+        {
+            if (def == null) return false;
+            if (Has(def.id)) return true;
+            return def.hair != HairStyle.Cap && def.hair != HairStyle.StrawHat;
+        }
+
+        public static void Build(CharacterDefinition def, HairGeometry g)
+        {
+            if (Has(def.id)) { Build(def.id, g); return; }
+            switch (def.hair)
+            {
+                case HairStyle.Spiky: case HairStyle.Crest: ControlledSpiky(g); break;
+                case HairStyle.Wild: ShortMessy(g); break;
+                case HairStyle.Long: LongFlowing(g); break;
+                case HairStyle.Ponytail: HighPonytail(g); break;
+                case HairStyle.Short: case HairStyle.Bun: Cropped(g); break;
+                case HairStyle.Bob: case HairStyle.Curly: case HairStyle.Twintails: RoundBob(g); break;
+                case HairStyle.Hood: Hooded(g); break;
+                case HairStyle.Braid: SleekLong(g); break;
+                default: ShortMessy(g); break;
+            }
+        }
+
         public static void Build(string id, HairGeometry g)
         {
             switch (id)

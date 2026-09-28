@@ -74,16 +74,19 @@ namespace HashiraChronicles
 
             // Float (casters), hips and weight.
             body.localPosition = hov > 0f ? new Vector3(0f, hov + Mathf.Sin(time * 1.7f) * 0.05f, 0f) : Vector3.zero;
-            float dip = crouch * idle + (guard ? 0.05f : 0f) + swingDip * sw
+            // Standing, the legs are almost straight (a soft knee only); crouch is a small personality touch at rest,
+            // and deeper bends come from walking, guarding and swings.
+            float dip = crouch * idle * 0.3f + (guard ? 0.05f : 0f) + swingDip * sw
                         + Mathf.Abs(Mathf.Sin(time * idleBounceFreq * Mathf.PI)) * idleBounce * idle
                         + Mathf.Abs(Mathf.Sin(phase)) * 0.035f * m;
             float shift = Mathf.Sin(time * 0.9f) * weightShift * idle;
-            float pelvisY = hipY - dip;
+            float standY = Mathf.Max(hipY, ankle + 0.02f + (legA + legB) * 0.985f);
+            float pelvisY = standY - dip;
             if (show)
             {
                 // Standing tall: legs almost straight (a soft knee, not a crouch), a slow weight shift, breathing.
                 shift = ShowHip() + Mathf.Sin(time * 0.45f) * 0.01f;
-                pelvisY = ankle + 0.02f + (legA + legB) * 0.975f + Mathf.Sin(time * 1.6f) * 0.003f;
+                pelvisY = ankle + 0.02f + (legA + legB) * 0.985f + Mathf.Sin(time * 1.6f) * 0.003f;
             }
             // Blend the hips between states (crouch, guard, showcase, dead) instead of jumping.
             Vector3 pelvisTarget = new Vector3(shift, pelvisY, 0f);

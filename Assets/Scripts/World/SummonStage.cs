@@ -14,7 +14,14 @@ namespace HashiraChronicles
     /// </summary>
     public class SummonStage : MonoBehaviour
     {
-        public enum SummonPhase { Idle, Gather, Charging, Seal, Silhouette, Reveal, Summary }
+        public enum SummonPhase { Idle, Gather, Charging, Seal, Silhouette, Reveal, Summary, Intro, Shrine, Cards }
+
+        // The 2D intro drawn by the summon screen, in seconds from the start of the Intro phase:
+        // fade to black, the sheathed sword appears, a hand grips it, CLANG — drawn, the screen is sliced open.
+        public const float IntroFade = 0.4f, IntroSword = 1.3f, IntroGrip = 1.85f, IntroDraw = 2.15f, IntroSlice = 2.8f;
+
+        /// <summary>Best rarity in this summon (colours the slash, the seal and the effects).</summary>
+        public int BestRarity { get; private set; }
 
         /// <summary>Taps needed to break the current seal, and taps landed so far.</summary>
         public int SealNeeded { get; private set; }
@@ -106,26 +113,362 @@ namespace HashiraChronicles
         IEnumerator Sequence()
         {
             var audio = GameManager.Instance != null ? GameManager.Instance.Audio : null;
-            if (Results.Count > 1) yield return Gather(audio);
+            BestRarity = 2;
+            foreach (var r in Results) BestRarity = Mathf.Max(BestRarity, r.rarity);
+            bool big = BestRarity >= 5;
+            Color best = RarityInfo.Color(BestRarity);
+            ClearShown();
+            ClearCards();
+
+            // 1–4. The blade (drawn by the UI over a black screen), timed with its sounds. Behind the black, the
+            // shrine shot is already set up so the slice opens straight onto it.
+            Phase = SummonPhase.Intro;
+            PhaseStart = Time.unscaledTime;
+            advance = false;
+            PrepareShrine();
+            var cam = CameraController.Instance;
+            if (cam != null) cam.Cut(new Vector3(0f, 2.4f, -7.5f), new Vector3(0f, 3.6f, 14f));
+            bool swordSound = false, gripSound = false, clang = false, slice = false;
+            while (!skipAll)
+            {
+                float t = Time.unscaledTime - PhaseStart;
+                if (advance) { advance = false; PhaseStart -= Mathf.Max(0f, IntroSlice - 0.3f - t); t = Time.unscaledTime - PhaseStart; }
+                if (!swordSound && t > IntroFade) { swordSound = true; if (audio != null) audio.Play("sp_activate", 0.5f); }
+                if (!gripSound && t > IntroSword + 0.25f) { gripSound = true; if (audio != null) audio.PlayPitched("thud", 0.45f, 1.3f); }
+                if (!clang && t > IntroGrip + 0.05f)
+                {
+                    clang = true;
+                    if (audio != null) { audio.PlayPitched("parry", 0.9f, 0.85f); audio.Play("slashHeavy", 0.6f); }
+                }
+                if (!slice && t > IntroDraw + 0.05f)
+                {
+                    slice = true;
+                    if (audio != null) { audio.Play("sp_whoosh", 0.8f); audio.Play(big ? "ultimate" : "slash", big ? 0.7f : 0.6f); if (big) audio.Play("el_thunder", 0.6f); }
+                    if (cam != null) cam.Shake(big ? 0.55f : 0.2f);
+                }
+                if (t >= IntroSlice) break;
+                yield return null;
+            }
+
+            // 5–9. The shrine glows, the moon rises, energy swirls, the seal forms and erupts.
+            if (!skipAll) yield return ShrineRite(audio, best, big);
+            // 10. Cards fly out and land around the altar.
+            if (!skipAll) yield return FlyCards(audio);
+            // 11–12. Each slayer lands with an impact; rarity sets the colour and the effects.
             for (CurrentIndex = 0; CurrentIndex < Results.Count && !skipAll; CurrentIndex++)
             {
                 Current = Results[CurrentIndex];
-                if (CurrentIndex < ringOrbs.Count && ringOrbs[CurrentIndex] != null) ringOrbs[CurrentIndex].gameObject.SetActive(false);
-                yield return RevealOne(Current, audio, Results.Count > 1);
+                yield return LandOne(Current, audio, Results.Count > 1);
             }
-            ClearRing();
-            HideOrb();
+            ClearCards();
+            HideRite();
+            heroHolder.position = AltarPos + Vector3.up * 0.3f;
             Phase = SummonPhase.Summary;
             PhaseStart = Time.unscaledTime;
             ClearShown();
-            // Line up the best pull for the summary backdrop.
-            SummonSystem.Result best = Results[0];
-            foreach (var r in Results) if (r.rarity > best.rarity) best = r;
-            ShowHero(best.def, false);
-            SetCircle(RarityInfo.Color(best.rarity), 1f);
+            SummonSystem.Result top = Results[0];
+            foreach (var r in Results) if (r.rarity > top.rarity) top = r;
+            ShowHero(top.def, false);
+            SetCircle(RarityInfo.Color(top.rarity), 1f);
             ApplyLighting(0.8f);
-            if (CameraController.Instance != null) CameraController.Instance.Cut(new Vector3(-1.2f, 1.9f, -5.5f), new Vector3(-1.2f, 1.3f, 0f));
+            if (CameraController.Instance != null) CameraController.Instance.Cut(new Vector3(-1.2f, 1.9f, -5.5f), new Vector3(-1.2f, 1.3f, 0f), true);
             routine = null;
+        }
+
+        // ------------------------------------------------------------------ The rite
+
+        Transform moon, swirl;
+        Light shrineLight;
+        Material shrinePaper;
+        readonly List<Transform> cards = new List<Transform>();
+        Vector3 circleBase, runesBase;
+
+        /// <summary>Dark shrine, no moon, no seal: ready for the slice to open onto.</summary>
+        void PrepareShrine()
+        {
+            ApplyLighting(0.25f);
+            SetBraziers(new Color(0.4f, 0.5f, 1f), 0.15f);
+            SetShrineGlow(0.15f);
+            if (moon != null) { moon.gameObject.SetActive(false); }
+            if (swirl != null) swirl.gameObject.SetActive(false);
+            if (circle != null) circle.localScale = Vector3.zero;
+            if (runes != null) runes.localScale = Vector3.zero;
+            SetCircle(new Color(0.35f, 0.55f, 1f), 0.4f);
+        }
+
+        void HideRite()
+        {
+            if (moon != null) moon.gameObject.SetActive(false);
+            if (swirl != null) swirl.gameObject.SetActive(false);
+            if (circle != null) circle.localScale = circleBase;
+            if (runes != null) runes.localScale = runesBase;
+            SetShrineGlow(0.6f);
+        }
+
+        void SetShrineGlow(float k)
+        {
+            if (shrinePaper != null)
+            {
+                Color em = new Color(1f, 0.62f, 0.3f) * Mathf.Clamp01(k);
+                if (shrinePaper.HasProperty("_Emission")) shrinePaper.SetColor("_Emission", em);
+            }
+            if (shrineLight != null) shrineLight.intensity = 3.2f * k;
+        }
+
+        IEnumerator ShrineRite(AudioManager audio, Color best, bool big)
+        {
+            Phase = SummonPhase.Shrine;
+            PhaseStart = Time.unscaledTime;
+            advance = false;
+            var cam = CameraController.Instance;
+            // 5. The shrine lights up behind the slash.
+            float e = 0f;
+            while (e < 0.6f && !advance)
+            {
+                e += Time.unscaledDeltaTime;
+                SetShrineGlow(Mathf.SmoothStep(0.15f, 1f, e / 0.6f));
+                yield return null;
+            }
+            SetShrineGlow(1f);
+            // 6. A massive moon rises overhead; the camera tilts up to it.
+            moon.gameObject.SetActive(true);
+            if (cam != null) cam.Dolly(new Vector3(0f, 3f, -9f), new Vector3(0f, 10f, 22f), 1.2f);
+            if (audio != null) audio.Play("charge", 0.5f);
+            e = 0f;
+            while (e < 1.3f && !advance)
+            {
+                e += Time.unscaledDeltaTime;
+                float k = Mathf.SmoothStep(0f, 1f, e / 1.3f);
+                moon.position = new Vector3(0f, Mathf.Lerp(10f, 26f, k), 48f);
+                moon.localScale = Vector3.one * Mathf.Lerp(4f, 22f, k);
+                ApplyLighting(Mathf.Lerp(0.25f, 0.55f, k));
+                yield return null;
+            }
+            moon.position = new Vector3(0f, 26f, 48f);
+            moon.localScale = Vector3.one * 22f;
+            // 7. Energy swirls around the shrine and down to the altar.
+            swirl.gameObject.SetActive(true);
+            SetSwirl(best, 0f);
+            if (cam != null) cam.Dolly(new Vector3(0f, 4.2f, -9.5f), new Vector3(0f, 2f, 4f), 1.2f);
+            if (audio != null) audio.Play("buildup", 0.6f);
+            e = 0f;
+            while (e < 1.3f && !advance)
+            {
+                e += Time.unscaledDeltaTime;
+                float k = e / 1.3f;
+                SetSwirl(best, k);
+                for (int i = 0; i < 2; i++)
+                {
+                    float a = (Time.unscaledTime * 3f + i * Mathf.PI) % (Mathf.PI * 2f);
+                    float rad = Mathf.Lerp(7f, 2f, k);
+                    Vector3 p = AltarPos + new Vector3(Mathf.Cos(a) * rad, 0.5f + (1f - k) * 3f, Mathf.Sin(a) * rad + 3f * (1f - k));
+                    VFX.Breath(p, Color.Lerp(new Color(0.5f, 0.7f, 1f), best, k), 2);
+                }
+                yield return null;
+            }
+            // 8. The summon seal draws itself on the ground.
+            if (cam != null) cam.Dolly(new Vector3(0f, 6.2f, -8f), AltarPos + Vector3.up * 0.4f, 0.9f);
+            if (audio != null) audio.Play("sp_activate", 0.7f);
+            e = 0f;
+            while (e < 0.9f && !advance)
+            {
+                e += Time.unscaledDeltaTime;
+                float k = Mathf.SmoothStep(0f, 1f, e / 0.9f);
+                circle.localScale = circleBase * k;
+                runes.localScale = runesBase * Mathf.Clamp01(k * 1.3f - 0.3f);
+                SetCircle(Color.Lerp(new Color(0.35f, 0.55f, 1f), best, k), 0.6f + k);
+                SetSwirl(best, 1f);
+                yield return null;
+            }
+            circle.localScale = circleBase;
+            runes.localScale = runesBase;
+            // 9. The seal erupts upward.
+            SetCircle(best, 1.6f);
+            VFX.Pillar(AltarPos, best, big ? 18f : 12f, 1f);
+            VFX.Shockwave(AltarPos, big ? 9f : 6f, best, 0.6f);
+            VFX.BurstDisc(AltarPos, 6f, best, 0.6f);
+            VFX.Breath(AltarPos + Vector3.up, best, big ? 90 : 50);
+            VFX.ImpactLight(AltarPos + Vector3.up * 2f, best, big ? 22f : 14f, 0.6f);
+            if (audio != null) { audio.Play("specialRelease", 0.8f); audio.Play(big ? "ultimate" : "skill", 0.7f); }
+            if (cam != null) cam.Shake(big ? 0.6f : 0.3f);
+            GameEvents.RaiseImpact(big ? 1f : 0.5f);
+            if (big)
+                for (int i = 0; i < 5; i++)
+                {
+                    Vector3 o = AltarPos + Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * Random.Range(1.5f, 5f);
+                    BoltFx.Strike(o + Vector3.up * 18f, o, Color.Lerp(best, Color.white, 0.5f), 0.4f, 0.25f, 0.5f);
+                    if (audio != null && i % 2 == 0) audio.Play("el_thunder", 0.6f);
+                    yield return Wait(0.07f);
+                }
+            SetBraziers(best, 1.4f);
+            swirl.gameObject.SetActive(false);
+            yield return Wait(0.3f);
+        }
+
+        void SetSwirl(Color c, float k)
+        {
+            if (swirl == null) return;
+            for (int i = 0; i < swirl.childCount; i++)
+            {
+                var ring = swirl.GetChild(i);
+                float spin = Time.unscaledTime * (120f + i * 60f) * (i % 2 == 0 ? 1f : -1f);
+                ring.localRotation = Quaternion.Euler(70f + i * 8f, spin, 0f);
+                float rad = Mathf.Lerp(6f - i, 2.2f + i * 0.4f, k);
+                ring.localScale = Vector3.one * rad;
+                ring.localPosition = new Vector3(0f, Mathf.Lerp(3f + i, 0.6f + i * 0.5f, k), 0f);
+                var rend = ring.GetComponent<Renderer>();
+                if (rend != null) rend.sharedMaterial.color = new Color(c.r, c.g, c.b, 0.25f + 0.35f * k);
+            }
+        }
+
+        /// <summary>Cards burst out of the pillar and land in an arc around the altar, each glowing its rarity.</summary>
+        IEnumerator FlyCards(AudioManager audio)
+        {
+            Phase = SummonPhase.Cards;
+            PhaseStart = Time.unscaledTime;
+            advance = false;
+            var cam = CameraController.Instance;
+            if (cam != null) cam.Dolly(new Vector3(0f, 4.4f, -9.5f), AltarPos + Vector3.up * 1f, 0.8f);
+            int n = Results.Count;
+            var from = new List<Vector3>();
+            var to = new List<Vector3>();
+            for (int i = 0; i < n; i++)
+            {
+                float a = n == 1 ? 0f : Mathf.Lerp(-62f, 62f, i / (n - 1f));
+                to.Add(AltarPos + new Vector3(Mathf.Sin(a * Mathf.Deg2Rad) * 3.4f, 0.8f, -Mathf.Cos(a * Mathf.Deg2Rad) * 3.4f));
+                from.Add(AltarPos + Vector3.up * 2.6f);
+                cards.Add(MakeCard(Results[i].rarity));
+            }
+            float dur = 0.9f, stagger = Mathf.Min(0.08f, 0.6f / n);
+            float e = 0f;
+            var landed = new bool[n];
+            while (e < dur + stagger * n)
+            {
+                e += Time.unscaledDeltaTime;
+                for (int i = 0; i < n; i++)
+                {
+                    float k = Mathf.Clamp01((e - i * stagger) / dur);
+                    var c = cards[i];
+                    if (c == null) continue;
+                    c.gameObject.SetActive(k > 0f);
+                    float ek = 1f - (1f - k) * (1f - k);
+                    c.position = Vector3.Lerp(from[i], to[i], ek) + Vector3.up * Mathf.Sin(k * Mathf.PI) * 3.2f;
+                    c.rotation = Quaternion.Euler(0f, 180f + (1f - k) * 900f, (1f - k) * 40f);
+                    if (k >= 1f && !landed[i])
+                    {
+                        landed[i] = true;
+                        Color rc = RarityInfo.Color(Results[i].rarity);
+                        VFX.Dust(to[i] - Vector3.up * 0.75f, 6);
+                        VFX.Shockwave(to[i] - Vector3.up * 0.75f, 1f + Results[i].rarity * 0.2f, rc, 0.3f);
+                        if (audio != null) audio.PlayPitched("coin", 0.35f, 0.8f + Results[i].rarity * 0.1f);
+                    }
+                }
+                yield return null;
+            }
+            yield return Wait(0.35f);
+        }
+
+        Transform MakeCard(int rarity)
+        {
+            Color rc = RarityInfo.Color(rarity);
+            var t = new GameObject("SummonCard").transform;
+            t.SetParent(world.transform, false);
+            MeshFactory.MeshObject(MeshFactory.RoundedCube(), t, Vector3.zero, new Vector3(0.86f, 1.2f, 0.04f), MaterialFactory.Toon(Color.Lerp(rc, Color.white, 0.2f), 0.01f, rc * 0.8f), false);
+            MeshFactory.MeshObject(MeshFactory.RoundedCube(), t, new Vector3(0f, 0f, -0.012f), new Vector3(0.74f, 1.06f, 0.04f), MaterialFactory.Toon(new Color(0.06f, 0.05f, 0.1f), 0f), false);
+            // A slayer's silhouette on the face of the card.
+            var ink = MaterialFactory.Toon(Color.Lerp(rc, Color.black, 0.6f), 0f, rc * 0.25f);
+            MeshFactory.MeshObject(MeshFactory.SmoothSphere(), t, new Vector3(0f, 0.22f, -0.04f), new Vector3(0.26f, 0.26f, 0.02f), ink, false);
+            MeshFactory.MeshObject(MeshFactory.SmoothCapsule(), t, new Vector3(0f, -0.14f, -0.04f), new Vector3(0.26f, 0.22f, 0.02f), ink, false);
+            MeshFactory.MeshObject(MeshFactory.SmoothSphere(), t, Vector3.zero, new Vector3(1.4f, 1.8f, 0.3f), MaterialFactory.Additive(new Color(rc.r, rc.g, rc.b, rarity >= 5 ? 0.45f : 0.25f)), false);
+            t.gameObject.SetActive(false);
+            return t;
+        }
+
+        void ClearCards()
+        {
+            foreach (var c in cards) if (c != null) Destroy(c.gameObject);
+            cards.Clear();
+        }
+
+        /// <summary>One slayer: their card flies to the altar and bursts, the slayer drops from above and lands.</summary>
+        IEnumerator LandOne(SummonSystem.Result r, AudioManager audio, bool multi)
+        {
+            int rarity = r.rarity;
+            Color rc = RarityInfo.Color(rarity);
+            bool big = rarity >= 5;
+            advance = false;
+            ClearShown();
+            var cam = CameraController.Instance;
+            Phase = SummonPhase.Silhouette;
+            PhaseStart = Time.unscaledTime;
+            SetCircle(rc, 1.1f);
+            // The card rises to the altar and bursts.
+            var card = CurrentIndex < cards.Count ? cards[CurrentIndex] : null;
+            if (card != null)
+            {
+                Vector3 a = card.position, b = AltarPos + Vector3.up * 2.4f;
+                float e = 0f, d = multi ? 0.25f : 0.4f;
+                while (e < d && !advance)
+                {
+                    e += Time.unscaledDeltaTime;
+                    float k = Mathf.SmoothStep(0f, 1f, e / d);
+                    card.position = Vector3.Lerp(a, b, k);
+                    card.rotation = Quaternion.Euler(0f, 180f + k * 360f, 0f);
+                    yield return null;
+                }
+                VFX.HitSpark(b, Color.Lerp(rc, Color.white, 0.4f), big ? 40 : 20);
+                VFX.Shockwave(b, big ? 4f : 2.5f, rc, 0.3f);
+                VFX.ImpactLight(b, rc, big ? 14f : 8f, 0.25f);
+                Destroy(card.gameObject);
+                cards[CurrentIndex] = null;
+                if (audio != null) audio.PlayPitched("impact", 0.6f, 1.2f);
+            }
+            // The slayer drops out of the light and lands with an impact.
+            ShowHero(r.def, true);
+            Vector3 land = AltarPos + Vector3.up * 0.3f, top = land + Vector3.up * 5f;
+            if (cam != null) cam.Dolly(new Vector3(0f, 2.1f, -5.4f), land + Vector3.up * 1.2f, multi ? 0.35f : 0.5f);
+            float f = 0f, fall = multi ? 0.28f : 0.4f;
+            while (f < fall)
+            {
+                f += Time.unscaledDeltaTime;
+                float k = Mathf.Clamp01(f / fall);
+                heroHolder.position = Vector3.Lerp(top, land, k * k);
+                yield return null;
+            }
+            heroHolder.position = land;
+            VFX.Dust(land, big ? 16 : 10);
+            VFX.Shockwave(land, big ? 5f : 3f, rc, 0.4f);
+            VFX.BurstDisc(land, big ? 4f : 2.5f, rc, 0.4f);
+            if (audio != null) audio.Play(big ? "impact" : "thud", 0.7f);
+            if (cam != null) cam.Shake(big ? 0.5f : 0.15f);
+            GameEvents.RaiseImpact(big ? 0.8f : 0.3f);
+            if (big)
+                for (int i = 0; i < (rarity >= 6 ? 6 : 3); i++)
+                {
+                    Vector3 o = land + Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * Random.Range(1.2f, 3.5f);
+                    BoltFx.Strike(o + Vector3.up * 14f, o, Color.Lerp(rc, Color.white, 0.5f), 0.35f, 0.22f, 0.45f);
+                    if (audio != null && i == 0) audio.Play("el_thunder", 0.6f);
+                    yield return Wait(0.06f);
+                }
+            yield return Wait(multi ? 0.15f : 0.3f);
+
+            // The reveal: colour floods in (the UI shows the card).
+            Phase = SummonPhase.Reveal;
+            PhaseStart = Time.unscaledTime;
+            SetSilhouette(false);
+            ApplyLighting(big ? 1.1f : 0.8f);
+            VFX.Pillar(land, rc, big ? 10f : 6f, 0.7f);
+            VFX.Breath(land, rc, 30 + (rarity - 2) * 20);
+            VFX.ImpactLight(land + Vector3.up * 1.5f, rc, 10f, 0.8f);
+            if (shown != null) { shown.Flash(Color.white, 1f); shown.Victory(); }
+            if (audio != null) audio.Play(big ? "ultimate" : "victory", 0.8f);
+            if (rarity >= 6) foreach (var p in pillars) VFX.Pillar(p.position, rc, 12f, 1f);
+            if (cam != null) cam.Dolly(new Vector3(-1.1f, 1.7f, -3.9f), land + new Vector3(-0.9f, 1.25f, 0f), 1.2f);
+            advance = false;
+            float auto = multi ? 2.2f : 4.5f;
+            float t0 = Time.unscaledTime;
+            while (!advance && Time.unscaledTime - t0 < auto) yield return null;
+            advance = false;
         }
 
         IEnumerator RevealOne(SummonSystem.Result r, AudioManager audio, bool multi)
@@ -501,8 +844,8 @@ namespace HashiraChronicles
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
             RenderSettings.fogColor = new Color(0.03f, 0.02f, 0.07f);
-            RenderSettings.fogStartDistance = 12f;
-            RenderSettings.fogEndDistance = 45f;
+            RenderSettings.fogStartDistance = 22f;
+            RenderSettings.fogEndDistance = 110f;
             RenderSettings.ambientLight = new Color(0.2f, 0.18f, 0.3f) * brightness;
             if (Camera.main != null) Camera.main.backgroundColor = new Color(0.02f, 0.01f, 0.05f);
             if (RenderSettings.sun != null)
@@ -511,6 +854,84 @@ namespace HashiraChronicles
                 RenderSettings.sun.intensity = 0.9f * brightness;
                 RenderSettings.sun.transform.rotation = Quaternion.Euler(60f, -20f, 0f);
             }
+        }
+
+        /// <summary>The glowing shrine behind the altar, a torii before it, the moon and the energy swirl.</summary>
+        void BuildShrine(Transform root)
+        {
+            var s = new GameObject("Shrine").transform;
+            s.SetParent(root, false);
+            s.position = new Vector3(0f, 0f, 15f);
+
+            var stone = MaterialFactory.Toon(new Color(0.3f, 0.29f, 0.33f), 0.02f);
+            var red = MaterialFactory.Toon(new Color(0.72f, 0.12f, 0.12f), 0.02f);
+            var wood = MaterialFactory.Toon(new Color(0.3f, 0.2f, 0.14f), 0.02f);
+            var roof = MaterialFactory.Toon(new Color(0.16f, 0.15f, 0.22f), 0.02f);
+            var gold = MaterialFactory.Toon(new Color(0.95f, 0.78f, 0.35f), 0.01f, new Color(0.3f, 0.2f, 0.05f));
+            shrinePaper = MaterialFactory.Toon(new Color(1f, 0.9f, 0.7f), 0.01f, new Color(1f, 0.62f, 0.3f));
+            var cube = MeshFactory.RoundedCube();
+            var cyl = MeshFactory.SmoothCylinder();
+            SP(s, cube, new Vector3(0f, 0.45f, 0f), new Vector3(11f, 0.9f, 7.5f), stone, Vector3.zero);
+            for (int i = 0; i < 3; i++) SP(s, cube, new Vector3(0f, 0.15f + i * 0.2f, -4.4f + i * 0.45f), new Vector3(4.4f, 0.3f, 0.6f), stone, Vector3.zero);
+            // Pillars, glowing paper walls, back wall.
+            for (int i = 0; i < 4; i++)
+            {
+                float x = -4.2f + i * 2.8f;
+                SP(s, cyl, new Vector3(x, 2.4f, -2.9f), new Vector3(0.42f, 1.5f, 0.42f), red, Vector3.zero);
+                SP(s, cyl, new Vector3(x, 2.4f, 2.9f), new Vector3(0.42f, 1.5f, 0.42f), red, Vector3.zero);
+                if (i < 3) SP(s, cube, new Vector3(x + 1.4f, 2.4f, -2.75f), new Vector3(2.3f, 2.6f, 0.12f), shrinePaper, Vector3.zero);
+            }
+            SP(s, cube, new Vector3(0f, 2.4f, 2.9f), new Vector3(8.6f, 3f, 0.25f), wood, Vector3.zero);
+            for (int sd = -1; sd <= 1; sd += 2) SP(s, cube, new Vector3(sd * 4.3f, 2.4f, 0f), new Vector3(0.25f, 3f, 5.8f), wood, Vector3.zero);
+            SP(s, cube, new Vector3(0f, 3.95f, -2.9f), new Vector3(9.4f, 0.3f, 0.35f), red, Vector3.zero);
+            // A deep two-tier roof with upturned eaves and a gold ridge.
+            for (int tier = 0; tier < 2; tier++)
+            {
+                float y = 4.7f + tier * 1.4f, w = 12.4f - tier * 3.2f, d = 4.6f - tier * 1.2f;
+                for (int sd = -1; sd <= 1; sd += 2)
+                    SP(s, cube, new Vector3(0f, y, sd * d * 0.42f), new Vector3(w, 0.3f, d), roof, new Vector3(sd * 26f, 0f, 0f));
+                SP(s, cube, new Vector3(0f, y + d * 0.2f + 0.2f, 0f), new Vector3(w * 0.96f, 0.3f, 0.45f), gold, Vector3.zero);
+                for (int sx = -1; sx <= 1; sx += 2)
+                    for (int sz = -1; sz <= 1; sz += 2)
+                        SP(s, cube, new Vector3(sx * w * 0.5f, y - 0.45f, sz * d * 0.82f), new Vector3(0.9f, 0.22f, 0.5f), roof, new Vector3(0f, sx * sz * 35f, sx * 18f));
+            }
+            // Hanging lanterns and the shrine's warm light.
+            for (int sx = -1; sx <= 1; sx += 2)
+                SP(s, MeshFactory.SmoothSphere(), new Vector3(sx * 2.8f, 3.3f, -3.3f), new Vector3(0.6f, 0.75f, 0.6f), shrinePaper, Vector3.zero);
+            var lg = new GameObject("ShrineLight");
+            lg.transform.SetParent(s, false);
+            lg.transform.localPosition = new Vector3(0f, 2.6f, -4.5f);
+            shrineLight = lg.AddComponent<Light>();
+            shrineLight.type = LightType.Point;
+            shrineLight.color = new Color(1f, 0.66f, 0.35f);
+            shrineLight.range = 14f;
+            // A torii between the altar and the shrine.
+            float tz = -5f;
+            for (int sx = -1; sx <= 1; sx += 2) SP(s, cyl, new Vector3(sx * 2.8f, 2.6f, tz), new Vector3(0.45f, 2.6f, 0.45f), red, Vector3.zero);
+            SP(s, cube, new Vector3(0f, 5.35f, tz), new Vector3(7.6f, 0.42f, 0.7f), red, Vector3.zero);
+            SP(s, cube, new Vector3(0f, 5.62f, tz), new Vector3(8.2f, 0.18f, 0.8f), roof, Vector3.zero);
+            SP(s, cube, new Vector3(0f, 4.4f, tz), new Vector3(6.4f, 0.3f, 0.35f), red, Vector3.zero);
+            SP(s, cube, new Vector3(0f, 4.85f, tz - 0.05f), new Vector3(0.9f, 0.7f, 0.12f), gold, Vector3.zero);
+
+            // The moon (appears during the rite) and the energy swirl rings.
+            moon = new GameObject("Moon").transform;
+            moon.SetParent(root, false);
+            MeshFactory.MeshObject(MeshFactory.SmoothSphere(), moon, Vector3.zero, Vector3.one, MaterialFactory.Toon(new Color(1f, 0.97f, 0.88f), 0f, new Color(0.95f, 0.9f, 0.78f)), false);
+            MeshFactory.MeshObject(MeshFactory.SmoothSphere(), moon, Vector3.zero, Vector3.one * 1.35f, MaterialFactory.Additive(new Color(0.8f, 0.85f, 1f, 0.22f)), false);
+            moon.gameObject.SetActive(false);
+            swirl = new GameObject("Swirl").transform;
+            swirl.SetParent(root, false);
+            swirl.position = AltarPos;
+            for (int i = 0; i < 3; i++)
+                MeshFactory.MeshObject(MeshFactory.Ring(0.93f - i * 0.02f), swirl, Vector3.zero, Vector3.one, MaterialFactory.Additive(new Color(0.5f, 0.7f, 1f, 0.4f)), false);
+            swirl.gameObject.SetActive(false);
+        }
+
+        static Transform SP(Transform parent, Mesh m, Vector3 p, Vector3 sc, Material mat, Vector3 e)
+        {
+            var go = MeshFactory.MeshObject(m, parent, p, sc, mat);
+            go.transform.localRotation = Quaternion.Euler(e);
+            return go.transform;
         }
 
         void EnsureWorld()
@@ -588,6 +1009,10 @@ namespace HashiraChronicles
             var band = MeshFactory.MeshObject(MeshFactory.Ring(0.85f), orb, Vector3.zero, Vector3.one * 1.5f, orbGlow, false);
             band.transform.localRotation = Quaternion.Euler(70f, 0f, 0f);
             orb.gameObject.SetActive(false);
+
+            circleBase = circle.localScale;
+            runesBase = runes.localScale;
+            BuildShrine(root);
 
             heroHolder = new GameObject("SummonHero").transform;
             heroHolder.SetParent(transform, false);

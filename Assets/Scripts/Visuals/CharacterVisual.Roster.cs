@@ -77,6 +77,21 @@ namespace HashiraChronicles
                     r.stance = 0.1f;
                     break;
             }
+            // Proportions of their own (Design Bible): leg length from how they fight, head size from their age and
+            // manner, shoulder width from their build, plus a small personal variation so no two match.
+            var pv = new System.Random(IdSeed(def.id));
+            float jitter = 1f + ((float)pv.NextDouble() - 0.5f) * 0.06f;
+            float legK = def.style == CombatStyle.Swift ? 1.1f : def.style == CombatStyle.Ranged ? 1.08f : def.style == CombatStyle.Heavy ? 0.92f
+                : def.style == CombatStyle.Brawler ? 0.95f : def.style == CombatStyle.Healer ? 0.93f : 1f;
+            legK *= jitter;
+            float headK = (def.motion == MotionStyle.Nervous || def.motion == MotionStyle.Light ? 1.07f : def.motion == MotionStyle.Stoic || def.motion == MotionStyle.Confident ? 0.95f : 1f)
+                * (frame == Frame.Heavy ? 0.9f : frame == Frame.Slim ? 1.03f : 1f) * (1f + ((float)pv.NextDouble() - 0.5f) * 0.05f);
+            float shoulderK = Mathf.Clamp(Mathf.Lerp(0.94f, 1.1f, (def.bodyWidth - 0.85f) / 0.5f), 0.92f, 1.1f);
+            r.hipY *= legK; r.legA *= legK; r.legB *= legK;
+            r.shoulder = new Vector3(r.shoulder.x * shoulderK, r.shoulder.y, r.shoulder.z);
+            torsoW *= shoulderK;
+            for (int i = 0; i < 2; i++) { r.thigh[i].localScale = new Vector3(1f, legK, 1f); r.shin[i].localScale = new Vector3(1f, legK, 1f); }
+            head.localScale = Vector3.one * headK;
             float frameScale = (frame == Frame.Heavy ? 1.06f : 1f) * Mathf.Clamp(def.bodyHeight, 0.85f, 1.2f);
             Model.localScale = Vector3.one * frameScale;
             float sx = r.shoulder.x;
@@ -271,10 +286,12 @@ namespace HashiraChronicles
             Ball(head, new Vector3(0f, 0.04f, 0f), new Vector3(0.1f, 0.16f, 0.1f), mSkin);
             Ball(head, hc, hr * 2f, mSkin);
             for (int s = -1; s <= 1; s += 2) Ball(head, hc + new Vector3(s * (hr.x - 0.01f), -0.03f, -0.01f), new Vector3(0.07f, 0.12f, 0.08f), mSkin);
-            RosterFace(def, hc, hr, mSkin, elem);
+            RosterFaceV2(def, hc, hr, mSkin, elem);
             var realHead = head;
             // The sculpted hair (quality standard: Ren, Mina, Sora); everyone else keeps their current hair for now.
-            if (!SculptedHair(def, hc, hr))
+            bool sculpted = SculptedHair(def, hc, hr, mP);
+            if (sculpted) HairExtras(def, hc, hr);
+            if (!sculpted)
             {
                 var hairRoot = J("HairRoot", head, hc);
                 hairRoot.localScale = Vector3.one * (hr.x / 0.4f);
@@ -283,7 +300,7 @@ namespace HashiraChronicles
                 HairDetail(def);
                 head = realHead;
             }
-            HeadY = (r.hipY + r.hover + 0.02f + r.neck.y + hc.y) * frameScale;
+            HeadY = (r.hipY + r.hover + 0.02f + r.neck.y + hc.y * headK) * frameScale;
 
             // ---- Accessories
             if (def.scarf)
@@ -371,12 +388,140 @@ namespace HashiraChronicles
             }
 
             // ---- Weapon
+            // One hero piece by role, for a silhouette of their own (Design Bible §5).
+            if (def.role == Role.Tank && outfit != Outfit.Armored)
+            {
+                var pad = J("Pauldron", r.upper[1], new Vector3(-0.03f, 0.05f, 0f));
+                for (int k = 0; k < 3; k++)
+                    Ball(pad, new Vector3(-0.02f * k, -k * 0.065f, 0f), new Vector3(0.32f - k * 0.045f, 0.13f, 0.28f - k * 0.035f), k == 1 ? mTrim : mMetal, new Vector3(0f, 0f, 22f));
+            }
+            if (def.style == CombatStyle.Ranged && !def.cape)
+            {
+                var half = J("HalfCape", T, new Vector3(-0.1f, 0.33f, -0.04f));
+                half.localRotation = Quaternion.Euler(0f, 0f, 18f);
+                Ball(half, new Vector3(-0.04f, -0.02f, 0f), new Vector3(0.22f, 0.09f, 0.26f), mA);
+                DStrips(half, new Vector3(-0.05f, -0.02f, -0.09f), new Vector3(10f, 0f, 0f), 3, 0.065f, 0.38f, 0.07f, 2, mA, mTrim);
+            }
+            if (def.style == CombatStyle.Healer)
+            {
+                var bow = J("ObiBow", T, new Vector3(0f, 0.05f, -chestR - 0.03f));
+                for (int sd = -1; sd <= 1; sd += 2)
+                    Ball(bow, new Vector3(sd * 0.1f, 0.02f, -0.02f), new Vector3(0.16f, 0.12f, 0.05f), mA, new Vector3(0f, 0f, sd * 15f));
+                Ball(bow, new Vector3(0f, 0.01f, -0.03f), new Vector3(0.06f, 0.07f, 0.05f), mTrim);
+                DStrips(bow, new Vector3(0f, -0.02f, -0.03f), new Vector3(8f, 0f, 0f), 2, 0.07f, 0.24f, 0.07f, 2, mA, null);
+            }
+
             RosterWeapon(def, r, mTrim, mA, mS, mLeather, mMetal, rarity);
+            RosterShowPose(def, r);
             OptimizeParts();
             r.Solve(0f);
         }
 
         static float Diff(Color a, Color b) { return Mathf.Abs(a.r - b.r) + Mathf.Abs(a.g - b.g) + Mathf.Abs(a.b - b.b); }
+
+        /// <summary>A natural team-screen stance of their own, chosen from weapon and manner (never all identical).</summary>
+        void RosterShowPose(CharacterDefinition def, PremiumRig r)
+        {
+            switch (def.weapon)
+            {
+                case WeaponKind.Staff: r.showPose = PremiumRig.ShowPose.StaffBothHands; r.showButt = 0.56f; return;
+                case WeaponKind.Spear: r.showButt = 0.86f; r.showPose = def.motion == MotionStyle.Confident ? PremiumRig.ShowPose.OrbHand : PremiumRig.ShowPose.Natural; return;
+                case WeaponKind.Bow: r.showPose = PremiumRig.ShowPose.HandOnHipR; return;
+                case WeaponKind.Greatsword: r.showPose = PremiumRig.ShowPose.HandOnHipL; return;
+            }
+            switch (def.motion)
+            {
+                case MotionStyle.Confident: r.showPose = def.weapon == WeaponKind.Katana || def.weapon == WeaponKind.Moon ? PremiumRig.ShowPose.WeaponShoulder : PremiumRig.ShowPose.HandOnHipL; break;
+                case MotionStyle.Sly: r.showPose = PremiumRig.ShowPose.HandOnHipL; break;
+                case MotionStyle.Light: r.showPose = def.weapon == WeaponKind.Katana ? PremiumRig.ShowPose.WeaponShoulder : PremiumRig.ShowPose.Natural; break;
+                case MotionStyle.Aggressive: r.showPose = def.weapon == WeaponKind.Fists ? PremiumRig.ShowPose.HandOnHipL : PremiumRig.ShowPose.WeaponShoulder; break;
+                default: r.showPose = PremiumRig.ShowPose.Natural; break;
+            }
+        }
+
+        /// <summary>
+        /// A face of their own (Design Bible): eye shape, brows and mouth from their manner, then a personal
+        /// variation of eye width and spacing, nose and at most one mark, all stable per character.
+        /// </summary>
+        void RosterFaceV2(CharacterDefinition def, Vector3 hc, Vector3 hr, Material skin, Color elem)
+        {
+            var pv = new System.Random(IdSeed(def.id) ^ 0x5bd1);
+            var f = new FaceSpec();
+            f.iris = Color.Lerp(def.bladeColor, elem, 0.4f);
+            f.brows = Color.Lerp(def.hairColor, Color.black, 0.4f);
+            f.lashes = def.hair == HairStyle.Long || def.hair == HairStyle.Twintails || def.hair == HairStyle.Bob || def.hair == HairStyle.Braid || def.hair == HairStyle.Bun;
+            switch (def.motion)
+            {
+                case MotionStyle.Nervous: f.eyeH = 0.15f; f.lid = 0f; f.tilt = -6f; f.brow = -20f; f.mouth = "o"; f.mark = "blush"; break;
+                case MotionStyle.Aggressive: f.eyeH = 0.11f; f.lid = 0.25f; f.tilt = 10f; f.brow = 26f; f.browThick = 0.028f; f.mouth = "grin"; break;
+                case MotionStyle.Graceful: f.lid = 0.22f; f.tilt = -4f; f.brow = -8f; f.browThick = 0.016f; f.lashes = true; f.mouth = "smile"; f.mark = "blush"; break;
+                case MotionStyle.Stoic: f.eyeH = 0.11f; f.lid = 0.3f; f.tilt = 0f; f.brow = 6f; f.browThick = 0.026f; f.mouth = "flat"; break;
+                case MotionStyle.Confident: f.lid = 0.12f; f.tilt = 6f; f.brow = 12f; f.browThick = 0.024f; f.mouth = "smirk"; break;
+                case MotionStyle.Sly: f.eyeH = 0.12f; f.lid = 0.28f; f.tilt = 8f; f.brow = 16f; f.mouth = "smirk"; break;
+                case MotionStyle.Light: f.eyeH = 0.14f; f.lid = 0f; f.tilt = -2f; f.brow = -10f; f.mouth = "grin"; f.mark = "blush"; break;
+                default: f.mouth = "smile"; break;
+            }
+            f.eyeW *= 0.93f + (float)pv.NextDouble() * 0.14f;
+            f.eyeX += ((float)pv.NextDouble() - 0.5f) * 0.02f;
+            f.eyeY += ((float)pv.NextDouble() - 0.5f) * 0.02f;
+            f.nose = pv.NextDouble() < 0.5 ? "dot" : "line";
+            if (string.IsNullOrEmpty(f.mark))
+            {
+                double m = pv.NextDouble();
+                if (def.style == CombatStyle.Brawler || def.style == CombatStyle.Heavy) f.mark = m < 0.5 ? "scar" : m < 0.7 ? "bandage" : "";
+                else f.mark = m < 0.18 ? "beauty" : m < 0.3 ? "bandage" : m < 0.4 ? "scar" : "";
+            }
+            var b = new Proportions { hc = hc, hr = hr };
+            DFace(b, f, skin, def.skinTone);
+        }
+
+        /// <summary>Hair pieces that go beyond the sculpted base: a bun, twin tails, a long braid.</summary>
+        void HairExtras(CharacterDefinition def, Vector3 hc, Vector3 hr)
+        {
+            var hm = PM(def.hairColor, 0.01f);
+            switch (def.hair)
+            {
+                case HairStyle.Bun:
+                {
+                    Vector3 p = hc + new Vector3(0f, hr.y * 0.72f, -hr.z * 0.62f);
+                    Ball(head, p, new Vector3(0.24f, 0.22f, 0.22f), hm);
+                    Band(head, p + new Vector3(0f, -0.06f, 0.05f), 0.08f, 0.03f, 0.01f, PM(def.accentColor, 0.008f), null, new Vector3(-40f, 0f, 0f));
+                    break;
+                }
+                case HairStyle.Twintails:
+                    for (int s = -1; s <= 1; s += 2)
+                    {
+                        var t = J("Twintail", head, hc + new Vector3(s * hr.x * 0.82f, hr.y * 0.35f, -hr.z * 0.3f));
+                        t.localRotation = Quaternion.Euler(0f, 0f, s * 18f);
+                        Band(t, Vector3.zero, 0.05f, 0.04f, 0.012f, PM(def.accentColor, 0.008f));
+                        Transform prev = t;
+                        for (int k = 0; k < 5; k++)
+                        {
+                            Ball(prev, new Vector3(0f, -0.07f, 0f), new Vector3(0.16f - k * 0.02f, 0.16f, 0.14f - k * 0.015f), hm);
+                            var sw = prev.gameObject.AddComponent<Sway>();
+                            sw.Amount = 3f + k;
+                            sw.Speed = 1f;
+                            prev = J("T", prev, new Vector3(0f, -0.11f, 0f));
+                        }
+                    }
+                    break;
+                case HairStyle.Braid:
+                {
+                    var braid = J("Braid", head, hc + new Vector3(0f, -0.1f, -hr.z - 0.03f));
+                    Transform prev = braid;
+                    for (int k = 0; k < 6; k++)
+                    {
+                        Ball(prev, new Vector3(k % 2 == 0 ? 0.012f : -0.012f, -0.05f, 0f), new Vector3(0.1f - k * 0.006f, 0.1f, 0.08f - k * 0.004f), hm, new Vector3(0f, 0f, k % 2 == 0 ? 20f : -20f));
+                        var sw = prev.gameObject.AddComponent<Sway>();
+                        sw.Amount = 2f + k * 0.8f;
+                        sw.Speed = 0.9f;
+                        prev = J("B", prev, new Vector3(0f, -0.085f, -0.005f));
+                    }
+                    Band(prev, new Vector3(0f, 0.02f, 0f), 0.03f, 0.03f, 0.01f, PM(def.accentColor, 0.008f));
+                    break;
+                }
+            }
+        }
 
         void ChestPlate(Transform T, float chestR, Vector3 ts, Material plate, Material under, Material trim, int rarity)
         {

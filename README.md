@@ -78,6 +78,34 @@ separate from combat idle, attacks, specials, victory and defeat. Each slayer:
 Personality shows only in the head angle and which leg takes the weight. Everyone faces the camera with the same
 slight three-quarter turn toward the group.
 
+**Summon.**
+1. The screen fades to black.
+2. A sheathed sword appears across the screen.
+3. A hand grips the hilt.
+4. CLANG: the blade is drawn in a flash of sparks.
+5. A diagonal slash splits the black open onto a glowing shrine.
+6. A huge moon rises overhead.
+7. Energy swirls around the altar.
+8. The summon seal draws itself and erupts upward.
+9. Cards carrying slayer silhouettes fly out and land in an arc.
+10. Each slayer drops from the light and lands with an impact before their reveal.
+
+Rarity colours the slash, seal, cards and effects. Legendary and Mythic pulls get a much bigger slash with
+lightning along the cut, lightning strikes and heavy camera shake.
+
+**Whole roster to the design standard.**
+- **Hair:** every slayer has sculpted hair in their own hairstyle, varied per character, plus buns, twin tails and braids. Hats keep their hat.
+- **Proportions:** leg length follows how they fight, head size their age and manner, and shoulders their build.
+- **Faces:** eye shape, brows and mouth follow their manner, with personal variation and at most one mark.
+- **Silhouette:** a role hero piece (pauldron for tanks, half-cape for ranged fighters, sash bow for healers).
+- **Pose:** their own natural team-screen pose.
+
+Standing legs are nearly straight (a soft knee), with deeper bends only when walking, guarding or attacking.
+On the TEAM screen, drag a slayer to turn them around.
+
+**Worlds.** Every mission now uses the new-standard worlds, varied per mission: forests, villages and roads become
+the Forest world, mountains and temples Snow Mountain, and demon lands, castles and fallen cities the Volcano.
+
 **Home screen.** The lobby is laid out like a premium anime action RPG (`HomeScreen.cs`):
 - **Top-left:** profile (portrait, level, name, EXP bar) and a compact shortcut column (Event, Notice, Ranking, Friends).
 - **Upper-left:** the logo, and under it a large banner carousel that slides every few seconds, with dots (limited event, featured summon, explore Kiriha, forge).

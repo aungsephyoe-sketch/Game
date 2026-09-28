@@ -196,6 +196,14 @@ namespace HashiraChronicles
             if (st.Results != null && st.Results.Count > 1 && st.Phase != SummonStage.SummonPhase.Gather)
                 GUI.Label(new Rect(safe.x + 30f, safe.y + 30f, 300f, 60f), (st.CurrentIndex + 1) + " / " + st.Results.Count, UIStyles.H2);
 
+            if (st.Phase == SummonStage.SummonPhase.Intro)
+            {
+                DrawSummonIntro(st);
+                // Drawn again so it shows over the black (the one above already takes the tap).
+                if (Btn(new Rect(safe.xMax - 250f, safe.y + 24f, 220f, 80f), "SKIP ▶▶", UIStyles.ButtonSmall)) st.SkipAll();
+                if (GUI.Button(new Rect(0f, 0f, W, H), GUIContent.none, GUIStyle.none)) st.Advance();
+                return;
+            }
             if (st.Phase == SummonStage.SummonPhase.Gather)
             {
                 UIStyles.Outlined(new Rect(0f, H - 210f, W, 70f), "The stars are gathering...", UIStyles.Sized(UIStyles.Center, 40), Color.white, 3f);
@@ -280,6 +288,141 @@ namespace HashiraChronicles
             if (r.isNew) UIStyles.Outlined(new Rect(card.xMax - 210f, card.y + 20f, 190f, 70f), "NEW!", UIStyles.Sized(UIStyles.Big, 58), UIStyles.Good, 3f);
             else GUI.Label(new Rect(card.xMax - 380f, card.y + 330f, 360f, 50f), (r.def.rarity >= 5 ? "<color=#C77DFF>DUPLICATE → awaken: +30 Lv, purple star</color>" : "<color=#FF9C7A>DUPLICATE → feed for double EXP</color>"), UIStyles.Sized(UIStyles.Right, 22));
             GUI.Label(new Rect(0f, H - 90f, W, 50f), "<color=#BBBBBB>Tap to continue</color>", UIStyles.Sized(UIStyles.Center, 26));
+        }
+
+        /// <summary>
+        /// The opening of every summon, drawn over the 3D shrine: black; a sheathed sword fades in across the screen;
+        /// a hand closes on the hilt; CLANG — the blade is drawn in a flash; a diagonal slash splits the black and
+        /// the two halves fall apart onto the shrine. High rarities get a bigger, coloured slash, lightning and shake.
+        /// </summary>
+        void DrawSummonIntro(SummonStage st)
+        {
+            float t = Time.unscaledTime - st.PhaseStart;
+            int rar = st.BestRarity;
+            bool big = rar >= 5;
+            Color rc = rar >= 4 ? RarityInfo.Color(rar) : new Color(0.85f, 0.95f, 1f);
+            var saved = GUI.matrix;
+            // Shake after the draw (bigger for high rarities).
+            if (t > SummonStage.IntroGrip && t < SummonStage.IntroSlice)
+            {
+                float amp = (big ? 16f : 5f) * Mathf.Clamp01(1f - (t - SummonStage.IntroGrip) / 0.9f);
+                GUI.matrix = saved * Matrix4x4.Translate(new Vector3(Random.Range(-amp, amp), Random.Range(-amp, amp), 0f));
+            }
+            float cy = H * 0.5f;
+            float mouth = W * 0.66f;           // where the scabbard ends and the hilt begins
+            float hiltLen = W * 0.14f, bladeLen = W * 0.56f;
+
+            if (t < SummonStage.IntroDraw + 0.05f)
+            {
+                // 1. Black.
+                UIStyles.Rect(new Rect(-40f, -40f, W + 80f, H + 80f), new Color(0f, 0f, 0f, Mathf.Clamp01(t / SummonStage.IntroFade)));
+                // 2. The sword: scabbard and hilt fade in, a glint runs along it.
+                float a = Mathf.Clamp01((t - SummonStage.IntroFade) / (SummonStage.IntroSword - SummonStage.IntroFade));
+                a = a * a * (3f - 2f * a);
+                float draw = Mathf.Clamp01((t - SummonStage.IntroGrip) / (SummonStage.IntroDraw - SummonStage.IntroGrip));
+                float slide = draw * draw * W * 0.9f;   // hilt and blade leave to the right
+                var old = GUI.color;
+                GUI.color = new Color(1f, 1f, 1f, a);
+                // Scabbard: black lacquer with gold fittings (stays put).
+                var sc = new Rect(mouth - bladeLen, cy - 16f, bladeLen, 32f);
+                Round(sc, new Color(0.08f, 0.06f, 0.08f), 16f);
+                Round(new Rect(sc.x + 10f, sc.y + 4f, sc.width - 20f, 6f), new Color(1f, 1f, 1f, 0.12f), 3f);
+                Round(new Rect(sc.x - 6f, sc.y - 2f, 40f, 36f), new Color(0.85f, 0.66f, 0.28f), 12f);
+                Round(new Rect(sc.xMax - 30f, sc.y - 3f, 30f, 38f), new Color(0.85f, 0.66f, 0.28f), 8f);
+                Round(new Rect(sc.x + sc.width * 0.3f, sc.y - 2f, 18f, 36f), new Color(0.75f, 0.12f, 0.12f), 6f);
+                // The drawn blade, visible between the scabbard mouth and the hilt as it slides out.
+                if (slide > 1f)
+                {
+                    var bl = new Rect(mouth, cy - 12f, Mathf.Min(slide, bladeLen), 24f);
+                    Round(bl, new Color(0.78f, 0.81f, 0.88f), 6f);
+                    Round(new Rect(bl.x, bl.y, bl.width, 5f), new Color(1f, 1f, 1f, 0.9f), 3f);
+                    Round(new Rect(bl.x, bl.y + 12f, bl.width, 3f), new Color(rc.r, rc.g, rc.b, 0.7f), 2f);
+                }
+                // Hilt: gold guard, wrapped handle, pommel.
+                float hx = mouth + slide;
+                Round(new Rect(hx - 8f, cy - 44f, 22f, 88f), new Color(0.9f, 0.72f, 0.3f), 10f);
+                var grip = new Rect(hx + 14f, cy - 17f, hiltLen, 34f);
+                Round(grip, new Color(0.12f, 0.1f, 0.14f), 12f);
+                for (int i = 0; i < 7; i++) Round(new Rect(grip.x + 10f + i * (hiltLen - 24f) / 6f, grip.y + 6f, 14f, 22f), new Color(0.55f, 0.1f, 0.14f), 7f);
+                Round(new Rect(grip.xMax - 6f, cy - 20f, 26f, 40f), new Color(0.85f, 0.66f, 0.28f), 10f);
+                // Glint.
+                if (a > 0.5f && draw <= 0f)
+                {
+                    float gx = Mathf.Lerp(sc.x, grip.xMax, Mathf.Repeat((t - SummonStage.IntroFade) * 0.8f, 1f));
+                    Round(new Rect(gx - 30f, cy - 18f, 60f, 4f), new Color(1f, 1f, 1f, 0.7f), 2f);
+                }
+                // 3. The hand closes on the grip.
+                float g = Mathf.Clamp01((t - SummonStage.IntroSword) / (SummonStage.IntroGrip - SummonStage.IntroSword - 0.1f));
+                if (g > 0f)
+                {
+                    g = 1f - (1f - g) * (1f - g) * (1f - g);
+                    float handX = Mathf.Lerp(W + 60f, grip.x + hiltLen * 0.35f, g) + slide;
+                    var sleeve = new Rect(handX + 70f, cy - 58f, W, 116f);
+                    Round(sleeve, new Color(0.12f, 0.14f, 0.24f), 40f);
+                    Round(new Rect(sleeve.x, sleeve.y, 26f, sleeve.height), new Color(0.85f, 0.66f, 0.28f), 12f);
+                    var fist = new Rect(handX - 10f, cy - 46f, 92f, 92f);
+                    Round(fist, new Color(0.96f, 0.82f, 0.7f), 36f);
+                    for (int i = 0; i < 4; i++) Round(new Rect(fist.x - 8f + i * 22f, fist.y + 50f, 24f, 36f), new Color(0.93f, 0.78f, 0.66f), 11f);
+                    Round(new Rect(fist.x + 6f, fist.y + 4f, 48f, 26f), new Color(0.9f, 0.74f, 0.62f), 12f);
+                }
+                GUI.color = old;
+                // CLANG: the flash and sparks at the scabbard mouth.
+                float c = t - SummonStage.IntroGrip - 0.05f;
+                if (c > 0f && c < 0.35f)
+                {
+                    float f = 1f - c / 0.35f;
+                    UIStyles.Rect(new Rect(-40f, -40f, W + 80f, H + 80f), new Color(1f, 1f, 1f, f * 0.55f));
+                    for (int i = 0; i < 10; i++)
+                    {
+                        var sv = GUI.matrix;
+                        RotateGui(i * 36f + c * 200f, new Vector2(mouth, cy));
+                        Round(new Rect(mouth, cy - 2f, (80f + i * 12f) * (1f - f * 0.5f), 4f), new Color(1f, 0.9f, 0.6f, f), 2f);
+                        GUI.matrix = sv;
+                    }
+                    UIStyles.Outlined(new Rect(mouth - 300f, cy - 190f, 600f, 120f), "CLANG!", UIStyles.Sized(UIStyles.Big, Mathf.RoundToInt(Mathf.Lerp(120f, 96f, f))), new Color(1f, 1f, 1f, f), 4f);
+                }
+            }
+            else
+            {
+                // 4. The screen is sliced diagonally; the black falls apart onto the shrine behind it.
+                float k = Mathf.Clamp01((t - SummonStage.IntroDraw) / (SummonStage.IntroSlice - SummonStage.IntroDraw));
+                float sep = k * k * H * 1.3f;
+                var pivot = new Vector2(W * 0.5f, H * 0.5f);
+                var sv = GUI.matrix;
+                RotateGui(-24f, pivot);
+                UIStyles.Rect(new Rect(-W, pivot.y - H * 2f - sep, W * 3f, H * 2f), Color.black);
+                UIStyles.Rect(new Rect(-W, pivot.y + sep, W * 3f, H * 2f), Color.black);
+                // The slash itself: a hot line with a coloured glow (much bigger for high rarities).
+                float thick = (big ? 26f : 10f) * (1f - k * 0.6f);
+                float glowA = 1f - k;
+                UIStyles.Rect(new Rect(-W, pivot.y - thick * 2.5f, W * 3f, thick * 5f), new Color(rc.r, rc.g, rc.b, 0.35f * glowA));
+                UIStyles.Rect(new Rect(-W, pivot.y - thick * 0.5f, W * 3f, thick), new Color(1f, 1f, 1f, glowA));
+                if (big)
+                {
+                    // Lightning crackling along the cut.
+                    var rng = new System.Random(Mathf.FloorToInt(t * 20f));
+                    for (int b = 0; b < 3; b++)
+                    {
+                        float x = -W * 0.2f;
+                        float y = pivot.y;
+                        while (x < W * 1.2f)
+                        {
+                            float nx = x + 40f + (float)rng.NextDouble() * 60f;
+                            float ny = pivot.y + ((float)rng.NextDouble() - 0.5f) * 70f;
+                            float dx = nx - x, dy = ny - y;
+                            float len = Mathf.Sqrt(dx * dx + dy * dy);
+                            var s2 = GUI.matrix;
+                            RotateGui(Mathf.Atan2(dy, dx) * Mathf.Rad2Deg, new Vector2(x, y));
+                            UIStyles.Rect(new Rect(x, y - 2f, len, 4f), new Color(Mathf.Lerp(rc.r, 1f, 0.5f), Mathf.Lerp(rc.g, 1f, 0.5f), 1f, glowA));
+                            GUI.matrix = s2;
+                            x = nx; y = ny;
+                        }
+                    }
+                }
+                GUI.matrix = sv;
+                if (k < 0.2f) UIStyles.Rect(new Rect(-40f, -40f, W + 80f, H + 80f), new Color(rc.r, rc.g, rc.b, (0.2f - k) * (big ? 3f : 1.5f)));
+            }
+            GUI.matrix = saved;
         }
 
         void DrawSummonSummary(PlayerData d, SummonStage st)

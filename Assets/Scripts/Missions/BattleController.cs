@@ -31,6 +31,23 @@ namespace HashiraChronicles
         GameObject barrier;
 
         /// <summary>Keeps a position inside the playable space: the locked clearing, else the road and its clearings.</summary>
+        /// <summary>
+        /// Which of the new-standard worlds a mission is built in: forests, villages and kingdom roads become the
+        /// Forest world; mountains and temples the Snow Mountain; demon lands, castles and fallen cities the Volcano.
+        /// </summary>
+        public static string WorldEnv(MissionDefinition def)
+        {
+            if (def == null || def.openWorld || def.training) return null;
+            if (!string.IsNullOrEmpty(def.prototypeEnv)) return def.prototypeEnv;
+            if (!GameConfig.NewWorlds || def.theme == null) return null;
+            switch (def.theme.kind)
+            {
+                case EnvironmentKind.Mountain: case EnvironmentKind.Temple: return "snow";
+                case EnvironmentKind.DemonLand: case EnvironmentKind.Castle: case EnvironmentKind.FallenCity: return "volcano";
+                default: return "forest";
+            }
+        }
+
         public static Vector3 ClampToArena(Vector3 p)
         {
             p.y = 0f;
@@ -144,7 +161,7 @@ namespace HashiraChronicles
                 try
                 {
                     Journey = Journey.Build(def);
-                    World = string.IsNullOrEmpty(def.prototypeEnv) ? JourneyBuilder.Build(Journey, def, transform) : PrototypeWorld.Build(Journey, def, transform);
+                    World = string.IsNullOrEmpty(WorldEnv(def)) ? JourneyBuilder.Build(Journey, def, transform) : PrototypeWorld.Build(Journey, def, transform);
                     spawn = Journey.Start;
                 }
                 catch (System.Exception ex)
@@ -161,7 +178,7 @@ namespace HashiraChronicles
             }
 
             // Solid scenery blocks movement (the prototype worlds register their own obstacles).
-            if (string.IsNullOrEmpty(def.prototypeEnv)) Obstacles.Scan(transform);
+            if (Journey == null || string.IsNullOrEmpty(WorldEnv(def))) Obstacles.Scan(transform);
             // Scenery never hides the fighting slayer.
             CameraOcclusion.Attach(this);
             // Tall set pieces (towers, spires, far hills) threw long jagged shadow streaks across the road.

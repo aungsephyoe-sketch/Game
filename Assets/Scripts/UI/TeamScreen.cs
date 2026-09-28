@@ -23,6 +23,36 @@ namespace HashiraChronicles
 
         static readonly Element[] FilterOrder = { Element.Water, Element.Flame, Element.Thunder, Element.Beast, Element.Dark, Element.Light };
 
+        int teamDragSlot = -1;
+        float teamDragLast, teamDragDistance;
+
+        void HandleTeamDrag(PlayerData d)
+        {
+            if (teamDragSlot < 0) return;
+            var ev = Event.current;
+            if (ev.type == EventType.MouseDrag)
+            {
+                float dx = ev.mousePosition.x - teamDragLast;
+                teamDragLast = ev.mousePosition.x;
+                teamDragDistance += Mathf.Abs(dx);
+                gm.Home.RotateLineupSlot(teamDragSlot, -dx * 0.6f);
+                ev.Use();
+            }
+            else if (ev.type == EventType.MouseUp)
+            {
+                int i = teamDragSlot;
+                teamDragSlot = -1;
+                ev.Use();
+                if (teamDragDistance < 10f && i < d.team.Count)
+                {
+                    gm.Audio.Play("click", 0.5f);
+                    teamSlot = i;
+                    rosterPick = d.team[i];
+                    gm.Home.LineupCheer(i);
+                }
+            }
+        }
+
         void DrawTeam()
         {
             var d = gm.Data;
@@ -98,7 +128,15 @@ namespace HashiraChronicles
                     StarStrip(new Vector2(fp.x - 44f, iy + 40f), c.stars, 22f, c.awaken);
                     UIStyles.Outlined(new Rect(fp.x - 110f, iy + 66f, 220f, 32f), def.displayName, UIStyles.Sized(UIStyles.Center, 22), Color.white, 2f);
                     UIStyles.Outlined(new Rect(fp.x - 110f, iy + 94f, 220f, 30f), "Power " + CharacterSystem.Power(d, c).ToString("N0"), UIStyles.Sized(UIStyles.Center, 20), new Color(0.9f, 0.9f, 0.9f), 2f);
-                    if (GUI.Button(hit, GUIContent.none, GUIStyle.none)) { gm.Audio.Play("click", 0.5f); teamSlot = i; rosterPick = d.team[i]; gm.Home.LineupCheer(i); }
+                    // Drag to turn the slayer around; a quick tap selects them (and they cheer).
+                    var ev = Event.current;
+                    if (ev.type == EventType.MouseDown && hit.Contains(ev.mousePosition))
+                    {
+                        teamDragSlot = i;
+                        teamDragLast = ev.mousePosition.x;
+                        teamDragDistance = 0f;
+                        ev.Use();
+                    }
                 }
                 else
                 {
@@ -113,6 +151,10 @@ namespace HashiraChronicles
                     if (GUI.Button(card, GUIContent.none, GUIStyle.none)) { gm.Audio.Play("click", 0.5f); teamSlot = i; teamEditing = true; }
                 }
             }
+
+            HandleTeamDrag(d);
+            if (d.team.Count > 0)
+                GUI.Label(new Rect(W * 0.5f - 300f, H - 40f, 600f, 32f), "<color=#BBBBBB>Drag a slayer to turn them around</color>", UIStyles.Sized(UIStyles.Center, 18));
 
             float by = H - 130f;
             float bx = safe.xMax - 30f;

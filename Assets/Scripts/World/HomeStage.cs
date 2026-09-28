@@ -385,8 +385,18 @@ namespace HashiraChronicles
             }
         }
 
+        readonly List<float> slotSpin = new List<float>();
+
+        /// <summary>Turns the slayer in line-up slot i (drag to rotate on the TEAM screen).</summary>
+        public void RotateLineupSlot(int i, float degrees)
+        {
+            while (slotSpin.Count <= i) slotSpin.Add(0f);
+            slotSpin[i] += degrees;
+        }
+
         public void ClearLineup()
         {
+            slotSpin.Clear();
             RestoreSilhouette();
             if (lineupRoot != null) Destroy(lineupRoot);
             lineupRoot = null;
@@ -429,6 +439,13 @@ namespace HashiraChronicles
                 // After a cheer, each slayer settles back into their own pose.
                 for (int i = 0; i < lineupVisuals.Count; i++)
                     if (lineupVisuals[i] != null && !lineupVisuals[i].Posing) lineupVisuals[i].HoldTeamIdle();
+                // Dragged slayers turn smoothly to where the player spun them.
+                for (int i = 0; i < lineupSlots.Count; i++)
+                {
+                    float spin = i < slotSpin.Count ? slotSpin[i] : 0f;
+                    var want = Quaternion.Euler(0f, LineupYaw(i) + spin, 0f);
+                    lineupSlots[i].rotation = Quaternion.Slerp(lineupSlots[i].rotation, want, 1f - Mathf.Exp(-Time.unscaledDeltaTime * 12f));
+                }
                 if (CameraController.Instance != null)
                     CameraController.Instance.SetFixed(CurrentLineupCamera + new Vector3(Mathf.Sin(t * 0.15f) * 0.15f, 0f, 0f), new Vector3(0.3f, lineupCount > 3 ? 1.3f : 1.2f, 0.4f));
                 return;

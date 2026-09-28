@@ -8,12 +8,20 @@ namespace HashiraChronicles
     /// </summary>
     public partial class CharacterVisual
     {
+        /// <summary>A stable number from a character id (for per-character variation that never changes).</summary>
+        static int IdSeed(string id)
+        {
+            int h = 17;
+            if (!string.IsNullOrEmpty(id)) foreach (char c in id) h = h * 31 + c;
+            return h & 0x7fffffff;
+        }
+
         /// <summary>Sculpted hair for this character, if it has a recipe. Returns false to fall back to the old hair.</summary>
         bool SculptedHair(CharacterDefinition def, Vector3 hc, Vector3 hr, Material cloth = null)
         {
-            if (!HairStyles.Has(def.id) || head == null) return false;
-            var g = new HairGeometry(hc, hr, def.id.Length * 7919);
-            HairStyles.Build(def.id, g);
+            if (!HairStyles.Has(def) || head == null) return false;
+            var g = new HairGeometry(hc, hr, IdSeed(def.id));
+            HairStyles.Build(def, g);
 
             Color c = def.hairColor;
             bool dark = c.r + c.g + c.b < 0.6f;

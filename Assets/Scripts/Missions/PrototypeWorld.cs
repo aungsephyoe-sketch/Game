@@ -85,9 +85,12 @@ namespace HashiraChronicles
 
         public static JourneyBuilder.Result Build(Journey j, MissionDefinition m, Transform parent)
         {
-            K = Parse(m.prototypeEnv);
+            K = Parse(BattleController.WorldEnv(m));
             J = j;
-            rng = new System.Random(1234 + (int)K * 77);
+            int idSeed = 0;
+            if (!string.IsNullOrEmpty(m.id)) foreach (char ch in m.id) idSeed = idSeed * 31 + ch;
+            // Prototype missions keep their tuned layout; every other mission gets its own variation.
+            rng = new System.Random(1234 + (int)K * 77 + (string.IsNullOrEmpty(m.prototypeEnv) ? idSeed : 0));
             P = MakePalette(K);
             channels.Clear();
             matCache.Clear();
