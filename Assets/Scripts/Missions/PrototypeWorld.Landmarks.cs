@@ -260,6 +260,7 @@ namespace HashiraChronicles
         static void Landmarks()
         {
             lightBudget = Mathf.Max(2, GameSettings.MaxDynamicLights);
+            if (K == Kind.Village) { VillageLandmarks(); return; }
             for (int i = 0; i < J.places.Count; i++)
             {
                 var pl = J.places[i];

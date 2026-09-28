@@ -1087,6 +1087,42 @@ namespace HashiraChronicles
             return m;
         }
 
+        /// <summary>The three co-op gates in Kiriha's plaza (name, tagline, demon strength).</summary>
+        public static readonly string[] CoopGateNames = { "Gate of Embers", "Gate of Frost", "Gate of the Abyss" };
+        public static readonly string[] CoopGateTiers = { "HARD", "EXPERT", "NIGHTMARE" };
+        public static readonly float[] CoopGatePower = { 3f, 4.5f, 6f };
+
+        /// <summary>
+        /// A co-op gate mission for a party of three: one of the new worlds, one more wave than usual, demons
+        /// several times stronger than normal, and bigger rewards.
+        /// </summary>
+        public static MissionDefinition CoopMission(int tier, int level)
+        {
+            tier = Mathf.Clamp(tier, 0, 2);
+            string[] env = { "forest", "snow", "volcano" };
+            var m = PrototypeMission(env[tier], level + tier * 4);
+            m.id = "COOP-" + (tier + 1);
+            m.name = CoopGateNames[tier] + " (Co-op)";
+            m.type = MissionType.Side;
+            m.coopTier = tier;
+            m.coopPower = CoopGatePower[tier];
+            m.storyText = m.description = "A party of three steps through the " + CoopGateNames[tier] + ". The demons beyond are " + m.coopPower.ToString("0.#") + "x stronger than anywhere else — stay together.";
+            m.waves.Add(tier == 0 ? Wave("shadow_demon", 3, "brute", 2) : tier == 1 ? Wave("frost_oni", 2, "ice_wraith", 3) : Wave("demon_warrior", 3, "flame_beast", 2));
+            int total = 0;
+            foreach (var w in m.waves) total += w.TotalCount;
+            m.killObjective = Mathf.Max(3, Mathf.RoundToInt(total * 0.8f));
+            float mul = 2f + tier;
+            m.rewards.exp = Mathf.RoundToInt(m.rewards.exp * mul);
+            m.rewards.coins = Mathf.RoundToInt(m.rewards.coins * mul);
+            m.rewards.expScrolls += 2 + tier;
+            m.rewards.skillScrolls += 1 + tier;
+            m.rewards.ascensionOre += 1 + tier;
+            m.firstClearRewards = new RewardBundle { crystals = 100 * (tier + 1) };
+            m.timeLimit = 1200f;
+            m.recommendedPower = Mathf.RoundToInt(m.recommendedPower * (1f + tier * 0.5f));
+            return m;
+        }
+
         static void BuildEvents()
         {
             Events.Clear();

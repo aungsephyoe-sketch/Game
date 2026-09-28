@@ -13,6 +13,7 @@ namespace HashiraChronicles
 
             DrawLowHealth(b);
             DrawEnemyBars(cam);
+            if (b.Def != null && b.Def.coopAllyIds.Count > 0) DrawPartyTags(cam);
             DrawDamageNumbers(cam);
             DrawImpactFrame();
             if (!b.CinematicLock)
@@ -41,6 +42,24 @@ namespace HashiraChronicles
             Round(new Rect(pr.center.x + 5f, pr.center.y - 22f, 11f, 44f), Color.white, 4f);
 
             if (TimeController.Paused) DrawPauseMenu();
+        }
+
+        /// <summary>Co-op gates: the party's AI slayers wear their player names and a health bar.</summary>
+        void DrawPartyTags(Camera cam)
+        {
+            if (cam == null) return;
+            float s = HudLayout.Scale;
+            foreach (var c in Combatant.All)
+            {
+                var ally = c as AllySoldier;
+                if (ally == null || !ally.IsSlayer || !ally.IsAlive) continue;
+                Vector3 sp = cam.WorldToScreenPoint(ally.Position + Vector3.up * 2.3f);
+                if (sp.z < 0f) continue;
+                var p = new Vector2(sp.x / s, (Screen.height - sp.y) / s);
+                Color el = ElementChart.ColorOf(ally.Element);
+                UIStyles.Outlined(new Rect(p.x - 120f, p.y - 40f, 240f, 28f), ally.DisplayName, UIStyles.Sized(UIStyles.Center, 20), Color.Lerp(el, Color.white, 0.5f), 2f);
+                UIStyles.Bar(new Rect(p.x - 60f, p.y - 10f, 120f, 9f), ally.Health.Current / Mathf.Max(1f, ally.Stats.hp), new Color(0.4f, 0.95f, 0.5f));
+            }
         }
 
         void DrawLockMarker(Camera cam)
@@ -113,9 +132,11 @@ namespace HashiraChronicles
             if (m.Def.openWorld)
             {
                 GUI.Label(new Rect(r.x + 18f, r.y + 42f, r.width - 36f, 44f), "Explore Kiriha Village", UIStyles.Sized(UIStyles.H2, 30));
-                GUI.Label(new Rect(r.x + 18f, r.y + 88f, r.width - 36f, 36f), "<color=#DDDDDD>Villagers met " + m.VillagersMet + "   ·   Chests " + m.ChestsFound + "/" + m.ChestsTotal + "</color>", UIStyles.Sized(UIStyles.Body, 22));
-                if (FlatBtn(new Rect(r.x + 18f, r.y + 138f, 200f, 56f), "LEAVE", new Color(0.2f, 0.24f, 0.4f), true, 24)) m.Retreat();
+                GUI.Label(new Rect(r.x + 18f, r.y + 80f, r.width - 36f, 30f), "<color=#DDDDDD>Villagers met " + m.VillagersMet + "   ·   Chests " + m.ChestsFound + "/" + m.ChestsTotal + "</color>", UIStyles.Sized(UIStyles.Body, 20));
+                GUI.Label(new Rect(r.x + 18f, r.y + 110f, r.width - 36f, 30f), HubOnlineText(), UIStyles.Sized(UIStyles.Body, 20));
+                if (FlatBtn(new Rect(r.x + 18f, r.y + 146f, 200f, 54f), "LEAVE", new Color(0.2f, 0.24f, 0.4f), true, 24)) m.Retreat();
                 DrawVillageTalk(b);
+                DrawVillageHub(b);
                 return;
             }
             if (m.Def.training)

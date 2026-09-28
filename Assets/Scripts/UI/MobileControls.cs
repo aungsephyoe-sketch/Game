@@ -107,8 +107,17 @@ namespace HashiraChronicles
             }
         }
 
+        /// <summary>Screen areas (GUI coords) where menus drawn over the battle eat touches (the village chat,
+        /// party and gate panels), refreshed every frame by whoever draws them.</summary>
+        public static readonly List<Rect> UiBlockers = new List<Rect>();
+        public static int UiBlockersFrame = -10;
+        /// <summary>True while a text box has the keyboard (typing never moves the slayer).</summary>
+        public static bool KeyboardBlocked;
+
         void OnBegan(Pointer p, ref InputState s)
         {
+            if (Time.frameCount - UiBlockersFrame < 3)
+                foreach (var r in UiBlockers) if (r.Contains(p.pos)) return;
             if (HudLayout.Pause.Contains(p.pos)) { s.pauseDown = true; return; }
             if (TimeController.Paused) return;
 
@@ -152,6 +161,7 @@ namespace HashiraChronicles
 
         void ReadKeyboard(ref InputState s, ref bool attackHeld)
         {
+            if (KeyboardBlocked) return;
             var k = Vector2.zero;
             if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow)) k.y += 1f;
             if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) k.y -= 1f;

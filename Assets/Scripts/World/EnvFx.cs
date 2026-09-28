@@ -131,6 +131,13 @@ namespace HashiraChronicles
                     main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
                     em.rateOverTime = 8f * scale; noise.strength = 0.7f; noise.frequency = 0.3f;
                     break;
+                case "petals":
+                    main.startLifetime = 10f; main.startSpeed = 0.35f; main.gravityModifier = 0.025f;
+                    main.startSize = new ParticleSystem.MinMaxCurve(0.08f, 0.16f);
+                    main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.72f, 0.84f), new Color(1f, 0.88f, 0.94f));
+                    main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+                    em.rateOverTime = 12f * scale; noise.strength = 0.8f; noise.frequency = 0.3f;
+                    break;
                 case "ash":
                     main.startLifetime = 9f; main.startSpeed = 0.2f; main.gravityModifier = 0.02f;
                     main.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.1f); main.startColor = new Color(0.45f, 0.42f, 0.42f, 0.45f);

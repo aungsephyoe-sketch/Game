@@ -298,6 +298,12 @@ namespace HashiraChronicles
         public string eventId;
         /// <summary>Event quests: 0 Easy, 1 Medium, 2 Hard.</summary>
         public int difficulty;
+        /// <summary>Co-op gate missions: how much stronger the demons are (1 = normal), the gate tier, and the
+        /// party members who fight beside you (AI slayers standing in for the other players).</summary>
+        public float coopPower = 1f;
+        public int coopTier = -1;
+        public List<string> coopAllyIds = new List<string>();
+        public List<string> coopAllyNames = new List<string>();
         public string MissionLabel { get { return id.ToUpper(); } }
     }
 

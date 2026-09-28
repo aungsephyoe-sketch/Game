@@ -92,6 +92,15 @@ namespace HashiraChronicles
                 // Regular demons go down faster.
                 hpMul *= 0.55f;
             }
+            // Co-op gates: the demons beyond are built for a party of three.
+            var cb = BattleController.Current;
+            if (cb != null && cb.Def != null && cb.Def.coopPower > 1f)
+            {
+                float k = cb.Def.coopPower;
+                hpMul *= k;
+                atkMul *= 1f + 0.35f * (k - 1f);
+                defMul *= 1f + 0.15f * (k - 1f);
+            }
             Stats = new StatBlock(def.baseHp * hpMul, def.baseAtk * atkMul, def.baseDef * defMul, 0.05f, 1.5f, def.moveSpeed, 1f);
             Radius = def.radius;
             Health.Init(Stats.hp);

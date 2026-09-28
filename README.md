@@ -36,6 +36,31 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Kiriha Village hub (0.19.0)
+**The village, rebuilt.** Kiriha is now built on the same standard as the forest, snow and volcano worlds
+(`PrototypeWorld.Village.cs`, `Kind.Village`): a moonlit night with stars and a haloed moon, a timber village gate
+with plastered walls, a street of townhouses (glowing paper windows, noren curtains that sway, tiled gable roofs,
+some two storeys, a second row behind), a lantern-lit market, the plaza under a great cherry tree with a petal
+carpet, a stone lantern ring, a well and a quest board, an old water mill whose wheel turns in the river by the
+bridge, a tea stop, and a shrine at the top with guardians, a purification pavilion and a curved-roof hall. Cherry
+petals and fireflies drift through it. The **home screen** stands your leader in the street looking up at the plaza,
+and the **open world** is the same village (`OpenWorldBuilder` → `PrototypeWorld.BuildVillage`).
+
+**Players, chat and co-op gates.** The plaza is a hub (`VillageHub`, `VillageHubUI.cs`): other slayers walk around
+with name tags, there is a village chat (type and press Enter or SEND), and the HUD shows how many players are online.
+Walk up to someone and tap **INVITE**, or tap **FIND PARTY**, to form a party of three; party members follow you.
+The three **co-op gates** (Embers — Hard, Frost — Expert, Abyss — Nightmare) only open for a full party of three.
+Beyond them the demons are 3x / 4.5x / 6x stronger (HP ×power, attack and defence scaled up too) with an extra wave,
+the party fights beside you, and the rewards are 2–4x bigger with diamonds on the first clear.
+
+> **Online is a simulated preview.** There is no game server yet: the other players are AI, the chat replies and
+> the online count are generated locally (`VillageOnline`), and in a co-op gate your party members are AI slayers.
+> The UI says so. Real multiplayer needs a backend (for example Photon, or Unity Netcode with a relay/lobby
+> service); `VillageOnline` and the party/chat calls in `VillageHub` are the seams it would plug into.
+
+Also in 0.19.0: the game is now called **Blade Legends** (old saves are migrated), the home banner carousel can be
+swiped, the home slayer can be turned by dragging, and the summon reveal no longer overlaps the name card.
+
 ### Premium characters, demons and worlds
 **Characters.** Every slayer, villager and soldier is built on a jointed rig (`CharacterVisual.Roster.cs` +
 `PremiumRig`): shoulders, elbows, hips and knees driven by two-bone IK (feet stay planted, the weapon hand follows
@@ -400,6 +425,7 @@ Key design choices:
   missions & bosses, save system. *Next:* link-slot passive bonuses, more versions per character.
 - **Phase 3 – Story & live systems** ✅ 7-chapter story with cutscenes, world map, summoning with pity,
   daily/weekly missions, shop, events. *Next:* voiced lines, event currency, link-slot passives.
-- **Phase 4 – Online**: accounts, cloud save (Firebase/PlayFab), 4-player co-op raids, 3v3 PvP by
-  power rating, analytics, purchases.
+- **Phase 4 – Online**: the village hub, chat, parties of three and co-op gates are in as a local simulation
+  (0.19.0). *Next:* a real backend for presence, chat and party matchmaking, accounts, cloud save
+  (Firebase/PlayFab), 3v3 PvP by power rating, analytics, purchases.
 - **Phase 5 – Ship**: store builds for iOS (App Store) and Android (Google Play).

@@ -207,6 +207,12 @@ namespace HashiraChronicles
                 case Kind.Volcano:
                     BurntTree(b, glowB, p, h * 0.7f);
                     break;
+                case Kind.Village:
+                    // Cherry trees in blossom among dark cedars and a few evergreen oaks.
+                    if (type == 1) Cedar(b, p, h * 1.25f, VillageGreen);
+                    else if (type == 2) BroadTree(b, p, h, VillageGreen * 1.15f);
+                    else BroadTree(b, p, h * 0.85f, Color.Lerp(P.leafMid, P.leafLight, R(0f, 0.5f)));
+                    break;
                 default:
                     if (type == 1) Cedar(b, p, h * 1.25f, P.leafMid);
                     else if (type == 2) BroadTree(b, p, h, new Color(0.85f, 0.72f, 0.25f));
@@ -373,7 +379,7 @@ namespace HashiraChronicles
                         if (roll > chance) continue;
                         treeCells.Add(cell);
                         float h = R(7f, 12f) * (g < 16f ? 1f : 1.15f);
-                        int type = K == Kind.Forest ? (clump > 0.62f ? 1 : rng.Next(9) == 0 ? 2 : 0) : K == Kind.Snow ? (rng.Next(6) == 0 ? 2 : 0) : 0;
+                        int type = K == Kind.Village ? (clump > 0.6f ? 1 : rng.Next(5) == 0 ? 2 : 0) : K == Kind.Forest ? (clump > 0.62f ? 1 : rng.Next(9) == 0 ? 2 : 0) : K == Kind.Snow ? (rng.Next(6) == 0 ? 2 : 0) : 0;
                         if (g < 16f) NearTree(at, h, type);
                         else FarTree(at, h, type);
                     }
@@ -392,6 +398,7 @@ namespace HashiraChronicles
         static void ReserveLandmarks()
         {
             if (hasBridge) Reserve(bridgeCenter, 9f);
+            if (K == Kind.Village) { VillageReserve(); return; }
             for (int i = 0; i < J.places.Count; i++)
             {
                 var pl = J.places[i];
@@ -415,6 +422,16 @@ namespace HashiraChronicles
             {
                 case Kind.Snow: SnowPine(farTrees, p, h); break;
                 case Kind.Volcano: BurntTree(farTrees, glowB, p, h * 0.7f); break;
+                case Kind.Village:
+                    if (type == 1) Cedar(farTrees, p, h * 1.25f, VillageGreen);
+                    else
+                    {
+                        farTrees.Add(trunkMesh, p + Vector3.down * 0.2f, Quaternion.identity, new Vector3(h * 0.06f, h * 0.6f, h * 0.06f), P.trunk);
+                        Color leaf = type == 2 ? VillageGreen : Color.Lerp(P.leafDark, P.leafMid, R(0.2f, 1f));
+                        farTrees.Add(lowSphere, p + Vector3.up * h * 0.7f, Quaternion.identity, Vector3.one * h * 0.62f, Jitter(leaf, 0.05f), 0.12f, 0.5f, 0.4f);
+                        farTrees.Add(lowSphere, p + new Vector3(h * 0.15f, h * 0.9f, 0f), Quaternion.identity, Vector3.one * h * 0.36f, Jitter(Color.Lerp(leaf, P.leafLight, 0.4f), 0.05f), 0.14f, 0.5f, 0.4f);
+                    }
+                    break;
                 default:
                     if (type == 1) Cedar(farTrees, p, h * 1.25f, P.leafMid);
                     else
@@ -429,9 +446,14 @@ namespace HashiraChronicles
             }
         }
 
+        /// <summary>Evergreen foliage between the cherry trees of Kiriha (dark teal under moonlight).</summary>
+        static readonly Color VillageGreen = new Color(0.16f, 0.34f, 0.32f);
+
         static void EdgeDetail(Vector3 at, float patch, float fromEdge)
         {
             float roll = (float)rng.NextDouble();
+            // Village streets have tidy edges: fewer weeds, and none in front of the houses.
+            if (K == Kind.Village && (roll < 0.5f || IsReserved(at.x, at.z))) return;
             switch (K)
             {
                 case Kind.Snow:

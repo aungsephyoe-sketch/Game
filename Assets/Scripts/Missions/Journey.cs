@@ -162,6 +162,35 @@ namespace HashiraChronicles
             return j;
         }
 
+        /// <summary>
+        /// Kiriha Village as a route (the home screen backdrop and the open-world hub): the village gate, the market
+        /// street, the plaza under the great cherry tree, the old mill bridge over the river, and the shrine steps.
+        /// </summary>
+        public static Journey Village()
+        {
+            var j = new Journey { halfWidth = 5.5f };
+            string[] names = { "Village Gate", "Market Street", "Kiriha Plaza", "Old Mill Bridge", "Shrine Steps" };
+            Vector3[] pos = { new Vector3(0f, 0f, -36f), new Vector3(0f, 0f, -12f), new Vector3(0f, 0f, 16f), new Vector3(6f, 0f, 58f), new Vector3(2f, 0f, 90f) };
+            float[] rad = { 9f, 10f, 14f, 9f, 13f };
+            for (int i = 0; i < names.Length; i++)
+                j.places.Add(new JourneyPlace { name = names[i], pos = pos[i], radius = rad[i], isBridge = names[i].Contains("Bridge") });
+            for (int i = 0; i < j.places.Count - 1; i++)
+            {
+                Vector3 a = j.places[i].pos, b = j.places[i + 1].pos;
+                Vector3 side = Vector3.Cross(Vector3.up, (b - a).normalized) * (i % 2 == 0 ? 2.5f : -2.5f);
+                Vector3 c1 = Vector3.Lerp(a, b, 0.33f) + side, c2 = Vector3.Lerp(a, b, 0.66f) - side * 0.6f;
+                int n = Mathf.Max(8, Mathf.RoundToInt(Vector3.Distance(a, b) / 2.5f));
+                for (int k = (i == 0 ? 0 : 1); k <= n; k++)
+                {
+                    float t = (float)k / n, u = 1f - t;
+                    j.path.Add(u * u * u * a + 3f * u * u * t * c1 + 3f * u * t * t * c2 + t * t * t * b);
+                }
+            }
+            for (int i = 1; i < j.path.Count; i++) j.Length += Vector3.Distance(j.path[i - 1], j.path[i]);
+            j.EndDirection = (j.path[j.path.Count - 1] - j.path[j.path.Count - 2]).normalized;
+            return j;
+        }
+
         public static string ReachText(string place)
         {
             return place.StartsWith("The ") ? "Reach " + place : "Reach the " + place;

@@ -112,6 +112,7 @@ namespace HashiraChronicles
             started = true;
 
             if (Def.allies > 0) SpawnAllies(Def.allies);
+            if (Def.coopAllyIds.Count > 0) SpawnCoopParty();
             var j = battle.Journey;
             if (j == null) { yield return ClassicRun(); yield break; }
             GameEvents.RaiseAreaEntered(j.places[0].name, RegionName());
@@ -516,6 +517,21 @@ namespace HashiraChronicles
                 case "boss_veyrath": return entrance ? "Five hundred years, and my other half finally comes home." : "Then let the eclipse be total!";
                 default: return null;
             }
+        }
+
+        /// <summary>The party from the village gate: two AI slayers fighting beside you.</summary>
+        void SpawnCoopParty()
+        {
+            Vector3 origin = battle.Team.Active != null ? battle.Team.Active.Position : Vector3.zero;
+            var names = new List<string>();
+            for (int i = 0; i < Def.coopAllyIds.Count; i++)
+            {
+                string nm = i < Def.coopAllyNames.Count ? Def.coopAllyNames[i] : "Ally";
+                Vector3 at = origin + new Vector3(i == 0 ? -2.2f : 2.2f, 0f, -1.5f);
+                AllySoldier.SpawnSlayer(battle.transform, at, Def.enemyLevel, Def.coopAllyIds[i], nm);
+                names.Add(nm);
+            }
+            GameEvents.RaiseBanner("CO-OP GATE · PARTY OF 3", string.Join(" · ", names.ToArray()) + " fight with you — the demons here are " + Def.coopPower.ToString("0.#") + "x stronger");
         }
 
         void SpawnAllies(int count)

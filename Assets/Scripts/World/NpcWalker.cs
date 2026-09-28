@@ -17,6 +17,10 @@ namespace HashiraChronicles
         public string[] Lines;
         public string SpeakerName = "";
 
+        /// <summary>When set, the walker keeps close behind this (a party member following you round the village).</summary>
+        public Transform FollowTarget;
+        public Vector3 FollowOffset = new Vector3(0f, 0f, -2f);
+
         public string CurrentLine { get; private set; }
         public float LineUntil { get; private set; }
 
@@ -77,6 +81,16 @@ namespace HashiraChronicles
             target.y = Center.y;
         }
 
+        /// <summary>Stops following and strolls from wherever it now stands.</summary>
+        public void StopFollowing()
+        {
+            FollowTarget = null;
+            Center = transform.position;
+            MinRadius = 1f;
+            MaxRadius = 5f;
+            PickTarget();
+        }
+
         void Update()
         {
             talkTimer -= Time.deltaTime;
@@ -87,6 +101,30 @@ namespace HashiraChronicles
                 talkTimer = Random.Range(8f, 18f);
             }
 
+            if (FollowTarget != null)
+            {
+                Vector3 goal = FollowTarget.position + FollowTarget.rotation * FollowOffset;
+                Vector3 d = goal - transform.position;
+                d.y = 0f;
+                float dist = d.magnitude;
+                if (dist > 0.35f)
+                {
+                    float sp = Mathf.Clamp(dist * 2.2f, 1.5f, 7f);
+                    Vector3 next = transform.position + d / dist * Mathf.Min(dist, sp * Time.deltaTime);
+                    var bc = BattleController.Current;
+                    if (bc != null && bc.Def != null && bc.Def.openWorld) next = OpenWorldBuilder.Clamp(next);
+                    transform.position = next;
+                    transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(d), Time.deltaTime * 8f);
+                    visual.SetMoving(Mathf.Clamp01(sp / 5f));
+                }
+                else
+                {
+                    visual.SetMoving(0f);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, FollowTarget.rotation, Time.deltaTime * 4f);
+                }
+                if (dist > 14f) transform.position = goal;
+                return;
+            }
             if (wait > 0f)
             {
                 wait -= Time.deltaTime;

@@ -35,7 +35,6 @@ namespace HashiraChronicles
         float viewerYaw = 180f;
         float nextLook;
         float yawTarget = 180f;
-        ArenaTheme theme;
 
         static readonly Vector3 HeroPos = new Vector3(1.4f, 0f, 0f);
 
@@ -46,7 +45,7 @@ namespace HashiraChronicles
             EnsureWorld();
             SetHero(data.team.Count > 0 ? data.team[0] : GameDatabase.Protagonist);
             gameObject.SetActive(true);
-            ArenaBuilder.ApplyLighting(theme);
+            PrototypeWorld.ApplyVillageLighting();
         }
 
         public void ShowViewer(string characterId)
@@ -57,7 +56,7 @@ namespace HashiraChronicles
             if (shownId != characterId) viewerYaw = 180f;
             SetHero(characterId);
             gameObject.SetActive(true);
-            ArenaBuilder.ApplyLighting(theme);
+            PrototypeWorld.ApplyVillageLighting();
         }
 
         public void Hide() { gameObject.SetActive(false); }
@@ -119,29 +118,27 @@ namespace HashiraChronicles
         void EnsureWorld()
         {
             if (world != null) return;
-            theme = NightVillage();
             world = new GameObject("HomeWorld");
             world.transform.SetParent(transform, false);
-            ArenaBuilder.Build(theme, world.transform, false, 3);
-            LanternStrings(world.transform);
-            // Campfire, training posts and villagers.
-            EnvFx.Fire(world.transform, new Vector3(-2.5f, 0f, 3.5f), 1f);
-            var wood = MaterialFactory.Toon(new Color(0.35f, 0.24f, 0.15f));
-            for (int i = 0; i < 5; i++)
+            // The real Kiriha Village (the same world as the open-world hub): the street up to the plaza and its
+            // great cherry tree, townhouses with glowing windows, lantern strings, the moon and stars.
+            try { PrototypeWorld.BuildVillage(Journey.Village(), world.transform, false); }
+            catch (System.Exception ex)
             {
-                var log = MeshFactory.Primitive(PrimitiveType.Cylinder, world.transform, new Vector3(-2.5f, 0.1f, 3.5f), new Vector3(0.18f, 0.5f, 0.18f), wood);
-                log.transform.localRotation = Quaternion.Euler(80f, i * 72f, 0f);
+                Debug.LogError("[Home] village build failed, using the simple backdrop: " + ex);
+                foreach (Transform c in world.transform) Destroy(c.gameObject);
+                ArenaBuilder.Build(NightVillage(), world.transform, false, 3);
+                LanternStrings(world.transform);
             }
-            var post = MeshFactory.Primitive(PrimitiveType.Cylinder, world.transform, new Vector3(4f, 0.9f, 3f), new Vector3(0.3f, 0.9f, 0.3f), wood);
-            MeshFactory.Primitive(PrimitiveType.Cube, post.transform, new Vector3(0f, 0.3f, 0f), new Vector3(4f, 0.12f, 0.6f), wood);
             string[] lines =
             {
                 "Ren! Training again? You'll wear out the post!", "The harvest looks good this year.",
                 "Have you seen the sky lately? Such strange colours...", "Master Tessai says you're almost ready.",
                 "Grandma's making rice cakes tonight!", "They say the capital has an arena. Imagine!"
             };
+            // Villagers stroll in the lane behind the leader, short of the tree.
             for (int i = 0; i < Mathf.RoundToInt(5 * GameSettings.SceneryDensity) + 1; i++)
-                walkers.Add(NpcWalker.Spawn(world.transform, i % 2 == 0 ? "npc_villager" : "npc_villager2", Vector3.zero, 7f, 13f, lines));
+                walkers.Add(NpcWalker.Spawn(world.transform, i % 2 == 0 ? "npc_villager" : "npc_villager2", new Vector3(0f, 0f, 8.5f), 2.8f, 5.5f, lines));
             heroHolder = new GameObject("HeroHolder").transform;
             heroHolder.SetParent(transform, false);
             heroHolder.position = HeroPos;

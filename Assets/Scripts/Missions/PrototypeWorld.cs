@@ -18,14 +18,18 @@ namespace HashiraChronicles
     /// </summary>
     public static partial class PrototypeWorld
     {
-        public enum Kind { Forest, Snow, Volcano }
+        public enum Kind { Forest, Snow, Volcano, Village }
 
         public static Kind Parse(string s)
         {
             if (s == "snow") return Kind.Snow;
             if (s == "volcano") return Kind.Volcano;
+            if (s == "village") return Kind.Village;
             return Kind.Forest;
         }
+
+        /// <summary>Green worlds (the forest and Kiriha Village share their terrain, plants and hills).</summary>
+        static bool Leafy { get { return K == Kind.Forest || K == Kind.Village; } }
 
         class Palette
         {
@@ -85,13 +89,36 @@ namespace HashiraChronicles
 
         public static JourneyBuilder.Result Build(Journey j, MissionDefinition m, Transform parent)
         {
-            K = Parse(BattleController.WorldEnv(m));
-            J = j;
+            var kind = Parse(BattleController.WorldEnv(m));
             int idSeed = 0;
             if (!string.IsNullOrEmpty(m.id)) foreach (char ch in m.id) idSeed = idSeed * 31 + ch;
             // Prototype missions keep their tuned layout; every other mission gets its own variation.
-            rng = new System.Random(1234 + (int)K * 77 + (string.IsNullOrEmpty(m.prototypeEnv) ? idSeed : 0));
+            return BuildCore(kind, j, 1234 + (int)kind * 77 + (string.IsNullOrEmpty(m.prototypeEnv) ? idSeed : 0), parent, true);
+        }
+
+        /// <summary>
+        /// Kiriha Village by night on the same standard as the mission worlds: the home screen backdrop
+        /// (battleCamera = false) and the open-world hub.
+        /// </summary>
+        public static JourneyBuilder.Result BuildVillage(Journey j, Transform parent, bool battleCamera)
+        {
+            return BuildCore(Kind.Village, j, 20260928, parent, battleCamera);
+        }
+
+        /// <summary>Re-applies the village's night lighting (the home screen, after a battle changed it).</summary>
+        public static void ApplyVillageLighting()
+        {
+            ApplyPalette(MakePalette(Kind.Village), Kind.Village);
+        }
+
+        static JourneyBuilder.Result BuildCore(Kind kind, Journey j, int seed, Transform parent, bool battleCamera)
+        {
+            K = kind;
+            J = j;
+            rng = new System.Random(seed);
             P = MakePalette(K);
+            hasBridge = false;
+            houses.Clear();
             channels.Clear();
             matCache.Clear();
             var res = new JourneyBuilder.Result();
@@ -121,7 +148,7 @@ namespace HashiraChronicles
             // Everything solid that was built as a separate set piece blocks movement too.
             Obstacles.Scan(stat);
             Atmosphere(res);
-            Lighting();
+            Lighting(battleCamera);
 
             StaticBatchingUtility.Combine(stat.gameObject);
             return res;
@@ -163,6 +190,23 @@ namespace HashiraChronicles
                     p.sun = new Color(1f, 0.62f, 0.42f); p.sunIntensity = 0.95f; p.sunEuler = new Vector3(38f, 20f, 0f);
                     p.shadow = new Color(0.5f, 0.32f, 0.42f); p.rim = new Color(1f, 0.55f, 0.3f); p.far = new Color(0.3f, 0.1f, 0.1f);
                     p.lantern = new Color(1f, 0.5f, 0.15f);
+                    break;
+                case Kind.Village:
+                    // Kiriha at night: moonlit teal grass, pale stone streets, cherry blossom, warm lanterns.
+                    p.grassA = new Color(0.22f, 0.4f, 0.36f); p.grassB = new Color(0.28f, 0.46f, 0.38f); p.grassC = new Color(0.36f, 0.54f, 0.42f);
+                    p.path = new Color(0.6f, 0.58f, 0.64f); p.pathEdge = new Color(0.46f, 0.46f, 0.52f); p.clearing = new Color(0.64f, 0.62f, 0.66f);
+                    p.rock = new Color(0.5f, 0.5f, 0.58f); p.rockDark = new Color(0.32f, 0.32f, 0.4f); p.bank = new Color(0.2f, 0.34f, 0.32f);
+                    p.leafDark = new Color(0.72f, 0.36f, 0.56f); p.leafMid = new Color(0.96f, 0.62f, 0.78f); p.leafLight = new Color(1f, 0.84f, 0.92f);
+                    p.trunk = new Color(0.32f, 0.22f, 0.22f); p.accent = new Color(0.84f, 0.18f, 0.16f);
+                    p.flowerA = new Color(1f, 0.86f, 0.5f); p.flowerB = new Color(1f, 0.62f, 0.78f); p.flowerC = new Color(0.72f, 0.72f, 1f);
+                    p.water = new Color(0.22f, 0.4f, 0.66f); p.waterFoam = new Color(0.85f, 0.9f, 1f, 0.45f);
+                    p.skyTop = new Color(0.05f, 0.07f, 0.2f); p.skyHorizon = new Color(0.4f, 0.3f, 0.56f); p.sunGlow = new Color(0.88f, 0.92f, 1f);
+                    p.fog = new Color(0.28f, 0.24f, 0.42f); p.fogStart = 34f; p.fogEnd = 250f;
+                    p.amSky = new Color(0.5f, 0.54f, 0.86f); p.amEquator = new Color(0.56f, 0.48f, 0.7f); p.amGround = new Color(0.34f, 0.3f, 0.36f);
+                    // Cool moonlight from over the viewer's left shoulder, so faces stay lit.
+                    p.sun = new Color(0.74f, 0.8f, 1f); p.sunIntensity = 0.95f; p.sunEuler = new Vector3(40f, 30f, 0f);
+                    p.shadow = new Color(0.42f, 0.4f, 0.66f); p.rim = new Color(1f, 0.78f, 0.6f); p.far = new Color(0.22f, 0.22f, 0.4f);
+                    p.lantern = new Color(1f, 0.66f, 0.32f);
                     break;
                 default:
                     p.grassA = new Color(0.36f, 0.6f, 0.26f); p.grassB = new Color(0.48f, 0.7f, 0.3f); p.grassC = new Color(0.62f, 0.76f, 0.34f);
@@ -253,6 +297,10 @@ namespace HashiraChronicles
                         break;
                     case Kind.Volcano:
                         h = SS(0f, 5f, d) * 1.1f + SS(5f, 24f, d) * (2f + 8f * WorldKit.Ridged(x * 0.03f, z * 0.03f)) + SS(12f, 70f, d) * 11f * WorldKit.Ridged(x * 0.014f, z * 0.014f) + n2 * 0.45f;
+                        break;
+                    case Kind.Village:
+                        // Level ground for the houses beside the street, then gentle hills beyond the village.
+                        h = SS(7f, 30f, d) * (1.6f + 5f * n1) + SS(20f, 70f, d) * 10f * n1 * n1 + n2 * 0.25f * SS(4f, 10f, d);
                         break;
                     default:
                         h = SS(0f, 5f, d) * 0.9f + SS(3f, 26f, d) * (2.2f + 5.5f * n1) + SS(10f, 70f, d) * 9f * n1 * n1 + n2 * 0.5f * SS(0f, 4f, d);
@@ -388,7 +436,14 @@ namespace HashiraChronicles
             float slope = SS(0.86f, 0.6f, nrm.y);
             c = Color.Lerp(c, Color.Lerp(P.rock, P.rockDark, n2), slope);
             if (K == Kind.Snow) c = Color.Lerp(c, P.grassC, SS(6f, 14f, h) * (1f - slope) * 0.6f);
-            if (K == Kind.Forest) c = Color.Lerp(c, P.bank, SS(0.5f, 3f, h) * 0.25f * (1f - slope));
+            if (Leafy) c = Color.Lerp(c, P.bank, SS(0.5f, 3f, h) * 0.25f * (1f - slope));
+            if (K == Kind.Village)
+            {
+                // Paving: faint flagstone joints on the streets and the plaza.
+                float paved = Mathf.Max(pw, cw);
+                float joint = SS(0.8f, 0.95f, Mathf.Abs(Mathf.Sin(x * 1.9f + Mathf.Sin(z * 0.7f))) ) * SS(0.8f, 0.95f, Mathf.Abs(Mathf.Sin(z * 1.9f)));
+                c = Color.Lerp(c, c * 0.82f, paved * (0.35f + joint * 0.4f) * n3);
+            }
             float glow = 0f;
             foreach (var ch in channels)
             {
@@ -509,6 +564,8 @@ namespace HashiraChronicles
             Vector3 sunDir = Quaternion.Euler(P.sunEuler) * Vector3.back;
             sunDir.y = Mathf.Abs(sunDir.y) * 0.4f + 0.1f;
             sunDir.Normalize();
+            // At night the glow belongs to the moon, which hangs ahead over the village (where the camera looks).
+            if (K == Kind.Village) sunDir = new Vector3(-0.4f, 0.29f, 0.87f).normalized;
             for (int a = 0; a <= lat; a++)
             {
                 float el = Mathf.Lerp(-0.25f, 1f, a / (float)lat) * Mathf.PI * 0.5f;
@@ -550,6 +607,53 @@ namespace HashiraChronicles
             var disc = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), go.transform, sunDir * 0.92f, Vector3.one * (K == Kind.Volcano ? 0.09f : 0.06f),
                 MaterialFactory.Additive(new Color(P.sunGlow.r, P.sunGlow.g, P.sunGlow.b, 0.9f)), false);
             disc.name = "Sun";
+            if (K == Kind.Village) MoonAndStars(go.transform, sunDir);
+        }
+
+        /// <summary>A soft breathing halo round the moon, a few darker maria on its face, and a field of stars (one combined mesh).</summary>
+        static void MoonAndStars(Transform dome, Vector3 moonDir)
+        {
+            var halo = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), dome, moonDir * 0.9f, Vector3.one * 0.2f, MaterialFactory.Additive(new Color(0.55f, 0.6f, 0.9f, 0.18f)), false);
+            halo.name = "MoonHalo";
+            halo.AddComponent<Pulse>().Speed = 0.35f;
+            // Craters: slightly darker patches on the face of the disc.
+            var crater = MaterialFactory.Transparent(new Color(0.55f, 0.6f, 0.78f, 0.35f), false);
+            Vector3 right = Vector3.Cross(Vector3.up, moonDir).normalized, up = Vector3.Cross(moonDir, right);
+            for (int k = 0; k < 4; k++)
+            {
+                Vector3 o = right * R(-0.015f, 0.015f) + up * R(-0.015f, 0.015f);
+                var c = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), dome, moonDir * 0.885f + o, Vector3.one * R(0.008f, 0.016f), crater, false);
+                c.name = "Crater";
+            }
+            var verts = new List<Vector3>();
+            var tris = new List<int>();
+            var srand = new System.Random(77);
+            for (int k = 0; k < 260; k++)
+            {
+                float az = (float)srand.NextDouble() * Mathf.PI * 2f;
+                float el = Mathf.Lerp(0.12f, 1.45f, Mathf.Pow((float)srand.NextDouble(), 0.7f));
+                Vector3 d = new Vector3(Mathf.Cos(el) * Mathf.Cos(az), Mathf.Sin(el), Mathf.Cos(el) * Mathf.Sin(az));
+                if (Vector3.Dot(d, moonDir) > 0.97f) continue;
+                Vector3 a = Vector3.Cross(d, Vector3.up).normalized;
+                if (a.sqrMagnitude < 0.5f) a = Vector3.right;
+                Vector3 b = Vector3.Cross(d, a);
+                float s = 0.0016f + (float)srand.NextDouble() * (k % 9 == 0 ? 0.0035f : 0.0014f);
+                Vector3 c = d * 0.95f;
+                int i0 = verts.Count;
+                verts.Add(c + a * s); verts.Add(c + b * s); verts.Add(c - a * s); verts.Add(c - b * s);
+                tris.AddRange(new[] { i0, i0 + 1, i0 + 2, i0, i0 + 2, i0 + 3, i0, i0 + 2, i0 + 1, i0, i0 + 3, i0 + 2 });
+            }
+            var mesh = new Mesh { name = "Stars" };
+            mesh.SetVertices(verts);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateBounds();
+            mesh.bounds = new Bounds(Vector3.zero, Vector3.one * 2000f);
+            var go = new GameObject("Stars");
+            go.transform.SetParent(dome, false);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = MaterialFactory.Additive(new Color(0.9f, 0.92f, 1f, 0.9f));
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         /// <summary>Distant ranges in two or three layers, fading into the sky with distance.</summary>
@@ -571,7 +675,7 @@ namespace HashiraChronicles
                     float a = Mathf.Lerp(-150f, 150f, (i + R(0.2f, 0.8f)) / count);
                     Vector3 dir = Quaternion.Euler(0f, a, 0f) * fwd;
                     Vector3 p = c + dir * (dist + R(-15f, 15f)) + Vector3.up * -2f;
-                    float hgt = K == Kind.Forest ? R(35f, 70f) : K == Kind.Snow ? R(60f, 110f) : R(40f, 80f);
+                    float hgt = Leafy ? R(35f, 70f) : K == Kind.Snow ? R(60f, 110f) : R(40f, 80f);
                     hgt *= 1f + layer * 0.25f;
                     float fade = 0.25f + layer * 0.25f;
                     Mountain(b, p, R(45f, 75f) * (1f + layer * 0.2f), hgt, fade, rng.Next(1000));
@@ -591,8 +695,8 @@ namespace HashiraChronicles
             var cols = new List<Color>();
             var tris = new List<int>();
             float off = seed * 1.37f;
-            Color rock = K == Kind.Forest ? new Color(0.36f, 0.48f, 0.4f) : K == Kind.Snow ? new Color(0.46f, 0.52f, 0.66f) : new Color(0.14f, 0.1f, 0.1f);
-            Color lower = K == Kind.Forest ? new Color(0.22f, 0.38f, 0.24f) : rock * 0.8f;
+            Color rock = K == Kind.Forest ? new Color(0.36f, 0.48f, 0.4f) : K == Kind.Snow ? new Color(0.46f, 0.52f, 0.66f) : K == Kind.Village ? new Color(0.28f, 0.32f, 0.46f) : new Color(0.14f, 0.1f, 0.1f);
+            Color lower = K == Kind.Forest ? new Color(0.22f, 0.38f, 0.24f) : K == Kind.Village ? new Color(0.16f, 0.26f, 0.3f) : rock * 0.8f;
             Color cap = K == Kind.Volcano ? new Color(0.28f, 0.24f, 0.24f) : new Color(0.96f, 0.98f, 1f);
             for (int r = 0; r <= rings; r++)
             {
@@ -670,34 +774,39 @@ namespace HashiraChronicles
 
         // ------------------------------------------------------------------ Lighting and atmosphere
 
-        static void Lighting()
+        static void ApplyPalette(Palette p, Kind k)
         {
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogColor = P.fog;
-            RenderSettings.fogStartDistance = P.fogStart;
-            RenderSettings.fogEndDistance = P.fogEnd;
+            RenderSettings.fogColor = p.fog;
+            RenderSettings.fogStartDistance = p.fogStart;
+            RenderSettings.fogEndDistance = p.fogEnd;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor = P.amSky * 0.85f;
-            RenderSettings.ambientEquatorColor = P.amEquator * 0.85f;
-            RenderSettings.ambientGroundColor = P.amGround * 0.85f;
+            RenderSettings.ambientSkyColor = p.amSky * 0.85f;
+            RenderSettings.ambientEquatorColor = p.amEquator * 0.85f;
+            RenderSettings.ambientGroundColor = p.amGround * 0.85f;
             var cam = Camera.main;
             if (cam != null)
             {
-                cam.backgroundColor = P.skyHorizon;
+                cam.backgroundColor = p.skyHorizon;
                 cam.farClipPlane = 420f;
             }
             var sun = RenderSettings.sun;
             if (sun != null)
             {
-                sun.color = P.sun;
-                sun.intensity = P.sunIntensity;
-                sun.transform.rotation = Quaternion.Euler(P.sunEuler);
+                sun.color = p.sun;
+                sun.intensity = p.sunIntensity;
+                sun.transform.rotation = Quaternion.Euler(p.sunEuler);
                 sun.shadows = LightShadows.Soft;
-                sun.shadowStrength = K == Kind.Snow ? 0.55f : 0.7f;
+                sun.shadowStrength = k == Kind.Snow ? 0.55f : k == Kind.Village ? 0.6f : 0.7f;
             }
+        }
+
+        static void Lighting(bool battleCamera)
+        {
+            ApplyPalette(P, K);
             root.gameObject.AddComponent<LightingRestorer>();
-            if (CameraController.Instance != null)
+            if (battleCamera && CameraController.Instance != null)
             {
                 // A slightly lower, more cinematic angle so the landscape and horizon read behind the fight.
                 var restore = root.gameObject.AddComponent<CameraOffsetRestorer>();
@@ -709,9 +818,10 @@ namespace HashiraChronicles
         static void Atmosphere(JourneyBuilder.Result res)
         {
             Vector3 c = Journey.Flat(J.places[J.places.Count / 2].pos);
-            if (K != Kind.Volcano) CloudDrift.CreateLayer(dyn, c, 12, 34f, new Color(1f, 1f, 1f, K == Kind.Snow ? 0.7f : 0.6f), 120f);
+            if (K == Kind.Village) CloudDrift.CreateLayer(dyn, c, 10, 36f, new Color(0.52f, 0.5f, 0.74f, 0.42f), 120f);
+            else if (K != Kind.Volcano) CloudDrift.CreateLayer(dyn, c, 12, 34f, new Color(1f, 1f, 1f, K == Kind.Snow ? 0.7f : 0.6f), 120f);
             else CloudDrift.CreateLayer(dyn, c, 10, 30f, new Color(0.25f, 0.15f, 0.15f, 0.6f), 120f);
-            if (K != Kind.Volcano)
+            if (K == Kind.Snow || K == Kind.Forest)
             {
                 BirdFlock.Create(dyn, J.places[1].pos + Vector3.up * 4f, 6, K == Kind.Snow ? new Color(0.2f, 0.22f, 0.3f) : new Color(0.95f, 0.95f, 0.95f)).Radius = 26f;
                 BirdFlock.Create(dyn, boss + Vector3.up * 8f, 5, new Color(0.2f, 0.2f, 0.25f)).Radius = 34f;
@@ -729,6 +839,11 @@ namespace HashiraChronicles
                     res.weather = EnvFx.Weather(follow, Vector3.zero, "embers", 36f);
                     EnvFx.Weather(follow, Vector3.zero, "ash", 36f);
                     break;
+                case Kind.Village:
+                    // Cherry petals on the night breeze and fireflies drifting over the grass.
+                    res.weather = EnvFx.Weather(follow, Vector3.zero, "petals", 40f);
+                    EnvFx.Weather(follow, Vector3.zero, "motes", 34f);
+                    break;
                 default:
                     res.weather = EnvFx.Weather(follow, Vector3.zero, "leaves", 36f);
                     EnvFx.Weather(follow, Vector3.zero, "motes", 30f);
@@ -736,7 +851,7 @@ namespace HashiraChronicles
             }
             // Low fog banks drifting over the ground away from the road.
             var fogMat = MaterialFactory.Transparent(new Color(P.fog.r, P.fog.g, P.fog.b, K == Kind.Volcano ? 0.22f : 0.16f), true);
-            for (int i = 0; i < 26; i++)
+            for (int i = 0; i < (K == Kind.Village ? 14 : 26); i++)
             {
                 float s = R(0f, J.Length);
                 Vector3 p = Journey.Flat(J.PointAt(s));

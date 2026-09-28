@@ -149,9 +149,9 @@ namespace HashiraChronicles
             Obstacles.Clear();
             if (def.openWorld)
             {
-                OpenWorldBuilder.Build(transform);
-                ArenaBuilder.ApplyLighting(def.theme);
-                spawn = new Vector3(0f, 0f, -14f);
+                World = OpenWorldBuilder.Build(transform);
+                spawn = OpenWorldBuilder.Spawn;
+                gameObject.AddComponent<VillageHub>();
             }
             else if (def.collisionTest) CollisionTestArena.Build(def.theme, transform);
             else if (def.training) ArenaBuilder.Build(def.theme, transform);

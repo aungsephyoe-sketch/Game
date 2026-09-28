@@ -164,7 +164,7 @@ namespace HashiraChronicles
                     list.Add(new BannerSlide { tag = "LIMITED SUMMON", title = f.displayName + " — " + f.versionTitle, sub = "Featured Mythic · rate up", accent = new Color(0.75f, 0.4f, 1f),
                         art = ArtLibrary.CharacterFull(f), open = () => gm.GoTo(GameScreen.Summon) });
             }
-            list.Add(new BannerSlide { tag = "EXPLORE", title = "Kiriha Village", sub = "Walk the village freely, meet the villagers, find hidden chests", accent = new Color(0.35f, 0.85f, 0.55f),
+            list.Add(new BannerSlide { tag = "VILLAGE HUB", title = "Kiriha Village", sub = "Chat, team up in threes and brave the co-op gates (online preview)", accent = new Color(0.35f, 0.85f, 0.55f),
                 art = TileArt.Village, open = () => gm.BeginMission(GameDatabase.OpenWorld) });
             list.Add(new BannerSlide { tag = "FORGE", title = "Upgrade Your Gear", sub = "Swords, haori and charms for every slayer", accent = new Color(1f, 0.7f, 0.25f),
                 picture = PicUpgrade, open = () => OpenMenu("EQUIPMENT") });
