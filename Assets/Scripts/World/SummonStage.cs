@@ -12,9 +12,9 @@ namespace HashiraChronicles
     ///   lightning strikes for Legendary+, a portal opens, a silhouette steps out, then the full reveal.
     /// The UI reads <see cref="Phase"/>/<see cref="Current"/> to draw prompts, name cards and the results grid.
     /// </summary>
-    public class SummonStage : MonoBehaviour
+    public partial class SummonStage : MonoBehaviour
     {
-        public enum SummonPhase { Idle, Gather, Charging, Seal, Silhouette, Reveal, Summary, Intro, Shrine, Cards }
+        public enum SummonPhase { Idle, Gather, Charging, Seal, Silhouette, Reveal, Summary, Intro, Shrine, Cards, Chest }
 
         // The 2D intro drawn by the summon screen, in seconds from the start of the Intro phase:
         // fade to black, the sheathed sword appears, a hand grips it, CLANG — drawn, the screen is sliced open.
@@ -123,40 +123,12 @@ namespace HashiraChronicles
             Current = null;
             CurrentIndex = 0;
 
-            // 1–4. The blade (drawn by the UI over a black screen), timed with its sounds. Behind the black, the
-            // shrine shot is already set up so the slice opens straight onto it.
-            Phase = SummonPhase.Intro;
-            PhaseStart = Time.unscaledTime;
+            // 1–9. The summon chest: it slams down, spins and upgrades, waits for taps and bursts open.
             advance = false;
-            PrepareShrine();
-            var cam = CameraController.Instance;
-            if (cam != null) cam.Cut(new Vector3(0f, 2.4f, -7.5f), new Vector3(0f, 3.6f, 14f));
-            bool swordSound = false, gripSound = false, clang = false, slice = false;
-            while (!skipAll)
-            {
-                float t = Time.unscaledTime - PhaseStart;
-                if (advance) { advance = false; PhaseStart -= Mathf.Max(0f, IntroSlice - 0.3f - t); t = Time.unscaledTime - PhaseStart; }
-                if (!swordSound && t > IntroFade) { swordSound = true; if (audio != null) audio.Play("sp_activate", 0.5f); }
-                if (!gripSound && t > IntroSword + 0.25f) { gripSound = true; if (audio != null) audio.PlayPitched("thud", 0.45f, 1.3f); }
-                if (!clang && t > IntroGrip + 0.05f)
-                {
-                    clang = true;
-                    if (audio != null) { audio.PlayPitched("parry", 0.9f, 0.85f); audio.Play("slashHeavy", 0.6f); }
-                }
-                if (!slice && t > IntroDraw + 0.05f)
-                {
-                    slice = true;
-                    if (audio != null) { audio.Play("sp_whoosh", 0.8f); audio.Play(big ? "ultimate" : "slash", big ? 0.7f : 0.6f); if (big) audio.Play("el_thunder", 0.6f); }
-                    if (cam != null) cam.Shake(big ? 0.55f : 0.2f);
-                }
-                if (t >= IntroSlice) break;
-                yield return null;
-            }
-
-            // 5–9. The shrine glows, the moon rises, energy swirls, the seal forms and erupts.
-            if (!skipAll) yield return ShrineRite(audio, best, big);
+            if (!skipAll) yield return ChestRite(audio, best, big);
             // 10. Cards fly out and land around the altar.
             if (!skipAll) yield return FlyCards(audio);
+            HideChest();
             // 11–12. Each slayer lands with an impact; rarity sets the colour and the effects.
             for (CurrentIndex = 0; CurrentIndex < Results.Count && !skipAll; CurrentIndex++)
             {
@@ -164,6 +136,7 @@ namespace HashiraChronicles
                 yield return LandOne(Current, audio, Results.Count > 1);
             }
             ClearCards();
+            HideChest();
             HideRite();
             heroHolder.position = AltarPos + Vector3.up * 0.3f;
             Phase = SummonPhase.Summary;

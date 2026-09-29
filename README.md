@@ -36,6 +36,22 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Summon chest, poster faces, U-shaped heads (0.30.0)
+- **Heads**: smaller (about 12% less than 0.29), a "U" shape — a jaw keeps the cheeks wide lower down and rounds
+  off at the bottom (the pointed chin is gone) — and the head is lifted onto a visible neck.
+- **Summon chest** (`SummonStage.Chest.cs`), replacing the sword-draw intro and the shrine rite: a treasure chest
+  slams onto the altar, lifts and spins faster and faster, upgrading through the rarity colours up to the best
+  slayer in the pull, slows to face you and rattles. TAP TO OPEN (1 tap, 2 for Epic+, 3 for Legendary+); each tap
+  jolts it and cracks the lid. The lid bursts open with a light pillar, shockwave and (for the big ones)
+  lightning, and the cards fly out as before. SKIP still skips everything.
+- **Poster cards**: zoomed out to show more of the slayer, and every card has its own expression — smile, smirk,
+  confident grin, angry shout, big happy laugh or determined frown (mouth, eyes and brows) — and one of four poses
+  (hero stance, charge, cool lean, playful tilt), chosen from their personality.
+- **Enemies no longer float away in long combos**: a juggled demon is lifted less the higher it is, never above
+  2.2 m, and stops being lifted after 1.6 s in the air, then falls. A demon knocked out of the air state some other
+  way (a parry stagger) now falls back down too.
+- **Co-op has no pause button** (and Esc / P don't pause there).
+
 ### Stylized hero redesign (0.29.0)
 Original characters, redesigned around mobile-hero design principles (exaggerated proportions, strong
 silhouettes, simple shapes, bold colour blocking). Nothing is copied from any other game.

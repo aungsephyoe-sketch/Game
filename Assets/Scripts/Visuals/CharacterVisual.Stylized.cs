@@ -68,7 +68,7 @@ namespace HashiraChronicles
             shapeSet = true;
             if (rig == null || head == null) { deferOptimize = false; return; }
             bool handMade = IsPremium(def.id) || IsDesign(def.id);
-            if (hasFace) Chin(def);
+            if (hasFace) JawAndNeck(def);
             if (!handMade)
             {
                 Color elem = def.npc ? def.bladeColor : ElementChart.ColorOf(def.element);
@@ -120,11 +120,15 @@ namespace HashiraChronicles
 
         // ------------------------------------------------------------------ Face
 
-        /// <summary>A soft, slightly pointed anime chin under the mouth: the face reads as a face, not a ball.</summary>
-        void Chin(CharacterDefinition def)
+        /// <summary>
+        /// A "U"-shaped head: a jaw that keeps the cheeks wide lower down and rounds off at the bottom (no pointed
+        /// chin), set back a little so the mouth stays in front of it, and a real neck under it.
+        /// </summary>
+        void JawAndNeck(CharacterDefinition def)
         {
             var skin = PM(def.skinTone);
-            Ball(head, faceC + new Vector3(0f, -faceR.y * 0.74f, faceR.z * 0.42f), new Vector3(faceR.x * 0.95f, faceR.y * 0.5f, faceR.z * 0.8f), skin);
+            Ball(head, faceC + new Vector3(0f, -faceR.y * 0.35f, 0f), new Vector3(faceR.x * 1.92f, faceR.y * 1.24f, faceR.z * 1.64f), skin);
+            Part(PrimitiveType.Capsule, head, new Vector3(0f, -0.01f, -0.01f), new Vector3(0.1f, 0.075f, 0.095f), skin);
         }
 
         // ------------------------------------------------------------------ Hair

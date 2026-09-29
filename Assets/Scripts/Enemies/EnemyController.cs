@@ -46,6 +46,10 @@ namespace HashiraChronicles
         protected NavAgent nav;
         float height;
         float verticalVelocity;
+        /// <summary>How long it's been in the air since the launch (juggles stop lifting after a while).</summary>
+        float airTime;
+        /// <summary>Highest a juggled demon can be carried (metres).</summary>
+        const float MaxJuggleHeight = 2.2f;
         float downTimer;
         bool alerted;
 
@@ -177,8 +181,11 @@ namespace HashiraChronicles
                     Think(dt);
                     break;
                 case State.Airborne:
+                    airTime += dt;
                     verticalVelocity -= 22f * dt;
                     height += verticalVelocity * dt;
+                    // Never carried up into the sky, however fast the combo.
+                    if (height > MaxJuggleHeight) { height = MaxJuggleHeight; verticalVelocity = Mathf.Min(verticalVelocity, 0f); }
                     if (height <= 0f)
                     {
                         height = 0f;
@@ -201,6 +208,13 @@ namespace HashiraChronicles
                     break;
             }
 
+            // Left the air state some other way (a parry stagger, a stun) while still up: fall back down.
+            if (state != State.Airborne && height > 0f)
+            {
+                verticalVelocity = Mathf.Min(verticalVelocity, 0f) - 22f * dt;
+                height = Mathf.Max(0f, height + verticalVelocity * dt);
+                if (height <= 0f) verticalVelocity = 0f;
+            }
             if (state != State.Airborne) Separate();
             if (state != State.Spawning)
             {
@@ -535,8 +549,9 @@ namespace HashiraChronicles
 
             if (state == State.Airborne)
             {
-                // Juggle: every hit keeps a launched demon up a little longer.
-                verticalVelocity = Mathf.Max(verticalVelocity, 4.5f);
+                // Juggle: a hit keeps a launched demon up a little longer — less the higher it is, and not at
+                // all after ~1.6 s in the air, so fast combos can't float it away.
+                if (airTime <= 1.6f) verticalVelocity = Mathf.Max(verticalVelocity, 4.5f * (1f - Mathf.Clamp01(height / MaxJuggleHeight)));
                 return;
             }
             if (!IsBoss && info.launch && IsLight && state != State.Down)
@@ -562,6 +577,7 @@ namespace HashiraChronicles
         {
             CancelAttack();
             state = State.Airborne;
+            airTime = 0f;
             verticalVelocity = upSpeed;
             visual.SetMoving(0f);
             visual.Hit(-transform.forward);

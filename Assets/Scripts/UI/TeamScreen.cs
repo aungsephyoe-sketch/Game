@@ -270,7 +270,7 @@ namespace HashiraChronicles
 
             // The slayer, head and shoulders, with a dark ink edge like a cartoon card portrait.
             var art = ArtLibrary.CharacterAction(def);
-            Rect uv = new Rect(0.1f, 0.42f, 0.8f, 0.56f);
+            Rect uv = new Rect(0.04f, 0.33f, 0.92f, 0.65f);
             if (art == null) { art = ArtLibrary.Character(def); uv = new Rect(0.08f, 0.06f, 0.84f, 0.84f); }
             if (art == null) return;
             var ar = new Rect(r.x, r.y + 4f, r.width, r.height - 4f);

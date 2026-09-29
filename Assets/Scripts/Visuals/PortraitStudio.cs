@@ -123,6 +123,7 @@ namespace HashiraChronicles
                         // Turned three-quarters, in their battle pose.
                         holder.localRotation = Quaternion.Euler(0f, 34f, 0f);
                         v.ApplyBannerPose();
+                        v.ApplyPosterLook(def); // its own expression and pose on the card art
                     }
                     else v.ApplyTeamIdle();
                 }

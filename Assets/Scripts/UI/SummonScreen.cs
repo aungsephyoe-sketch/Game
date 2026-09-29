@@ -246,6 +246,30 @@ namespace HashiraChronicles
                 if (GUI.Button(new Rect(0f, 0f, W, H), GUIContent.none, GUIStyle.none)) st.Advance();
                 return;
             }
+            if (st.Phase == SummonStage.SummonPhase.Chest)
+            {
+                // The chest is 3D in the shrine; the UI adds its glow, the prompt and the tap pips.
+                var cc = st.ChestColor;
+                var old = GUI.color;
+                GUI.color = new Color(cc.r, cc.g, cc.b, 0.22f + 0.1f * Mathf.Sin(Time.unscaledTime * 6f));
+                GUI.DrawTexture(new Rect(0f, 0f, W, H), UIStyles.Vignette);
+                GUI.color = old;
+                if (st.ChestWaiting)
+                {
+                    float p = 1f + 0.08f * Mathf.Sin(Time.unscaledTime * 9f);
+                    UIStyles.Outlined(new Rect(0f, H - 230f, W, 80f), "TAP TO OPEN!", UIStyles.Sized(UIStyles.Center, Mathf.RoundToInt(56 * p)), Color.white, 4f);
+                    for (int i = 0; i < st.ChestTapsNeeded; i++)
+                    {
+                        Vector2 pc = new Vector2(W * 0.5f + (i - (st.ChestTapsNeeded - 1) * 0.5f) * 56f, H - 120f);
+                        UIStyles.CircleTex(pc, 20f, new Color(0f, 0f, 0f, 0.5f));
+                        UIStyles.CircleTex(pc, 16f, i < st.ChestTaps ? cc : new Color(1f, 1f, 1f, 0.3f));
+                    }
+                    if (GUI.Button(new Rect(0f, 0f, W, H), GUIContent.none, GUIStyle.none)) st.Tap();
+                }
+                else if (GUI.Button(new Rect(0f, 0f, W, H), GUIContent.none, GUIStyle.none)) st.Advance();
+                if (Btn(new Rect(safe.xMax - 250f, safe.y + 24f, 220f, 80f), "SKIP ▶▶", UIStyles.ButtonSmall)) st.SkipAll();
+                return;
+            }
             if (st.Phase == SummonStage.SummonPhase.Gather)
             {
                 UIStyles.Outlined(new Rect(0f, H - 210f, W, 70f), "The stars are gathering...", UIStyles.Sized(UIStyles.Center, 40), Color.white, 3f);

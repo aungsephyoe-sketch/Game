@@ -92,18 +92,18 @@ namespace HashiraChronicles
             if (!GameConfig.CartoonStyle || rig == null || strength <= 0f) return;
             var r = rig;
             // Target proportions from the slayer's shape language (monsters use the neutral set at lower strength).
-            float tLeg = 0.78f, tTorsoY = 0.88f, tTorsoXZ = 1.17f, tLimb = 1.42f, tHead = 1.42f, tHand = 1.52f, tFoot = 1.42f, tWeapon = 1.4f, tPelvis = 1.17f;
+            float tLeg = 0.78f, tTorsoY = 0.88f, tTorsoXZ = 1.17f, tLimb = 1.42f, tHead = 1.26f, tHand = 1.52f, tFoot = 1.42f, tWeapon = 1.4f, tPelvis = 1.17f;
             if (shapeSet && strength >= 1f)
                 switch (Shape)
                 {
                     // Square: wide and heavy — broad shoulders, thick limbs, huge hands and boots, short legs.
-                    case ShapeLanguage.Square: tLeg = 0.74f; tTorsoY = 0.84f; tTorsoXZ = 1.3f; tLimb = 1.58f; tHead = 1.34f; tHand = 1.72f; tFoot = 1.55f; tWeapon = 1.5f; tPelvis = 1.2f; break;
+                    case ShapeLanguage.Square: tLeg = 0.74f; tTorsoY = 0.84f; tTorsoXZ = 1.3f; tLimb = 1.58f; tHead = 1.18f; tHand = 1.72f; tFoot = 1.55f; tWeapon = 1.5f; tPelvis = 1.2f; break;
                     // Triangle: a V — wide shoulders over a narrow waist, longer legs, big pointed weapon.
-                    case ShapeLanguage.Triangle: tLeg = 0.84f; tTorsoY = 0.84f; tTorsoXZ = 1.22f; tLimb = 1.34f; tHead = 1.42f; tHand = 1.5f; tFoot = 1.4f; tWeapon = 1.52f; tPelvis = 0.95f; break;
+                    case ShapeLanguage.Triangle: tLeg = 0.84f; tTorsoY = 0.84f; tTorsoXZ = 1.22f; tLimb = 1.34f; tHead = 1.25f; tHand = 1.5f; tFoot = 1.4f; tWeapon = 1.52f; tPelvis = 0.95f; break;
                     // Circle: round and cuddly — the biggest head, a short round body, soft chunky limbs.
-                    case ShapeLanguage.Circle: tLeg = 0.72f; tTorsoY = 0.8f; tTorsoXZ = 1.24f; tLimb = 1.42f; tHead = 1.52f; tHand = 1.5f; tFoot = 1.45f; tWeapon = 1.36f; tPelvis = 1.22f; break;
+                    case ShapeLanguage.Circle: tLeg = 0.72f; tTorsoY = 0.8f; tTorsoXZ = 1.24f; tLimb = 1.42f; tHead = 1.33f; tHand = 1.5f; tFoot = 1.45f; tWeapon = 1.36f; tPelvis = 1.22f; break;
                     // Diamond: tall and elegant — slim limbs, a narrow waist, long weapon.
-                    case ShapeLanguage.Diamond: tLeg = 0.86f; tTorsoY = 0.86f; tTorsoXZ = 1.1f; tLimb = 1.26f; tHead = 1.45f; tHand = 1.42f; tFoot = 1.32f; tWeapon = 1.48f; tPelvis = 0.98f; break;
+                    case ShapeLanguage.Diamond: tLeg = 0.86f; tTorsoY = 0.86f; tTorsoXZ = 1.1f; tLimb = 1.26f; tHead = 1.27f; tHand = 1.42f; tFoot = 1.32f; tWeapon = 1.48f; tPelvis = 0.98f; break;
                 }
             float legK = Mathf.Lerp(1f, tLeg, strength);
             float torsoY = Mathf.Lerp(1f, tTorsoY, strength), torsoXZ = Mathf.Lerp(1f, tTorsoXZ, strength);
@@ -129,13 +129,14 @@ namespace HashiraChronicles
             if (r.torso != null) r.torso.localScale = Vector3.Scale(r.torso.localScale, new Vector3(torsoXZ, torsoY, torsoXZ));
             if (r.pelvis != null) r.pelvis.localScale = Vector3.Scale(r.pelvis.localScale, new Vector3(pelvisK, 1f, pelvisK));
             r.shoulder = Vector3.Scale(r.shoulder, new Vector3(torsoXZ, torsoY, torsoXZ));
-            r.neck = new Vector3(r.neck.x, r.neck.y * torsoY, r.neck.z);
+            // Lift the head clear of the shoulders so the neck shows.
+            r.neck = new Vector3(r.neck.x, r.neck.y * torsoY + (shapeSet ? 0.06f : 0f), r.neck.z);
             r.restHandR = Vector3.Scale(r.restHandR, new Vector3(torsoXZ, torsoY, 1f));
             r.restHandL = Vector3.Scale(r.restHandL, new Vector3(torsoXZ, torsoY, 1f));
-            // Head and eyes: the big readable face — a softer mochi shape (a little wider and flatter), not a ball.
+            // Head and eyes: the big readable face, as tall as it is wide (the jaw gives it its "U").
             if (head != null)
             {
-                head.localScale = Vector3.Scale(head.localScale, new Vector3(headK * 1.06f, headK * 0.9f, headK * 0.98f));
+                head.localScale = Vector3.Scale(head.localScale, new Vector3(headK, headK * 0.99f, headK * 0.97f));
                 foreach (var lid in head.GetComponentsInChildren<EyeLid>(true)) lid.transform.localScale *= eyeK;
             }
             // Oversized weapon.

@@ -37,12 +37,15 @@ namespace HashiraChronicles
 
             // PvP uses that corner for the kill feed.
             if (!b.CinematicLock && (b.Def == null || b.Def.pvpMode < 0)) DrawMinimap(b);
-            // Pause button.
-            var pr = HudLayout.Pause;
-            Round(pr, new Color(0.05f, 0.06f, 0.1f, 0.7f), 16f);
-            RoundFrame(pr, new Color(1f, 1f, 1f, 0.15f), 2f, 16f);
-            Round(new Rect(pr.center.x - 16f, pr.center.y - 22f, 11f, 44f), Color.white, 4f);
-            Round(new Rect(pr.center.x + 5f, pr.center.y - 22f, 11f, 44f), Color.white, 4f);
+            // Pause button (not in co-op: the party keeps playing, so there's nothing to pause).
+            if (b.Def == null || b.Def.coopTier < 0)
+            {
+                var pr = HudLayout.Pause;
+                Round(pr, new Color(0.05f, 0.06f, 0.1f, 0.7f), 16f);
+                RoundFrame(pr, new Color(1f, 1f, 1f, 0.15f), 2f, 16f);
+                Round(new Rect(pr.center.x - 16f, pr.center.y - 22f, 11f, 44f), Color.white, 4f);
+                Round(new Rect(pr.center.x + 5f, pr.center.y - 22f, 11f, 44f), Color.white, 4f);
+            }
 
             if (TimeController.Paused) DrawPauseMenu();
         }

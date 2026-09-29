@@ -489,6 +489,8 @@ namespace HashiraChronicles
         public void TogglePause()
         {
             if (CurrentScreen != GameScreen.Battle || Battle == null || Battle.Finished) return;
+            // Co-op can't be paused (tap area, Esc and P all do nothing there).
+            if (Battle.Def != null && Battle.Def.coopTier >= 0 && !TimeController.Paused) return;
             TimeController.Paused = !TimeController.Paused;
             Audio.Play("click", 0.6f);
         }
