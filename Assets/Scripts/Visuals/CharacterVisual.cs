@@ -57,10 +57,12 @@ namespace HashiraChronicles
             v.Model = model;
             if (GameConfig.UseImportedModels && v.TryLoadModel("Characters/" + def.id, def.bladeColor, 1f, 1.75f * def.scale)) return v;
 
+            v.deferOptimize = true;
             if (IsPremium(def.id)) v.BuildPremium(def);
             else if (IsDesign(def.id)) v.BuildDesign(def);
             else if (GameConfig.PremiumRoster) v.BuildRoster(def);
             else v.BuildChibi(def);
+            v.Stylize(def);
             v.CartoonProportions(1f);
             v.SoftenLook();
             return v;
@@ -385,12 +387,17 @@ namespace HashiraChronicles
 
         public void Skill(int index, float duration)
         {
-            if (driver != null) { driver.Trigger("Skill" + (index + 1)); TrailBurst(duration + 0.2f); }
+            if (driver != null) { driver.Trigger("Skill" + (index + 1)); TrailBurst(duration + 0.2f); return; }
+            if (dead || !GameConfig.CartoonStyle) return;
+            Squish(0.14f);
+            StartCoroutine(SkillFlourish(index));
         }
 
         public void Ultimate()
         {
-            if (driver != null) { driver.Trigger("Ultimate"); TrailBurst(1.5f); }
+            if (driver != null) { driver.Trigger("Ultimate"); TrailBurst(1.5f); return; }
+            if (dead || !GameConfig.CartoonStyle) return;
+            StartPose(UltimateRoutine());
         }
 
         public void Dodge(Vector3 worldDir, float duration)
@@ -525,21 +532,37 @@ namespace HashiraChronicles
             Model.localPosition = Vector3.zero;
         }
 
+        static float EaseOutBack(float x)
+        {
+            const float c1 = 1.70158f, c3 = c1 + 1f;
+            x = Mathf.Clamp01(x) - 1f;
+            return 1f + c3 * x * x * x + c1 * x * x;
+        }
+
         IEnumerator HitRoutine(Vector3 fromWorldDir)
         {
+            // Impact → knockback → springy recovery: the body snaps away from the blow, squashes, slides back a
+            // little, then rebounds past upright before settling.
             Vector3 away = transform.InverseTransformDirection(-fromWorldDir);
             away.y = 0f;
             if (away.sqrMagnitude < 0.01f) away = Vector3.back;
-            Vector3 axis = Vector3.Cross(Vector3.up, away.normalized);
+            away.Normalize();
+            Vector3 axis = Vector3.Cross(Vector3.up, away);
+            const float T = 0.36f;
             float t = 0f;
-            while (t < 0.22f)
+            while (t < T)
             {
                 t += Time.deltaTime;
-                float k = Mathf.Sin(Mathf.Clamp01(t / 0.22f) * Mathf.PI);
-                Model.localRotation = Quaternion.AngleAxis(-22f * k, axis);
+                float k = Mathf.Clamp01(t / T);
+                float snap = k < 0.18f ? k / 0.18f : 1f - EaseOutBack((k - 0.18f) / 0.82f);
+                Model.localRotation = Quaternion.AngleAxis(-30f * snap, axis);
+                Model.localPosition = away * 0.2f * Mathf.Max(0f, snap);
+                Model.localScale = baseScale * Vector3.LerpUnclamped(Vector3.one, new Vector3(1.12f, 0.86f, 1.12f), snap);
                 yield return null;
             }
             Model.localRotation = Quaternion.identity;
+            Model.localPosition = Vector3.zero;
+            Model.localScale = Vector3.one * baseScale;
         }
 
         IEnumerator KnockdownRoutine()
@@ -584,36 +607,212 @@ namespace HashiraChronicles
             Model.localPosition = Vector3.zero;
         }
 
-        IEnumerator VictoryRoutine()
+        /// <summary>Squash-and-stretch jump: crouch (anticipation), launch (stretch), land (squash).</summary>
+        IEnumerator Jump(float height, float air, float spinTurns, bool heavy)
         {
-            if (SwordPivot != null) SwordPivot.localRotation = Quaternion.Euler(-80f, 10f, 0f);
             float t = 0f;
-            while (t < 0.5f)
+            while (t < 0.13f)
             {
                 t += Time.deltaTime;
-                Model.localPosition = new Vector3(0f, Mathf.Sin(Mathf.Clamp01(t / 0.5f) * Mathf.PI) * 0.6f, 0f);
+                float k = Mathf.Clamp01(t / 0.13f);
+                Model.localScale = baseScale * Vector3.Lerp(Vector3.one, new Vector3(1.16f, 0.8f, 1.16f), k);
+                Model.localPosition = new Vector3(0f, -0.06f * k, 0f);
                 yield return null;
             }
-            Model.localPosition = Vector3.zero;
+            t = 0f;
+            while (t < air)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / air);
+                Model.localPosition = new Vector3(0f, Mathf.Sin(k * Mathf.PI) * height, 0f);
+                float st = Mathf.Sin(Mathf.Clamp01(k * 1.6f) * Mathf.PI);
+                Model.localScale = baseScale * Vector3.Lerp(Vector3.one, new Vector3(0.86f, 1.2f, 0.86f), st);
+                Model.localRotation = Quaternion.Euler(0f, 360f * spinTurns * Mathf.SmoothStep(0f, 1f, k), 0f);
+                yield return null;
+            }
+            Model.localRotation = Quaternion.identity;
+            if (heavy) { VFX.Dust(transform.position, 8); Squish(-0.2f); }
+            t = 0f;
+            while (t < 0.14f)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Sin(Mathf.Clamp01(t / 0.14f) * Mathf.PI);
+                Model.localPosition = Vector3.zero;
+                Model.localScale = baseScale * Vector3.Lerp(Vector3.one, heavy ? new Vector3(1.22f, 0.76f, 1.22f) : new Vector3(1.14f, 0.84f, 1.14f), k);
+                yield return null;
+            }
+            Model.localScale = Vector3.one * baseScale;
+        }
+
+        IEnumerator VictoryRoutine()
+        {
+            ShapeLanguage sh = shapeSet ? Shape : ShapeLanguage.Triangle;
+            // Every shape celebrates differently: a spinning leap, a heavy stomp, happy hops, an elegant twirl.
+            switch (sh)
+            {
+                case ShapeLanguage.Square:
+                    if (SwordPivot != null) SwordPivot.localRotation = Quaternion.Euler(-95f, 20f, 0f);
+                    yield return Jump(0.45f, 0.36f, 0f, true);
+                    break;
+                case ShapeLanguage.Circle:
+                    if (SwordPivot != null) SwordPivot.localRotation = Quaternion.Euler(-70f, -30f, 0f);
+                    yield return Jump(0.4f, 0.28f, 0f, false);
+                    yield return Jump(0.55f, 0.32f, 0f, false);
+                    break;
+                case ShapeLanguage.Diamond:
+                    if (SwordPivot != null) SwordPivot.localRotation = Quaternion.Euler(-110f, 0f, 0f);
+                    yield return Jump(0.7f, 0.6f, 1f, false);
+                    break;
+                default:
+                    if (SwordPivot != null) SwordPivot.localRotation = Quaternion.Euler(-80f, 10f, 0f);
+                    yield return Jump(0.75f, 0.42f, 1f, false);
+                    if (SwordPivot != null) SwordPivot.localRotation = Quaternion.Euler(-15f, 35f, 0f);
+                    break;
+            }
+            float time = 0f;
             while (true)
             {
-                Model.localRotation = Quaternion.Euler(0f, Mathf.Sin(Time.time * 2f) * 6f, 0f);
+                time += Time.deltaTime;
+                switch (sh)
+                {
+                    case ShapeLanguage.Square:
+                    {
+                        // Flexing bounce.
+                        float f = Mathf.Abs(Mathf.Sin(time * 3.2f));
+                        Model.localScale = baseScale * new Vector3(1f + 0.06f * f, 1f - 0.05f * f, 1f + 0.06f * f);
+                        Model.localRotation = Quaternion.Euler(-4f, Mathf.Sin(time * 1.6f) * 8f, 0f);
+                        break;
+                    }
+                    case ShapeLanguage.Circle:
+                        Model.localPosition = new Vector3(0f, Mathf.Abs(Mathf.Sin(time * 5f)) * 0.14f, 0f);
+                        Model.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(time * 5f) * 7f);
+                        if (SwordPivot != null) SwordPivot.localRotation = Quaternion.Euler(-70f, -30f + Mathf.Sin(time * 6f) * 30f, 0f);
+                        break;
+                    case ShapeLanguage.Diamond:
+                        Model.localPosition = new Vector3(0f, 0.08f + Mathf.Sin(time * 2f) * 0.05f, 0f);
+                        Model.localRotation = Quaternion.Euler(-3f, Mathf.Sin(time * 0.9f) * 14f, Mathf.Sin(time * 1.8f) * 3f);
+                        break;
+                    default:
+                        Model.localRotation = Quaternion.Euler(-6f, Mathf.Sin(time * 2f) * 6f, 0f);
+                        break;
+                }
                 yield return null;
             }
         }
 
         IEnumerator DefeatRoutine()
         {
+            // Stagger back, sway, drop to the knees and slump, still breathing hard.
             float t = 0f;
-            while (t < 0.6f)
+            while (t < 0.4f)
             {
                 t += Time.deltaTime;
-                float k = Mathf.SmoothStep(0f, 1f, t / 0.6f);
-                Model.localRotation = Quaternion.Euler(28f * k, 0f, 0f);
-                Model.localPosition = new Vector3(0f, -0.45f * k, 0f);
+                float k = Mathf.Clamp01(t / 0.4f);
+                Model.localPosition = new Vector3(0f, 0f, -0.28f * Mathf.SmoothStep(0f, 1f, k));
+                Model.localRotation = Quaternion.Euler(-10f * Mathf.Sin(k * Mathf.PI), 0f, Mathf.Sin(k * Mathf.PI * 3f) * 9f);
                 yield return null;
             }
-            while (true) yield return null;
+            if (SwordPivot != null) SwordPivot.localRotation = Quaternion.Euler(70f, 25f, 0f);
+            t = 0f;
+            while (t < 0.35f)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / 0.35f);
+                float e = k * k;
+                Model.localRotation = Quaternion.Euler(30f * e, 0f, 0f);
+                Model.localPosition = new Vector3(0f, -0.42f * e, -0.28f);
+                yield return null;
+            }
+            Squish(-0.18f);
+            VFX.Dust(transform.position, 4);
+            float time = 0f;
+            while (true)
+            {
+                time += Time.deltaTime;
+                float br = Mathf.Sin(time * 3.2f);
+                Model.localScale = baseScale * new Vector3(1f + 0.015f * br, 1f + 0.03f * br, 1f + 0.015f * br);
+                Model.localRotation = Quaternion.Euler(30f + br * 2f, 0f, 0f);
+                yield return null;
+            }
+        }
+
+        /// <summary>Signature ultimate pose: crouch and gather, leap with the weapon raised high, hold, drop.</summary>
+        IEnumerator UltimateRoutine()
+        {
+            var start = SwordPivot != null ? SwordPivot.localRotation : Quaternion.identity;
+            float t = 0f;
+            while (t < 0.16f)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / 0.16f);
+                Model.localScale = baseScale * Vector3.Lerp(Vector3.one, new Vector3(1.18f, 0.78f, 1.18f), k);
+                Model.localPosition = new Vector3(0f, -0.08f * k, 0f);
+                Model.localRotation = Quaternion.Euler(14f * k, 0f, 0f);
+                if (SwordPivot != null) SwordPivot.localRotation = Quaternion.Slerp(start, Quaternion.Euler(25f, -120f, 0f), k);
+                yield return null;
+            }
+            t = 0f;
+            while (t < 0.22f)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / 0.22f);
+                float e = 1f - (1f - k) * (1f - k);
+                Model.localScale = baseScale * Vector3.Lerp(new Vector3(1.18f, 0.78f, 1.18f), new Vector3(0.86f, 1.2f, 0.86f), e);
+                Model.localPosition = new Vector3(0f, 0.4f * e, 0f);
+                Model.localRotation = Quaternion.Euler(Mathf.Lerp(14f, -12f, e), 0f, 0f);
+                if (SwordPivot != null) SwordPivot.localRotation = Quaternion.Slerp(Quaternion.Euler(25f, -120f, 0f), Quaternion.Euler(-160f, 0f, 0f), e);
+                yield return null;
+            }
+            t = 0f;
+            while (t < 0.24f)
+            {
+                t += Time.deltaTime;
+                // Power hold: hover and tremble with energy.
+                Model.localPosition = new Vector3(Mathf.Sin(t * 90f) * 0.012f, 0.4f + Mathf.Sin(t * 12f) * 0.02f, 0f);
+                Model.localScale = baseScale * Vector3.Lerp(new Vector3(0.86f, 1.2f, 0.86f), Vector3.one, t / 0.24f);
+                yield return null;
+            }
+            t = 0f;
+            while (t < 0.12f)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / 0.12f);
+                Model.localPosition = new Vector3(0f, 0.4f * (1f - k * k), 0f);
+                Model.localRotation = Quaternion.Euler(Mathf.Lerp(-12f, 8f, k), 0f, 0f);
+                yield return null;
+            }
+            Squish(-0.22f);
+            Model.localPosition = Vector3.zero;
+            Model.localRotation = Quaternion.identity;
+            Model.localScale = Vector3.one * baseScale;
+            if (SwordPivot != null) SwordPivot.localRotation = swordRest;
+        }
+
+        /// <summary>A quick skill flourish in the slayer's shape (a spin, a stomp, a hop or a twirl).</summary>
+        IEnumerator SkillFlourish(int index)
+        {
+            ShapeLanguage sh = shapeSet ? Shape : ShapeLanguage.Triangle;
+            float T = 0.28f, t = 0f;
+            punchUntil = Time.time + T + 0.05f;
+            while (t < T && !dead && !posing)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Clamp01(t / T);
+                float a = Mathf.Sin(k * Mathf.PI);
+                switch (sh)
+                {
+                    case ShapeLanguage.Square: Model.localScale = baseScale * Vector3.Lerp(Vector3.one, new Vector3(1.16f, 0.82f, 1.16f), a); break;
+                    case ShapeLanguage.Circle: Model.localPosition = new Vector3(0f, a * 0.25f, 0f); break;
+                    case ShapeLanguage.Diamond: Model.localRotation = Quaternion.Euler(0f, (index % 2 == 0 ? 1f : -1f) * 360f * Mathf.SmoothStep(0f, 1f, k), 0f); break;
+                    default: Model.localRotation = Quaternion.Euler(18f * a, 0f, (index % 2 == 0 ? -1f : 1f) * 16f * a); break;
+                }
+                yield return null;
+            }
+            if (!posing && !dead)
+            {
+                Model.localRotation = Quaternion.identity;
+                Model.localScale = Vector3.one * baseScale;
+            }
         }
 
         static readonly float[] SwingFrom = { -110f, 100f, -40f, 120f, -150f };
@@ -646,18 +845,21 @@ namespace HashiraChronicles
             // Anticipation → strike → follow-through → settle, inside the same total time so hit timing is unchanged.
             float dir = Mathf.Sign(toYaw - fromYaw);
             if (dir == 0f) dir = 1f;
-            float windUp = duration * 0.24f;
-            float pull = GameConfig.CartoonStyle ? 22f : 10f, over = GameConfig.CartoonStyle ? 18f : 8f;
+            float windUp = duration * 0.3f;
+            float pull = GameConfig.CartoonStyle ? 34f : 10f, over = GameConfig.CartoonStyle ? 26f : 8f;
+            // Our own squash and stretch owns the body scale for this swing.
+            if (GameConfig.CartoonStyle) punchUntil = Time.time + duration + 0.12f;
             var from = SwordPivot.localRotation;
             var cocked = Quaternion.Euler(pitch - 8f, fromYaw - dir * pull, roll);
             float t = 0f;
             while (t < windUp)
             {
                 t += Time.deltaTime;
-                float w = Mathf.Clamp01(t / windUp);
+                // Reach the cocked pose by 70% of the wind-up and hold it: a readable anticipation beat.
+                float w = Mathf.Clamp01(t / (windUp * 0.7f));
                 SwordPivot.localRotation = Quaternion.Slerp(from, cocked, w * w * (3f - 2f * w));
                 // Anticipation: the body squashes down as it winds up...
-                if (GameConfig.CartoonStyle && !dead) Model.localScale = baseScale * Vector3.Lerp(Vector3.one, new Vector3(1.07f, 0.9f, 1.07f), w);
+                if (GameConfig.CartoonStyle && !dead) Model.localScale = baseScale * Vector3.Lerp(Vector3.one, new Vector3(1.1f, 0.86f, 1.1f), w);
                 yield return null;
             }
             if (Trail != null) { Trail.Clear(); Trail.emitting = true; }
@@ -675,22 +877,24 @@ namespace HashiraChronicles
                 if (GameConfig.CartoonStyle && !dead)
                 {
                     float st = Mathf.Sin(Mathf.Clamp01(s / strike) * Mathf.PI);
-                    Model.localScale = baseScale * Vector3.Lerp(new Vector3(1.07f, 0.9f, 1.07f), new Vector3(0.93f, 1.12f, 0.93f), Mathf.Clamp01(s / (strike * 0.4f))) * 1f;
-                    if (s > strike * 0.4f) Model.localScale = baseScale * Vector3.Lerp(Vector3.one, new Vector3(0.93f, 1.12f, 0.93f), st);
+                    Model.localScale = baseScale * Vector3.Lerp(new Vector3(1.1f, 0.86f, 1.1f), new Vector3(0.9f, 1.16f, 0.9f), Mathf.Clamp01(s / (strike * 0.4f)));
+                    if (s > strike * 0.4f) Model.localScale = baseScale * Vector3.Lerp(Vector3.one, new Vector3(0.9f, 1.16f, 0.9f), st);
                 }
                 yield return null;
             }
-            if (GameConfig.CartoonStyle && !dead) Model.localScale = Vector3.one * baseScale;
+            if (GameConfig.CartoonStyle && !dead) { Model.localScale = Vector3.one * baseScale; Squish(-0.1f); } // impact pop
             if (Trail != null) Trail.emitting = false;
             yield return new WaitForSeconds(0.1f);
+            // Recovery: back to the ready pose with a little springy overshoot.
             float r = 0f;
             var start = SwordPivot.localRotation;
             while (r < 1f)
             {
                 r = Mathf.Min(1f, r + Time.deltaTime * 4.5f);
-                SwordPivot.localRotation = Quaternion.Slerp(start, swordRest, r * r * (3f - 2f * r));
+                SwordPivot.localRotation = Quaternion.SlerpUnclamped(start, swordRest, EaseOutBack(r));
                 yield return null;
             }
+            SwordPivot.localRotation = swordRest;
             swingRoutine = null;
         }
 

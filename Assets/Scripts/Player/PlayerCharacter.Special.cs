@@ -38,6 +38,7 @@ namespace HashiraChronicles
                 audio.Play(BuildSound(), 0.9f);
             }
             Visual.SetCharge(1f, color);
+            Visual.Ultimate(); // signature pose: gather, leap with the weapon raised, hold
             SceneLighting.UltimateMood(color, 3.2f);
             GameEvents.RaiseImpact(0.4f);
             VFX.Shockwave(Position, 2.5f, Color.white, 0.3f);

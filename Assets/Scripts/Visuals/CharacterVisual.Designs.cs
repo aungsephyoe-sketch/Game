@@ -176,7 +176,7 @@ namespace HashiraChronicles
         void DHead(Proportions b, Material skin, bool squareJaw)
         {
             Ball(head, new Vector3(0f, 0.04f, 0f), new Vector3(0.1f, 0.16f, 0.1f) * (b.hr.x / 0.37f) * 1.1f, skin);
-            Ball(head, b.hc, b.hr * 2f, skin);
+            Ball(head, b.hc, b.hr * 2f, skin); SetFace(b.hc, b.hr);
             if (squareJaw) Ball(head, b.hc + new Vector3(0f, -b.hr.y * 0.42f, b.hr.z * 0.12f), new Vector3(b.hr.x * 1.7f, b.hr.y * 0.9f, b.hr.z * 1.6f), skin);
             for (int s = -1; s <= 1; s += 2) Ball(head, b.hc + new Vector3(s * (b.hr.x - 0.01f), -0.03f, -0.01f), new Vector3(0.07f, 0.12f, 0.08f) * (b.hr.y / 0.36f), skin);
         }

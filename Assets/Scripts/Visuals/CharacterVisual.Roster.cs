@@ -38,8 +38,10 @@ namespace HashiraChronicles
             if ((def.armor && frame == Frame.Heavy) || (def.style == CombatStyle.Heavy && heavyWeapon)) outfit = Outfit.Armored;
 
             // ---- Palette
-            Color primary = def.haoriColor, secondary = def.bodyColor;
-            Color accent = def.accentColor;
+            // Bold colour blocking: vivid colours, and hair / outfit / under-layer kept clearly apart.
+            Color primary = SeparateFrom(Vivid(def.haoriColor), def.hairColor, 0.35f);
+            Color secondary = SeparateFrom(Vivid(def.bodyColor), primary, 0.3f);
+            Color accent = Vivid(def.accentColor);
             if (Diff(accent, primary) < 0.08f) accent = Color.Lerp(def.bladeColor, new Color(0.95f, 0.78f, 0.35f), 0.5f);
             Color gold = new Color(0.95f, 0.78f, 0.34f);
             Color trimC = rarity >= 4 ? gold : accent;
@@ -204,8 +206,7 @@ namespace HashiraChronicles
                 Ball(r.shin[i], Vector3.zero, Vector3.one * (frame == Frame.Heavy ? 0.13f : 0.1f), outfit == Outfit.Armored ? mP : mPants);
                 Taper(r.shin[i], Vector3.zero, 0.25f, frame == Frame.Heavy ? 0.07f : 0.052f, frame == Frame.Heavy ? 0.06f : 0.042f, mPants);
                 if (outfit == Outfit.Light)
-                    for (int k = 0; k < 4; k++)
-                        Band(r.shin[i], new Vector3(0f, -0.07f - k * 0.045f, 0f), 0.05f - k * 0.003f, 0.026f, 0.009f, mLight, null, new Vector3(0f, 0f, k % 2 == 0 ? 12f : -12f));
+                    Band(r.shin[i], new Vector3(0f, -0.14f, 0f), 0.05f, 0.14f, 0.01f, mLight); // one bold wrap, not many thin ones
                 else if (outfit == Outfit.Armored || def.armor)
                 {
                     Taper(r.shin[i], new Vector3(0f, -0.02f, 0.012f), 0.19f, frame == Frame.Heavy ? 0.072f : 0.056f, frame == Frame.Heavy ? 0.064f : 0.048f, mMetal, new Vector3(1f, 1f, 1.05f));
@@ -248,7 +249,7 @@ namespace HashiraChronicles
                         Band(r.upper[i], new Vector3(0f, -0.09f, 0f), 0.066f, 0.02f, 0.008f, mTrim);
                         Ball(r.lower[i], Vector3.zero, Vector3.one * 0.09f, mLight);
                         Taper(r.lower[i], Vector3.zero, 0.17f, 0.045f, 0.038f, mLight);
-                        for (int k = 0; k < 3; k++) Band(r.lower[i], new Vector3(0f, -0.05f - k * 0.045f, 0f), 0.044f - k * 0.002f, 0.01f, 0.006f, mLeather);
+                        Band(r.lower[i], new Vector3(0f, -0.1f, 0f), 0.045f, 0.07f, 0.008f, mLeather);
                         break;
                     case Outfit.Robe:
                         Ball(r.upper[i], new Vector3(0f, -0.01f, 0f), Vector3.one * 0.12f, mP);
@@ -284,7 +285,7 @@ namespace HashiraChronicles
 
             // ---- Head, face, hair
             Ball(head, new Vector3(0f, 0.04f, 0f), new Vector3(0.1f, 0.16f, 0.1f), mSkin);
-            Ball(head, hc, hr * 2f, mSkin);
+            Ball(head, hc, hr * 2f, mSkin); SetFace(hc, hr);
             for (int s = -1; s <= 1; s += 2) Ball(head, hc + new Vector3(s * (hr.x - 0.01f), -0.03f, -0.01f), new Vector3(0.07f, 0.12f, 0.08f), mSkin);
             RosterFaceV2(def, hc, hr, mSkin, elem);
             var realHead = head;
@@ -534,12 +535,8 @@ namespace HashiraChronicles
             for (int k = 0; k < 3; k++)
             {
                 Band(T, new Vector3(0f, ys[k], 0f), rs[k], 0.012f, 0.005f, under, ts * 1.02f);
-                if (rarity >= 4)
-                    for (int j = -2; j <= 2; j++)
-                    {
-                        float a = j * 0.32f;
-                        Ball(T, new Vector3(Mathf.Sin(a) * rs[k] * ts.x * 1.02f, ys[k], Mathf.Cos(a) * (rs[k] + 0.006f) * ts.z * 1.02f), Vector3.one * 0.022f, trim);
-                    }
+                if (rarity >= 4 && k == 1)
+                    Ball(T, new Vector3(0f, ys[k], (rs[k] + 0.006f) * ts.z * 1.02f), new Vector3(0.07f, 0.05f, 0.02f), trim); // one bold stud
             }
         }
 

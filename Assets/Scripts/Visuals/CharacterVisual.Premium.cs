@@ -121,6 +121,8 @@ namespace HashiraChronicles
             var shine = MaterialFactory.Toon(Color.white, 0f, new Color(0.8f, 0.8f, 0.8f));
             var lowLash = PM(Color.Lerp(browC, new Color(0.6f, 0.3f, 0.3f), 0.5f), 0f);
             var mBrow = PM(browC, 0f);
+            var mRim = PMe(Color.Lerp(iris, Color.black, 0.5f), 0f, iris * 0.06f);
+            var crease = PM(Color.Lerp(skin.color, new Color(0.45f, 0.25f, 0.25f), 0.35f), 0f);
             // Calm or fierce looks come from a narrower eye and the lash line, not from lid geometry
             // (a skin-coloured lid shape over the eye read as a strange hood).
             h *= 1f - Mathf.Clamp01(lid) * 0.55f;
@@ -133,21 +135,34 @@ namespace HashiraChronicles
                 e.gameObject.AddComponent<EyeLid>();
                 if (head.GetComponentInParent<Blinker>() == null) gameObject.AddComponent<Blinker>();
                 Ball(e, new Vector3(0f, 0f, -0.006f), new Vector3(w, h, 0.032f), white);
-                Ball(e, new Vector3(0f, -h * 0.05f, -0.002f), new Vector3(w * 0.7f, h * 0.82f, 0.03f), mIris);
-                Ball(e, new Vector3(0f, -h * 0.22f, 0f), new Vector3(w * 0.5f, h * 0.32f, 0.028f), mLow);
-                Ball(e, new Vector3(0f, -h * 0.02f, 0.002f), new Vector3(w * 0.3f, h * 0.42f, 0.026f), ink);
+                // Iris: a dark rim, the colour, a darker upper band (the lid's shadow) and a bright lower glow.
+                Ball(e, new Vector3(0f, -h * 0.05f, -0.003f), new Vector3(w * 0.76f, h * 0.88f, 0.03f), mRim);
+                Ball(e, new Vector3(0f, -h * 0.05f, -0.002f), new Vector3(w * 0.68f, h * 0.8f, 0.03f), mIris);
+                Ball(e, new Vector3(0f, h * 0.2f, -0.001f), new Vector3(w * 0.62f, h * 0.34f, 0.029f), mRim);
+                Ball(e, new Vector3(0f, -h * 0.24f, 0f), new Vector3(w * 0.48f, h * 0.3f, 0.028f), mLow);
+                Ball(e, new Vector3(0f, -h * 0.02f, 0.002f), new Vector3(w * 0.28f, h * 0.4f, 0.026f), ink);
+                // Highlights: a big soft one, a small one and a tiny sparkle.
                 Ball(e, new Vector3(-w * 0.16f, h * 0.18f, 0.006f), new Vector3(w * 0.26f, h * 0.24f, 0.02f), shine);
                 Ball(e, new Vector3(w * 0.14f, -h * 0.24f, 0.006f), new Vector3(w * 0.12f, h * 0.1f, 0.02f), shine);
+                Ball(e, new Vector3(w * 0.2f, h * 0.14f, 0.006f), new Vector3(w * 0.07f, h * 0.06f, 0.02f), shine);
+                // Upper lash line: thick, with a small wing at the outer corner (longer lashes for some).
                 float lidBottom = h * 0.5f - lid * h;
-                Part(PrimitiveType.Capsule, e, new Vector3(0f, lidBottom, 0.01f), new Vector3(0.026f, w * 0.58f, 0.022f), ink, new Vector3(0f, 0f, 90f));
+                Part(PrimitiveType.Capsule, e, new Vector3(0f, lidBottom, 0.01f), new Vector3(0.03f, w * 0.6f, 0.022f), ink, new Vector3(0f, 0f, 90f));
+                Part(PrimitiveType.Capsule, e, new Vector3(s * w * 0.5f, lidBottom - 0.004f, 0.009f), new Vector3(0.02f, 0.032f, 0.016f), ink, new Vector3(0f, 0f, -62f * s));
                 if (flick)
                 {
                     Part(PrimitiveType.Capsule, e, new Vector3(s * w * 0.52f, lidBottom + 0.012f, 0.008f), new Vector3(0.014f, 0.03f, 0.014f), ink, new Vector3(0f, 0f, -50f * s));
                     Part(PrimitiveType.Capsule, e, new Vector3(s * w * 0.4f, lidBottom + 0.022f, 0.009f), new Vector3(0.012f, 0.024f, 0.012f), ink, new Vector3(0f, 0f, -30f * s));
                 }
+                // Lid crease above the eye and a soft lower lash.
+                Part(PrimitiveType.Capsule, e, new Vector3(-s * w * 0.04f, lidBottom + h * 0.16f, 0.004f), new Vector3(0.007f, w * 0.34f, 0.008f), crease, new Vector3(0f, 0f, 90f + s * 6f));
                 Part(PrimitiveType.Capsule, e, new Vector3(0f, -h * 0.47f, 0.004f), new Vector3(0.011f, w * 0.28f, 0.011f), lowLash, new Vector3(0f, 0f, 90f));
+                // Brow: a thick inner end tapering to the outer end.
                 var b = OnFace(hc, hr, s * (x + 0.01f), y + h * 0.5f + 0.055f);
-                Part(PrimitiveType.Capsule, b, new Vector3(0f, 0f, 0.004f), new Vector3(browThick, 0.062f, 0.016f), mBrow, new Vector3(0f, 0f, 90f + s * brow));
+                var bb = J("Brow", b, new Vector3(0f, 0f, 0.004f));
+                bb.localRotation = Quaternion.Euler(0f, 0f, s * brow);
+                Part(PrimitiveType.Capsule, bb, new Vector3(-s * 0.018f, 0f, 0f), new Vector3(browThick * 1.25f, 0.036f, 0.016f), mBrow, new Vector3(0f, 0f, 90f));
+                Part(PrimitiveType.Capsule, bb, new Vector3(s * 0.02f, -0.003f, 0f), new Vector3(browThick * 0.8f, 0.034f, 0.015f), mBrow, new Vector3(0f, 0f, 90f - s * 10f));
             }
         }
 
@@ -348,7 +363,7 @@ namespace HashiraChronicles
             // Head.
             Vector3 hc = new Vector3(0f, 0.33f, 0.02f), hr = new Vector3(0.37f, 0.36f, 0.35f);
             Ball(head, new Vector3(0f, 0.04f, 0f), new Vector3(0.1f, 0.16f, 0.1f), mSkin);
-            Ball(head, hc, hr * 2f, mSkin);
+            Ball(head, hc, hr * 2f, mSkin); SetFace(hc, hr);
             for (int s = -1; s <= 1; s += 2) Ball(head, hc + new Vector3(s * 0.36f, -0.03f, -0.01f), new Vector3(0.07f, 0.12f, 0.08f), mSkin);
             PremiumEyes(hc, hr, 0.125f, -0.035f, 0.115f, 0.135f, new Color(0.3f, 0.78f, 0.35f), new Color(0.95f, 0.9f, 0.4f), 0.06f, 6f, false, 14f, 0.022f, new Color(0.06f, 0.16f, 0.1f), mSkin);
             Blush(hc, hr, 0.3f);
@@ -559,7 +574,7 @@ namespace HashiraChronicles
 
             // Head: strong jaw, shaved sides, a flat top with a topknot, short beard, a scar and fierce amber eyes.
             Vector3 hc = new Vector3(0f, 0.32f, 0.02f), hr = new Vector3(0.34f, 0.34f, 0.33f);
-            Ball(head, hc, hr * 2f, mSkin);
+            Ball(head, hc, hr * 2f, mSkin); SetFace(hc, hr);
             Ball(head, hc + new Vector3(0f, -0.11f, 0.03f), new Vector3(0.62f, 0.46f, 0.58f), mSkin);
             for (int s = -1; s <= 1; s += 2) Ball(head, hc + new Vector3(s * 0.335f, -0.03f, -0.01f), new Vector3(0.08f, 0.13f, 0.09f), mSkin);
             Ball(head, hc + new Vector3(0f, 0.09f, -0.06f), new Vector3(0.71f, 0.6f, 0.64f), mStubble);
@@ -755,7 +770,7 @@ namespace HashiraChronicles
             // Head: calm half-lidded violet eyes with gold lower irises, long lashes, a gentle smile.
             Vector3 hc = new Vector3(0f, 0.32f, 0.02f), hr = new Vector3(0.36f, 0.36f, 0.34f);
             Ball(head, new Vector3(0f, 0.04f, 0f), new Vector3(0.085f, 0.15f, 0.085f), mSkin);
-            Ball(head, hc, hr * 2f, mSkin);
+            Ball(head, hc, hr * 2f, mSkin); SetFace(hc, hr);
             for (int s = -1; s <= 1; s += 2) Ball(head, hc + new Vector3(s * 0.35f, -0.03f, -0.01f), new Vector3(0.06f, 0.11f, 0.07f), mSkin);
             PremiumEyes(hc, hr, 0.125f, -0.04f, 0.115f, 0.13f, new Color(0.6f, 0.36f, 1f), new Color(1f, 0.85f, 0.4f), 0.22f, -4f, true, -8f, 0.016f, hairDk * 0.8f, mSkin);
             Blush(hc, hr, 0.35f);

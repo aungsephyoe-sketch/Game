@@ -36,6 +36,37 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Stylized hero redesign (0.29.0)
+Original characters, redesigned around mobile-hero design principles (exaggerated proportions, strong
+silhouettes, simple shapes, bold colour blocking). Nothing is copied from any other game.
+- **Shape language** (`CharacterVisual.Stylized.cs`): every slayer has a dominant shape — Circle (support,
+  friendly), Square (tank, heavy), Triangle (fast, aggressive) or Diamond (magical, elegant) — from their role,
+  style, weapon and manner. It drives their proportions, silhouette pieces, hair, weapon details and victory.
+- **Proportions per shape**: Square is wide with huge hands and boots; Triangle is a V with wide shoulders over a
+  narrow waist; Circle has the biggest head and a short round body; Diamond is tall and slim. All get shorter
+  torsos, chunkier limbs, bigger hands, shoes and weapons, and bigger showcase poses.
+- **Silhouette pieces**: 2–4 big clothing shapes in the slayer's shape (block pauldrons and a heavy collar;
+  shoulder spikes, a sharp popped collar and a pointed sash tail; puffed shoulders, a ruff and a pom-pom; a tall
+  diamond collar and a floating element crystal).
+- **Hair**: existing hair pushed bigger, then large stylised clumps (swept spikes, round puffs, a flat top or a
+  tall crest), anime side locks and a bouncy cowlick. Clumps and locks sway with movement.
+- **Faces**: eyes now have a dark iris rim, a shadowed upper iris, a glowing lower iris, three highlights, a
+  winged lash line and a lid crease; brows taper from a thick inner end; a soft defined chin. Face parts are no
+  longer merged into the head mesh, so brows and mouth can animate with expressions (this also fixes the 0.27
+  brow/mouth changes, which had no effect).
+- **Signature weapons**: a guard, head or crown in the slayer's shape, a glowing element line down the blade and
+  a streaming pommel ribbon; bows get bladed tips, shields an emblem, gauntlets shaped knuckles.
+- **Colour**: vivid colours with hair, outfit and under-layer pushed apart; fewer tiny details (one bold leg wrap
+  instead of four thin bands, one stud instead of fifteen).
+- **Animation**: stronger anticipation with a held beat before each swing, an impact pop, and a springy
+  overshooting recovery; hits snap away, knock back and rebound; a signature ultimate pose (gather, leap with
+  the weapon raised, power hold, drop); skill flourishes per shape; victories per shape (spinning leap, heavy
+  stomp and flex, happy double hop, elegant floating twirl); defeat staggers back, drops to the knees and
+  slumps, still breathing.
+- **Cards by rarity**: Rare adds rivets; Epic adds corner gems and a light sweep; Legendary adds gold corner
+  brackets, a crest with a glowing gem and twinkling sparkles; Mythic and GOD add holographic foil, rising
+  embers and a colour-shifting animated rim.
+
 ### Chunky hero style (0.28.0)
 - **Chunkier proportions** in the style of mobile hero games: bigger heads (×1.42), shorter and thicker legs,
   broader torsos, thicker limbs, big hands and boots, and bigger weapons. Demons get a milder version.

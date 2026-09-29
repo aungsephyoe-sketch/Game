@@ -11,9 +11,12 @@ namespace HashiraChronicles
     /// </summary>
     public partial class CharacterVisual
     {
+        /// <summary>Set while a hero is being built: the merge waits until the stylize pass has added its pieces.</summary>
+        bool deferOptimize;
+
         void OptimizeParts()
         {
-            if (rig == null) return;
+            if (rig == null || deferOptimize) return;
             var joints = new HashSet<Transform>();
             joints.Add(Model);
             joints.Add(rig.body);
@@ -37,6 +40,8 @@ namespace HashiraChronicles
         /// <summary>True when a transform only holds a mesh (nothing that animates or needs to stay separate).</summary>
         static bool Plain(Transform t)
         {
+            // Face parts (brows, mouth, marks) stay separate: expressions move them.
+            if (t.name == "Face") return false;
             foreach (var c in t.GetComponents<Component>())
                 if (!(c is Transform) && !(c is MeshFilter) && !(c is MeshRenderer) && !(c is Collider)) return false;
             return true;

@@ -386,7 +386,9 @@ namespace HashiraChronicles
             Round(Grow(win, 2f), new Color(0.05f, 0.04f, 0.1f), 12f);
             GUI.BeginGroup(win);
             PosterArt(new Rect(0f, 0f, win.width, win.height), def, god ? GodColor : ec, win.x * 0.013f);
+            CardTierFx(new Rect(0f, 0f, win.width, win.height), god ? 8 : c.stars, win.x * 0.013f + win.y * 0.007f);
             GUI.EndGroup();
+            CardOrnaments(r, win, god ? 8 : c.stars, rc);
             // Rarity ribbon at the bottom of the window.
             var rib = new Rect(win.x, win.yMax - 24f, win.width, 24f);
             UIStyles.Rect(rib, new Color(0f, 0f, 0f, 0.45f));
@@ -433,6 +435,131 @@ namespace HashiraChronicles
             {
                 float p = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f);
                 RoundFrame(r, god ? new Color(1f, 0.85f, 0.3f, 0.5f + 0.4f * p) : new Color(1f, 0.25f, 0.2f, 0.5f + 0.4f * p), 3f, 16f);
+            }
+        }
+
+        /// <summary>
+        /// Card effects inside the portrait window, richer with rarity: a light sweep (Epic+), twinkling sparkles
+        /// (Legendary+), holographic foil and rising embers (Mythic / GOD). Drawn in the window's group, so clipped.
+        /// </summary>
+        void CardTierFx(Rect w, int stars, float seed)
+        {
+            float time = Time.unscaledTime;
+            if (stars >= 7)
+            {
+                // Holographic foil: soft rainbow bands drifting down the art.
+                for (int i = 0; i < 6; i++)
+                {
+                    float y = Mathf.Repeat(time * 22f + i * w.height / 6f + seed * 50f, w.height + 30f) - 30f;
+                    Color hc = Color.HSVToRGB(Mathf.Repeat(time * 0.12f + i / 6f, 1f), 0.55f, 1f);
+                    hc.a = 0.08f;
+                    UIStyles.Rect(new Rect(0f, y, w.width, 26f), hc);
+                }
+                // Rising embers.
+                for (int i = 0; i < 9; i++)
+                {
+                    float ph = Mathf.Repeat(time * (0.25f + (i % 3) * 0.07f) + i * 0.137f + seed, 1f);
+                    float x = w.width * Mathf.Repeat(i * 0.311f + seed * 0.7f, 1f) + Mathf.Sin(time * 2f + i) * 6f;
+                    float a = Mathf.Sin(ph * Mathf.PI);
+                    Color ec = stars >= 8 ? new Color(1f, 0.85f, 0.35f, 0.75f * a) : new Color(1f, 0.45f + 0.3f * (i % 2), 0.9f, 0.7f * a);
+                    UIStyles.CircleTex(new Vector2(x, w.height * (1f - ph)), 2.5f + (i % 3), ec);
+                }
+            }
+            if (stars >= 6)
+            {
+                // Twinkling four-point sparkles.
+                for (int i = 0; i < 5; i++)
+                {
+                    float tw = Mathf.Clamp01(Mathf.Sin(time * 2.6f + i * 1.9f + seed * 3f));
+                    if (tw <= 0.05f) continue;
+                    var c = new Vector2(w.width * Mathf.Repeat(0.17f + i * 0.23f + seed * 0.3f, 0.9f) + 8f, w.height * Mathf.Repeat(0.12f + i * 0.37f, 0.7f) + 10f);
+                    float sz = 3f + 7f * tw;
+                    var col = new Color(1f, 0.97f, 0.8f, 0.85f * tw);
+                    UIStyles.Rect(new Rect(c.x - sz, c.y - 1f, sz * 2f, 2f), col);
+                    UIStyles.Rect(new Rect(c.x - 1f, c.y - sz, 2f, sz * 2f), col);
+                    UIStyles.CircleTex(c, 2.5f, col);
+                }
+            }
+            if (stars >= 5)
+            {
+                // A soft band of light sweeping across every few seconds.
+                float period = stars >= 7 ? 2.6f : 3.6f;
+                float k = Mathf.Repeat(time + seed * 2f, period) / period;
+                if (k < 0.45f)
+                {
+                    float x = Mathf.Lerp(-60f, w.width + 20f, k / 0.45f);
+                    for (int i = 0; i < 5; i++)
+                    {
+                        float a = 0.16f * (1f - Mathf.Abs(i - 2) / 3f);
+                        UIStyles.Rect(new Rect(x + i * 9f, 0f, 9f, w.height), new Color(1f, 1f, 1f, a));
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Frame ornaments by rarity: rivets (Rare), corner gems (Epic), gold corner brackets and a crest
+        /// (Legendary), and a colour-shifting animated rim with a glowing crest gem (Mythic / GOD).
+        /// </summary>
+        void CardOrnaments(Rect r, Rect win, int stars, Color rc)
+        {
+            float time = Time.unscaledTime;
+            var ink = new Color(0.06f, 0.05f, 0.12f);
+            var gold = new Color(1f, 0.82f, 0.32f);
+            if (stars >= 7)
+            {
+                Color hc = Color.HSVToRGB(Mathf.Repeat(time * 0.15f, 1f), stars >= 8 ? 0.35f : 0.6f, 1f);
+                float p = 0.5f + 0.5f * Mathf.Sin(time * 4f);
+                RoundFrame(Grow(r, 5f), new Color(hc.r, hc.g, hc.b, 0.35f + 0.35f * p), 3f, 21f);
+                RoundFrame(Grow(win, 3f), new Color(hc.r, hc.g, hc.b, 0.6f), 2f, 13f);
+            }
+            if (stars >= 4)
+            {
+                // Rivets in the frame's corners.
+                Vector2[] rv = { new Vector2(r.x + 6f, r.yMax - 6f), new Vector2(r.xMax - 6f, r.yMax - 6f) };
+                foreach (var v in rv)
+                {
+                    UIStyles.CircleTex(v, 4f, ink);
+                    UIStyles.CircleTex(v, 3f, stars >= 6 ? gold : Color.Lerp(rc, Color.white, 0.4f));
+                }
+            }
+            if (stars >= 5)
+            {
+                // Gems on the window's lower corners.
+                Color gc = stars >= 6 ? gold : Color.Lerp(rc, Color.white, 0.2f);
+                for (int s = 0; s < 2; s++)
+                {
+                    var v = new Vector2(s == 0 ? win.x + 2f : win.xMax - 2f, win.yMax - 26f);
+                    UIStyles.CircleTex(v, 7f, ink);
+                    UIStyles.CircleTex(v, 5.5f, gc);
+                    UIStyles.CircleTex(v + new Vector2(-1.5f, -1.5f), 2f, new Color(1f, 1f, 1f, 0.7f));
+                }
+            }
+            if (stars >= 6)
+            {
+                // Gold corner brackets around the art.
+                float L = 22f, T = 4f;
+                Rect w = Grow(win, 4f);
+                Vector2[] cs = { new Vector2(w.x, w.y), new Vector2(w.xMax, w.y), new Vector2(w.x, w.yMax), new Vector2(w.xMax, w.yMax) };
+                for (int i = 0; i < 4; i++)
+                {
+                    float sx = i % 2 == 0 ? 1f : -1f, sy = i < 2 ? 1f : -1f;
+                    var c = cs[i];
+                    Rect h = new Rect(sx > 0 ? c.x : c.x - L, sy > 0 ? c.y : c.y - T, L, T);
+                    Rect v = new Rect(sx > 0 ? c.x : c.x - T, sy > 0 ? c.y : c.y - L, T, L);
+                    UIStyles.Rect(Grow(h, 1f), ink); UIStyles.Rect(Grow(v, 1f), ink);
+                    UIStyles.Rect(h, gold); UIStyles.Rect(v, gold);
+                }
+                // Crest on the top edge: a gold plate with a glowing gem.
+                var cc = new Vector2(r.center.x, r.y + 2f);
+                Round(new Rect(cc.x - 26f, cc.y - 9f, 52f, 18f), ink, 9f);
+                Round(new Rect(cc.x - 24f, cc.y - 7f, 48f, 14f), gold, 7f);
+                float gp = 0.5f + 0.5f * Mathf.Sin(time * 3f);
+                Color gem = stars >= 7 ? Color.HSVToRGB(Mathf.Repeat(time * 0.15f, 1f), 0.7f, 1f) : Color.Lerp(rc, Color.white, 0.2f);
+                UIStyles.CircleTex(cc, 13f + gp * 3f, new Color(gem.r, gem.g, gem.b, 0.25f));
+                UIStyles.CircleTex(cc, 9f, ink);
+                UIStyles.CircleTex(cc, 7.5f, gem);
+                UIStyles.CircleTex(cc + new Vector2(-2.5f, -2.5f), 2.5f, new Color(1f, 1f, 1f, 0.8f));
             }
         }
 
