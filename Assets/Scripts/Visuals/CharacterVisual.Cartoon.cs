@@ -11,6 +11,25 @@ namespace HashiraChronicles
     /// </summary>
     public partial class CharacterVisual
     {
+        /// <summary>
+        /// Soft, squishy look: bodies use gentle shading steps and no hard shine; the weapon keeps crisp edges and
+        /// its glint. Adds a springy squash-and-stretch bounce.
+        /// </summary>
+        void SoftenLook()
+        {
+            if (SwordPivot != null)
+            {
+                var pb = new MaterialPropertyBlock();
+                foreach (var r in SwordPivot.GetComponentsInChildren<Renderer>(true))
+                {
+                    r.GetPropertyBlock(pb);
+                    pb.SetFloat("_Crisp", 1f);
+                    r.SetPropertyBlock(pb);
+                }
+            }
+            if (Model != null && GetComponent<SquishBounce>() == null) gameObject.AddComponent<SquishBounce>().Init(this);
+        }
+
         void CartoonProportions(float strength)
         {
             if (!GameConfig.CartoonStyle || rig == null || strength <= 0f) return;
@@ -41,10 +60,10 @@ namespace HashiraChronicles
             r.neck = new Vector3(r.neck.x, r.neck.y * torsoY, r.neck.z);
             r.restHandR = Vector3.Scale(r.restHandR, new Vector3(torsoXZ, torsoY, 1f));
             r.restHandL = Vector3.Scale(r.restHandL, new Vector3(torsoXZ, torsoY, 1f));
-            // Head and eyes: the big readable face.
+            // Head and eyes: the big readable face — a softer mochi shape (a little wider and flatter), not a ball.
             if (head != null)
             {
-                head.localScale *= headK;
+                head.localScale = Vector3.Scale(head.localScale, new Vector3(headK * 1.06f, headK * 0.9f, headK * 0.98f));
                 foreach (var lid in head.GetComponentsInChildren<EyeLid>(true)) lid.transform.localScale *= eyeK;
             }
             // Oversized weapon.

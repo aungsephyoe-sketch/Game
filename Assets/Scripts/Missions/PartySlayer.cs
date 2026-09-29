@@ -72,7 +72,7 @@ namespace HashiraChronicles
         Profile prof;
         float aggression, skill, slotAngle;
         float thinkTimer, stateUntil, swingTimer, specialTimer, ultTimer, defendTimer, dodgeTimer, idleTalk, downTimer, recoverTimer;
-        float moveBlend;
+        float moveBlend, dashTimer;
         int comboStep;
         Vector3 stateGoal;
         bool hunt;
@@ -193,6 +193,7 @@ namespace HashiraChronicles
                 return;
             }
             if (!IsAlive || nav == null) return;
+            dashTimer -= dt;
             swingTimer -= dt; specialTimer -= dt; ultTimer -= dt; defendTimer -= dt; dodgeTimer -= dt; idleTalk -= dt; recoverTimer -= dt;
             while (recentHits.Count > 0 && Time.time - recentHits.Peek().Key > 3f) recentHits.Dequeue();
             if (defendTimer <= 0f && DamageTakenMultiplier < 1f) DamageTakenMultiplier = 1f;
@@ -582,8 +583,9 @@ namespace HashiraChronicles
                 case AIState.Attack:
                     if (Valid(target)) goal = AttackSpot(target, lead);
                     stop = 0.5f;
+                    if (hunt) speedMul = 1.3f;
                     break;
-                case AIState.Position: stop = 0.4f; break;
+                case AIState.Position: stop = 0.4f; if (hunt) speedMul = 1.45f; break;
                 case AIState.Navigate: stop = 1f; speedMul = hunt ? 1.4f : 1.15f; break;
                 case AIState.Search: stop = 1.2f; speedMul = hunt ? 1.35f : 0.75f; face = false; break;
                 case AIState.Reposition: stop = 0.3f; speedMul = 1.15f; break;
@@ -592,6 +594,29 @@ namespace HashiraChronicles
                 case AIState.Dodge: stop = 0.2f; speedMul = 2.6f; face = false; break;
                 case AIState.Recover: stop = 0.3f; speedMul = 1.2f; face = false; break;
                 case AIState.Defend: case AIState.Special: case AIState.Ultimate: case AIState.Idle: speedMul = 0f; break;
+            }
+
+            // Co-op: dash-lunge at demons that are a few metres off (only along a clear, walkable line).
+            if (hunt && dashTimer <= 0f && Valid(target) && (State == AIState.Position || State == AIState.Navigate || State == AIState.Attack))
+            {
+                Vector3 toT = Flat(target.Position - Position);
+                float dT = toT.magnitude - target.Radius - 1.2f;
+                if (dT > 3f && dT < 16f)
+                {
+                    Vector3 dirT = toT.normalized;
+                    Vector3 end = BattleController.ClampToArena(Obstacles.Sweep(Position, Position + dirT * Mathf.Min(dT, 7f)));
+                    if (Flat(end - Position).magnitude > 2.5f)
+                    {
+                        dashTimer = Random.Range(0.9f, 1.6f) * (1.25f - skill * 0.4f);
+                        VFX.KnockTrail(Position, dirT, tint);
+                        VFX.Dust(Position, 4);
+                        transform.position = end;
+                        transform.rotation = Quaternion.LookRotation(dirT);
+                        visual.DashAttack(0.15f);
+                        swingTimer = Mathf.Min(swingTimer, 0.05f);
+                        if (GameManager.Instance != null && Random.value < 0.4f) GameManager.Instance.Audio.PlayVaried("dash", 0.22f, 0.1f);
+                    }
+                }
             }
 
             // Move with the nav agent (road routing, feelers, stuck detection).
@@ -613,7 +638,8 @@ namespace HashiraChronicles
             moveBlend = Mathf.MoveTowards(moveBlend, moving ? Mathf.Clamp01(speedMul) : 0f, dt * 5f);
             if (moving)
             {
-                float speed = Stats.speed * speedMul * Mathf.Lerp(0.45f, 1f, moveBlend);
+                // Co-op teammates run noticeably faster than a stroll: they're there to clear.
+                float speed = Stats.speed * speedMul * (hunt ? 1.3f : 1f) * Mathf.Lerp(0.45f, 1f, moveBlend);
                 Vector3 step = dir.normalized * speed * dt;
                 transform.position = BattleController.ClampToArena(Obstacles.Sweep(transform.position, transform.position + step));
             }
@@ -649,6 +675,8 @@ namespace HashiraChronicles
             float gap = PlayStyle == Style.Duelist ? 0.32f : PlayStyle == Style.Vanguard ? 0.62f : 0.5f;
             // Recovery after the combo finisher: a short pause, longer for careful players.
             swingTimer = finisher ? Random.Range(0.7f, 1.2f) * (1.4f - aggression * 0.5f) : gap;
+            // Co-op: quicker strikes and shorter recovery.
+            if (hunt) swingTimer *= finisher ? 0.55f : 0.7f;
             if (PlayStyle == Style.Skirmisher || PlayStyle == Style.Support)
             {
                 // A thrown crescent (support: a lighter bolt) that flies to the demon.
@@ -679,8 +707,8 @@ namespace HashiraChronicles
 
         void SpecialUsed()
         {
-            specialTimer = Random.Range(6f, 9f) * (1.3f - skill * 0.4f);
-            swingTimer = 0.7f;
+            specialTimer = Random.Range(6f, 9f) * (1.3f - skill * 0.4f) * (hunt ? 0.65f : 1f);
+            swingTimer = hunt ? 0.35f : 0.7f;
             if (Random.value < 0.6f) Say(Specials[(int)PlayStyle] + "!!", 2f);
         }
 
@@ -753,7 +781,7 @@ namespace HashiraChronicles
         void Ultimate()
         {
             if (PlayStyle != Style.Support && !Valid(target)) return; // target gone: don't waste it
-            ultTimer = Random.Range(22f, 30f);
+            ultTimer = Random.Range(22f, 30f) * (hunt ? 0.7f : 1f);
             specialTimer = Mathf.Max(specialTimer, 2.5f);
             swingTimer = 1.2f;
             Say(Ultimates[(int)PlayStyle].ToUpper() + "!!!", 2.4f);

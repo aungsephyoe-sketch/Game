@@ -1,7 +1,8 @@
 namespace HashiraChronicles
 {
     /// <summary>Breathing-style affinity. Water > Flame > Beast > Thunder > Water; Light and Dark counter each other.</summary>
-    public enum Element { Water, Flame, Beast, Thunder, Light, Dark }
+    /// <summary>Beast is shown as WIND in the menus. Earth was added last so saved games keep their values.</summary>
+    public enum Element { Water, Flame, Beast, Thunder, Light, Dark, Earth }
 
     public enum Role { DPS, Burst, Support, Tank }
 

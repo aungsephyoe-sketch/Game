@@ -12,8 +12,7 @@ namespace HashiraChronicles
 
         static string ElementName(Element e)
         {
-            // Beast is the green wind element in the menus.
-            return e == Element.Beast ? "WIND" : e.ToString().ToUpper();
+            return ElementChart.Name(e).ToUpperInvariant();
         }
 
         void OpenMenu(string label)
@@ -540,7 +539,7 @@ namespace HashiraChronicles
                 ry += 40f;
             }
             ry += 6f;
-            GUI.Label(new Rect(rx, ry, rw, 54f), "<color=#AAAAAA><size=17>Type advantage deals ×1.5. Water › Flame › Beast › Thunder › Water, Light ↔ Dark.</size></color>", UIStyles.Small);
+            GUI.Label(new Rect(rx, ry, rw, 54f), "<color=#AAAAAA><size=17>Type advantage: +15% dealt, −15% against. Water › Fire › Earth › Wind › Thunder › Water. Light and Dark are neutral.</size></color>", UIStyles.Small);
             ry += 58f;
             float pw = (rw - 2f * 12f) / 3f, ph = pw * 1.25f;
             for (int i = 0; i < 3; i++)
@@ -682,6 +681,7 @@ namespace HashiraChronicles
             y += 132f;
             if (tip != null) GUI.Label(new Rect(x, y - 2f, w, 24f), "<color=#FFD36B>Tip: " + tip + "</color>", UIStyles.Sized(UIStyles.Small, 16));
             y += 22f;
+            y = DrawMatchups(foes, headFoe, d, x, y, w);
             if (m.training) return;
 
             // Objectives: each is a star; stars pay diamonds (1★ 1, 2★ 2, 3★ 5).
@@ -852,6 +852,54 @@ namespace HashiraChronicles
             {
                 GUI.Label(new Rect(row.x, y + 2f, row.width, 30f), "<color=#FFD36B>" + tip + "</color>", UIStyles.Sized(UIStyles.Small, 18));
                 y += 28f;
+            }
+            return y;
+        }
+
+        /// <summary>
+        /// Element matchups for a quest: for each demon element, which slayer types deal +15% and which −15%, and
+        /// how the current team fares against the main demon.
+        /// </summary>
+        float DrawMatchups(List<string> foes, EnemyDefinition main, PlayerData d, float x, float y, float w)
+        {
+            var els = new List<Element>();
+            foreach (var id in foes)
+            {
+                var e = GameDatabase.GetEnemy(id);
+                if (e != null && !ElementChart.Neutral(e.element) && !els.Contains(e.element)) els.Add(e.element);
+            }
+            if (els.Count == 0 && main == null) return y;
+            for (int i = 0; i < els.Count && i < 2; i++)
+            {
+                var el = els[i];
+                Element good = ElementChart.WeakTo(el), bad = ElementChart.StrongAgainst(el);
+                var row = new Rect(x, y, w, 34f);
+                Round(row, new Color(1f, 1f, 1f, 0.05f), 10f);
+                GUI.DrawTexture(new Rect(row.x + 8f, row.y + 5f, 24f, 24f), IconFactory.Get(IconFactory.ForElement(el)), ScaleMode.ScaleToFit, true);
+                GUI.Label(new Rect(row.x + 38f, row.y, w - 44f, 34f),
+                    "<color=#" + UIStyles.Hex(ElementChart.ColorOf(el)) + "><b>" + ElementChart.Name(el).ToUpperInvariant() + "</b></color> demons:   " +
+                    "<color=#" + UIStyles.Hex(ElementChart.ColorOf(good)) + "><b>" + ElementChart.Name(good) + " types +15%</b></color>   ·   " +
+                    "<color=#" + UIStyles.Hex(ElementChart.ColorOf(bad)) + ">" + ElementChart.Name(bad) + " types −15%</color>", UIStyles.Sized(UIStyles.Body, 18));
+                y += 38f;
+            }
+            if (main != null && !ElementChart.Neutral(main.element) && d.team.Count > 0)
+            {
+                var sb = new System.Text.StringBuilder("<color=#AAAAAA>Your team vs " + main.displayName + ":</color>  ");
+                foreach (var id in d.team)
+                {
+                    var cd = GameDatabase.GetCharacter(id);
+                    if (cd == null) continue;
+                    float mul = ElementChart.Multiplier(cd.element, main.element);
+                    string mark = mul > 1.01f ? "<color=#7CFF8A>▲15%</color>" : mul < 0.99f ? "<color=#FF7A6E>▼15%</color>" : "<color=#AAAAAA>—</color>";
+                    sb.Append(cd.displayName).Append(' ').Append(mark).Append("   ");
+                }
+                GUI.Label(new Rect(x + 4f, y, w - 8f, 28f), sb.ToString(), UIStyles.Sized(UIStyles.Small, 17));
+                y += 30f;
+            }
+            else if (main != null && ElementChart.Neutral(main.element))
+            {
+                GUI.Label(new Rect(x + 4f, y, w - 8f, 28f), "<color=#AAAAAA>" + ElementChart.Name(main.element) + " is neutral — no element has an edge.</color>", UIStyles.Sized(UIStyles.Small, 17));
+                y += 30f;
             }
             return y;
         }

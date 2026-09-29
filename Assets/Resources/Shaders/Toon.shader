@@ -13,6 +13,7 @@ Shader "Hashira/Toon"
         _OutlineWidth ("Outline Width", Range(0, 0.1)) = 0.03
         _Emission ("Emission", Color) = (0,0,0,0)
         _Flash ("Flash", Range(0,1)) = 0
+        _Crisp ("Crisp (weapons)", Range(0,1)) = 0
         _FlashColor ("Flash Color", Color) = (1,1,1,1)
     }
     SubShader
@@ -40,6 +41,7 @@ Shader "Hashira/Toon"
             fixed4 _Emission;
             fixed4 _FlashColor;
             half _RimPower;
+            half _Crisp;
             half _Flash;
 
             struct v2f
@@ -75,14 +77,15 @@ Shader "Hashira/Toon"
                 // a bright hard highlight, a hard rim and strong ambient so colours stay bright and readable.
                 float hl = ndl * 0.5 + 0.5;
                 hl *= lerp(0.55, 1.0, step(0.5, shadow));
-                float aa = 0.02;
+                // Soft, squishy bodies: wide, gentle steps between tones. Weapons (_Crisp = 1) keep hard edges.
+                float aa = lerp(0.11, 0.02, _Crisp);
                 float toMid = smoothstep(0.42 - aa, 0.42 + aa, hl);
                 float toLit = smoothstep(0.7 - aa, 0.7 + aa, hl);
 
                 fixed3 baseCol = tex2D(_MainTex, i.uv).rgb * _Color.rgb;
                 fixed3 ambient = ShadeSH9(float4(n, 1.0));
                 fixed3 light = min(_LightColor0.rgb, 1.0);
-                fixed3 shadowTone = baseCol * lerp(_ShadowColor.rgb, fixed3(1, 1, 1), 0.15) * 0.66;
+                fixed3 shadowTone = baseCol * lerp(_ShadowColor.rgb, fixed3(1, 1, 1), 0.15) * lerp(0.8, 0.66, _Crisp);
                 fixed3 midTone = baseCol * lerp(fixed3(1, 1, 1), light, 0.5) * 0.93;
                 fixed3 litTone = baseCol * lerp(fixed3(1, 1, 1), light, 0.6) * 1.06;
                 fixed3 col = lerp(lerp(shadowTone, midTone, toMid), litTone, toLit);
@@ -90,14 +93,15 @@ Shader "Hashira/Toon"
 
                 // Bright cartoon highlight: a small hard spot.
                 float3 h = normalize(l + v);
-                float spec = smoothstep(0.955, 0.965, dot(n, h)) * step(0.5, shadow);
-                col += spec * 0.22;
+                // Matte on bodies (a faint soft sheen), a hard glint on weapons.
+                float spec = smoothstep(lerp(0.9, 0.955, _Crisp), lerp(0.99, 0.965, _Crisp), dot(n, h)) * step(0.5, shadow);
+                col += spec * lerp(0.05, 0.22, _Crisp);
 
                 float rim = pow(1.0 - saturate(dot(n, v)), _RimPower) * saturate(ndl + 0.5);
-                col += _RimColor.rgb * smoothstep(0.4, 0.45, rim) * 0.16;
+                col += _RimColor.rgb * smoothstep(lerp(0.25, 0.4, _Crisp), lerp(0.65, 0.45, _Crisp), rim) * lerp(0.08, 0.16, _Crisp);
                 // Saturated, punchy colour.
                 float luma = dot(col, float3(0.299, 0.587, 0.114));
-                col = lerp(luma.xxx, col, 1.22);
+                col = lerp(luma.xxx, col, lerp(1.12, 1.22, _Crisp));
                 col = saturate(col);
                 col = min(col, 0.98);
                 col += _Emission.rgb;

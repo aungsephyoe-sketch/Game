@@ -124,6 +124,12 @@ namespace HashiraChronicles
                     for (int i = 0; i < 3; i++)
                         VFX.Slash(p + pc.transform.forward * 1.2f, pc.transform.forward, 2f * scale, 60f, -30f + i * 30f, new Color(0.8f, 0.7f, 1f), 0.25f);
                     break;
+                case Element.Earth:
+                    // Rocks heave up around the slayer.
+                    VFX.Shockwave(p, 2.6f * scale, new Color(0.65f, 0.55f, 0.3f), 0.4f);
+                    VFX.Dust(p, ultimate ? 30 : 14);
+                    VFX.Pillar(p, new Color(0.6f, 0.8f, 0.3f), 3f * scale, 0.35f);
+                    break;
                 case Element.Light:
                     VFX.BurstDisc(p, 3f * scale, new Color(1f, 0.9f, 0.6f), 0.5f);
                     VFX.Pillar(p, new Color(1f, 0.95f, 0.8f), 6f * scale, 0.5f);

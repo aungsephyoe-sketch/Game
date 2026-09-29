@@ -158,6 +158,15 @@ namespace HashiraChronicles
                         Emit(leaves, p, (forward + Random.insideUnitSphere * 0.6f) * Random.Range(2f, 4f), Random.value < 0.5f ? new Color(0.35f, 0.8f, 0.3f) : new Color(0.7f, 0.9f, 0.3f));
                     }
                     break;
+                case Element.Earth:
+                    // Rock chips and grass flung off the blade.
+                    VFX.Slash(center, forward, radius * 1.05f, arc, roll - 10f, new Color(0.7f, 0.58f, 0.3f, 0.6f), dur * 1.4f);
+                    for (int i = 0; i < n; i++)
+                    {
+                        Vector3 p = ArcPoint(center, rot, radius, arc, Random.value);
+                        Emit(leaves, p, (forward + Random.insideUnitSphere * 0.7f) * Random.Range(2f, 4f) + Vector3.up * 1.5f, Random.value < 0.5f ? new Color(0.5f, 0.38f, 0.2f) : new Color(0.55f, 0.8f, 0.28f));
+                    }
+                    break;
                 case Element.Light:
                     for (int i = 0; i < n * 2; i++)
                     {
@@ -191,6 +200,7 @@ namespace HashiraChronicles
                     case Element.Flame: Emit(flames, from, v, Random.value < 0.35f ? new Color(1f, 0.9f, 0.4f) : new Color(1f, 0.4f, 0.06f), Random.Range(0.4f, 0.9f)); break;
                     case Element.Thunder: Emit(droplets, from, v * 1.3f, new Color(1f, 0.95f, 0.5f), 0.07f); break;
                     case Element.Beast: Emit(leaves, from, v * 0.7f, new Color(0.45f, 0.85f, 0.35f)); break;
+                    case Element.Earth: Emit(leaves, from, v * 0.6f, Random.value < 0.5f ? new Color(0.5f, 0.38f, 0.2f) : new Color(0.55f, 0.8f, 0.28f)); break;
                     case Element.Light: Emit(sparkles, from, v * 0.8f, Random.value < 0.5f ? Color.white : new Color(1f, 0.9f, 0.5f)); break;
                     default: Emit(wisps, from, v * 0.5f, new Color(0.25f, 0.06f, 0.35f, 0.7f)); Emit(sparkles, from, v, new Color(0.75f, 0.35f, 1f)); break;
                 }
@@ -224,6 +234,10 @@ namespace HashiraChronicles
                     break;
                 case Element.Beast:
                     for (int i = 0; i < n; i++) Emit(leaves, pos, Random.onUnitSphere * Random.Range(1.5f, 3.5f), new Color(0.45f, 0.85f, 0.35f));
+                    break;
+                case Element.Earth:
+                    for (int i = 0; i < n; i++) Emit(leaves, pos, Random.onUnitSphere * Random.Range(2f, 4f) + Vector3.up * 2f, Random.value < 0.6f ? new Color(0.5f, 0.38f, 0.2f) : new Color(0.55f, 0.8f, 0.28f));
+                    VFX.Dust(new Vector3(pos.x, pos.y - 1f, pos.z), heavy ? 8 : 3);
                     break;
                 case Element.Light:
                     for (int i = 0; i < n; i++) Emit(sparkles, pos, Random.onUnitSphere * Random.Range(1f, 3f), Random.value < 0.5f ? Color.white : new Color(1f, 0.9f, 0.5f));
@@ -287,6 +301,17 @@ namespace HashiraChronicles
                         float a = Random.value * Mathf.PI * 2f;
                         Vector3 d = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
                         Emit(leaves, ground + d * radius * 0.5f + Vector3.up * Random.Range(0.2f, 2f), Vector3.Cross(Vector3.up, d) * 5f + Vector3.up * 2f, new Color(0.45f, 0.85f, 0.35f));
+                    }
+                    break;
+                case Element.Earth:
+                    // The ground cracks and heaves.
+                    VFX.Shockwave(ground, radius * 0.75f, new Color(0.65f, 0.52f, 0.28f), 0.5f);
+                    VFX.Pillar(ground, new Color(0.55f, 0.78f, 0.28f), 3.5f, 0.45f);
+                    VFX.Dust(ground, 20);
+                    for (int i = 0; i < n; i++)
+                    {
+                        Vector2 r = Random.insideUnitCircle * radius * 0.7f;
+                        Emit(leaves, ground + new Vector3(r.x, 0.2f, r.y), Vector3.up * Random.Range(3f, 6f) + new Vector3(r.x, 0f, r.y), new Color(0.5f, 0.38f, 0.2f));
                     }
                     break;
                 case Element.Light:

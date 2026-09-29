@@ -33,6 +33,7 @@ namespace HashiraChronicles
                 case Element.Thunder: return "bolt";
                 case Element.Beast: return "claw";
                 case Element.Light: return "sun";
+                case Element.Earth: return "leaf";
                 default: return "moon";
             }
         }
@@ -224,6 +225,16 @@ namespace HashiraChronicles
                         float ticks = Mathf.Min(Mathf.Min(Box(p, V(0f, 0.8f), V(0.06f, 0.18f)), Box(p, V(0f, -0.8f), V(0.06f, 0.18f))),
                             Mathf.Min(Box(p, V(0.8f, 0f), V(0.18f, 0.06f)), Box(p, V(-0.8f, 0f), V(0.18f, 0.06f))));
                         return Mathf.Min(Mathf.Min(ring, ticks), Circle(p, Vector2.zero, 0.14f));
+                    };
+                case "leaf":
+                    return p =>
+                    {
+                        // A rounded leaf with a stem and a vein.
+                        float a = Circle(p, V(-0.32f, -0.05f), 0.72f), b = Circle(p, V(0.32f, 0.05f), 0.72f);
+                        float leaf = Mathf.Max(a, b);
+                        float stem = Seg(p, V(-0.35f, -0.85f), V(0.35f, 0.75f), 0.07f);
+                        float vein = Seg(p, V(-0.2f, -0.45f), V(0.25f, 0.55f), 0.035f);
+                        return Mathf.Min(Mathf.Max(leaf, -vein), stem);
                     };
                 case "drop":
                     return p =>

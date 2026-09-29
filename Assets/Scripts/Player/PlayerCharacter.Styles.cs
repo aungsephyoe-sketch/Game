@@ -70,6 +70,7 @@ namespace HashiraChronicles
                 case Element.Thunder: return "build_thunder";
                 case Element.Beast: return "build_wind";
                 case Element.Light: return "build_light";
+                case Element.Earth: return "buildup";
                 default: return "build_dark";
             }
         }
@@ -85,6 +86,7 @@ namespace HashiraChronicles
                 case Element.Water: id = "el_water"; break;
                 case Element.Beast: id = "el_wind"; break;
                 case Element.Light: id = "el_light"; break;
+                case Element.Earth: id = "slam"; break;
                 default: id = "el_dark"; break;
             }
             Audio.PlayVaried(id, volume, 0.12f);

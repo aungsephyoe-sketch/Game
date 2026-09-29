@@ -36,6 +36,25 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Elements, faster co-op, softer slayers (0.25.0)
+- **Element cycle:** Water › Fire › Earth › Wind › Thunder › Water.
+  - Hitting the element you beat deals **+15%**, and hitting the one that beats you deals **−15%**. Light and Dark are neutral.
+  - **Earth** is a new element with its own colour, leaf icon, filter tab, promo theme, slash, impact and finisher effects, and sounds.
+  - Tetsu (Stone), Taro (Boulder) and Daigo (Mountain) are now Earth slayers. The Forest Demon, Forest Demon boss and Bone Warrior are Earth monsters.
+- **Quest matchups:** every quest page shows each demon element's matchup (e.g. *FIRE demons: Water types +15% · Earth types −15%*) and how each slayer on your team fares against the main demon (▲15% / ▼15% / —).
+- **Co-op teammates:**
+  - they run about 30% faster and dash-lunge at demons 3–16 m away (only along a clear line);
+  - they swing about 30% faster with shorter recovery, and use specials about a third sooner and ultimates 30% sooner;
+  - they hunt toward the objective instead of lingering by you.
+- **Characters screen:**
+  - the NEW DESIGNS button is gone;
+  - cards are bigger, with faces zoomed in and soft pastel element tints;
+  - the selected card bobs, and a sparkle twinkles on each card.
+- **Softer, squishier slayers:**
+  - gentle shading steps instead of hard bands, a matte finish (no hard shine), and a softer rim and saturation; weapons keep their crisp edges and glint;
+  - heads are a softer, slightly wider and flatter shape instead of a ball;
+  - a springy squash-and-stretch body: it breathes at rest, hops on each step, and jiggles on attacks, hits and dodges.
+
 ### Ground placement and AI rebuild (0.24.0)
 **Characters sinking into or hovering over the ground: root cause and fix.**
 - **Cause:** all movement code works on a flat plane. `BattleController.ClampToArena` forced `y = 0`, and about 75 other places write positions assuming flat ground. The new worlds aren't flat: river trenches dip beside the bridges, bridge decks sit above the riverbed, and banks rise at the edges.

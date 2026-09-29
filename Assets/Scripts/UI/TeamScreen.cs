@@ -21,7 +21,7 @@ namespace HashiraChronicles
 
         static bool TeamUnlocked(PlayerData d, int t) { return t == 0 || d.missionsCleared >= TeamUnlockClears[t] || d.activeTeam == t; }
 
-        static readonly Element[] FilterOrder = { Element.Water, Element.Flame, Element.Thunder, Element.Beast, Element.Dark, Element.Light };
+        static readonly Element[] FilterOrder = { Element.Water, Element.Flame, Element.Earth, Element.Beast, Element.Thunder, Element.Light, Element.Dark };
 
         int teamDragSlot = -1;
         float teamDragLast, teamDragDistance;
@@ -224,7 +224,8 @@ namespace HashiraChronicles
             locked.Sort((a, b) => b.rarity.CompareTo(a.rarity));
             var area = new Rect(x0 + 216f, top, detail.x - x0 - 236f, H - top - 30f);
             Round(area, new Color(0.05f, 0.06f, 0.1f, 0.82f), 16f);
-            float gw = 168f, gh = 222f, gg = 16f;
+            // Bigger, cuter cards: fewer per row, faces zoomed in.
+            float gw = 204f, gh = 262f, gg = 18f;
             var view = new Rect(area.x + 16f, area.y + 16f, area.width - 32f, area.height - 32f);
             int cols = Mathf.Max(1, Mathf.FloorToInt((view.width - 20f + gg) / (gw + gg)));
             int shown = list.Count + locked.Count;
@@ -305,15 +306,23 @@ namespace HashiraChronicles
             bool maxed = ExperienceSystem.IsMaxed(c);
             bool god = ExperienceSystem.IsGod(c);
             if (god) rc = GodColor;
-            Round(Offset(r, 0f, 4f), new Color(0f, 0f, 0f, 0.4f), 12f);
-            Round(r, Color.Lerp(new Color(0.08f, 0.08f, 0.13f), rc, 0.22f), 12f);
-            Round(new Rect(r.x, r.y, r.width, r.height * 0.55f), new Color(1f, 1f, 1f, 0.06f), 12f);
-            // Face with aura.
-            var face = new Rect(r.x + 8f, r.y + 8f, r.width - 16f, r.width - 16f);
+            // The selected card bobs gently.
+            if (selected) r.y -= 3f + 3f * Mathf.Sin(Time.unscaledTime * 4f);
+            Round(Offset(r, 0f, 5f), new Color(0f, 0f, 0f, 0.35f), 22f);
+            // Soft pastel card in the slayer's element, rounder corners.
+            Color pastel = Color.Lerp(ec, Color.white, 0.55f);
+            Round(r, Color.Lerp(new Color(0.12f, 0.1f, 0.2f), rc, 0.25f), 22f);
+            Round(new Rect(r.x + 5f, r.y + 5f, r.width - 10f, r.height * 0.66f), new Color(pastel.r, pastel.g, pastel.b, 0.28f), 18f);
+            Round(new Rect(r.x + 12f, r.y + 9f, r.width - 24f, 14f), new Color(1f, 1f, 1f, 0.18f), 7f);
+            // Face with aura, zoomed in on the face.
+            var face = new Rect(r.x + 6f, r.y + 6f, r.width - 12f, r.width - 12f);
             Aura(face.center, face.width * 0.5f, god ? GodColor : ec, maxed && !god);
             if (god) Aura(face.center, face.width * 0.62f, new Color(1f, 0.85f, 0.3f), false);
             var tex = ArtLibrary.Character(def);
-            if (tex != null) GUI.DrawTexture(face, tex, ScaleMode.ScaleAndCrop, true);
+            if (tex != null) GUI.DrawTextureWithTexCoords(face, tex, new Rect(0.14f, 0.16f, 0.72f, 0.72f), true);
+            // A little twinkle in the corner.
+            float tw = Mathf.Max(0f, Mathf.Sin(Time.unscaledTime * 2.2f + r.x * 0.05f));
+            UIStyles.Outlined(new Rect(r.xMax - 40f, r.y + 8f, 30f, 30f), "✦", UIStyles.Sized(UIStyles.Center, 20), new Color(1f, 1f, 0.9f, 0.3f + 0.6f * tw), 0f);
             Round(new Rect(r.x + 2f, r.yMax - 64f, r.width - 4f, 62f), new Color(0f, 0f, 0f, 0.55f), 10f);
             UIStyles.CircleTex(new Vector2(r.x + 22f, r.yMax - 82f), 17f, Color.Lerp(ec, Color.black, 0.2f));
             GUI.DrawTexture(new Rect(r.x + 10f, r.yMax - 94f, 24f, 24f), IconFactory.Get(IconFactory.ForElement(def.element)), ScaleMode.ScaleToFit, true);

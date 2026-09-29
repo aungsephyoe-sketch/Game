@@ -190,7 +190,7 @@ namespace HashiraChronicles
             hana.ultimate = Ab("Garden of Rebirth", AbilityShape.Heal, 0f, 0.5f, 1, 0f, 9f, "Restores 50% HP to every slayer and blasts nearby demons.", 15f, 6f);
             Characters.Add(hana);
 
-            var tetsu = Hero("tetsu_guard", "tetsu", "Tetsu Ganryu", "Iron Captain", "Stone Breathing", 5, Element.Beast, Role.Tank,
+            var tetsu = Hero("tetsu_guard", "tetsu", "Tetsu Ganryu", "Iron Captain", "Stone Breathing", 5, Element.Earth, Role.Tank,
                 "Captain of the Solmere guard. Wields a greatsword like a wall.",
                 "Tetsu served the Chancellor for twenty years. Learning what the Chancellor really was broke something in him — and hardened the rest.",
                 new Color(0.35f, 0.42f, 0.55f), new Color(0.12f, 0.16f, 0.36f), new Color(0.26f, 0.17f, 0.1f), new Color(0.78f, 0.78f, 0.82f));
@@ -358,7 +358,7 @@ namespace HashiraChronicles
         {
             var C = new Color(0.1f, 0.1f, 0.12f);
             // ---- Common
-            var h = Hero("taro_rock", "taro", "Taro Ishida", "Village Strongman", "Boulder Breathing", 3, Element.Beast, Role.Tank,
+            var h = Hero("taro_rock", "taro", "Taro Ishida", "Village Strongman", "Boulder Breathing", 3, Element.Earth, Role.Tank,
                 "The strongest man in Kiriha. He carries the festival drum by himself.", "Taro has never been in a real fight. He has lifted every rock in the valley, though.", C, C, C, C);
             h.skills = new[] { Ab("Shoulder Bash", AbilityShape.Dash, 6f, 1.8f, 1, 6f, 2f, "A heavy running bash.", 5f, 7f), Ab("Ground Pound", AbilityShape.Burst, 8f, 1.6f, 1, 0f, 4f, "Pounds the ground.", 7f, 5f), Ab("Windmill", AbilityShape.Spin, 9f, 1f, 3, 0f, 3.5f, "Spins with fists out.") };
             h.ultimate = Ab("Boulder Toss", AbilityShape.Burst, 0f, 2f, 1, 0f, 5f, "Lifts a boulder and throws it.", 20f, 8f);
@@ -380,7 +380,7 @@ namespace HashiraChronicles
             Characters.Add(h);
 
             // ---- Rare
-            h = Hero("daigo_stone", "daigo", "Daigo Iwakura", "Quarry Guard", "Mountain Breathing", 4, Element.Beast, Role.Tank,
+            h = Hero("daigo_stone", "daigo", "Daigo Iwakura", "Quarry Guard", "Mountain Breathing", 4, Element.Earth, Role.Tank,
                 "A quiet giant who guards the stone quarry with a sword as big as a door.", "Daigo speaks one sentence a day. Usually it's 'Move.'", C, C, C, C);
             h.skills = new[] { Ab("Stone Cleave", AbilityShape.Wave, 6f, 2.2f, 1, 8f, 2.2f, "A cleaving wave of rock.", 6f, 5f), Ab("Quake", AbilityShape.Burst, 8f, 1.8f, 1, 0f, 4.5f, "Shakes the ground.", 8f, 6f), Ab("Boulder Rush", AbilityShape.Dash, 9f, 2f, 1, 7f, 2.4f, "Charges like a rockslide.", 6f, 8f) };
             h.ultimate = Ab("Landslide", AbilityShape.Burst, 0f, 2.2f, 1, 0f, 6f, "Boulders tumble down on the demons.", 22f, 8f);
@@ -678,10 +678,10 @@ namespace HashiraChronicles
             Enemies.Add(new EnemyDefinition { id = "shadow_demon", form = "shadow", artKey = "shadow_demon", weakness = "Fast claws but thin body: parry its lunge and it staggers.", displayName = "Shadow Demon", archetype = EnemyArchetype.Normal, element = Element.Dark,
                 baseHp = 2600, baseAtk = 175, baseDef = 110, moveSpeed = 3.6f, attackRange = 2f, attackCooldown = 2f, windup = 0.55f,
                 bodyColor = new Color(0.08f, 0.06f, 0.12f), accentColor = new Color(0.5f, 0.3f, 0.9f), description = "Born from the forest's shadows." });
-            Enemies.Add(new EnemyDefinition { id = "forest_beast", form = "forest", artKey = "forest_demon", weakness = "Slow root slams. Flame breathing burns its bark.", displayName = "Forest Demon", archetype = EnemyArchetype.Tank, element = Element.Beast,
+            Enemies.Add(new EnemyDefinition { id = "forest_beast", form = "forest", artKey = "forest_demon", weakness = "Slow root slams. Flame breathing burns its bark.", displayName = "Forest Demon", archetype = EnemyArchetype.Tank, element = Element.Earth,
                 baseHp = 7000, baseAtk = 240, baseDef = 330, moveSpeed = 2.6f, attackRange = 2.6f, attackCooldown = 2.8f, windup = 0.85f,
                 poise = 6f, scale = 1.6f, radius = 0.95f, bodyColor = new Color(0.22f, 0.28f, 0.12f), accentColor = new Color(0.6f, 0.9f, 0.3f), description = "A corrupted guardian of the woods." });
-            Enemies.Add(new EnemyDefinition { id = "demon_warrior", form = "bone", artKey = "bone_warrior", weakness = "Huge overhead cleaver: guard is useless — dodge, then hit its back. Light damage cracks its bones.", displayName = "Bone Warrior", archetype = EnemyArchetype.Elite, element = Element.Flame,
+            Enemies.Add(new EnemyDefinition { id = "demon_warrior", form = "bone", artKey = "bone_warrior", weakness = "Huge overhead cleaver: guard is useless — dodge, then hit its back. Light damage cracks its bones.", displayName = "Bone Warrior", archetype = EnemyArchetype.Elite, element = Element.Earth,
                 baseHp = 8000, baseAtk = 280, baseDef = 280, moveSpeed = 3.6f, attackRange = 2.6f, attackCooldown = 2.3f, windup = 0.65f,
                 poise = 8f, scale = 1.2f, radius = 0.7f, bodyColor = new Color(0.35f, 0.08f, 0.06f), accentColor = new Color(1f, 0.3f, 0.15f), description = "A demon trained in human swordplay." });
             Enemies.Add(new EnemyDefinition { id = "frost_oni", form = "oni", weakness = "Ice armour shatters under Flame.", displayName = "Frost Oni", archetype = EnemyArchetype.Tank, element = Element.Water,
@@ -721,7 +721,7 @@ namespace HashiraChronicles
             // ---- Bosses ----
             Boss("boss_gorvath", "Gorvath", "The Horned Butcher of Kiriha", "thousandarm", Element.Beast, 22000, 230, 240, 2.4f, 2f,
                 new Color(0.35f, 0.18f, 0.12f), new Color(1f, 0.5f, 0.2f), new[] { 0.5f }, "The first of the Demon Lord's servants to reach Kiriha.");
-            Boss("boss_thousandarm", "The Forest Demon", "Heart of the Shadow Forest", "thousandarm", Element.Beast, 34000, 260, 280, 2.1f, 2.2f,
+            Boss("boss_thousandarm", "The Forest Demon", "Heart of the Shadow Forest", "thousandarm", Element.Earth, 34000, 260, 280, 2.1f, 2.2f,
                 new Color(0.25f, 0.35f, 0.18f), new Color(0.8f, 1f, 0.4f), new[] { 0.5f }, "Roots and arms without number. Once it protected the forest; now the eclipse rots it from within.");
             Boss("boss_hyoga", "Hyoga", "The Frost Oni", "goken", Element.Water, 36000, 300, 330, 1.35f, 1.3f,
                 new Color(0.6f, 0.75f, 0.9f), new Color(0.8f, 0.95f, 1f), new[] { 0.5f }, "It has guarded the mountain pass for a century.");

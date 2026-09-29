@@ -188,6 +188,9 @@ namespace HashiraChronicles
                 case Element.Dark:
                     if (Random.value < 0.25f) VFX.Smoke(Position + offset * 0.6f, new Color(0.25f, 0.05f, 0.3f, 0.7f), 6);
                     break;
+                case Element.Earth:
+                    if (Random.value < 0.35f) VFX.Dust(Position + offset * 0.5f, 6);
+                    break;
                 case Element.Light:
                     if (Random.value < 0.3f) VFX.Pillar(Position + offset * 0.4f, new Color(1f, 0.9f, 0.6f), 3f, 0.2f);
                     break;

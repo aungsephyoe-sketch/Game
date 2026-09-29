@@ -62,6 +62,7 @@ namespace HashiraChronicles
             else if (GameConfig.PremiumRoster) v.BuildRoster(def);
             else v.BuildChibi(def);
             v.CartoonProportions(1f);
+            v.SoftenLook();
             return v;
         }
 
@@ -340,6 +341,16 @@ namespace HashiraChronicles
 
         // ------------------------------------------------------------------ Animation API
 
+        /// <summary>How much it's walking or running right now (0..1).</summary>
+        public float MovingAmount { get { return moving; } }
+
+        /// <summary>Jiggle the soft body: negative squashes, positive stretches.</summary>
+        public void Squish(float amount)
+        {
+            var sb = GetComponent<SquishBounce>();
+            if (sb != null) sb.Poke(amount);
+        }
+
         public void SetMoving(float amount01, bool sprint = false)
         {
             moving = Mathf.Clamp01(amount01);
@@ -349,6 +360,7 @@ namespace HashiraChronicles
         /// <summary>Combo step 0-4 (4 = finisher). Rigged: Attack1..Attack5 triggers.</summary>
         public void Attack(int step, float duration)
         {
+            Squish(0.1f);
             if (driver != null) { driver.Trigger("Attack" + (step + 1)); TrailBurst(duration + 0.1f); return; }
             Swing(SwingFrom[step % 5], SwingTo[step % 5], duration, SwingPitch[step % 5]);
             if (!GameConfig.CartoonStyle) Punch(1.08f);
@@ -357,6 +369,7 @@ namespace HashiraChronicles
 
         public void HeavyAttack(float duration)
         {
+            Squish(-0.16f);
             if (driver != null) { driver.Trigger("Heavy"); TrailBurst(duration + 0.15f); return; }
             Swing(-160f, 160f, duration, 25f);
             Punch(1.15f);
@@ -364,6 +377,7 @@ namespace HashiraChronicles
 
         public void DashAttack(float duration)
         {
+            Squish(0.14f);
             if (driver != null) { driver.Trigger("DashAttack"); TrailBurst(duration + 0.1f); return; }
             Swing(-130f, 110f, duration, 10f);
             Punch(1.1f);
@@ -381,6 +395,7 @@ namespace HashiraChronicles
 
         public void Dodge(Vector3 worldDir, float duration)
         {
+            Squish(-0.1f);
             if (driver != null) { driver.Trigger("Dodge"); return; }
             if (dead) return;
             StartPose(DodgeRoutine(worldDir, duration));
@@ -402,6 +417,7 @@ namespace HashiraChronicles
 
         public void Hit(Vector3 fromWorldDir)
         {
+            Squish(-0.18f);
             if (driver != null) { driver.Trigger("Hit"); return; }
             if (dead || posing) return;
             StartPose(HitRoutine(fromWorldDir));

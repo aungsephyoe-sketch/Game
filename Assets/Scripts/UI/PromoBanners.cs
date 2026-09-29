@@ -30,6 +30,7 @@ namespace HashiraChronicles
                 case Element.Water: return new PromoTheme { top = new Color(0.02f, 0.07f, 0.3f), bottom = new Color(0.08f, 0.66f, 0.95f), glow = new Color(0.3f, 0.85f, 1f), particle = new Color(0.8f, 0.97f, 1f), fx = 1 };
                 case Element.Thunder: return new PromoTheme { top = new Color(0.18f, 0.04f, 0.38f), bottom = new Color(0.95f, 0.78f, 0.15f), glow = new Color(1f, 0.9f, 0.35f), particle = new Color(1f, 0.95f, 0.5f), fx = 2 };
                 case Element.Dark: return new PromoTheme { top = new Color(0.02f, 0f, 0.05f), bottom = new Color(0.42f, 0.08f, 0.58f), glow = new Color(0.7f, 0.3f, 1f), particle = new Color(0.8f, 0.5f, 1f), fx = 3 };
+                case Element.Earth: return new PromoTheme { top = new Color(0.12f, 0.1f, 0.03f), bottom = new Color(0.55f, 0.72f, 0.2f), glow = new Color(0.75f, 0.95f, 0.35f), particle = new Color(0.8f, 0.95f, 0.5f), fx = 5 };
                 case Element.Light: return new PromoTheme { top = new Color(0.55f, 0.36f, 0.1f), bottom = new Color(1f, 0.95f, 0.78f), glow = new Color(1f, 0.92f, 0.6f), particle = Color.white, fx = 4 };
                 default: return new PromoTheme { top = new Color(0.03f, 0.2f, 0.12f), bottom = new Color(0.45f, 0.88f, 0.3f), glow = new Color(0.6f, 1f, 0.5f), particle = new Color(0.8f, 1f, 0.6f), fx = 5 };
             }
