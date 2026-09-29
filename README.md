@@ -36,6 +36,16 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Chunky hero style (0.28.0)
+- **Chunkier proportions** in the style of mobile hero games: bigger heads (×1.42), shorter and thicker legs,
+  broader torsos, thicker limbs, big hands and boots, and bigger weapons. Demons get a milder version.
+- **Bold hero faces**: thicker brows tilted into a confident, ready-to-fight look and wider mouths, built from
+  each design's existing face parts, so the talking and mood expressions still work.
+- **Smoother toy shading**: wider soft transitions between light and shadow, a stronger soft rim, and more top-down
+  volume on bodies. Weapons stay crisp.
+- Portraits are framed a little wider so the bigger heads aren't cropped.
+- All designs remain original; only the art style is inspired by those games.
+
 ### Collectible cards and toy-figure shading (0.27.0)
 - **Character list cards fixed**: the diagonal "light rays" on the posters were rotated rectangles, which IMGUI
   can't clip, so they poked out of the cards as long colour sticks. The posters now use no rotation at all: an

@@ -117,7 +117,7 @@ namespace HashiraChronicles
                 if (def != null) v = CharacterVisual.BuildHero(def, holder);
                 if (v != null)
                 {
-                    headY = v.HeadY; height = headY + 0.45f; v.FidgetsEnabled = false;
+                    headY = v.HeadY; height = headY + 0.52f; v.FidgetsEnabled = false;
                     if (action)
                     {
                         // Turned three-quarters, in their battle pose.
@@ -140,7 +140,7 @@ namespace HashiraChronicles
 
             // Frame: full body, or the head and chest.
             float focusY = full ? height * 0.5f : headY - 0.25f;
-            float span = full ? height * 1.1f : 1.3f;
+            float span = full ? height * 1.1f : 1.42f;
             float dist = span * 0.5f / Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
             Vector3 focus = StagePos + Vector3.up * focusY;
             cam.transform.position = focus + new Vector3(0f, action ? -height * 0.28f : full ? 0.2f : 0.1f, dist);

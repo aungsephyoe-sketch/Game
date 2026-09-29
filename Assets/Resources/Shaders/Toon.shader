@@ -78,7 +78,7 @@ Shader "Hashira/Toon"
                 float hl = ndl * 0.5 + 0.5;
                 hl *= lerp(0.55, 1.0, step(0.5, shadow));
                 // Soft, squishy bodies: wide, gentle steps between tones. Weapons (_Crisp = 1) keep hard edges.
-                float aa = lerp(0.11, 0.02, _Crisp);
+                float aa = lerp(0.15, 0.02, _Crisp);
                 float toMid = smoothstep(0.42 - aa, 0.42 + aa, hl);
                 float toLit = smoothstep(0.7 - aa, 0.7 + aa, hl);
 
@@ -93,7 +93,7 @@ Shader "Hashira/Toon"
                 // Toy-figure volume on bodies: a soft sky light from above and a gentle bounce below, so rounded
                 // shapes read as smooth, chunky 3D forms (not shine). Weapons keep their flat cel look.
                 float sky = saturate(n.y * 0.5 + 0.5);
-                col *= lerp(1.0, lerp(0.9, 1.08, sky), 1.0 - _Crisp);
+                col *= lerp(1.0, lerp(0.86, 1.1, sky), 1.0 - _Crisp);
 
                 // Bright cartoon highlight: a small hard spot.
                 float3 h = normalize(l + v);
@@ -102,7 +102,7 @@ Shader "Hashira/Toon"
                 col += spec * lerp(0.07, 0.22, _Crisp);
 
                 float rim = pow(1.0 - saturate(dot(n, v)), _RimPower) * saturate(ndl + 0.5);
-                col += _RimColor.rgb * smoothstep(lerp(0.25, 0.4, _Crisp), lerp(0.65, 0.45, _Crisp), rim) * lerp(0.08, 0.16, _Crisp);
+                col += _RimColor.rgb * smoothstep(lerp(0.25, 0.4, _Crisp), lerp(0.65, 0.45, _Crisp), rim) * lerp(0.12, 0.16, _Crisp);
                 // Saturated, punchy colour.
                 float luma = dot(col, float3(0.299, 0.587, 0.114));
                 // Rich, cartoony colour on bodies (soft shading keeps it from looking harsh).

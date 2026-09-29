@@ -29,6 +29,7 @@ namespace HashiraChronicles
             }
             if (Model != null && GetComponent<SquishBounce>() == null) gameObject.AddComponent<SquishBounce>().Init(this);
             LivelyFace();
+            HeroFace();
         }
 
         /// <summary>Livelier cartoon faces: a big sparkle in every eye (it blinks with the eye) and rosy cheeks.</summary>
@@ -51,16 +52,50 @@ namespace HashiraChronicles
             }
         }
 
+        /// <summary>
+        /// Bold hero faces in the chunky mobile-hero style: thick, confident brows tilted down toward the nose and
+        /// a wider mouth, so every slayer reads as determined and full of attitude even at a distance. Works on the
+        /// face parts each design already has (brows = the highest off-centre pair above the eyes).
+        /// </summary>
+        void HeroFace()
+        {
+            if (head == null) return;
+            var lids = head.GetComponentsInChildren<EyeLid>(true);
+            if (lids.Length == 0) return;
+            float eyeY = lids[0].transform.localPosition.y;
+            var brows = new System.Collections.Generic.List<Transform>();
+            Transform mouth = null;
+            float lowY = float.MaxValue;
+            foreach (Transform f in head)
+            {
+                if (f.name != "Face" || f.GetComponentInChildren<EyeLid>() != null) continue;
+                Vector3 p = f.localPosition;
+                if (Mathf.Abs(p.x) > 0.04f && p.y > eyeY + 0.04f) brows.Add(f);
+                if (Mathf.Abs(p.x) < 0.03f && p.y < lowY) { lowY = p.y; mouth = f; }
+            }
+            brows.Sort((a, b) => b.localPosition.y.CompareTo(a.localPosition.y));
+            for (int i = 0; i < brows.Count && i < 2; i++)
+            {
+                var b = brows[i];
+                b.localScale = Vector3.Scale(b.localScale, new Vector3(1.25f, 1.7f, 1.2f));
+                // Inner ends down, outer ends up: a confident, ready-to-fight look.
+                float side = Mathf.Sign(b.localPosition.x);
+                b.localRotation = Quaternion.Euler(0f, 0f, 9f * side) * b.localRotation;
+                b.localPosition += new Vector3(0f, -0.006f, 0.004f);
+            }
+            if (mouth != null) mouth.localScale = Vector3.Scale(mouth.localScale, new Vector3(1.3f, 1.15f, 1f));
+        }
+
         void CartoonProportions(float strength)
         {
             if (!GameConfig.CartoonStyle || rig == null || strength <= 0f) return;
             var r = rig;
-            float legK = Mathf.Lerp(1f, 0.84f, strength);
-            float torsoY = Mathf.Lerp(1f, 0.9f, strength), torsoXZ = Mathf.Lerp(1f, 1.12f, strength);
-            float limb = Mathf.Lerp(1f, 1.32f, strength);
-            float headK = Mathf.Lerp(1f, 1.3f, strength);
-            float handK = Mathf.Lerp(1f, 1.38f, strength), footK = Mathf.Lerp(1f, 1.3f, strength);
-            float eyeK = Mathf.Lerp(1f, 1.2f, strength), weaponK = Mathf.Lerp(1f, 1.3f, strength);
+            float legK = Mathf.Lerp(1f, 0.78f, strength);
+            float torsoY = Mathf.Lerp(1f, 0.88f, strength), torsoXZ = Mathf.Lerp(1f, 1.17f, strength);
+            float limb = Mathf.Lerp(1f, 1.42f, strength);
+            float headK = Mathf.Lerp(1f, 1.42f, strength);
+            float handK = Mathf.Lerp(1f, 1.52f, strength), footK = Mathf.Lerp(1f, 1.42f, strength);
+            float eyeK = Mathf.Lerp(1f, 1.22f, strength), weaponK = Mathf.Lerp(1f, 1.4f, strength);
 
             // Legs: shorter and thicker (the IK uses the same numbers, so feet still land on the ground).
             r.hipY *= legK; r.legA *= legK; r.legB *= legK;
