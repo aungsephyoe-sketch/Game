@@ -68,11 +68,7 @@ namespace HashiraChronicles
             return Mathf.InverseLerp(Tiers[ti].min, Tiers[ti + 1].min, trophies);
         }
 
-        static readonly string[] BotNames =
-        {
-            "Kaede", "Haruto", "MoonlitRiver", "Sumi", "TsubakiBlade", "Riku_07", "Hotaru", "Asagi", "Kuro", "YuzuTea", "Botan", "Shin", "Akari",
-            "Nagisa", "Ryo", "Hinata", "Komorebi", "Sora_Kaze", "Minato", "Tomoe", "Ember_Fox", "Mochi", "NightOwl", "StormPetal", "Kazu", "Aoi"
-        };
+        static readonly string[] BotNames = GamerNames.All;
 
         /// <summary>Builds a match: your team (you + two), their team (three), an arena and the mode rules.</summary>
         public static MissionDefinition MakeMatch(PlayerData d, int mode, bool ranked)

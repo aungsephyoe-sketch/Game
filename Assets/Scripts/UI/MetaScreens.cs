@@ -144,6 +144,14 @@ namespace HashiraChronicles
                 case "boss": return "swords";
                 case "upgrade": return "person";
                 case "summon": return "spin";
+                case "coop": return "group";
+                case "pvp": case "pvpwin": return "swords";
+                case "ultimate": return "burst";
+                case "skill": return "slashes";
+                case "dodge": return "dodge";
+                case "stars3": return "up";
+                case "chat": return "mail";
+                case "event": return "sun";
                 default: return "scroll";
             }
         }
@@ -194,7 +202,9 @@ namespace HashiraChronicles
                 case "kill": return TileRed;
                 case "boss": return TileMaroon;
                 case "upgrade": return TileGreen;
-                case "summon": return TilePurple;
+                case "summon": case "ultimate": return TilePurple;
+                case "coop": case "event": case "stars3": return TileGreen;
+                case "pvp": case "pvpwin": return TileMaroon;
                 default: return TileBlue;
             }
         }

@@ -698,14 +698,33 @@ namespace HashiraChronicles
                     float hgt = Leafy ? R(35f, 70f) : K == Kind.Snow ? R(60f, 110f) : R(40f, 80f);
                     hgt *= 1f + layer * 0.25f;
                     float fade = 0.25f + layer * 0.25f;
-                    Mountain(b, p, R(45f, 75f) * (1f + layer * 0.2f), hgt, fade, rng.Next(1000));
+                    float rad = R(45f, 75f) * (1f + layer * 0.2f);
+                    // Long routes reach past the ring: push the range outward until it clears the road and every place.
+                    p = ClearOfPlay(p, dir, rad);
+                    Mountain(b, p, rad, hgt, fade, rng.Next(1000));
                 }
             }
             // The world's great landmark peak straight ahead, beyond the destination.
-            Vector3 hero = Journey.Flat(boss) + fwd * 120f;
+            Vector3 hero = ClearOfPlay(Journey.Flat(boss) + fwd * 120f, fwd, 80f);
             if (K == Kind.Volcano) Volcano(b, hero + Vector3.down * 2f, 70f, 85f);
             else Mountain(b, hero + Vector3.down * 2f, 80f, K == Kind.Snow ? 150f : 105f, 0.15f, 7);
             b.Flush(true);
+        }
+
+        /// <summary>Moves a background piece of this footprint outward along dir until it's well clear of the road and all places.</summary>
+        static Vector3 ClearOfPlay(Vector3 p, Vector3 dir, float radius)
+        {
+            Vector3 flatDir = new Vector3(dir.x, 0f, dir.z);
+            if (flatDir.sqrMagnitude < 0.001f) flatDir = Vector3.forward;
+            flatDir.Normalize();
+            for (int i = 0; i < 20; i++)
+            {
+                JourneyPlace pl;
+                float clear = Mathf.Min(PathDist(p.x, p.z) - J.halfWidth, PlaceDist(p.x, p.z, out pl));
+                if (clear > radius + 25f) break;
+                p += flatDir * 15f;
+            }
+            return p;
         }
 
         static void Mountain(WorldMeshBuilder b, Vector3 p, float radius, float height, float fade, int seed)

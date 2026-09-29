@@ -17,12 +17,7 @@ namespace HashiraChronicles
         public const int MaxFriends = 50;
         const string CodeChars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
-        static readonly string[] SimNames =
-        {
-            "Kaede", "Haruto", "MoonlitRiver", "Sumi", "TsubakiBlade", "Riku_07", "Hotaru", "Asagi", "Kuro", "YuzuTea", "Botan", "Shin",
-            "Akari", "Nagisa", "Ryo", "Hinata", "Komorebi", "Sora_Kaze", "Minato", "Tomoe", "Ember_Fox", "Mochi", "LanternLight", "Takumi",
-            "Ichigo", "Rin_Rin", "StormPetal", "Kazu", "NightOwl", "Yuki22", "PeachBlossom", "Daichi", "Mei", "Suzu", "Kenta", "Aoi"
-        };
+        static readonly string[] SimNames = GamerNames.All;
 
         static readonly Dictionary<string, ChatPersona> personas = new Dictionary<string, ChatPersona>();
         /// <summary>The friend currently typing (for the "typing…" line) and until when.</summary>
@@ -197,6 +192,7 @@ namespace HashiraChronicles
             t.lines.Add(new DmLine { mine = true, text = ProfileSystem.MaskChat(text), time = System.DateTime.Now.Ticks });
             Trim(t);
             ChatBrain.Learn(text);
+            QuestSystem.Report("chat", 1);
             d.messagesSent++;
             // They answer in their own time (minutes to days) — see FriendChat.
             FriendChat.OnPlayerMessage(d, f, text);

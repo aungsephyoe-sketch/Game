@@ -24,6 +24,21 @@ namespace HashiraChronicles
             new QuestDef { id = "w_kill", title = "Defeat 500 demons", kind = "kill", target = 500, daily = false, reward = new RewardBundle { crystals = 80, skillScrolls = 5 } },
             new QuestDef { id = "w_boss", title = "Defeat 5 bosses", kind = "boss", target = 5, daily = false, reward = new RewardBundle { crystals = 80, ascensionOre = 4 } },
             new QuestDef { id = "w_summon", title = "Summon 10 times", kind = "summon", target = 10, daily = false, reward = new RewardBundle { crystals = 50 } },
+            // More dailies.
+            new QuestDef { id = "d_coop", title = "Clear a co-op gate", kind = "coop", target = 1, daily = true, reward = new RewardBundle { crystals = 25, coins = 4000 } },
+            new QuestDef { id = "d_pvp", title = "Play 2 arena matches", kind = "pvp", target = 2, daily = true, reward = new RewardBundle { crystals = 20, coins = 3000 } },
+            new QuestDef { id = "d_ult", title = "Unleash 3 ultimates", kind = "ultimate", target = 3, daily = true, reward = new RewardBundle { crystals = 15, expScrolls = 2 } },
+            new QuestDef { id = "d_skill", title = "Use skills 20 times", kind = "skill", target = 20, daily = true, reward = new RewardBundle { coins = 3000, skillScrolls = 1 } },
+            new QuestDef { id = "d_dodge", title = "Land 3 perfect dodges", kind = "dodge", target = 3, daily = true, reward = new RewardBundle { crystals = 15 } },
+            new QuestDef { id = "d_stars", title = "Clear a mission with 3 stars", kind = "stars3", target = 1, daily = true, reward = new RewardBundle { crystals = 15, coins = 2500 } },
+            new QuestDef { id = "d_chat", title = "Message a friend", kind = "chat", target = 1, daily = true, reward = new RewardBundle { coins = 1500 } },
+            // More weeklies.
+            new QuestDef { id = "w_coop", title = "Clear 7 co-op gates", kind = "coop", target = 7, daily = false, reward = new RewardBundle { crystals = 150, ascensionOre = 3 } },
+            new QuestDef { id = "w_pvpwin", title = "Win 10 arena matches", kind = "pvpwin", target = 10, daily = false, reward = new RewardBundle { crystals = 150, coins = 20000 } },
+            new QuestDef { id = "w_event", title = "Clear 5 event quests", kind = "event", target = 5, daily = false, reward = new RewardBundle { crystals = 100, expScrolls = 6 } },
+            new QuestDef { id = "w_ult", title = "Unleash 20 ultimates", kind = "ultimate", target = 20, daily = false, reward = new RewardBundle { crystals = 80, skillScrolls = 4 } },
+            new QuestDef { id = "w_stars", title = "Clear 10 missions with 3 stars", kind = "stars3", target = 10, daily = false, reward = new RewardBundle { crystals = 120 } },
+            new QuestDef { id = "w_upgrade", title = "Upgrade slayers 10 times", kind = "upgrade", target = 10, daily = false, reward = new RewardBundle { coins = 25000, ascensionOre = 2 } },
         };
 
         static string DailyKey() { return System.DateTime.UtcNow.ToString("yyyyMMdd"); }
@@ -50,6 +65,18 @@ namespace HashiraChronicles
         {
             EnsureReset(d);
             return d.quests.Find(q => q.id == id);
+        }
+
+        static bool hooked;
+
+        /// <summary>Listens to battle events (ultimates, skills, perfect dodges) once at startup.</summary>
+        public static void Hook()
+        {
+            if (hooked) return;
+            hooked = true;
+            GameEvents.UltimateStarted += (p, a) => Report("ultimate", 1);
+            GameEvents.SkillUsed += (p, a) => Report("skill", 1);
+            GameEvents.PerfectDodge += () => Report("dodge", 1);
         }
 
         public static void Report(string kind, int amount)

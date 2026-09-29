@@ -321,6 +321,9 @@ namespace HashiraChronicles
                 MoveTo(transform.position + knockVelocity * Time.deltaTime);
                 knockVelocity = Vector3.Lerp(knockVelocity, Vector3.zero, 1f - Mathf.Exp(-Time.deltaTime * 10f));
             }
+            // Safety net: whenever no move is running, any leftover lift on the model settles back to the feet.
+            if (Action == ActionKind.None && Visual != null && Visual.transform.localPosition.sqrMagnitude > 0.0001f)
+                Visual.transform.localPosition = Vector3.MoveTowards(Visual.transform.localPosition, Vector3.zero, Time.deltaTime * 12f);
         }
 
         void Face(Vector3 dir, float t)
@@ -383,6 +386,8 @@ namespace HashiraChronicles
             actionRoutine = null;
             if (Action == ActionKind.Ultimate) FinishUltimateEffects();
             if (Action == ActionKind.Knockdown) Visual.GetUp(0.15f);
+            // An interrupted leap or rise (specials lift the model up to 8 m) must not leave it floating.
+            if (Visual != null) Visual.transform.localPosition = Vector3.zero;
             Action = ActionKind.None;
             attackQueued = false;
             canMoveCancel = false;

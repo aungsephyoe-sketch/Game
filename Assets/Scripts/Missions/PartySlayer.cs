@@ -172,6 +172,9 @@ namespace HashiraChronicles
 
         public void Say(string text, float seconds = 3.2f)
         {
+            // Co-op missions: teammates fight, they don't chat.
+            var bcs = BattleController.Current;
+            if (Team == CombatTeam.Player && bcs != null && bcs.Def != null && bcs.Def.coopAllyIds.Count > 0 && bcs.Def.pvpMode < 0) return;
             Bubble = ChatBrain.Casual(text, skill);
             BubbleUntil = Time.time + seconds;
         }
@@ -601,13 +604,14 @@ namespace HashiraChronicles
             {
                 Vector3 toT = Flat(target.Position - Position);
                 float dT = toT.magnitude - target.Radius - 1.2f;
-                if (dT > 3f && dT < 16f)
+                if (dT > 1.8f && dT < 18f)
                 {
                     Vector3 dirT = toT.normalized;
                     Vector3 end = BattleController.ClampToArena(Obstacles.Sweep(Position, Position + dirT * Mathf.Min(dT, 7f)));
                     if (Flat(end - Position).magnitude > 2.5f)
                     {
-                        dashTimer = Random.Range(0.9f, 1.6f) * (1.25f - skill * 0.4f);
+                        // Dash nearly all the time in co-op.
+                        dashTimer = Random.Range(0.3f, 0.55f);
                         VFX.KnockTrail(Position, dirT, tint);
                         VFX.Dust(Position, 4);
                         transform.position = end;
@@ -676,13 +680,13 @@ namespace HashiraChronicles
             // Recovery after the combo finisher: a short pause, longer for careful players.
             swingTimer = finisher ? Random.Range(0.7f, 1.2f) * (1.4f - aggression * 0.5f) : gap;
             // Co-op: quicker strikes and shorter recovery.
-            if (hunt) swingTimer *= finisher ? 0.55f : 0.7f;
+            if (hunt) swingTimer *= finisher ? 0.3f : 0.45f;
             if (PlayStyle == Style.Skirmisher || PlayStyle == Style.Support)
             {
                 // A thrown crescent (support: a lighter bolt) that flies to the demon.
                 visual.Attack(step, 0.2f);
                 Vector3 fwd = transform.forward;
-                var tag = AttackTag.Basic(PlayStyle == Style.Support ? 0.6f : finisher ? 1.3f : 0.9f, tint);
+                var tag = AttackTag.Basic(PlayStyle == Style.Support ? 0.6f : finisher ? 1.3f * (hunt ? 10f : 1f) : 0.9f, tint);
                 tag.hitStop = 0f; tag.shake = 0f; tag.stagger = 1f;
                 CombatSystem.HitArc(this, Position, fwd, 9f, 16f, tag);
                 int n = PlayStyle == Style.Support ? 1 : 3;
@@ -691,7 +695,7 @@ namespace HashiraChronicles
             }
             if (finisher && PlayStyle == Style.Vanguard) visual.HeavyAttack(0.28f);
             else visual.Attack(step, 0.18f);
-            var t2 = AttackTag.Basic(finisher ? 1.6f : 1f, tint);
+            var t2 = AttackTag.Basic(finisher ? 1.6f * (hunt ? 10f : 1f) : 1f, tint);
             t2.hitStop = 0f; t2.shake = 0f; t2.stagger = finisher ? 2.5f : 1.2f;
             float arc = PlayStyle == Style.Vanguard ? 160f : 120f;
             CombatSystem.HitArc(this, Position, transform.forward, 2.4f, arc, t2);
@@ -700,7 +704,8 @@ namespace HashiraChronicles
 
         AttackTag SpecialTag()
         {
-            var tag = AttackTag.Basic(2.4f, tint);
+            // Co-op: strong attacks hit ten times harder.
+            var tag = AttackTag.Basic(2.4f * (hunt ? 10f : 1f), tint);
             tag.hitStop = 0f; tag.shake = 0f; tag.stagger = 3f;
             return tag;
         }
@@ -786,7 +791,7 @@ namespace HashiraChronicles
             swingTimer = 1.2f;
             Say(Ultimates[(int)PlayStyle].ToUpper() + "!!!", 2.4f);
             if (PlayStyle == Style.Support) { Heal(true); return; }
-            var tag = AttackTag.Basic(5f, tint);
+            var tag = AttackTag.Basic(5f * (hunt ? 10f : 1f), tint);
             tag.hitStop = 0.04f; tag.shake = 0.3f; tag.stagger = 5f;
             visual.Spin(0.5f, 2);
             CombatSystem.HitRadius(this, Position, 5.5f, tag);

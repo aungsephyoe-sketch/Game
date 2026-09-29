@@ -34,6 +34,7 @@ namespace HashiraChronicles
 
         void Awake()
         {
+            QuestSystem.Hook();
             if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
@@ -451,6 +452,11 @@ namespace HashiraChronicles
                 for (int i = 0; i < m.coopAllyNames.Count && i < m.coopAllyIds.Count; i++)
                     SocialSystem.MaybeRequest(Data, m.coopAllyNames[i], m.coopAllyIds[i], m.enemyLevel + Random.Range(-3, 6));
             }
+            // Daily / weekly mission progress.
+            if (m.pvpMode >= 0) { QuestSystem.Report("pvp", 1); if (result.victory) QuestSystem.Report("pvpwin", 1); }
+            if (result.victory && m.coopTier >= 0) QuestSystem.Report("coop", 1);
+            if (result.victory && !string.IsNullOrEmpty(m.eventId)) QuestSystem.Report("event", 1);
+            if (result.victory && result.stars >= 3) QuestSystem.Report("stars3", 1);
             if (result.victory)
             {
                 VillageChatter.OnMissionCleared(m);

@@ -66,11 +66,7 @@ namespace HashiraChronicles
         float nextChatter, nextJoinLeave;
         System.Random rng;
 
-        static readonly string[] Names =
-        {
-            "Kaede", "Haruto", "MoonlitRiver", "Sumi", "TsubakiBlade", "Riku_07", "Hotaru", "Asagi", "Kuro", "YuzuTea",
-            "Botan", "Shin", "Akari", "Nagisa", "Ryo", "Hinata", "Komorebi", "Sora_Kaze", "Minato", "Tomoe"
-        };
+        static readonly string[] Names = GamerNames.All;
 
         static readonly string[] Greetings = { "Hey there!", "Want to team up?", "Going to the gates?", "Nice blade!", "Hi! Party of three?", "The Abyss gate is no joke." };
 
