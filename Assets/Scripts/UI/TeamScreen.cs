@@ -252,28 +252,31 @@ namespace HashiraChronicles
         /// with rays and a diagonal stripe, the slayer in their action pose (upper body) with a thick white sticker
         /// outline and a dark ink edge.
         /// </summary>
+        /// <summary>
+        /// A slayer's card poster: their painted environment (see <see cref="PosterEnv"/>) with a little life in it
+        /// (petals, snow, embers, rain, fireflies, stars), and the slayer — head and upper body, facing the viewer
+        /// with their own expression and pose, lit to match — with a dark ink edge. Nothing is rotated, so it all
+        /// clips to the scrolling grid.
+        /// </summary>
         void PosterArt(Rect r, CharacterDefinition def, Color ec, float seed)
         {
-            // Soft "sky" in the element's colour: brighter at the top, deeper at the bottom (no rotated shapes —
-            // IMGUI can't clip those to the scrolling grid).
-            Color top = Color.Lerp(ec, Color.white, 0.45f), bottom = Color.Lerp(ec, new Color(0.1f, 0.06f, 0.2f), 0.45f);
-            const int bands = 10;
-            for (int i = 0; i < bands; i++)
-            {
-                float f = i / (float)(bands - 1);
-                UIStyles.Rect(new Rect(r.x, r.y + r.height * i / bands, r.width, r.height / bands + 1f), Color.Lerp(top, bottom, f));
-            }
-            // A soft glow behind the head.
-            Vector2 c = new Vector2(r.center.x, r.y + r.height * 0.45f);
+            var env = PosterEnv.For(def);
+            var bg = env.Backdrop();
+            if (bg != null) GUI.DrawTexture(r, bg, ScaleMode.StretchToFill, false);
+            PosterWeather(r, env.kind, seed);
+            // Now and then the storm lights up.
+            if (env.kind == PosterEnv.Kind.Storm && Mathf.Repeat(Time.unscaledTime + seed * 3f, 4.5f) < 0.12f)
+                UIStyles.Rect(r, new Color(0.85f, 0.85f, 1f, 0.28f));
+            // A soft glow of the slayer's element behind them.
+            Vector2 c = new Vector2(r.center.x, r.y + r.height * 0.42f);
             float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 2f + seed);
-            for (int k = 3; k >= 1; k--) UIStyles.CircleTex(c, r.width * (0.2f + k * 0.1f), new Color(1f, 1f, 1f, 0.07f + 0.02f * pulse));
+            for (int k = 3; k >= 1; k--) UIStyles.CircleTex(c, r.width * (0.18f + k * 0.09f), new Color(ec.r, ec.g, ec.b, 0.06f + 0.02f * pulse));
 
-            // The slayer, head and shoulders, with a dark ink edge like a cartoon card portrait.
-            var art = ArtLibrary.CharacterAction(def);
-            Rect uv = new Rect(0.04f, 0.33f, 0.92f, 0.65f);
+            var art = ArtLibrary.CharacterPoster(def);
+            Rect uv = new Rect(0f, 0f, 1f, 1f);
             if (art == null) { art = ArtLibrary.Character(def); uv = new Rect(0.08f, 0.06f, 0.84f, 0.84f); }
             if (art == null) return;
-            var ar = new Rect(r.x, r.y + 4f, r.width, r.height - 4f);
+            var ar = new Rect(r.x, r.y + 2f, r.width, r.height - 2f);
             var sil = Silhouette(art);
             var old = GUI.color;
             if (sil != null)
@@ -281,14 +284,56 @@ namespace HashiraChronicles
                 GUI.color = new Color(0.07f, 0.05f, 0.12f, 1f);
                 for (int i = 0; i < 4; i++)
                 {
-                    Vector2 o = new Vector2(Mathf.Cos(i * Mathf.PI / 2f + 0.78f), Mathf.Sin(i * Mathf.PI / 2f + 0.78f)) * 3f;
+                    Vector2 o = new Vector2(Mathf.Cos(i * Mathf.PI / 2f + 0.78f), Mathf.Sin(i * Mathf.PI / 2f + 0.78f)) * 2.5f;
                     GUI.DrawTextureWithTexCoords(new Rect(ar.x + o.x, ar.y + o.y, ar.width, ar.height), sil, uv, true);
                 }
             }
             GUI.color = old;
             GUI.DrawTextureWithTexCoords(ar, art, uv, true);
             // Glossy highlight across the top of the window.
-            UIStyles.Rect(new Rect(r.x, r.y, r.width, r.height * 0.18f), new Color(1f, 1f, 1f, 0.1f));
+            UIStyles.Rect(new Rect(r.x, r.y, r.width, r.height * 0.14f), new Color(1f, 1f, 1f, 0.08f));
+        }
+
+        /// <summary>A few drifting particles that suit the poster's environment.</summary>
+        void PosterWeather(Rect r, PosterEnv.Kind kind, float seed)
+        {
+            float time = Time.unscaledTime;
+            for (int i = 0; i < 7; i++)
+            {
+                float ph = Mathf.Repeat(time * (0.12f + (i % 3) * 0.05f) + i * 0.173f + seed, 1f);
+                float x0 = Mathf.Repeat(i * 0.29f + seed * 0.37f, 1f);
+                Vector2 p;
+                Color col;
+                float rad;
+                switch (kind)
+                {
+                    case PosterEnv.Kind.SakuraDusk:
+                        p = new Vector2(r.x + r.width * Mathf.Repeat(x0 + ph * 0.3f, 1f) + Mathf.Sin(time * 2f + i) * 5f, r.y + r.height * ph);
+                        col = new Color(1f, 0.72f, 0.84f, 0.85f); rad = 2.5f; break;
+                    case PosterEnv.Kind.SnowPeaks:
+                        p = new Vector2(r.x + r.width * x0 + Mathf.Sin(time + i) * 6f, r.y + r.height * ph);
+                        col = new Color(1f, 1f, 1f, 0.85f); rad = 2f; break;
+                    case PosterEnv.Kind.Volcano:
+                    case PosterEnv.Kind.SunsetHills:
+                        p = new Vector2(r.x + r.width * x0 + Mathf.Sin(time * 1.5f + i) * 4f, r.yMax - r.height * ph);
+                        col = kind == PosterEnv.Kind.Volcano ? new Color(1f, 0.55f, 0.2f, 0.9f * (1f - ph)) : new Color(1f, 0.9f, 0.6f, 0.5f * (1f - ph)); rad = 2f; break;
+                    case PosterEnv.Kind.Storm:
+                        p = new Vector2(r.x + r.width * Mathf.Repeat(x0 - ph * 0.15f, 1f), r.y + r.height * Mathf.Repeat(ph * 2f, 1f));
+                        UIStyles.Rect(new Rect(p.x, p.y, 1.5f, 10f), new Color(0.8f, 0.8f, 1f, 0.4f));
+                        continue;
+                    case PosterEnv.Kind.Forest:
+                        p = new Vector2(r.x + r.width * x0 + Mathf.Sin(time * 0.8f + i * 2f) * 8f, r.y + r.height * (0.4f + 0.5f * Mathf.Sin(ph * Mathf.PI)));
+                        col = new Color(0.85f, 1f, 0.5f, 0.8f * Mathf.Clamp01(Mathf.Sin(time * 3f + i))); rad = 2f; break;
+                    case PosterEnv.Kind.OceanDay:
+                        p = new Vector2(r.x + r.width * x0, r.y + r.height * (0.75f + 0.1f * Mathf.Sin(time * 2f + i)));
+                        col = new Color(1f, 1f, 1f, 0.5f * Mathf.Clamp01(Mathf.Sin(time * 2.5f + i * 1.7f))); rad = 1.5f; break;
+                    default:
+                        // Twinkling stars (night, rooftops).
+                        p = new Vector2(r.x + r.width * x0, r.y + r.height * (0.08f + 0.35f * Mathf.Repeat(i * 0.41f + seed, 1f)));
+                        col = new Color(1f, 1f, 0.9f, 0.8f * Mathf.Clamp01(Mathf.Sin(time * 2f + i * 1.3f))); rad = 1.5f; break;
+                }
+                UIStyles.CircleTex(p, rad, col);
+            }
         }
 
         static Material stickerMat;

@@ -92,25 +92,23 @@ namespace HashiraChronicles
             if (!GameConfig.CartoonStyle || rig == null || strength <= 0f) return;
             var r = rig;
             // Target proportions from the slayer's shape language (monsters use the neutral set at lower strength).
-            float tLeg = 0.78f, tTorsoY = 0.88f, tTorsoXZ = 1.17f, tLimb = 1.42f, tHead = 1.26f, tHand = 1.52f, tFoot = 1.42f, tWeapon = 1.4f, tPelvis = 1.17f;
+            // Human cartoon proportions: a big-ish head and hands, but clearly human anatomy. The shape language only
+            // nudges them (a slightly broader tank, a leaner V for fighters, a softer build for supports).
+            float tLeg = 0.9f, tTorsoY = 0.94f, tTorsoXZ = 1.08f, tLimb = 1.16f, tHead = 1.16f, tHand = 1.24f, tFoot = 1.18f, tWeapon = 1.3f, tPelvis = 1.06f;
             if (shapeSet && strength >= 1f)
                 switch (Shape)
                 {
-                    // Square: wide and heavy — broad shoulders, thick limbs, huge hands and boots, short legs.
-                    case ShapeLanguage.Square: tLeg = 0.74f; tTorsoY = 0.84f; tTorsoXZ = 1.3f; tLimb = 1.58f; tHead = 1.18f; tHand = 1.72f; tFoot = 1.55f; tWeapon = 1.5f; tPelvis = 1.2f; break;
-                    // Triangle: a V — wide shoulders over a narrow waist, longer legs, big pointed weapon.
-                    case ShapeLanguage.Triangle: tLeg = 0.84f; tTorsoY = 0.84f; tTorsoXZ = 1.22f; tLimb = 1.34f; tHead = 1.25f; tHand = 1.5f; tFoot = 1.4f; tWeapon = 1.52f; tPelvis = 0.95f; break;
-                    // Circle: round and cuddly — the biggest head, a short round body, soft chunky limbs.
-                    case ShapeLanguage.Circle: tLeg = 0.72f; tTorsoY = 0.8f; tTorsoXZ = 1.24f; tLimb = 1.42f; tHead = 1.33f; tHand = 1.5f; tFoot = 1.45f; tWeapon = 1.36f; tPelvis = 1.22f; break;
-                    // Diamond: tall and elegant — slim limbs, a narrow waist, long weapon.
-                    case ShapeLanguage.Diamond: tLeg = 0.86f; tTorsoY = 0.86f; tTorsoXZ = 1.1f; tLimb = 1.26f; tHead = 1.27f; tHand = 1.42f; tFoot = 1.32f; tWeapon = 1.48f; tPelvis = 0.98f; break;
+                    case ShapeLanguage.Square: tLeg = 0.88f; tTorsoXZ = 1.16f; tLimb = 1.26f; tHead = 1.1f; tHand = 1.32f; tFoot = 1.24f; tWeapon = 1.36f; tPelvis = 1.1f; break;
+                    case ShapeLanguage.Triangle: tLeg = 0.93f; tTorsoXZ = 1.12f; tLimb = 1.12f; tHead = 1.14f; tHand = 1.22f; tFoot = 1.16f; tWeapon = 1.36f; tPelvis = 0.98f; break;
+                    case ShapeLanguage.Circle: tLeg = 0.88f; tTorsoY = 0.92f; tTorsoXZ = 1.1f; tLimb = 1.18f; tHead = 1.2f; tHand = 1.24f; tFoot = 1.2f; tWeapon = 1.26f; tPelvis = 1.1f; break;
+                    case ShapeLanguage.Diamond: tLeg = 0.94f; tTorsoXZ = 1.04f; tLimb = 1.08f; tHead = 1.15f; tHand = 1.18f; tFoot = 1.12f; tWeapon = 1.34f; tPelvis = 1.0f; break;
                 }
             float legK = Mathf.Lerp(1f, tLeg, strength);
             float torsoY = Mathf.Lerp(1f, tTorsoY, strength), torsoXZ = Mathf.Lerp(1f, tTorsoXZ, strength);
             float limb = Mathf.Lerp(1f, tLimb, strength);
             float headK = Mathf.Lerp(1f, tHead, strength);
             float handK = Mathf.Lerp(1f, tHand, strength), footK = Mathf.Lerp(1f, tFoot, strength);
-            float eyeK = Mathf.Lerp(1f, 1.24f, strength), weaponK = Mathf.Lerp(1f, tWeapon, strength);
+            float eyeK = Mathf.Lerp(1f, 1.1f, strength), weaponK = Mathf.Lerp(1f, tWeapon, strength);
             float pelvisK = Mathf.Lerp(1f, tPelvis, strength);
 
             // Legs: shorter and thicker (the IK uses the same numbers, so feet still land on the ground).

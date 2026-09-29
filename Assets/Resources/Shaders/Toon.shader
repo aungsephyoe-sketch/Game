@@ -14,6 +14,8 @@ Shader "Hashira/Toon"
         _Emission ("Emission", Color) = (0,0,0,0)
         _Flash ("Flash", Range(0,1)) = 0
         _Crisp ("Crisp (weapons)", Range(0,1)) = 0
+        _TexAmt ("Surface texture amount", Range(0,1)) = 0
+        _TexKind ("Surface texture kind (0 cloth, 1 hair, 2 skin)", Float) = 0
         _FlashColor ("Flash Color", Color) = (1,1,1,1)
     }
     SubShader
@@ -29,6 +31,7 @@ Shader "Hashira/Toon"
             #pragma fragment frag
             #pragma multi_compile_fwdbase
             #pragma multi_compile_fog
+            #pragma target 3.0
             #include "UnityCG.cginc"
             #include "Lighting.cginc"
             #include "AutoLight.cginc"
@@ -43,6 +46,8 @@ Shader "Hashira/Toon"
             half _RimPower;
             half _Crisp;
             half _Flash;
+            float _TexAmt;
+            float _TexKind;
 
             struct v2f
             {
@@ -52,6 +57,7 @@ Shader "Hashira/Toon"
                 SHADOW_COORDS(2)
                 UNITY_FOG_COORDS(3)
                 float2 uv : TEXCOORD4;
+                float3 objPos : TEXCOORD5;
             };
 
             v2f vert (appdata_base v)
@@ -61,6 +67,7 @@ Shader "Hashira/Toon"
                 o.worldNormal = UnityObjectToWorldNormal(v.normal);
                 o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
                 o.uv = TRANSFORM_TEX(v.texcoord.xy, _MainTex);
+                o.objPos = v.vertex.xyz;
                 TRANSFER_SHADOW(o)
                 UNITY_TRANSFER_FOG(o, o.pos);
                 return o;
@@ -83,6 +90,33 @@ Shader "Hashira/Toon"
                 float toLit = smoothstep(0.7 - aa, 0.7 + aa, hl);
 
                 fixed3 baseCol = tex2D(_MainTex, i.uv).rgb * _Color.rgb;
+                // Painted surface texture in the mesh's own space (steady while the character moves): cloth gets a
+                // fine weave and soft folds, hair fine strands, skin a faint warmth variation. Fine detail fades
+                // out when it gets smaller than a pixel so it never shimmers.
+                if (_TexAmt > 0.001)
+                {
+                    float3 op = i.objPos;
+                    float tx = 0.0;
+                    if (_TexKind < 0.5)
+                    {
+                        float fw = saturate(1.0 - fwidth(op.y * 220.0) * 0.6);
+                        float weave = (sin(op.x * 220.0) * sin(op.y * 220.0) + sin(op.z * 220.0) * sin(op.y * 220.0)) * 0.5;
+                        float folds = sin(op.y * 38.0 + sin(op.x * 21.0 + op.z * 17.0) * 2.2);
+                        tx = weave * 0.05 * fw + folds * 0.055;
+                    }
+                    else if (_TexKind < 1.5)
+                    {
+                        float fw = saturate(1.0 - fwidth((op.x + op.z) * 260.0) * 0.5);
+                        float strands = sin((op.x + op.z) * 260.0 + sin(op.y * 40.0) * 3.0);
+                        float clumps = sin((op.x - op.z) * 55.0 + op.y * 12.0);
+                        tx = strands * 0.07 * fw + clumps * 0.04;
+                    }
+                    else
+                    {
+                        tx = sin(op.x * 90.0 + op.z * 40.0) * sin(op.y * 80.0) * 0.018;
+                    }
+                    baseCol *= 1.0 + tx * _TexAmt * (1.0 - _Crisp);
+                }
                 fixed3 ambient = ShadeSH9(float4(n, 1.0));
                 fixed3 light = min(_LightColor0.rgb, 1.0);
                 fixed3 shadowTone = baseCol * lerp(_ShadowColor.rgb, fixed3(1, 1, 1), 0.15) * lerp(0.8, 0.66, _Crisp);

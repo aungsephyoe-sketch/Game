@@ -37,6 +37,15 @@ namespace HashiraChronicles
             PosterFace(PosterMoodFor(def));
         }
 
+        Vector3 posterHeadTilt;
+
+        /// <summary>Turns the head to look straight at the viewer (the pose's head tilt stays, never a turn away).</summary>
+        public void FaceViewer()
+        {
+            if (head == null) return;
+            head.rotation = Quaternion.LookRotation(Vector3.forward, Vector3.up) * Quaternion.Euler(posterHeadTilt);
+        }
+
         void PosterPose(CharacterDefinition def, int pose)
         {
             bool blade = def.weapon != WeaponKind.Staff && def.weapon != WeaponKind.Bow && def.weapon != WeaponKind.Fans && def.weapon != WeaponKind.Fists;
@@ -44,14 +53,14 @@ namespace HashiraChronicles
             float drop;
             switch (pose)
             {
-                case 0: body = new Vector3(-7f, 0f, 0f); headE = new Vector3(-9f, 0f, 0f); wpn = new Vector3(-130f, 25f, 0f); drop = 0f; break;     // hero stance, weapon up
-                case 1: body = new Vector3(13f, -10f, 0f); headE = new Vector3(4f, 10f, 0f); wpn = new Vector3(-12f, 60f, 0f); drop = 0.07f; break;  // charging in, weapon low
-                case 2: body = new Vector3(0f, 16f, -6f); headE = new Vector3(0f, -12f, 9f); wpn = new Vector3(-150f, 35f, 0f); drop = 0f; break;    // cool lean, weapon on shoulder
-                default: body = new Vector3(4f, -8f, 8f); headE = new Vector3(0f, 12f, -11f); wpn = new Vector3(-70f, -30f, 0f); drop = 0.02f; break; // playful tilt
+                case 0: body = new Vector3(-5f, 0f, 0f); headE = new Vector3(-6f, 0f, 0f); wpn = new Vector3(-130f, 25f, 0f); drop = 0f; break;     // hero stance, weapon up
+                case 1: body = new Vector3(10f, -10f, 0f); headE = new Vector3(4f, 0f, 3f); wpn = new Vector3(-12f, 60f, 0f); drop = 0.05f; break;   // charging in, weapon low
+                case 2: body = new Vector3(0f, 16f, -5f); headE = new Vector3(0f, 0f, 8f); wpn = new Vector3(-150f, 35f, 0f); drop = 0f; break;      // cool lean, weapon on shoulder
+                default: body = new Vector3(3f, -8f, 6f); headE = new Vector3(0f, 0f, -9f); wpn = new Vector3(-70f, -30f, 0f); drop = 0.02f; break;  // playful tilt
             }
             Model.localRotation = Model.localRotation * Quaternion.Euler(body);
             Model.localPosition += Vector3.down * drop;
-            if (head != null) head.localRotation = head.localRotation * Quaternion.Euler(headE);
+            posterHeadTilt = headE;
             if (blade && SwordPivot != null) SwordPivot.localRotation = Quaternion.Euler(wpn);
             if (rig != null) rig.Solve(0f);
         }

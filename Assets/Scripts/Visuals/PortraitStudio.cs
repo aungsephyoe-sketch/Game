@@ -18,7 +18,7 @@ namespace HashiraChronicles
 
         Camera cam;
         Transform stage;
-        Light keyLight;
+        Light keyLight, rimLight;
         static readonly Vector3 StagePos = new Vector3(0f, -400f, 0f);
 
         static PortraitStudio Instance
@@ -60,6 +60,15 @@ namespace HashiraChronicles
             keyLight.intensity = 1.1f;
             keyLight.cullingMask = 1 << Layer;
             keyLight.enabled = false;
+            var rg = new GameObject("RimLight");
+            rg.transform.SetParent(transform, false);
+            // From behind the subject toward the camera, a little from above and the side.
+            rg.transform.rotation = Quaternion.LookRotation(new Vector3(-0.5f, -0.35f, 1f));
+            rimLight = rg.AddComponent<Light>();
+            rimLight.type = LightType.Directional;
+            rimLight.intensity = 1.3f;
+            rimLight.cullingMask = 1 << Layer;
+            rimLight.enabled = false;
         }
 
         /// <summary>Head-and-shoulders (or full body) portrait of a character. Null until rendered (next frame).</summary>
@@ -67,6 +76,16 @@ namespace HashiraChronicles
         {
             if (def == null) return null;
             return Get("h:" + def.id + (fullBody ? ":f" : ""));
+        }
+
+        /// <summary>
+        /// Card poster: head and upper body framed from the head itself (never cropped), facing the viewer with
+        /// the slayer's own expression and pose, lit to match their poster environment (<see cref="PosterEnv"/>).
+        /// </summary>
+        public static Texture HeroPoster(CharacterDefinition def)
+        {
+            if (def == null) return null;
+            return Get("h:" + def.id + ":p");
         }
 
         /// <summary>Full body in a dynamic battle pose from a low, heroic angle (summon and promo banners).</summary>
@@ -104,6 +123,8 @@ namespace HashiraChronicles
         {
             var parts = key.Split(':');
             bool action = parts.Length > 2 && parts[2] == "a";
+            bool poster = parts.Length > 2 && parts[2] == "p";
+            CharacterDefinition heroDef = null;
             bool full = parts.Length > 2 && (parts[2] == "f" || action);
             var holder = new GameObject("Subject").transform;
             holder.SetParent(stage, false);
@@ -114,11 +135,19 @@ namespace HashiraChronicles
             if (parts[0] == "h")
             {
                 var def = GameDatabase.GetCharacter(parts[1]);
+                heroDef = def;
                 if (def != null) v = CharacterVisual.BuildHero(def, holder);
                 if (v != null)
                 {
                     headY = v.HeadY; height = headY + 0.52f; v.FidgetsEnabled = false;
-                    if (action)
+                    if (poster)
+                    {
+                        holder.localRotation = Quaternion.Euler(0f, 14f, 0f);
+                        v.ApplyBannerPose();
+                        v.ApplyPosterLook(def);
+                        v.FaceViewer();
+                    }
+                    else if (action)
                     {
                         // Turned three-quarters, in their battle pose.
                         holder.localRotation = Quaternion.Euler(0f, 34f, 0f);
@@ -139,16 +168,32 @@ namespace HashiraChronicles
             foreach (var t in holder.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = Layer;
             foreach (var ps in holder.GetComponentsInChildren<ParticleSystem>(true)) ps.gameObject.SetActive(false);
 
-            // Frame: full body, or the head and chest.
-            float focusY = full ? height * 0.5f : headY - 0.25f;
-            float span = full ? height * 1.1f : 1.42f;
-            float dist = span * 0.5f / Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
-            Vector3 focus = StagePos + Vector3.up * focusY;
-            cam.transform.position = focus + new Vector3(0f, action ? -height * 0.28f : full ? 0.2f : 0.1f, dist);
-            cam.transform.LookAt(focus + (action ? Vector3.up * height * 0.06f : Vector3.zero));
+            if (poster && v.HeadTransform != null)
+            {
+                // Frame from the real head: a little space above the hair, down to the chest and waist.
+                var hb = new Bounds(v.HeadTransform.position, Vector3.one * 0.2f);
+                foreach (var hr in v.HeadTransform.GetComponentsInChildren<Renderer>())
+                    if (hr.enabled && hr.bounds.size.magnitude < 3f) hb.Encapsulate(hr.bounds);
+                float top = hb.max.y + hb.size.y * 0.16f, bottom = hb.min.y - hb.size.y * 1.3f;
+                float pspan = top - bottom;
+                float pdist = pspan * 0.5f / Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
+                Vector3 pf = new Vector3(hb.center.x, (top + bottom) * 0.5f, hb.center.z);
+                cam.transform.position = pf + new Vector3(0f, 0.08f, pdist);
+                cam.transform.LookAt(pf);
+            }
+            else
+            {
+                // Frame: full body, or the head and chest.
+                float focusY = full ? height * 0.5f : headY - 0.25f;
+                float span = full ? height * 1.1f : 1.42f;
+                float dist = span * 0.5f / Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
+                Vector3 focus = StagePos + Vector3.up * focusY;
+                cam.transform.position = focus + new Vector3(0f, action ? -height * 0.28f : full ? 0.2f : 0.1f, dist);
+                cam.transform.LookAt(focus + (action ? Vector3.up * height * 0.06f : Vector3.zero));
+            }
 
             // High-resolution, 8× anti-aliased portraits with mipmaps so they stay crisp at every size on screen.
-            var rt = new RenderTexture(full ? 800 : 512, full ? 1200 : 512, 24, RenderTextureFormat.ARGB32)
+            var rt = new RenderTexture(poster ? 640 : full ? 800 : 512, poster ? 668 : full ? 1200 : 512, 24, RenderTextureFormat.ARGB32)
             {
                 name = "Portrait_" + key, antiAliasing = 8, useMipMap = true, autoGenerateMips = true, filterMode = FilterMode.Trilinear, anisoLevel = 4
             };
@@ -164,8 +209,24 @@ namespace HashiraChronicles
             RenderSettings.ambientLight = new Color(0.62f, 0.6f, 0.68f);
             if (sun != null) sun.enabled = false;
             keyLight.enabled = true;
+            var keyRot = keyLight.transform.rotation;
+            if (poster && heroDef != null)
+            {
+                // The poster's own light: key colour and angle from its environment, a coloured rim from behind.
+                var env = PosterEnv.For(heroDef);
+                keyLight.color = env.key;
+                keyLight.intensity = env.keyIntensity;
+                keyLight.transform.rotation = Quaternion.Euler(env.keyEuler);
+                RenderSettings.ambientLight = env.ambient;
+                rimLight.color = env.rim;
+                rimLight.enabled = true;
+            }
             cam.Render();
             keyLight.enabled = false;
+            rimLight.enabled = false;
+            keyLight.color = Color.white;
+            keyLight.intensity = 1.1f;
+            keyLight.transform.rotation = keyRot;
             if (sun != null) sun.enabled = sunOn;
             RenderSettings.fog = fog;
             RenderSettings.ambientLight = amb;

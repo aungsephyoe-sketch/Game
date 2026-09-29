@@ -36,6 +36,22 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Human cartoon look, textured surfaces, environment posters (0.31.0)
+- **Clearly human, not blocky**: the literal shape pieces are gone (block pauldrons, cone spikes, cube and ball
+  hair, ruffs, pom-poms, floating crystals). Shape language now works underneath, only nudging proportions, hair
+  volume, poses and victories. Proportions are human-cartoon: head about 1.1–1.2×, limbs 1.1–1.25×, hands and
+  feet a little large, near-human leg and torso length, and slightly smaller eyes.
+- **Neck**: a human-thickness neck with a soft slope into the shoulders.
+- **Texture** (Toon shader `_TexAmt` / `_TexKind`): clothes get a fine weave and soft folds, hair fine strands and
+  clumps, skin a faint warmth variation. It is painted in each mesh's own space, so it doesn't swim while the
+  character moves, and fine detail fades when smaller than a pixel. Weapons and glowing parts stay clean.
+- **Card posters** (`PortraitStudio.HeroPoster`, `PosterEnv`): a new poster render framed from the head itself,
+  so the head is always in frame, head and upper body, every slayer looking straight at the viewer with their own
+  expression and pose. Each poster has its own environment and lighting from the slayer's element: sunset hills,
+  moonlit night, sakura dusk, sunny ocean, deep forest, snowy peaks, volcano, thunderstorm or lantern rooftops.
+  The painted backdrop matches the key light, the coloured rim light and the ambient on the slayer, plus drifting
+  petals, snow, embers, rain, fireflies or twinkling stars (and lightning flashes in the storm).
+
 ### Summon chest, poster faces, U-shaped heads (0.30.0)
 - **Heads**: smaller (about 12% less than 0.29), a "U" shape — a jaw keeps the cheeks wide lower down and rounds
   off at the bottom (the pointed chin is gone) — and the head is lifted onto a visible neck.

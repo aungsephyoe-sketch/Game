@@ -28,6 +28,9 @@ namespace HashiraChronicles
         /// <summary>Full body in an action pose, for banners.</summary>
         public static Texture CharacterAction(CharacterDefinition def) { return PortraitStudio.HeroAction(def); }
 
+        /// <summary>The slayer's card poster (head and upper body, expression, pose and environment light).</summary>
+        public static Texture CharacterPoster(CharacterDefinition def) { return PortraitStudio.HeroPoster(def); }
+
         public static Texture Monster(EnemyDefinition def) { return PortraitStudio.Enemy(def); }
 
         /// <summary>Region key art belonged to the earlier painted art direction; scenes are shown in 3D instead.</summary>
