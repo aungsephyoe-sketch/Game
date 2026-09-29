@@ -351,6 +351,88 @@ namespace HashiraChronicles
             Characters.Add(garou);
             BuildNewcomers();
             ApplyLooks();
+            BuildMonsterfolk();
+        }
+
+        /// <summary>
+        /// Monster-folk slayers: a few fighters who aren't human, each fighting the way their kind would — a goblin
+        /// with daggers, a skeleton with a bone blade, a demon with a trident, a cyclops with a club, a werewolf with
+        /// claws and a mummy with lashing bandages.
+        /// </summary>
+        static void BuildMonsterfolk()
+        {
+            var C = new Color(0.1f, 0.1f, 0.12f);
+            // Goblin — Common, fast daggers.
+            var h = Hero("snik_goblin", "snik", "Snik", "Dagger Goblin", "Pickpocket Breathing", 3, Element.Earth, Role.DPS,
+                "A cackling goblin with two rusty daggers and very quick hands.",
+                "Snik joined the slayers because they had better snacks than the goblin caves. He stayed because he likes stabbing demons even more than snacks.", C, C, C, C);
+            h.species = Species.Goblin; h.attackSpeed = 1.25f; h.comboMultipliers = new[] { 0.5f, 0.5f, 0.55f, 0.6f, 1.5f };
+            h.skills = new[] { Ab("Stab Stab Stab", AbilityShape.MultiSlash, 4f, 0.6f, 6, 0f, 3.2f, "Six frantic dagger stabs."), Ab("Sneaky Roll", AbilityShape.Dash, 6f, 1.6f, 2, 7f, 1.6f, "Rolls through enemies, daggers out."), Ab("Pocket Sand", AbilityShape.Burst, 9f, 1.2f, 1, 0f, 4f, "Throws sand, then stabs whoever is blinking.", 4f, 3f) };
+            h.ultimate = Ab("Goblin Mob", AbilityShape.MultiSlash, 0f, 0.9f, 10, 0f, 7f, "Whistles for his cousins; a mob of daggers swarms every demon nearby.", 18f, 5f);
+            Characters.Add(h);
+            Look("snik_goblin", HairStyle.Spiky, WeaponKind.TwinBlades, CombatStyle.Swift, MotionStyle.Sly,
+                new Color(0.35f, 0.26f, 0.16f), new Color(0.5f, 0.32f, 0.16f), new Color(0.2f, 0.16f, 0.1f), new Color(0.75f, 0.9f, 0.4f), 0.86f, 0.92f, true);
+            h.skinTone = new Color(0.46f, 0.72f, 0.34f);
+
+            // Skeleton — Rare, bone blade and a rattling skull.
+            h = Hero("clatter_skeleton", "clatter", "Clatter", "Bone Duelist", "Rattle Breathing", 4, Element.Dark, Role.Burst,
+                "A cheerful skeleton duelist who fights with a sword carved from a giant's bone.",
+                "Clatter woke up in an old battlefield with no memory and a lot of spare ribs. He decided to become a hero, because heroes get to keep their bones on.", C, C, C, C);
+            h.species = Species.Skeleton; h.attackSpeed = 1.1f;
+            h.skills = new[] { Ab("Bone Toss", AbilityShape.Wave, 5f, 1.7f, 2, 9f, 1.6f, "Throws two spinning bones."), Ab("Rattle Spin", AbilityShape.Spin, 7f, 1.1f, 4, 0f, 3.8f, "Spins apart and back together, blade out."), Ab("Reassemble", AbilityShape.Heal, 12f, 0.18f, 1, 0f, 5f, "Snaps every bone back into place (heals the team a little).") };
+            h.ultimate = Ab("Graveyard Encore", AbilityShape.Burst, 0f, 2.4f, 1, 0f, 8f, "Bony hands burst out of the ground and grab every demon around him.", 22f, 6f);
+            Characters.Add(h);
+            Look("clatter_skeleton", HairStyle.Hood, WeaponKind.Katana, CombatStyle.Swift, MotionStyle.Light,
+                new Color(0.18f, 0.16f, 0.22f), new Color(0.32f, 0.22f, 0.45f), new Color(0.2f, 0.16f, 0.3f), new Color(0.7f, 0.5f, 1f), 1f, 0.86f, true, false, false, false, false, new Color(0.9f, 0.75f, 0.35f));
+            h.skinTone = new Color(0.94f, 0.91f, 0.82f);
+
+            // Demon — Epic, trident and hellfire.
+            h = Hero("brimm_demon", "brimm", "Brimm", "Horned Rebel", "Hellfire Breathing", 5, Element.Flame, Role.Burst,
+                "A horned demon who turned against the demon lords, trident first.",
+                "Brimm was born in the ember pits and raised to serve the eclipse. He decided he'd rather be the one the demons are afraid of.", C, C, C, C);
+            h.species = Species.Demon;
+            h.skills = new[] { Ab("Trident Rush", AbilityShape.Dash, 5f, 2.2f, 3, 8f, 1.8f, "Charges with the trident, skewering a line of demons."), Ab("Hellfire Twirl", AbilityShape.Spin, 7f, 1.2f, 4, 0f, 4f, "Twirls the trident in a ring of fire."), Ab("Horn Butt", AbilityShape.Burst, 8f, 2f, 1, 0f, 3.5f, "A head-first slam with his horns.", 6f, 8f) };
+            h.ultimate = Ab("Ember Pit", AbilityShape.Burst, 0f, 2.6f, 1, 0f, 9f, "Stabs the ground and opens a pit of hellfire under every demon nearby.", 25f, 7f);
+            Characters.Add(h);
+            Look("brimm_demon", HairStyle.Wild, WeaponKind.Spear, CombatStyle.Swift, MotionStyle.Aggressive,
+                new Color(0.12f, 0.08f, 0.1f), new Color(0.2f, 0.12f, 0.14f), new Color(0.12f, 0.08f, 0.1f), new Color(1f, 0.45f, 0.1f), 1.05f, 1f, false, true, false, false, false, new Color(0.95f, 0.6f, 0.15f));
+            h.skinTone = new Color(0.86f, 0.3f, 0.26f);
+
+            // Cyclops — Epic tank, one eye and a giant club.
+            h = Hero("gorro_cyclops", "gorro", "Gorro", "One-Eyed Guardian", "Titan Breathing", 5, Element.Earth, Role.Tank,
+                "A gentle one-eyed giant who swings a club the size of a tree.",
+                "Gorro guarded a mountain pass for three hundred years. Nobody told him the war ended, so he found a new one.", C, C, C, C);
+            h.species = Species.Cyclops; h.attackSpeed = 0.8f; h.comboMultipliers = new[] { 0.9f, 0.95f, 1.05f, 1.1f, 2.1f };
+            h.skills = new[] { Ab("Club Smash", AbilityShape.Burst, 6f, 2.4f, 1, 0f, 4.2f, "Brings the club down like a falling tree.", 8f, 8f), Ab("Boulder Throw", AbilityShape.Wave, 8f, 2.2f, 1, 10f, 2.4f, "Hurls a boulder in a straight line."), Ab("Stomp", AbilityShape.Burst, 9f, 1.6f, 2, 0f, 5f, "Stomps twice; the ground jumps.", 7f, 5f) };
+            h.ultimate = Ab("Titan's Glare", AbilityShape.Wave, 0f, 3.4f, 1, 18f, 3f, "Opens his great eye wide and sweeps a beam of light across the field.", 25f, 8f);
+            Characters.Add(h);
+            Look("gorro_cyclops", HairStyle.Short, WeaponKind.Greatsword, CombatStyle.Heavy, MotionStyle.Stoic,
+                new Color(0.36f, 0.3f, 0.22f), new Color(0.46f, 0.38f, 0.26f), new Color(0.3f, 0.22f, 0.16f), new Color(0.85f, 0.75f, 0.5f), 1.25f, 1.4f, false, false, true);
+            h.skinTone = new Color(0.56f, 0.66f, 0.86f);
+
+            // Werewolf — Legendary, claws.
+            h = Hero("howl_werewolf", "howl", "Howl", "Moon Fang", "Full Moon Breathing", 6, Element.Beast, Role.DPS,
+                "A werewolf slayer who fights with his claws and never, ever loses a scent.",
+                "Howl was bitten by a moon demon as a boy. Instead of becoming a monster, he became the one monsters run from.", C, C, C, C);
+            h.species = Species.Werewolf; h.attackSpeed = 1.2f; h.comboMultipliers = new[] { 0.6f, 0.6f, 0.7f, 0.8f, 1.7f };
+            h.skills = new[] { Ab("Claw Rake", AbilityShape.MultiSlash, 4f, 0.8f, 6, 0f, 3.6f, "Rakes with both claws, over and over."), Ab("Pounce", AbilityShape.Dash, 6f, 2.4f, 1, 9f, 2f, "Leaps onto the nearest demon, claws first.", 5f, 7f), Ab("Moon Howl", AbilityShape.Burst, 9f, 1.4f, 2, 0f, 5f, "A howl that shakes demons off their feet.", 8f, 6f) };
+            h.ultimate = Ab("Full Moon Frenzy", AbilityShape.MultiSlash, 0f, 1.2f, 12, 0f, 8f, "The moon rises; he tears through every demon in a blur of claws.", 25f, 6f);
+            Characters.Add(h);
+            Look("howl_werewolf", HairStyle.Wild, WeaponKind.Fists, CombatStyle.Brawler, MotionStyle.Aggressive,
+                new Color(0.25f, 0.22f, 0.3f), new Color(0.32f, 0.3f, 0.42f), new Color(0.46f, 0.42f, 0.4f), new Color(0.75f, 0.85f, 1f), 1.12f, 1.2f, false, false, true);
+            h.skinTone = new Color(0.5f, 0.46f, 0.44f);
+
+            // Mummy — Legendary, lashing bandages.
+            h = Hero("tamun_mummy", "tamun", "Tamun", "Wrapped Wanderer", "Sand Breathing", 6, Element.Light, Role.Support,
+                "An ancient mummy who fights with the living bandages that wrap him.",
+                "Tamun slept for four thousand years under the desert. The eclipse woke him up. He is very grumpy about that, and the demons are paying for it.", C, C, C, C);
+            h.species = Species.Mummy;
+            h.skills = new[] { Ab("Wrap Lash", AbilityShape.Wave, 4f, 1.5f, 2, 10f, 1.6f, "Two bandages whip out in a straight line."), Ab("Bandage Bind", AbilityShape.Burst, 8f, 1.4f, 3, 0f, 4.5f, "Bandages snake out and bind every demon around him.", 8f, 2f), Ab("Sand Mend", AbilityShape.Heal, 12f, 0.2f, 1, 0f, 6f, "Wraps the team in healing sand.") };
+            h.ultimate = Ab("Tomb Unravel", AbilityShape.Burst, 0f, 2.5f, 1, 0f, 9f, "Unravels completely; a storm of bandages and sand sweeps the battlefield.", 22f, 6f);
+            Characters.Add(h);
+            Look("tamun_mummy", HairStyle.Hood, WeaponKind.Fans, CombatStyle.Ranged, MotionStyle.Stoic,
+                new Color(0.82f, 0.76f, 0.6f), new Color(0.22f, 0.4f, 0.6f), new Color(0.8f, 0.74f, 0.58f), new Color(1f, 0.85f, 0.35f), 1.02f, 0.92f, false, true, false, false, false, new Color(0.95f, 0.75f, 0.25f));
+            h.skinTone = new Color(0.9f, 0.85f, 0.7f);
         }
 
         /// <summary>More slayers to collect: four Common, four Rare and three Legendary, each with their own special.</summary>

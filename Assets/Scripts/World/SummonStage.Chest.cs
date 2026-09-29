@@ -98,7 +98,9 @@ namespace HashiraChronicles
             advance = false;
             tapped = false;
             ChestTaps = 0;
-            ChestTapsNeeded = BestRarity >= 6 ? 3 : BestRarity >= 5 ? 2 : 1;
+            // The chest never tells: random taps, random colours, the same burst for every pull.
+            ChestTapsNeeded = Random.Range(1, 4);
+            Color neutral = new Color(0.98f, 0.8f, 0.35f);
             PrepareShrine();
             ApplyLighting(0.5f);
             SetShrineGlow(0.5f);
@@ -137,10 +139,10 @@ namespace HashiraChronicles
             }
             chest.localScale = Vector3.one;
 
-            // 2. Spin up, upgrading through the rarities on the way.
+            // 2. Spin up, flickering through random colours (a roulette, not a hint).
             if (audio != null) audio.Play("charge", 0.6f);
             float spinDur = 1.9f, angle = 0f, speed = 0f;
-            int upgrades = Mathf.Max(0, BestRarity - 3);
+            float nextFlip = 0.35f;
             e = 0f;
             while (e < spinDur && !advance)
             {
@@ -152,10 +154,10 @@ namespace HashiraChronicles
                 chest.rotation = Quaternion.Euler(0f, angle, Mathf.Sin(e * 30f) * 3f * k);
                 chest.position = rest + Vector3.up * (Mathf.SmoothStep(0f, 1.1f, k) + Mathf.Sin(e * 9f) * 0.05f);
                 ChestGlow(0.15f + 0.35f * k);
-                // Upgrade beats, spread through the second half of the spin.
-                if (upgrades > 0 && step < BestRarity && k > 0.4f + 0.5f * (step - 3) / Mathf.Max(1f, upgrades))
+                if (e >= nextFlip)
                 {
-                    step++;
+                    nextFlip = e + Random.Range(0.18f, 0.45f);
+                    step = Random.Range(2, 7);
                     PaintChest(RarityInfo.Color(step));
                     VFX.BurstDisc(chest.position + Vector3.up * 0.5f, 3f + step * 0.4f, ChestColor, 0.35f);
                     VFX.ImpactLight(chest.position + Vector3.up, ChestColor, 10f, 0.4f);
@@ -166,8 +168,7 @@ namespace HashiraChronicles
                 if (Random.value < 0.5f) VFX.Breath(chest.position + Random.insideUnitSphere * 1.2f, ChestColor, 1);
                 yield return null;
             }
-            PaintChest(best);
-            step = BestRarity;
+            PaintChest(neutral);
 
             // 3. Slow to face the camera and drop back onto the altar.
             float startA = angle, endA = Mathf.Ceil((angle + 200f) / 360f) * 360f;
@@ -242,6 +243,9 @@ namespace HashiraChronicles
             }
             if (circle != null) circle.localScale = circleBase;
             if (runes != null) runes.localScale = runesBase;
+            // The same golden burst whatever is inside; the colours come at each slayer's reveal.
+            best = neutral;
+            big = Random.value < 0.5f;
             SetCircle(best, 1.6f);
             SetShrineGlow(1f);
             ApplyLighting(0.7f);

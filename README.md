@@ -36,6 +36,27 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Monster-folk slayers, blind summons, close-up posters (0.32.0)
+- **Six monster-folk slayers** (most of the roster stays human), each fighting the way their kind would:
+  | Slayer | Kind | Rarity | Fights with |
+  |---|---|---|---|
+  | Snik | Goblin | Common | two short daggers; pointed ears, long nose, fangs |
+  | Clatter | Skeleton | Rare | a bone blade; skull face with glowing sockets and a toothy grin |
+  | Brimm | Demon | Epic | a hellfire trident; curved horns, fangs, spade tail |
+  | Gorro | Cyclops | Epic | a spiked tree-trunk club; one big blinking eye |
+  | Howl | Werewolf | Legendary | claws; muzzle, wolf ears, bushy tail |
+  | Tamun | Mummy | Legendary | living bandages that lash out; wrapped head to toe, one glowing eye |
+  Their strikes have their own effects: claw rakes, bandage lashes, dagger sparks, club shockwaves, bone chips and
+  embers. Their skills and specials are named for their kind (Pounce, Full Moon Frenzy, Wrap Lash, Tomb Unravel,
+  Goblin Mob, Graveyard Encore, Titan's Glare, Ember Pit...). Fur gets the hair-strand texture and wraps the cloth
+  weave.
+- **Blind summons**: nothing gives the rarity away before the big reveal. The chest takes a random 1–3 taps,
+  flickers through random colours while it spins, and bursts the same golden way every time. The flying cards are
+  all the same sealed colour, and each landing uses one neutral colour with a random amount of drama (lightning
+  can happen for anyone). The rarity colour, and the thunder for the big ones, arrive at the reveal itself.
+- **Posters** are framed close on the face (just above the hair down to the shoulders).
+- **No visible neck**: the head sits on the shoulders again.
+
 ### Human cartoon look, textured surfaces, environment posters (0.31.0)
 - **Clearly human, not blocky**: the literal shape pieces are gone (block pauldrons, cone spikes, cube and ball
   hair, ruffs, pom-poms, floating crystals). Shape language now works underneath, only nudging proportions, hair

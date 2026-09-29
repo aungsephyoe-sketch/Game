@@ -69,6 +69,8 @@ namespace HashiraChronicles
         public Color accentColor = new Color(0.9f, 0.9f, 0.9f);
         /// <summary>Face and hands.</summary>
         public Color skinTone = new Color(0.97f, 0.82f, 0.7f);
+        /// <summary>Human, or one of the monster-folk (their body, face and weapon change to suit).</summary>
+        public Species species = Species.Human;
 
         public string FullName { get { return displayName + " — " + versionTitle; } }
         public Rarity RarityTier { get { return (Rarity)Mathf.Clamp(rarity, 3, 7); } }

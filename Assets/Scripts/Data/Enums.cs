@@ -6,6 +6,9 @@ namespace HashiraChronicles
 
     public enum Role { DPS, Burst, Support, Tank }
 
+    /// <summary>Most slayers are human; a few are monster-folk with their own bodies, faces and way of fighting.</summary>
+    public enum Species { Human, Goblin, Skeleton, Demon, Cyclops, Werewolf, Mummy }
+
     /// <summary>Common(3) Rare(4) Epic(5) Legendary(6) Mythic(7) – stored as the character's star rarity.</summary>
     public enum Rarity { Common = 3, Rare = 4, Epic = 5, Legendary = 6, Mythic = 7 }
 

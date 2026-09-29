@@ -316,7 +316,7 @@ namespace HashiraChronicles
                 float a = n == 1 ? 0f : Mathf.Lerp(-62f, 62f, i / (n - 1f));
                 to.Add(AltarPos + new Vector3(Mathf.Sin(a * Mathf.Deg2Rad) * 3.4f, 0.8f, -Mathf.Cos(a * Mathf.Deg2Rad) * 3.4f));
                 from.Add(AltarPos + Vector3.up * 2.6f);
-                cards.Add(MakeCard(Results[i].rarity));
+                cards.Add(MakeCard(-1));
             }
             float dur = 0.9f, stagger = Mathf.Min(0.08f, 0.6f / n);
             float e = 0f;
@@ -336,10 +336,9 @@ namespace HashiraChronicles
                     if (k >= 1f && !landed[i])
                     {
                         landed[i] = true;
-                        Color rc = RarityInfo.Color(Results[i].rarity);
                         VFX.Dust(to[i] - Vector3.up * 0.75f, 6);
-                        VFX.Shockwave(to[i] - Vector3.up * 0.75f, 1f + Results[i].rarity * 0.2f, rc, 0.3f);
-                        if (audio != null) audio.PlayPitched("coin", 0.35f, 0.8f + Results[i].rarity * 0.1f);
+                        VFX.Shockwave(to[i] - Vector3.up * 0.75f, 1.8f, new Color(0.82f, 0.88f, 1f), 0.3f);
+                        if (audio != null) audio.PlayPitched("coin", 0.35f, Random.Range(0.9f, 1.4f));
                     }
                 }
                 yield return null;
@@ -349,7 +348,8 @@ namespace HashiraChronicles
 
         Transform MakeCard(int rarity)
         {
-            Color rc = RarityInfo.Color(rarity);
+            // rarity < 0: a sealed card that looks the same whatever is inside.
+            Color rc = rarity < 0 ? new Color(0.82f, 0.86f, 1f) : RarityInfo.Color(rarity);
             var t = new GameObject("SummonCard").transform;
             t.SetParent(world.transform, false);
             MeshFactory.MeshObject(MeshFactory.RoundedCube(), t, Vector3.zero, new Vector3(0.86f, 1.2f, 0.04f), MaterialFactory.Toon(Color.Lerp(rc, Color.white, 0.2f), 0.01f, rc * 0.8f), false);
@@ -375,12 +375,15 @@ namespace HashiraChronicles
             int rarity = r.rarity;
             Color rc = RarityInfo.Color(rarity);
             bool big = rarity >= 5;
+            // Until the reveal nothing gives the rarity away: one neutral colour, and a random amount of drama.
+            Color hid = new Color(0.82f, 0.88f, 1f);
+            bool tease = Random.value < 0.45f;
             advance = false;
             ClearShown();
             var cam = CameraController.Instance;
             Phase = SummonPhase.Silhouette;
             PhaseStart = Time.unscaledTime;
-            SetCircle(rc, 1.1f);
+            SetCircle(hid, 1.1f);
             // The card rises to the altar and bursts.
             var card = CurrentIndex < cards.Count ? cards[CurrentIndex] : null;
             if (card != null)
@@ -395,9 +398,9 @@ namespace HashiraChronicles
                     card.rotation = Quaternion.Euler(0f, 180f + k * 360f, 0f);
                     yield return null;
                 }
-                VFX.HitSpark(b, Color.Lerp(rc, Color.white, 0.4f), big ? 40 : 20);
-                VFX.Shockwave(b, big ? 4f : 2.5f, rc, 0.3f);
-                VFX.ImpactLight(b, rc, big ? 14f : 8f, 0.25f);
+                VFX.HitSpark(b, Color.white, tease ? 40 : 26);
+                VFX.Shockwave(b, tease ? 4f : 3f, hid, 0.3f);
+                VFX.ImpactLight(b, hid, tease ? 14f : 10f, 0.25f);
                 Destroy(card.gameObject);
                 cards[CurrentIndex] = null;
                 if (audio != null) audio.PlayPitched("impact", 0.6f, 1.2f);
@@ -415,17 +418,18 @@ namespace HashiraChronicles
                 yield return null;
             }
             heroHolder.position = land;
-            VFX.Dust(land, big ? 16 : 10);
-            VFX.Shockwave(land, big ? 5f : 3f, rc, 0.4f);
-            VFX.BurstDisc(land, big ? 4f : 2.5f, rc, 0.4f);
-            if (audio != null) audio.Play(big ? "impact" : "thud", 0.7f);
-            if (cam != null) cam.Shake(big ? 0.5f : 0.15f);
-            GameEvents.RaiseImpact(big ? 0.8f : 0.3f);
-            if (big)
-                for (int i = 0; i < (rarity >= 6 ? 6 : 3); i++)
+            VFX.Dust(land, tease ? 16 : 12);
+            VFX.Shockwave(land, tease ? 5f : 3.5f, hid, 0.4f);
+            VFX.BurstDisc(land, tease ? 4f : 3f, hid, 0.4f);
+            if (audio != null) audio.Play(tease ? "impact" : "thud", 0.7f);
+            if (cam != null) cam.Shake(tease ? 0.45f : 0.2f);
+            GameEvents.RaiseImpact(tease ? 0.7f : 0.35f);
+            // Lightning sometimes, whatever is inside: a tease, not a tell.
+            if (tease)
+                for (int i = 0; i < 3; i++)
                 {
                     Vector3 o = land + Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * Random.Range(1.2f, 3.5f);
-                    BoltFx.Strike(o + Vector3.up * 14f, o, Color.Lerp(rc, Color.white, 0.5f), 0.35f, 0.22f, 0.45f);
+                    BoltFx.Strike(o + Vector3.up * 14f, o, new Color(0.9f, 0.93f, 1f), 0.35f, 0.22f, 0.45f);
                     if (audio != null && i == 0) audio.Play("el_thunder", 0.6f);
                     yield return Wait(0.06f);
                 }
@@ -435,6 +439,19 @@ namespace HashiraChronicles
             Phase = SummonPhase.Reveal;
             PhaseStart = Time.unscaledTime;
             SetSilhouette(false);
+            SetCircle(rc, 1.4f);
+            // The big ones get their thunder here, at the reveal itself.
+            if (big)
+            {
+                if (cam != null) cam.Shake(0.5f);
+                GameEvents.RaiseImpact(0.8f);
+                for (int i = 0; i < (rarity >= 6 ? 6 : 3); i++)
+                {
+                    Vector3 o = land + Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * Random.Range(1.2f, 3.5f);
+                    BoltFx.Strike(o + Vector3.up * 14f, o, Color.Lerp(rc, Color.white, 0.5f), 0.35f, 0.22f, 0.45f);
+                }
+                if (audio != null) audio.Play("el_thunder", 0.6f);
+            }
             ApplyLighting(big ? 1.1f : 0.8f);
             VFX.Pillar(land, rc, big ? 10f : 6f, 0.7f);
             VFX.Breath(land, rc, 30 + (rarity - 2) * 20);

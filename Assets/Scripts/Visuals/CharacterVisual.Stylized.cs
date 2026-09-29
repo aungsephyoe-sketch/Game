@@ -12,8 +12,9 @@ namespace HashiraChronicles
     ///   • Shape language — Circle (friendly, support), Square (tank, heavy), Triangle (fast, aggressive),
     ///     Diamond (magical, elegant) — picked from role, style, weapon and manner. It only nudges proportions,
     ///     hair volume, poses and the victory, never adds literal blocks, spikes or balls.
-    ///   • Face and neck — a U-shaped jaw and a human-thickness neck sloping into the shoulders (eyes, lashes and
-    ///     brows are in <see cref="PremiumEyes"/>).
+    ///   • Face — a U-shaped jaw, the head sitting on the shoulders (eyes, lashes and brows are in
+    ///     <see cref="PremiumEyes"/>).
+    ///   • Species — goblins, skeletons, demons, cyclopes, werewolves and mummies (see CharacterVisual.Species.cs).
     ///   • Weapon — a signature guard, head or crown, a glowing element line and a pommel ribbon.
     /// The nine hand-designed slayers keep their own weapons; they get the proportions and faces.
     /// </summary>
@@ -66,7 +67,8 @@ namespace HashiraChronicles
             shapeSet = true;
             if (rig == null || head == null) { deferOptimize = false; return; }
             bool handMade = IsPremium(def.id) || IsDesign(def.id);
-            if (hasFace) JawAndNeck(def);
+            if (hasFace) Jaw(def);
+            if (!handMade && hasFace) ApplySpecies(def);
             if (!handMade)
             {
                 Color elem = def.npc ? def.bladeColor : ElementChart.ColorOf(def.element);
@@ -76,7 +78,7 @@ namespace HashiraChronicles
                 var mGlow = PMe(elem, 0f, elem * 0.9f);
                 // Shape language stays subtle (proportions, pose, hair volume); no literal blocks, spikes or balls.
                 if (hasFace) HairShapes(def);
-                if (!def.npc) SignatureWeapon(def, mTrim, mA, mGlow, elem);
+                if (!def.npc && def.species == Species.Human) SignatureWeapon(def, mTrim, mA, mGlow, elem);
             }
             SurfaceTextures(def);
             deferOptimize = false;
@@ -102,6 +104,9 @@ namespace HashiraChronicles
                     }
                     Color c = m.color;
                     float kind = Diff(c, def.skinTone) < 0.04f ? 2f : Diff(c, def.hairColor) < 0.12f || InHair(r.transform) ? 1f : 0f;
+                    // Fur reads as strands, wraps as cloth.
+                    if (kind == 2f && def.species == Species.Werewolf) kind = 1f;
+                    if (kind == 2f && def.species == Species.Mummy) kind = 0f;
                     // Tiny face parts (eyes, lashes, mouth) stay flat.
                     if (InFace(r.transform)) continue;
                     m.SetFloat("_TexKind", kind);
@@ -159,14 +164,12 @@ namespace HashiraChronicles
 
         /// <summary>
         /// A "U"-shaped head: a jaw that keeps the cheeks wide lower down and rounds off at the bottom (no pointed
-        /// chin), set back a little so the mouth stays in front of it, and a real neck under it.
+        /// chin), set back a little so the mouth stays in front of it. The head sits on the shoulders (no visible neck).
         /// </summary>
-        void JawAndNeck(CharacterDefinition def)
+        void Jaw(CharacterDefinition def)
         {
             var skin = PM(def.skinTone);
             Ball(head, faceC + new Vector3(0f, -faceR.y * 0.35f, 0f), new Vector3(faceR.x * 1.92f, faceR.y * 1.24f, faceR.z * 1.64f), skin);
-            Part(PrimitiveType.Capsule, head, new Vector3(0f, -0.03f, -0.015f), new Vector3(0.155f, 0.1f, 0.14f), skin);
-            Ball(head, new Vector3(0f, -0.1f, -0.02f), new Vector3(0.22f, 0.09f, 0.17f), skin);
         }
 
         // ------------------------------------------------------------------ Hair

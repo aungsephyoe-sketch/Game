@@ -170,11 +170,12 @@ namespace HashiraChronicles
 
             if (poster && v.HeadTransform != null)
             {
-                // Frame from the real head: a little space above the hair, down to the chest and waist.
+                // Frame from the real head, so it is never cut off.
                 var hb = new Bounds(v.HeadTransform.position, Vector3.one * 0.2f);
                 foreach (var hr in v.HeadTransform.GetComponentsInChildren<Renderer>())
                     if (hr.enabled && hr.bounds.size.magnitude < 3f) hb.Encapsulate(hr.bounds);
-                float top = hb.max.y + hb.size.y * 0.16f, bottom = hb.min.y - hb.size.y * 1.3f;
+                // Close on the face: a little room above the hair, down to the shoulders.
+                float top = hb.max.y + hb.size.y * 0.07f, bottom = hb.min.y - hb.size.y * 0.35f;
                 float pspan = top - bottom;
                 float pdist = pspan * 0.5f / Mathf.Tan(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
                 Vector3 pf = new Vector3(hb.center.x, (top + bottom) * 0.5f, hb.center.z);

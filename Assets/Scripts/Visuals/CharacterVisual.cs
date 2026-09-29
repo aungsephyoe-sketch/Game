@@ -363,6 +363,7 @@ namespace HashiraChronicles
         public void Attack(int step, float duration)
         {
             Squish(0.1f);
+            SpeciesStrike(step, false);
             if (driver != null) { driver.Trigger("Attack" + (step + 1)); TrailBurst(duration + 0.1f); return; }
             Swing(SwingFrom[step % 5], SwingTo[step % 5], duration, SwingPitch[step % 5]);
             if (!GameConfig.CartoonStyle) Punch(1.08f);
@@ -372,6 +373,7 @@ namespace HashiraChronicles
         public void HeavyAttack(float duration)
         {
             Squish(-0.16f);
+            SpeciesStrike(4, true);
             if (driver != null) { driver.Trigger("Heavy"); TrailBurst(duration + 0.15f); return; }
             Swing(-160f, 160f, duration, 25f);
             Punch(1.15f);

@@ -113,8 +113,8 @@ namespace HashiraChronicles
                 else if (mood == PosterMood.Smirk && side < 0f) k = 0.62f;
                 e.localScale = new Vector3(e.localScale.x, e.localScale.y * k, e.localScale.z);
             }
-            // Mouth: swap the everyday mouth for the poster one.
-            if (mouth == null) return;
+            // Mouth: swap the everyday mouth for the poster one (monster-folk keep their own grin, snout or wraps).
+            if (mouth == null || SpeciesKind != Species.Human) return;
             foreach (var r in mouth.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
             var mo = J("PosterMouth", head, mouth.localPosition);
             mo.localRotation = mouth.localRotation;

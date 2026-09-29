@@ -28,8 +28,8 @@ namespace HashiraChronicles
                 }
             }
             if (Model != null && GetComponent<SquishBounce>() == null) gameObject.AddComponent<SquishBounce>().Init(this);
-            LivelyFace();
-            HeroFace();
+            // Rosy cheeks and hero brows are for human faces.
+            if (SpeciesKind == Species.Human) { LivelyFace(); HeroFace(); }
         }
 
         /// <summary>Livelier cartoon faces: a big sparkle in every eye (it blinks with the eye) and rosy cheeks.</summary>
@@ -127,8 +127,7 @@ namespace HashiraChronicles
             if (r.torso != null) r.torso.localScale = Vector3.Scale(r.torso.localScale, new Vector3(torsoXZ, torsoY, torsoXZ));
             if (r.pelvis != null) r.pelvis.localScale = Vector3.Scale(r.pelvis.localScale, new Vector3(pelvisK, 1f, pelvisK));
             r.shoulder = Vector3.Scale(r.shoulder, new Vector3(torsoXZ, torsoY, torsoXZ));
-            // Lift the head clear of the shoulders so the neck shows.
-            r.neck = new Vector3(r.neck.x, r.neck.y * torsoY + (shapeSet ? 0.06f : 0f), r.neck.z);
+            r.neck = new Vector3(r.neck.x, r.neck.y * torsoY, r.neck.z);
             r.restHandR = Vector3.Scale(r.restHandR, new Vector3(torsoXZ, torsoY, 1f));
             r.restHandL = Vector3.Scale(r.restHandL, new Vector3(torsoXZ, torsoY, 1f));
             // Head and eyes: the big readable face, as tall as it is wide (the jaw gives it its "U").
