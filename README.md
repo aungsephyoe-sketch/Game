@@ -36,6 +36,11 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Owner unlock (0.32.1)
+- `bash tools/unlock_all.sh` puts an `unlock_all` file next to this Mac's save; at launch the game then adds every
+  playable slayer to that save (new ones too). The file lives only on that computer, so no one else's game
+  changes. `bash tools/unlock_all.sh off` removes it (already-unlocked slayers stay).
+
 ### Monster-folk slayers, blind summons, close-up posters (0.32.0)
 - **Six monster-folk slayers** (most of the roster stays human), each fighting the way their kind would:
   | Slayer | Kind | Rarity | Fights with |

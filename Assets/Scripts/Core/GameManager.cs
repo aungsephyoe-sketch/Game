@@ -55,6 +55,7 @@ namespace HashiraChronicles
             GameSettings.Load();
             GameDatabase.EnsureBuilt();
             Data = SaveSystem.Load();
+            OwnerUnlock.Apply(Data); // only on a computer that has the unlock file (tools/unlock_all.sh)
 
             SetupCamera();
             SetupLight();
