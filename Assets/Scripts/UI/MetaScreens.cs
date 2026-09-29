@@ -376,11 +376,9 @@ namespace HashiraChronicles
                 Round(r, Color.Lerp(new Color(0.07f, 0.08f, 0.13f), rc, 0.2f), 16f);
                 Round(new Rect(r.x, r.y, r.width, 8f), rc, 4f);
                 var ic = new Rect(r.x + 20f, r.y + 26f, 90f, 90f);
-                UIStyles.CircleTex(ic.center, 48f, new Color(rc.r, rc.g, rc.b, 0.25f));
-                var oc = GUI.color;
-                GUI.color = Color.Lerp(rc, Color.white, 0.35f);
-                GUI.DrawTexture(ic, IconFactory.Get("orb"), ScaleMode.ScaleToFit, true);
-                GUI.color = oc;
+                UIStyles.CircleTex(ic.center, 56f, new Color(rc.r, rc.g, rc.b, 0.25f + 0.1f * Mathf.Sin(Time.unscaledTime * 3f + i)));
+                var art = GearArt.Get(e);
+                if (art != null) GUI.DrawTexture(Grow(ic, 6f), art, ScaleMode.ScaleToFit, true);
                 GUI.Label(new Rect(r.x + 124f, r.y + 22f, cw - 140f, 40f), e.displayName, UIStyles.Sized(UIStyles.H2, 24));
                 UIStyles.Outlined(new Rect(r.x + 124f, r.y + 60f, cw - 140f, 24f), RarityInfo.Name(e.rarity), UIStyles.Sized(UIStyles.Small, 16), rc, 1.2f);
                 int owned = d.equipment.FindAll(x => x.defId == e.id).Count;
@@ -391,7 +389,7 @@ namespace HashiraChronicles
                 if (b.atk > 0) st += "ATK +" + Mathf.RoundToInt(b.atk) + "   ";
                 if (b.def > 0) st += "DEF +" + Mathf.RoundToInt(b.def);
                 GUI.Label(new Rect(r.x + 20f, r.y + 128f, cw - 40f, 30f), "<color=#8CFF9E>" + st + "</color>", UIStyles.Sized(UIStyles.Body, 18));
-                GUI.Label(new Rect(r.x + 20f, r.y + 158f, cw - 40f, 50f), "<color=#BBBBBB>" + e.description + "</color>", UIStyles.Sized(UIStyles.Small, 16));
+                GUI.Label(new Rect(r.x + 20f, r.y + 158f, cw - 40f, 50f), (string.IsNullOrEmpty(e.effect) ? "<color=#BBBBBB>" : "<color=#FFD36B>✦ ") + e.description + "</color>", new GUIStyle(UIStyles.Sized(UIStyles.Small, 16)) { wordWrap = true });
                 int price = ShopSystem.AccessoryPrice(e);
                 bool can = d.coins >= price;
                 var br = new Rect(r.x + 20f, r.yMax - 80f, cw - 40f, 62f);

@@ -32,6 +32,10 @@ namespace HashiraChronicles
             eventPick = Mathf.Clamp(eventPick, 0, events.Count - 1);
             float top = safe.y + 124f;
             float k = Enter(0f, 0.4f);
+            // The chosen event's page plays like an ad each time it opens or you switch to it.
+            if (Time.unscaledTime - lastEventsDraw > 0.5f || eventAdStart < 0f) eventAdStart = Time.unscaledTime;
+            lastEventsDraw = Time.unscaledTime;
+            float at = Time.unscaledTime - eventAdStart;
 
             // ---- Event banners down the left.
             float lw = 560f, lh = (H - top - 24f - (events.Count - 1) * 12f) / events.Count;
@@ -100,7 +104,7 @@ namespace HashiraChronicles
                     UIStyles.CircleTex(new Vector2(r.x + 32f + p * 26f, r.yMax - 26f), 8f, clr ? Color.Lerp(a, Color.white, 0.2f) : new Color(1f, 1f, 1f, 0.2f));
                 }
                 UIStyles.Outlined(new Rect(r.x + 32f + ev.quests.Count * 26f, r.yMax - 42f, 200f, 32f), done == ev.quests.Count ? "<color=#7CFF8A>COMPLETE ✓</color>" : done + "/" + ev.quests.Count, UIStyles.Sized(UIStyles.Body, 18), Color.white, 1.5f);
-                if (GUI.Button(r, GUIContent.none, GUIStyle.none) && !picked) { eventPick = i; gm.Audio.Play("switch", 0.5f); eventScroll = Vector2.zero; }
+                if (GUI.Button(r, GUIContent.none, GUIStyle.none) && !picked) { eventPick = i; eventAdStart = Time.unscaledTime; gm.Audio.Play("switch", 0.5f); gm.Audio.PlayPitched("sp_whoosh", 0.4f, 1.3f); eventScroll = Vector2.zero; }
             }
 
             // ---- The chosen event.
@@ -116,16 +120,56 @@ namespace HashiraChronicles
             var hth = ThemeForColor(e.accent);
             PromoBackdrop(new Rect(0f, 0f, head.width, head.height), hth, new Vector2(head.width * 0.85f, head.height * 0.5f), eventPick * 1.3f + 0.4f, head.height * 1.4f);
             UIStyles.Rect(new Rect(0f, 0f, head.width, head.height), new Color(0f, 0f, 0f, 0.45f));
+            // The event's boss storms in from the right behind speed lines, then the camera keeps pushing in.
+            var hboss = GameDatabase.GetEnemy(e.bannerEnemy);
+            var hart = hboss != null ? ArtLibrary.Monster(hboss) : null;
+            AdSpeedLines(new Rect(head.width * 0.35f, 0f, head.width * 0.65f, head.height), at, hth.glow, 0.6f);
+            if (hart != null)
+            {
+                float ei = AdEase(at / 0.5f);
+                float zoom = Mathf.Lerp(1.4f, 1f, ei) * (1f + 0.08f * Mathf.Clamp01((at - 0.5f) / 6f));
+                float sz = head.height * 1.7f * zoom;
+                var ar = new Rect(head.width * 0.66f + (1f - ei) * head.width * 0.4f - (zoom - 1f) * sz * 0.3f, -head.height * 0.35f + Mathf.Sin(Time.unscaledTime * 1.2f) * 4f, sz, sz);
+                var oc = GUI.color;
+                GUI.color = new Color(1f, 0.15f, 0.1f, 0.5f * ei);
+                GUI.DrawTexture(Grow(ar, 8f), hart, ScaleMode.ScaleAndCrop, true);
+                GUI.color = new Color(1f, 1f, 1f, ei);
+                GUI.DrawTexture(ar, hart, ScaleMode.ScaleAndCrop, true);
+                GUI.color = oc;
+            }
             DangerOverlay(new Rect(0f, 0f, head.width, head.height), e.accent, eventPick + 5f, 0.7f);
+            AdSweep(new Rect(0f, 0f, head.width, head.height), 3.4f, eventPick * 0.7f);
+            if (at < 0.15f) UIStyles.Rect(new Rect(0f, 0f, head.width, head.height), new Color(1f, 1f, 1f, 0.55f * (1f - at / 0.15f)));
+            bool farmEv = e.id == "E6" || e.id == "E7" || e.id == "E8";
+            AdStamp(new Rect(head.width * 0.5f, 18f, 150f, 44f), farmEv ? "REPLAY!" : "LIMITED!", farmEv ? new Color(0.4f, 0.9f, 1f) : new Color(1f, 0.85f, 0.3f), 0.55f, at, -9f);
             GUI.EndGroup();
             float x = panel.x + 28f, w = panel.width - 56f, y = panel.y + 22f;
-            UIStyles.Outlined(new Rect(x, y, w, 60f), e.title, UIStyles.Sized(UIStyles.H1, 46), e.accent, 2f);
+            // Title slams in from the left with a size punch; the story fades up under it.
+            float tk = AdBack((at - 0.12f) / 0.35f);
+            float punch = at > 0.3f && at < 0.5f ? Mathf.Sin((at - 0.3f) / 0.2f * Mathf.PI) * 0.18f : 0f;
+            UIStyles.Outlined(new Rect(x - (1f - tk) * 500f, y, w, 60f), e.title, UIStyles.Sized(UIStyles.H1, Mathf.RoundToInt(46f * (1f + punch))), e.accent, 2f);
+            AdSparkBurst(new Vector2(x + 220f, y + 30f), at, 0.35f, e.accent, 160f);
             y += 62f;
-            GUI.Label(new Rect(x, y, w, 120f), "<i><color=#DADAE6>" + e.story + "</color></i>", UIStyles.Sized(UIStyles.Body, 20));
+            var oldStory = GUI.color;
+            GUI.color = new Color(1f, 1f, 1f, AdEase((at - 0.3f) / 0.4f));
+            GUI.Label(new Rect(x, y + (1f - AdEase((at - 0.3f) / 0.4f)) * 16f, w, 120f), "<i><color=#DADAE6>" + e.story + "</color></i>", UIStyles.Sized(UIStyles.Body, 20));
+            GUI.color = oldStory;
             y += 124f;
-            var prize = new Rect(x, y, w, 50f);
-            Round(prize, new Color(e.accent.r, e.accent.g, e.accent.b, 0.15f), 12f);
-            GUI.Label(new Rect(prize.x + 16f, prize.y, prize.width - 32f, prize.height), "<b>EVENT PRIZE</b>   <color=#FFD36B>" + e.prizeText + "</color>   <color=#999999>(clear the Hard quest)</color>", UIStyles.Sized(UIStyles.Body, 20));
+            // The prize: pops in, glows, gets a light sweep and a sparkle burst.
+            float pk = AdBack((at - 0.5f) / 0.3f);
+            var prize = new Rect(x + w * 0.5f * (1f - pk), y, w * pk, 50f);
+            if (pk > 0.02f)
+            {
+                float glowP = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f);
+                Round(Grow(prize, 3f + glowP * 3f), new Color(e.accent.r, e.accent.g, e.accent.b, 0.15f + 0.15f * glowP), 14f);
+                Round(prize, new Color(e.accent.r * 0.3f, e.accent.g * 0.3f, e.accent.b * 0.3f, 0.85f), 12f);
+                GUI.BeginGroup(prize);
+                promoOrigin = prize.position;
+                AdSweep(new Rect(0f, 0f, prize.width, prize.height), 2.6f, 0.4f, 1.6f);
+                GUI.EndGroup();
+                if (pk > 0.9f) GUI.Label(new Rect(prize.x + 16f, prize.y, prize.width - 32f, prize.height), "<b>EVENT PRIZE</b>   <color=#FFD36B>" + e.prizeText + "</color>   <color=#999999>(" + (farmEv ? "every clear" : "clear the Hard quest") + ")</color>", UIStyles.Sized(UIStyles.Body, 20));
+            }
+            AdSparkBurst(prize.center, at, 0.75f, new Color(1f, 0.85f, 0.35f), 220f);
             y += 62f;
 
             // Quests: difficulty chip, number, name + its story beat, level, stars, PLAY.
@@ -137,7 +181,9 @@ namespace HashiraChronicles
             {
                 var q = e.quests[i];
                 bool unlocked = d.IsMissionUnlocked(q), cleared = d.IsMissionCleared(q.id);
-                var r = new Rect(14f, i * (rowH + 10f), content.width - 28f, rowH);
+                // Rows slide in one after another.
+                float rk = AdEase((at - 0.55f - i * 0.07f) / 0.35f);
+                var r = new Rect(14f + (1f - rk) * 420f, i * (rowH + 10f), content.width - 28f, rowH);
                 Color dc = DifficultyColor(q.difficulty);
                 Round(r, unlocked ? new Color(1f, 1f, 1f, 0.05f) : new Color(0f, 0f, 0f, 0.3f), 14f);
                 Round(new Rect(r.x, r.y + 10f, 6f, r.height - 20f), dc, 3f);
@@ -170,6 +216,7 @@ namespace HashiraChronicles
         }
 
         Vector2 eventScroll;
+        float eventAdStart = -1f, lastEventsDraw = -10f;
 
         /// <summary>Level of the team's lead slayer (gates the Lv 70+ hunts).</summary>
         static int LeadLevel(PlayerData d)

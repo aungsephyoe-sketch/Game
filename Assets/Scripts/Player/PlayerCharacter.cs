@@ -85,6 +85,7 @@ namespace HashiraChronicles
             Visual.FidgetsEnabled = false;
             if (def.style == CombatStyle.Heavy) Stats.speed *= 0.88f;
             else if (def.style == CombatStyle.Swift) Stats.speed *= 1.12f;
+            InitAccessory();
         }
 
         float SkillLevelMult(int index) { return CharacterSystem.SkillLevelMultiplier(Owned.skillLevels[index]); }
@@ -533,6 +534,7 @@ namespace HashiraChronicles
         {
             Vector3 dir = moveInput.sqrMagnitude > 0.05f ? moveInput.normalized : -transform.forward;
             dodgeCooldown = Def.style == CombatStyle.Swift || Def.style == CombatStyle.Brawler ? 0.24f : Def.style == CombatStyle.Heavy ? 0.55f : 0.4f;
+            AccessoryOnDodge();
             const float duration = 0.2f;
             Health.GrantInvulnerability(0.3f);
             Visual.Dodge(dir, duration);
@@ -747,8 +749,9 @@ namespace HashiraChronicles
         public override void OnDealtDamage(DamageInfo info, Combatant target)
         {
             if (info.isUltimate) return;
-            UltGauge = Mathf.Min(UltMax, UltGauge + (info.special ? 0.8f : 1.8f));
+            UltGauge = Mathf.Min(UltMax, UltGauge + (info.special ? 0.8f : 1.8f) * AccessoryUltMult);
             if (BattleController.Current != null) BattleController.Current.RegisterHit(info.amount);
+            AccessoryOnDealt(info, target);
         }
 
         /// <summary>PvP respawn: back on their feet at a spawn point with some health.</summary>
@@ -763,6 +766,7 @@ namespace HashiraChronicles
 
         void OnDied()
         {
+            if (AccessoryRevive()) return;
             StopAction();
             Visual.PlayDeath();
             GameEvents.RaisePlayerMemberDown(this);

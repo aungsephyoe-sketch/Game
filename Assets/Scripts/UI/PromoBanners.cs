@@ -223,31 +223,47 @@ namespace HashiraChronicles
         {
             var th = ThemeFor(element);
             promoOrigin = groupOrigin;
+            float t = promoAdT;
             float X = lr.x, Y = lr.y;
+            // A little shake as the title slams in.
+            if (t > 0.3f && t < 0.46f) { X += Random.Range(-3f, 3f); Y += Random.Range(-2f, 2f); }
             Vector2 focus = new Vector2(X + lr.width * 0.74f, Y + lr.height * 0.55f);
             PromoBackdrop(lr, th, focus, seed, lr.height);
+            AdSpeedLines(new Rect(X + lr.width * 0.35f, Y, lr.width * 0.65f, lr.height), t, th.glow);
             if (art != null)
             {
                 float bob = Mathf.Sin(Time.unscaledTime * 1.6f + seed) * 4f;
-                var ar = new Rect(X + lr.width * 0.46f, Y - lr.height * 0.12f + bob, lr.width * 0.58f, lr.height * 1.3f);
+                // Zooms in from the side, then keeps pushing in slowly (a camera move, like an ad).
+                float ei = AdEase(t / 0.45f);
+                float zoom = Mathf.Lerp(1.35f, 1f, ei) * (1f + 0.06f * Mathf.Clamp01((t - 0.45f) / 5f));
+                float w0 = lr.width * 0.58f, h0 = lr.height * 1.3f;
+                var ar = new Rect(X + lr.width * 0.46f + (1f - ei) * lr.width * 0.35f - w0 * (zoom - 1f) * 0.5f, Y - lr.height * 0.12f + bob - h0 * (zoom - 1f) * 0.5f, w0 * zoom, h0 * zoom);
                 // Halo: the art drawn tinted and slightly larger behind itself.
                 var old = GUI.color;
-                GUI.color = new Color(th.glow.r, th.glow.g, th.glow.b, 0.55f);
+                GUI.color = new Color(th.glow.r, th.glow.g, th.glow.b, 0.55f * ei);
                 GUI.DrawTexture(Grow(ar, 8f), art, ScaleMode.ScaleAndCrop, true);
-                GUI.color = old;
+                GUI.color = new Color(1f, 1f, 1f, Mathf.Clamp01(ei * 1.5f));
                 GUI.DrawTexture(ar, art, ScaleMode.ScaleAndCrop, true);
+                GUI.color = old;
             }
-            else if (picture != null) picture(new Rect(X + lr.width * 0.56f, Y + 16f, lr.width * 0.4f, lr.height - 32f));
+            else if (picture != null) picture(new Rect(X + lr.width * 0.56f + (1f - AdEase(t / 0.45f)) * 200f, Y + 16f, lr.width * 0.4f, lr.height - 32f));
             // Title slash: a dark diagonal band for readability.
             var saved = GUI.matrix;
             PromoRotate(-6f, new Vector2(X + lr.width * 0.3f, Y + lr.height * 0.55f));
             UIStyles.Rect(new Rect(X - 40f, Y + lr.height * 0.3f, lr.width * 0.68f, lr.height * 0.5f), new Color(0f, 0f, 0f, 0.42f));
             UIStyles.Rect(new Rect(X - 40f, Y + lr.height * 0.3f - 5f, lr.width * 0.68f, 5f), th.glow);
             GUI.matrix = saved;
-            PromoChip(new Rect(X + 16f, Y + 14f, Mathf.Max(150f, chip.Length * 12f + 40f), 36f), chip, limited ? new Color(0.95f, 0.18f, 0.25f) : new Color(0.2f, 0.55f, 1f));
+            // Chip pops, headline slides, title slams in from the left with an overshoot and a size punch.
+            float cp = AdBack(t / 0.25f);
+            float cw = Mathf.Max(150f, chip.Length * 12f + 40f);
+            if (cp > 0.05f) PromoChip(new Rect(X + 16f, Y + 14f + (1f - cp) * 10f, cw * cp, 36f), cp > 0.6f ? chip : "", limited ? new Color(0.95f, 0.18f, 0.25f) : new Color(0.2f, 0.55f, 1f));
             if (!string.IsNullOrEmpty(headline))
-                UIStyles.Outlined(new Rect(X + 18f, Y + 56f, lr.width * 0.62f, 30f), headline, UIStyles.Sized(UIStyles.Body, 20), th.glow, 2f);
-            UIStyles.Outlined(new Rect(X + 18f, Y + lr.height * 0.34f, lr.width * 0.6f, 84f), title, new GUIStyle(UIStyles.Sized(UIStyles.H1, 34)) { wordWrap = true }, Color.white, 4f);
+                UIStyles.Outlined(new Rect(X + 18f - (1f - AdEase((t - 0.1f) / 0.3f)) * 160f, Y + 56f, lr.width * 0.62f, 30f), headline, UIStyles.Sized(UIStyles.Body, 20), th.glow, 2f);
+            float tk = AdBack((t - 0.15f) / 0.35f);
+            float punch = t > 0.3f && t < 0.5f ? Mathf.Sin((t - 0.3f) / 0.2f * Mathf.PI) * 0.22f : 0f;
+            UIStyles.Outlined(new Rect(X + 18f - (1f - tk) * lr.width * 0.6f, Y + lr.height * 0.34f, lr.width * 0.6f, 84f), title,
+                new GUIStyle(UIStyles.Sized(UIStyles.H1, Mathf.RoundToInt(34f * (1f + punch)))) { wordWrap = true }, Color.white, 4f);
+            AdSparkBurst(new Vector2(X + lr.width * 0.3f, Y + lr.height * 0.45f), t, 0.35f, th.glow, lr.width * 0.25f);
             if (stars > 0)
             {
                 string st = "";
@@ -262,7 +278,13 @@ namespace HashiraChronicles
                 UIStyles.Outlined(cd, "⏱ " + Countdown(), UIStyles.Sized(UIStyles.Center, 17), Color.white, 1.5f);
             }
             if (limited) DangerOverlay(lr, th.glow, seed, 0.8f);
+            // The rest of the ad: a stamp thumping down, the call to action, light sweeps and the opening flash.
+            if (limited) AdStamp(new Rect(X + lr.width * 0.42f, Y + 12f, 116f, 40f), "LIMITED!", new Color(1f, 0.85f, 0.3f), 0.5f, t, -8f);
+            AdCta(new Rect(X + lr.width - 212f, Y + lr.height - 86f, 196f, 38f), "TAP TO PLAY", limited ? new Color(0.95f, 0.2f, 0.28f) : new Color(0.2f, 0.6f, 1f), t, 0.75f);
+            AdSweep(lr, 3f, seed);
+            if (t < 0.15f) UIStyles.Rect(lr, new Color(1f, 1f, 1f, 0.6f * (1f - t / 0.15f)));
             RoundFrame(new Rect(X + 2f, Y + 2f, lr.width - 4f, lr.height - 4f), new Color(1f, 1f, 1f, 0.25f), 2f, 14f);
+            promoAdT = 99f;
         }
     }
 }

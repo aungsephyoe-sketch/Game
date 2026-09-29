@@ -169,14 +169,18 @@ namespace HashiraChronicles
         List<BannerSlide> BannerSlides(PlayerData d)
         {
             var list = new List<BannerSlide>();
+            // One ad per event.
             var events = GameDatabase.Events;
-            if (events.Count > 0)
+            for (int i = 0; i < events.Count; i++)
             {
-                var ev = events[0];
+                var ev = events[i];
+                int idx = i;
+                bool farm = ev.id == "E6" || ev.id == "E7" || ev.id == "E8";
                 var enemy = string.IsNullOrEmpty(ev.bannerEnemy) ? null : GameDatabase.GetEnemy(ev.bannerEnemy);
-                list.Add(new BannerSlide { tag = "NEW EVENT", headline = "LIMITED EVENT", title = ev.title, sub = ev.subtitle, accent = ev.accent,
-                    element = enemy != null ? enemy.element : Element.Flame, limited = true,
-                    art = enemy != null ? PortraitStudio.Enemy(enemy) : null, open = () => gm.GoTo(GameScreen.Events) });
+                list.Add(new BannerSlide { tag = farm ? "FARM EVENT" : i == 0 ? "NEW EVENT" : "EVENT", headline = ev.id == "E8" ? "LV 70+ HUNTS" : farm ? "REPLAY FOR REWARDS" : "LIMITED EVENT",
+                    title = ev.title, sub = ev.subtitle + "  ·  " + ev.prizeText, accent = ev.accent,
+                    element = enemy != null ? enemy.element : Element.Flame, limited = !farm,
+                    art = enemy != null ? PortraitStudio.Enemy(enemy) : null, open = () => { eventPick = idx; eventAdStart = -1f; gm.GoTo(GameScreen.Events); } });
             }
             var ids = SummonSystem.FeaturedIds;
             if (ids.Length > 0)
@@ -227,6 +231,8 @@ namespace HashiraChronicles
             tk = tk * tk * (3f - 2f * tk);
             float drag = bannerDragging ? Mathf.Clamp(bannerDrag, -r.width, r.width) : 0f;
             if (tk < 1f && bannerPrev >= 0 && bannerPrev < slides.Count) DrawSlide(Offset(local, -tk * r.width * bannerDir, 0f), slides[bannerPrev]);
+            // The showing slide plays its ad intro each time it comes on (not while being dragged).
+            promoAdT = bannerDragging ? 99f : Time.unscaledTime - (bannerFrom < 0f ? bannerSince : bannerFrom);
             DrawSlide(Offset(local, (1f - tk) * r.width * bannerDir + drag, 0f), slides[bannerIndex]);
             if (Mathf.Abs(drag) > 1f)
             {

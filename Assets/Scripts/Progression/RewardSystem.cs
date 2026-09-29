@@ -104,6 +104,9 @@ namespace HashiraChronicles
 
             total.coins += result.goldCollected;
             total.crystals += result.diamondsCollected;
+            // Team accessories: Golden Koi Coin (+30% gold), Scholar's Tassel (+30% EXP).
+            if (AccessoryFx.TeamHas(data, "fortune")) total.coins = Mathf.RoundToInt(total.coins * 1.3f);
+            if (AccessoryFx.TeamHas(data, "wisdom")) total.exp = Mathf.RoundToInt(total.exp * 1.3f);
             // Half the mission EXP also goes into the XP pool for training.
             data.xp += total.exp / 2;
             InventorySystem.AddCurrencies(data, total);

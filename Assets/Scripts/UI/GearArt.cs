@@ -18,7 +18,9 @@ namespace HashiraChronicles
             if (e == null) return null;
             Texture2D t;
             if (cache.TryGetValue(e.id, out t) && t != null) return t;
-            t = Paint(e);
+            // Painted artwork (tools/gen_accessory_art.py) when there is one, else the procedural icon.
+            t = Resources.Load<Texture2D>("Gear/" + e.id);
+            if (t == null) t = Paint(e);
             cache[e.id] = t;
             return t;
         }

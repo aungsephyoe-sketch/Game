@@ -355,6 +355,8 @@ namespace HashiraChronicles
         public StatBlock perLevel;
         public int maxLevel = 20;
         public string description;
+        /// <summary>Accessory special effect key (see PlayerCharacter.Accessory), or empty.</summary>
+        public string effect = "";
 
         public StatBlock BonusAt(int level)
         {

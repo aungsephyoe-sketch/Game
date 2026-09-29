@@ -1010,6 +1010,12 @@ namespace HashiraChronicles
 
         // ------------------------------------------------------------------ Equipment
 
+        static void Fx(string id, string name, int rarity, StatBlock b, StatBlock per, string effect, string desc)
+        {
+            Eq(id, name, EquipSlot.Accessory, rarity, b, per, desc);
+            Equipment[Equipment.Count - 1].effect = effect;
+        }
+
         static void Eq(string id, string name, EquipSlot slot, int rarity, StatBlock b, StatBlock per, string desc)
         {
             Equipment.Add(new EquipmentDefinition { id = id, displayName = name, slot = slot, rarity = rarity - 1, baseBonus = b, perLevel = per, description = desc });
@@ -1038,6 +1044,24 @@ namespace HashiraChronicles
             Eq("sword_moonfall", "Moonfall Edge", EquipSlot.Sword, 7, new StatBlock(600, 1300, 150, 0.1f, 0.4f, 0.2f, 0.2f), new StatBlock(50, 95, 12, 0.003f, 0.015f, 0.01f, 0.01f), "Mythic. A blade forged from a fallen piece of the moon.");
             Eq("haori_starweave", "Starweave Mantle", EquipSlot.Haori, 7, new StatBlock(3200, 260, 620, 0.05f, 0.1f, 0.3f, 0.1f), new StatBlock(260, 20, 50, 0.002f, 0.005f, 0.01f, 0.005f), "Mythic. Stitched from starlight; it glows softly in the dark.");
             Eq("acc_phoenixheart", "Phoenix Heart", EquipSlot.Accessory, 7, new StatBlock(1500, 500, 260, 0.08f, 0.3f, 0.2f, 0.3f), new StatBlock(110, 38, 20, 0.003f, 0.012f, 0.01f, 0.015f), "Mythic. Still warm. Specials hit 30% harder.");
+            // Accessories with special effects.
+            Fx("acc_sakura_pin", "Sakura Hairpin", 3, new StatBlock(250, 30, 30), new StatBlock(25, 3, 3), "bloom", "Heal 3% max HP every time you defeat a demon.");
+            Fx("acc_koi_coin", "Golden Koi Coin", 3, new StatBlock(150, 30, 20), new StatBlock(15, 3, 2), "fortune", "+30% gold from battles (works for the whole team).");
+            Fx("acc_scholar_tassel", "Scholar's Tassel", 3, new StatBlock(150, 30, 20), new StatBlock(15, 3, 2), "wisdom", "+30% slayer EXP from battles (works for the whole team).");
+            Fx("acc_ember_brooch", "Ember Heart Brooch", 4, new StatBlock(300, 110, 40, 0.02f), new StatBlock(30, 11, 4), "burn", "15% chance on hit to burst into flame for bonus fire damage.");
+            Fx("acc_frost_lotus", "Frost Lotus Charm", 4, new StatBlock(400, 70, 80), new StatBlock(40, 7, 8), "frost", "12% chance on hit to freeze a demon in place.");
+            Fx("acc_jade_turtle", "Jade Turtle Talisman", 4, new StatBlock(700, 0, 180), new StatBlock(70, 0, 18), "guard", "Take 12% less damage.");
+            Fx("acc_moon_rabbit", "Moon Rabbit Anklet", 4, new StatBlock(200, 60, 30, 0.02f, 0f, 0.4f), new StatBlock(20, 6, 3), "swift", "Dodge recovers 35% faster. SPD +0.4.");
+            Fx("acc_thorn_bracelet", "Thornvine Bracelet", 4, new StatBlock(600, 40, 160), new StatBlock(60, 4, 16), "thorns", "Returns 25% of the damage you take to the attacker.");
+            Fx("acc_fang_pendant", "Vampire Fang Pendant", 5, new StatBlock(300, 220, 40, 0.03f), new StatBlock(30, 20, 4), "lifesteal", "Heals you for 6% of all the damage you deal.");
+            Fx("acc_thunder_drum", "Thunder Drum Earrings", 5, new StatBlock(200, 240, 40, 0.03f), new StatBlock(20, 22, 4), "thunder", "Every 5th hit calls down a lightning bolt.");
+            Fx("acc_oni_mask", "Oni Mask Fragment", 5, new StatBlock(200, 280, 20, 0.04f, 0.1f), new StatBlock(20, 25, 2), "fury", "+30% damage while below 40% HP.");
+            Fx("acc_star_compass", "Star Compass", 5, new StatBlock(300, 160, 60, 0f, 0f, 0f, 0.1f), new StatBlock(30, 15, 6), "ultcharge", "Your special gauge fills 35% faster.");
+            Fx("acc_serpent_ring", "Serpent Coil Ring", 5, new StatBlock(250, 180, 40, 0.05f, 0.2f), new StatBlock(25, 16, 4, 0.002f, 0.01f), "serpent", "Critical hits heal 1.5% max HP. CRIT DMG +20%.");
+            Fx("acc_storm_bell", "Storm Bell", 5, new StatBlock(300, 150, 50, 0f, 0f, 0f, 0.25f), new StatBlock(30, 14, 5, 0f, 0f, 0f, 0.01f), "", "Specials hit 25% harder.");
+            Fx("acc_shadow_pin", "Shadowstep Pin", 5, new StatBlock(200, 230, 30, 0.04f, 0.1f, 0.2f), new StatBlock(20, 21, 3), "ambush", "The first hit after a dodge deals double damage.");
+            Fx("acc_phoenix_feather", "Phoenix Feather", 6, new StatBlock(1000, 300, 150, 0.04f, 0.15f), new StatBlock(80, 25, 12), "revive", "Once per battle, rise again with 35% HP when you fall.");
+            Fx("acc_void_crown", "Crown of the Eclipse", 7, new StatBlock(1400, 600, 220, 0.08f, 0.35f, 0.2f, 0.2f), new StatBlock(100, 45, 16, 0.003f, 0.012f, 0.01f, 0.01f), "eclipse", "Mythic. +15% damage, 5% lifesteal, and every 4th hit calls lightning.");
             // Abyssal set: only drops in the Lv 70+ Abyssal Hunts.
             Eq("sword_abyss", "Abyssal Fang", EquipSlot.Sword, 6, new StatBlock(300, 1100, 80, 0.09f, 0.35f, 0.1f, 0.15f), new StatBlock(30, 85, 8, 0.003f, 0.012f), "Legendary. Hunted from the Abyss; it hungers for demons.");
             Eq("haori_abyss", "Abyssal Shroud", EquipSlot.Haori, 6, new StatBlock(2600, 180, 520, 0.04f, 0.1f, 0.2f), new StatBlock(220, 15, 44, 0.002f), "Legendary. Woven from the dark between stars.");
@@ -1441,7 +1465,9 @@ namespace HashiraChronicles
                 q.rewards.expScrolls = 30 + i * 12;
                 q.rewards.crystals = 20 + i * 10;
                 q.dropTable.Clear();
-                q.dropTable.AddRange(new[] { "sword_abyss", "haori_abyss", "acc_abyss_eye", "sword_abyss", "haori_abyss", "acc_abyss_eye", "sword_akatsuki", "haori_ember", "acc_suncrest", "sword_dawn", "haori_royal", "acc_earrings" });
+                q.dropTable.AddRange(new[] { "sword_abyss", "haori_abyss", "acc_abyss_eye", "sword_abyss", "haori_abyss", "acc_abyss_eye", "sword_akatsuki", "haori_ember", "acc_suncrest", "sword_dawn", "haori_royal", "acc_earrings",
+                    "acc_fang_pendant", "acc_thunder_drum", "acc_oni_mask", "acc_star_compass", "acc_serpent_ring", "acc_shadow_pin", "acc_phoenix_feather" });
+                if (i >= 4) q.dropTable.Add("acc_void_crown");
                 if (i >= 3) q.dropTable.AddRange(new[] { "sword_moonfall", "haori_starweave", "acc_phoenixheart", "acc_dragonscale" });
                 if (i == 5) q.bossId = "boss_veyrath";
                 else if (i == 2) q.bossId = "boss_goken";

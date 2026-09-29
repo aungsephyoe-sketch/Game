@@ -38,6 +38,8 @@ namespace HashiraChronicles
             float elem = ElementChart.Multiplier(attacker.Element, target.Element);
             bool crit = Random.value < s.crit;
             float dmg = raw * mitigation * elem * target.DamageTakenMultiplier * (crit ? Mathf.Max(1f, s.critDmg) : 1f) * Random.Range(0.95f, 1.05f);
+            var apc = attacker as PlayerCharacter;
+            if (apc != null) dmg *= apc.AccessoryDamageMult(target);
             return new DamageInfo
             {
                 amount = Mathf.Max(1f, Mathf.Round(dmg)),
