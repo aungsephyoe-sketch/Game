@@ -153,6 +153,7 @@ namespace HashiraChronicles
                         holder.localRotation = Quaternion.Euler(0f, 34f, 0f);
                         v.ApplyBannerPose();
                         v.ApplyPosterLook(def); // its own expression and pose on the card art
+                        v.FaceViewer(); // banners: the slayer looks out at you
                     }
                     else v.ApplyTeamIdle();
                 }

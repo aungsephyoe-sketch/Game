@@ -6,10 +6,13 @@ namespace HashiraChronicles
     {
         public const int MaxLevel = 120;
         public const int ExpPerScroll = 1000;
+        /// <summary>Every source of slayer EXP counts double.</summary>
+        public const float ExpBoost = 2f;
 
         public static int ExpToNext(int level)
         {
-            return 80 + 40 * level + 6 * level * level;
+            // Gentler curve: about half the EXP per level it used to take at high levels.
+            return 60 + 25 * level + 3 * level * level;
         }
 
         /// <summary>Max level by rarity: Common 30, Rare 60, Epic 80, Legendary 100, Mythic 120.</summary>
@@ -43,7 +46,7 @@ namespace HashiraChronicles
         /// <summary>Coins needed to train a slayer from this level to the next.</summary>
         public static int LevelUpCost(int level)
         {
-            return 150 + level * 60 + level * level * 4;
+            return 100 + level * 40 + level * level * 2;
         }
 
         /// <summary>Spends gold and XP to raise levels (up to count, never past the rarity cap). Returns levels gained.</summary>
@@ -80,7 +83,7 @@ namespace HashiraChronicles
             int cap = Cap(c);
             int start = c.level;
             if (c.level >= cap) { c.exp = 0; return 0; }
-            c.exp += Mathf.Max(0, amount);
+            c.exp += Mathf.Max(0, Mathf.RoundToInt(amount * ExpBoost));
             while (c.level < cap && c.exp >= ExpToNext(c.level))
             {
                 c.exp -= ExpToNext(c.level);

@@ -176,9 +176,6 @@ namespace HashiraChronicles
 
         void HairShapes(CharacterDefinition def)
         {
-            Color hc = Vivid(def.hairColor, 1.12f, 0.12f);
-            var hair = PM(hc, 0.014f);
-            var hairLit = PM(Color.Lerp(hc, Color.white, 0.18f), 0.012f);
             // 1) Push the existing hair bigger (bolder shape), around the head's centre.
             float hk = 1.05f;
             Vector3 hs = Shape == ShapeLanguage.Diamond || Shape == ShapeLanguage.Triangle ? new Vector3(hk, hk * 1.03f, hk) : Vector3.one * hk;

@@ -403,6 +403,7 @@ namespace HashiraChronicles
             GenerateCombatSounds();
             GenerateSoundDesign();
             GenerateCoolPass();
+            GenerateMythicPass();
             tracks[MusicState.Menu] = BuildHomeTheme();
             tracks[MusicState.Explore] = BuildExploreMusic(scale);
             tracks[MusicState.Combat] = BuildBattleMusic(scale);

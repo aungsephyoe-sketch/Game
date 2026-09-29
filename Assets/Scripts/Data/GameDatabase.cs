@@ -352,6 +352,137 @@ namespace HashiraChronicles
             BuildNewcomers();
             ApplyLooks();
             BuildMonsterfolk();
+            BuildMonsterfolk2();
+        }
+
+        static void Monster(string id, string name, string title, string breathing, int rarity, Element el, Role role, Species sp, string desc, string story,
+            AbilityDefinition[] skills, AbilityDefinition ult, HairStyle hair, WeaponKind weapon, CombatStyle style, MotionStyle motion,
+            Color body, Color outfit, Color hairC, Color blade, Color skin, float h = 1f, float w = 1f, bool cape = false, bool pelt = false, bool armor = false, Color? accent = null, float atkSpeed = 1f)
+        {
+            var C = new Color(0.1f, 0.1f, 0.12f);
+            var d = Hero(id, id.Split('_')[0], name, title, breathing, rarity, el, role, desc, story, C, C, C, C);
+            d.species = sp;
+            d.skills = skills;
+            d.ultimate = ult;
+            d.attackSpeed = atkSpeed;
+            Characters.Add(d);
+            Look(id, hair, weapon, style, motion, body, outfit, hairC, blade, h, w, false, cape, pelt, armor, false, accent);
+            d.skinTone = skin;
+        }
+
+        /// <summary>More monster-folk: sixteen kinds, from a shambling zombie to a mythic soul reaper.</summary>
+        static void BuildMonsterfolk2()
+        {
+            // The first six get a meaner, darker palette.
+            Skin("snik_goblin", new Color(0.36f, 0.56f, 0.24f));
+            Skin("brimm_demon", new Color(0.72f, 0.18f, 0.18f));
+            Skin("howl_werewolf", new Color(0.38f, 0.34f, 0.36f));
+
+            // ---- Common
+            Monster("grub_zombie", "Grub", "Shambling Brawler", "Graveyard Breathing", 3, Element.Dark, Role.Tank, Species.Zombie,
+                "A slow, stubborn zombie who just keeps getting back up.", "Grub doesn't remember much. He remembers that demons are bad, and that he is very, very hard to stop.",
+                new[] { Ab("Grave Grab", AbilityShape.Dash, 6f, 1.6f, 2, 5f, 1.8f, "Lurches forward and grabs."), Ab("Rot Slam", AbilityShape.Burst, 8f, 1.5f, 1, 0f, 3.8f, "Slams both fists down.", 6f, 5f), Ab("Get Back Up", AbilityShape.Heal, 12f, 0.16f, 1, 0f, 5f, "Pulls himself together (heals the team a little).") },
+                Ab("Horde Night", AbilityShape.Burst, 0f, 2f, 3, 0f, 7f, "Hands claw up from the ground around every demon nearby.", 18f, 5f),
+                HairStyle.Messy, WeaponKind.Fists, CombatStyle.Brawler, MotionStyle.Nervous,
+                new Color(0.3f, 0.3f, 0.28f), new Color(0.36f, 0.3f, 0.4f), new Color(0.22f, 0.24f, 0.18f), new Color(0.6f, 0.9f, 0.3f), new Color(0.58f, 0.7f, 0.5f), 1.05f, 1.1f, false, false, false, null, 0.9f);
+            Monster("kappi_kappa", "Kappi", "River Imp", "Riverbed Breathing", 3, Element.Water, Role.Support, Species.Kappa,
+                "A mischievous river kappa who fights with webbed fists and splashes.", "Kappi challenges everyone he meets to a wrestling match. He usually wins. The demons always lose.",
+                new[] { Ab("Splash Jab", AbilityShape.MultiSlash, 4f, 0.7f, 4, 0f, 3.2f, "Four slippery jabs."), Ab("Belly Slide", AbilityShape.Dash, 6f, 1.6f, 2, 8f, 1.8f, "Slides through on his shell."), Ab("Dish Refill", AbilityShape.Heal, 11f, 0.2f, 1, 0f, 5.5f, "Splashes cool river water over the team.") },
+                Ab("River Rush", AbilityShape.Wave, 0f, 2.6f, 1, 16f, 3f, "Calls the river; a wave of water carries every demon away.", 18f, 8f),
+                HairStyle.Short, WeaponKind.Fists, CombatStyle.Brawler, MotionStyle.Light,
+                new Color(0.3f, 0.35f, 0.25f), new Color(0.25f, 0.45f, 0.55f), new Color(0.22f, 0.3f, 0.2f), new Color(0.5f, 0.85f, 1f), new Color(0.46f, 0.68f, 0.44f), 0.9f, 1f);
+
+            // ---- Rare
+            Monster("brakka_orc", "Brakka", "Tusk Raider", "Warcry Breathing", 4, Element.Flame, Role.DPS, Species.Orc,
+                "A tusked orc raider with two heavy cleavers and a battle cry that shakes trees.", "Brakka's clan was scattered by the eclipse. She fights for a new clan now: the slayers.",
+                new[] { Ab("Cleave Frenzy", AbilityShape.MultiSlash, 5f, 0.9f, 5, 0f, 3.8f, "Five brutal cleaver chops."), Ab("War Charge", AbilityShape.Dash, 7f, 2.1f, 1, 8f, 2.2f, "Charges, cleavers first.", 6f, 7f), Ab("Warcry", AbilityShape.Burst, 9f, 1.4f, 1, 0f, 5f, "A roar that knocks demons back.", 8f, 8f) },
+                Ab("Blood Moon Rampage", AbilityShape.MultiSlash, 0f, 1.1f, 10, 0f, 7.5f, "Goes berserk: a storm of cleaver blows around her.", 22f, 6f),
+                HairStyle.Wild, WeaponKind.Cleavers, CombatStyle.Heavy, MotionStyle.Aggressive,
+                new Color(0.3f, 0.22f, 0.16f), new Color(0.45f, 0.18f, 0.12f), new Color(0.12f, 0.1f, 0.08f), new Color(1f, 0.5f, 0.2f), new Color(0.42f, 0.58f, 0.3f), 1.1f, 1.2f, false, true);
+            Monster("ssira_lizard", "Ssira", "Marsh Lancer", "Swamp Breathing", 4, Element.Water, Role.DPS, Species.Lizardfolk,
+                "A lizardfolk lancer who strikes from the reeds like a snake.", "Ssira guards the marshes where the demons dump their cursed waters. She is not a forgiving guard.",
+                new[] { Ab("Tail Sweep", AbilityShape.Spin, 5f, 1.1f, 3, 0f, 3.6f, "Spins, spear and tail sweeping."), Ab("Reed Strike", AbilityShape.Dash, 6f, 2.2f, 1, 9f, 1.6f, "Darts out of nowhere, spear first."), Ab("Swamp Mire", AbilityShape.Burst, 9f, 1.3f, 3, 0f, 4.5f, "Turns the ground to biting mud.") },
+                Ab("Coil of the Deep", AbilityShape.Burst, 0f, 2.4f, 1, 0f, 8f, "A giant water serpent rises and coils around the demons.", 20f, 6f),
+                HairStyle.Crest, WeaponKind.Spear, CombatStyle.Swift, MotionStyle.Sly,
+                new Color(0.2f, 0.25f, 0.18f), new Color(0.2f, 0.38f, 0.3f), new Color(0.25f, 0.5f, 0.3f), new Color(0.4f, 0.95f, 0.7f), new Color(0.36f, 0.62f, 0.34f), 1.05f, 0.95f, false, false, false, null, 1.1f);
+            Monster("kree_harpy", "Kree", "Storm Harpy", "Gale Wing Breathing", 4, Element.Thunder, Role.Burst, Species.Harpy,
+                "A shrieking harpy who throws razor feathers from the sky.", "Kree nests on the highest peak in the land. She came down because the demons were blocking her view.",
+                new[] { Ab("Feather Volley", AbilityShape.Wave, 4f, 1.3f, 3, 11f, 1.5f, "Three razor feathers."), Ab("Talon Dive", AbilityShape.Dash, 7f, 2.3f, 1, 9f, 2f, "Dives with talons out."), Ab("Shriek", AbilityShape.Burst, 9f, 1.3f, 2, 0f, 5f, "A shriek that crackles with lightning.") },
+                Ab("Thunderwing Tempest", AbilityShape.Burst, 0f, 2.5f, 1, 0f, 9f, "Flies up and beats her wings; lightning feathers rain on everything.", 22f, 6f),
+                HairStyle.Wild, WeaponKind.Fans, CombatStyle.Ranged, MotionStyle.Light,
+                new Color(0.3f, 0.26f, 0.35f), new Color(0.4f, 0.34f, 0.6f), new Color(0.55f, 0.4f, 0.75f), new Color(1f, 0.9f, 0.4f), new Color(0.9f, 0.78f, 0.7f), 0.95f, 0.9f);
+            Monster("grimstone_gargoyle", "Grimstone", "Cathedral Watcher", "Granite Breathing", 4, Element.Earth, Role.Tank, Species.Gargoyle,
+                "A stone gargoyle who wakes at dusk and claws demons to gravel.", "Grimstone watched over the old cathedral for eight hundred years without moving. Then the demons knocked on the door.",
+                new[] { Ab("Stone Claw", AbilityShape.MultiSlash, 5f, 0.95f, 4, 0f, 3.5f, "Four stone claw swipes."), Ab("Plummet", AbilityShape.Burst, 7f, 2f, 1, 0f, 4f, "Drops like a statue from above.", 8f, 6f), Ab("Petrify", AbilityShape.Burst, 10f, 1.2f, 1, 0f, 5f, "A stone gaze that staggers demons.", 12f, 2f) },
+                Ab("Cathedral Fall", AbilityShape.Burst, 0f, 2.4f, 1, 0f, 8f, "Stone pillars crash down across the battlefield.", 25f, 7f),
+                HairStyle.Short, WeaponKind.Fists, CombatStyle.Brawler, MotionStyle.Stoic,
+                new Color(0.3f, 0.3f, 0.32f), new Color(0.35f, 0.3f, 0.4f), new Color(0.3f, 0.3f, 0.32f), new Color(0.6f, 0.9f, 0.9f), new Color(0.58f, 0.6f, 0.62f), 1.1f, 1.15f, false, false, false, null, 0.9f);
+
+            // ---- Epic
+            Monster("taurok_minotaur", "Taurok", "Labyrinth Breaker", "Stampede Breathing", 5, Element.Earth, Role.Tank, Species.Minotaur,
+                "A minotaur with a double axe who charges through walls, and demons.", "Taurok escaped a labyrinth by walking through it in a straight line. He has been walking in straight lines ever since.",
+                new[] { Ab("Gore Charge", AbilityShape.Dash, 6f, 2.4f, 1, 9f, 2.4f, "A horns-down charge.", 8f, 9f), Ab("Axe Whirl", AbilityShape.Spin, 8f, 1.3f, 3, 0f, 4.4f, "Whirls the double axe."), Ab("Hoof Stomp", AbilityShape.Burst, 9f, 1.8f, 1, 0f, 4.5f, "Stomps; the ground cracks.", 8f, 6f) },
+                Ab("Maze Breaker", AbilityShape.Dash, 0f, 3f, 3, 16f, 3.5f, "Charges back and forth through the demons three times.", 30f, 9f),
+                HairStyle.Short, WeaponKind.Greatsword, CombatStyle.Heavy, MotionStyle.Aggressive,
+                new Color(0.28f, 0.2f, 0.14f), new Color(0.4f, 0.16f, 0.12f), new Color(0.2f, 0.14f, 0.1f), new Color(0.95f, 0.75f, 0.4f), new Color(0.46f, 0.32f, 0.22f), 1.25f, 1.35f, false, true, true, null, 0.8f);
+            Monster("mossgut_troll", "Mossgut", "Bridge Troll", "Moss Breathing", 5, Element.Beast, Role.Tank, Species.Troll,
+                "A huge mossy troll with a tree for a club and a toll for every demon.", "Mossgut has charged a toll at the same bridge for two hundred years. Demons pay in bruises.",
+                new[] { Ab("Club Sweep", AbilityShape.Spin, 6f, 1.4f, 2, 0f, 4.6f, "A wide sweep of the club."), Ab("Toll Smash", AbilityShape.Burst, 8f, 2.2f, 1, 0f, 4f, "Brings the club down hard.", 8f, 7f), Ab("Regrow", AbilityShape.Heal, 12f, 0.2f, 1, 0f, 5f, "Moss grows over every wound.") },
+                Ab("Bridge Collapse", AbilityShape.Burst, 0f, 2.6f, 1, 0f, 9f, "Hurls a whole stone bridge into the demons.", 28f, 9f),
+                HairStyle.Wild, WeaponKind.Greatsword, CombatStyle.Heavy, MotionStyle.Steady,
+                new Color(0.26f, 0.24f, 0.2f), new Color(0.3f, 0.38f, 0.22f), new Color(0.3f, 0.45f, 0.22f), new Color(0.6f, 0.9f, 0.4f), new Color(0.5f, 0.62f, 0.7f), 1.3f, 1.4f, false, false, true, null, 0.8f);
+            Monster("karasu_tengu", "Karasu", "Mountain Tengu", "Crow Wind Breathing", 5, Element.Beast, Role.Burst, Species.Tengu,
+                "A long-nosed mountain tengu whose feather fan summons gales.", "Karasu trained a hundred swordsmen on his mountain. He decided it was time to fight the demons himself.",
+                new[] { Ab("Gale Fan", AbilityShape.Wave, 4f, 1.5f, 2, 12f, 2f, "Two cutting gusts."), Ab("Crow Step", AbilityShape.Dash, 6f, 1.9f, 3, 8f, 1.8f, "Blinks through the air like a crow."), Ab("Whirlwind Fan", AbilityShape.Spin, 8f, 1.2f, 4, 0f, 4.4f, "A spinning gale.") },
+                Ab("Heaven's Gale", AbilityShape.Burst, 0f, 2.6f, 1, 0f, 10f, "A great sweep of the fan; a tornado carries every demon away.", 25f, 9f),
+                HairStyle.Long, WeaponKind.Fans, CombatStyle.Technical, MotionStyle.Confident,
+                new Color(0.1f, 0.1f, 0.12f), new Color(0.75f, 0.72f, 0.65f), new Color(0.9f, 0.9f, 0.92f), new Color(0.6f, 1f, 0.7f), new Color(0.85f, 0.25f, 0.2f), 1.05f, 1f, true, false, false, new Color(0.9f, 0.2f, 0.2f));
+            Monster("hollow_ghost", "Hollow", "Lantern Ghost", "Will-o'-Wisp Breathing", 5, Element.Dark, Role.Support, Species.Ghost,
+                "A lonely lantern ghost who floats over the battlefield, healing friends and haunting demons.", "Hollow has haunted the old road for a century, lighting the way for lost travellers. The demons made the road too dangerous. That was a mistake.",
+                new[] { Ab("Wisp Bolt", AbilityShape.Wave, 4f, 1.4f, 3, 11f, 1.5f, "Three will-o'-wisps fly out."), Ab("Haunt", AbilityShape.Burst, 8f, 1.3f, 3, 0f, 4.5f, "A chill that stings every demon near."), Ab("Lantern Glow", AbilityShape.Heal, 11f, 0.22f, 1, 0f, 6f, "A warm lantern light heals the team.") },
+                Ab("Night Parade", AbilityShape.Burst, 0f, 2.3f, 1, 0f, 9f, "A parade of ghostly lanterns sweeps through every demon.", 20f, 5f),
+                HairStyle.Long, WeaponKind.Staff, CombatStyle.Healer, MotionStyle.Graceful,
+                new Color(0.8f, 0.86f, 0.95f), new Color(0.6f, 0.72f, 0.9f), new Color(0.85f, 0.9f, 1f), new Color(0.5f, 0.85f, 1f), new Color(0.8f, 0.9f, 0.98f), 1f, 0.9f);
+            Monster("obelisk_golem", "Obelisk", "Rune Golem", "Bedrock Breathing", 5, Element.Earth, Role.Tank, Species.Golem,
+                "An ancient rune golem with boulder fists and all the patience in the world.", "Obelisk was built to guard a temple that crumbled a thousand years ago. It adopted the slayers as its new temple.",
+                new[] { Ab("Boulder Punch", AbilityShape.Dash, 6f, 2.3f, 1, 6f, 2.2f, "A heavy running punch.", 8f, 9f), Ab("Rune Quake", AbilityShape.Burst, 8f, 1.8f, 2, 0f, 5f, "Runes flare and the ground shakes.", 8f, 5f), Ab("Stone Skin", AbilityShape.Heal, 12f, 0.18f, 1, 0f, 5f, "Shares its stone skin with the team.") },
+                Ab("Awakening", AbilityShape.Burst, 0f, 2.7f, 1, 0f, 9f, "Every rune on its body blazes; a wave of stone erupts outward.", 30f, 9f),
+                HairStyle.Short, WeaponKind.Fists, CombatStyle.Brawler, MotionStyle.Stoic,
+                new Color(0.4f, 0.38f, 0.36f), new Color(0.45f, 0.42f, 0.38f), new Color(0.4f, 0.38f, 0.36f), new Color(0.4f, 0.9f, 1f), new Color(0.56f, 0.54f, 0.5f), 1.3f, 1.4f, false, false, true, null, 0.8f);
+
+            // ---- Legendary
+            Monster("vesper_vampire", "Vesper Nightthorn", "Crimson Noble", "Crimson Breathing", 6, Element.Dark, Role.Burst, Species.Vampire,
+                "A vampire noble with bat wings and a crimson blade, faster than a heartbeat.", "Vesper has been a gentleman for three hundred years. The demons of the eclipse are terribly rude, so he has decided to be rude back.",
+                new[] { Ab("Crimson Waltz", AbilityShape.MultiSlash, 4f, 0.85f, 6, 0f, 3.8f, "A dancing six-cut combo."), Ab("Bat Swarm", AbilityShape.Wave, 6f, 1.6f, 3, 11f, 2f, "Sends a swarm of bats."), Ab("Mist Step", AbilityShape.Dash, 7f, 2f, 2, 9f, 1.8f, "Turns to mist and cuts through.") },
+                Ab("Eternal Night", AbilityShape.Burst, 0f, 2.8f, 1, 0f, 10f, "The sky goes dark; a thousand bats and a crimson moon fall on the demons.", 25f, 7f),
+                HairStyle.Short, WeaponKind.Katana, CombatStyle.Technical, MotionStyle.Confident,
+                new Color(0.08f, 0.06f, 0.1f), new Color(0.4f, 0.05f, 0.12f), new Color(0.12f, 0.1f, 0.14f), new Color(1f, 0.15f, 0.3f), new Color(0.88f, 0.86f, 0.92f), 1.1f, 0.95f, true, false, false, new Color(0.85f, 0.7f, 0.3f), 1.15f);
+            Monster("kohaku_kitsune", "Kohaku", "Nine-Tail Trickster", "Foxfire Breathing", 6, Element.Light, Role.Burst, Species.Kitsune,
+                "A kitsune trickster whose fans throw blue foxfire.", "Kohaku has five tails and wants all nine. Each tail comes from a great deed. Beating the eclipse should be worth at least two.",
+                new[] { Ab("Foxfire Fan", AbilityShape.Wave, 4f, 1.5f, 3, 11f, 1.8f, "Three blue foxfire flames."), Ab("Illusion Step", AbilityShape.Dash, 6f, 1.8f, 3, 9f, 1.8f, "Leaves illusions behind as she dashes."), Ab("Fox Ring", AbilityShape.Spin, 8f, 1.2f, 4, 0f, 4.4f, "A ring of foxfire around her.") },
+                Ab("Thousand Foxes", AbilityShape.Burst, 0f, 2.7f, 1, 0f, 10f, "Illusion foxes pour out of her tails and burst into foxfire on every demon.", 25f, 6f),
+                HairStyle.Long, WeaponKind.Fans, CombatStyle.Technical, MotionStyle.Sly,
+                new Color(0.95f, 0.93f, 0.9f), new Color(0.85f, 0.25f, 0.2f), new Color(0.98f, 0.6f, 0.2f), new Color(0.45f, 0.75f, 1f), new Color(0.98f, 0.88f, 0.8f), 1f, 0.9f, false, false, false, new Color(1f, 0.85f, 0.4f), 1.1f);
+            Monster("blizz_yeti", "Blizz", "Summit Yeti", "Avalanche Breathing", 6, Element.Water, Role.DPS, Species.Yeti,
+                "A towering yeti whose claws leave frost behind.", "Blizz lived alone on the highest summit until the eclipse froze even his mountain. Now he's come down, and he is cold and cranky.",
+                new[] { Ab("Frost Maul", AbilityShape.MultiSlash, 4f, 0.95f, 5, 0f, 3.8f, "Five icy claw swipes."), Ab("Avalanche Roll", AbilityShape.Dash, 7f, 2.4f, 2, 9f, 2.4f, "Rolls through like an avalanche.", 6f, 9f), Ab("Ice Roar", AbilityShape.Burst, 9f, 1.5f, 2, 0f, 5f, "A roar that freezes the air.") },
+                Ab("Whiteout", AbilityShape.Burst, 0f, 2.8f, 1, 0f, 10f, "A blizzard sweeps the field; ice spikes erupt under every demon.", 28f, 7f),
+                HairStyle.Wild, WeaponKind.Fists, CombatStyle.Brawler, MotionStyle.Aggressive,
+                new Color(0.85f, 0.9f, 0.95f), new Color(0.55f, 0.7f, 0.85f), new Color(0.94f, 0.96f, 1f), new Color(0.6f, 0.9f, 1f), new Color(0.55f, 0.65f, 0.85f), 1.3f, 1.35f, false, false, true, null, 1.05f);
+            Monster("jack_pumpkin", "Jack Hollowbright", "Pumpkin Knight", "Harvest Flame Breathing", 6, Element.Flame, Role.DPS, Species.PumpkinKnight,
+                "A headless knight with a burning carved pumpkin for a head and a greatsword to match.", "Jack lost his head in a war long ago. The pumpkin he found instead is, in his opinion, a big improvement.",
+                new[] { Ab("Harvest Cleave", AbilityShape.Wave, 5f, 2.1f, 1, 9f, 2.2f, "A cleaving wave of harvest fire."), Ab("Lantern Charge", AbilityShape.Dash, 7f, 2.2f, 1, 8f, 2.2f, "Charges with a burning grin.", 6f, 7f), Ab("Seed Burst", AbilityShape.Burst, 9f, 1.4f, 3, 0f, 4.5f, "Fiery pumpkin seeds scatter everywhere.") },
+                Ab("Hallow's Blaze", AbilityShape.Burst, 0f, 2.8f, 1, 0f, 10f, "Carved pumpkin lanterns rise all over the field and explode in orange fire.", 26f, 7f),
+                HairStyle.Short, WeaponKind.Greatsword, CombatStyle.Balanced, MotionStyle.Confident,
+                new Color(0.15f, 0.12f, 0.1f), new Color(0.2f, 0.15f, 0.25f), new Color(0.15f, 0.12f, 0.1f), new Color(1f, 0.55f, 0.1f), new Color(0.9f, 0.8f, 0.7f), 1.15f, 1.1f, true, false, true, new Color(0.95f, 0.5f, 0.1f), 0.95f);
+
+            // ---- Mythic
+            Monster("mortis_reaper", "Mortis", "Soul Reaper", "Soul Harvest Breathing", 7, Element.Dark, Role.Burst, Species.Reaper,
+                "A floating skeletal reaper with a great scythe, who ferries demons to where they belong.", "Mortis has one job: to collect what should not linger. The eclipse brought him a lot of overtime.",
+                new[] { Ab("Soul Reap", AbilityShape.Spin, 4f, 1.3f, 4, 0f, 4.4f, "A wide scythe sweep that hits all around."), Ab("Grave Glide", AbilityShape.Dash, 6f, 2.2f, 2, 10f, 2f, "Glides through the demon line."), Ab("Death's Toll", AbilityShape.Burst, 9f, 1.8f, 3, 0f, 5.5f, "A bell tolls three times; each toll strikes.") },
+                Ab("Final Harvest", AbilityShape.Burst, 0f, 3.2f, 1, 0f, 11f, "The scythe splits the sky; ghostly hands drag every demon down.", 30f, 8f),
+                HairStyle.Hood, WeaponKind.Spear, CombatStyle.Heavy, MotionStyle.Stoic,
+                new Color(0.06f, 0.05f, 0.08f), new Color(0.12f, 0.08f, 0.18f), new Color(0.1f, 0.08f, 0.14f), new Color(0.65f, 0.4f, 1f), new Color(0.93f, 0.9f, 0.84f), 1.15f, 0.95f, true, false, false, new Color(0.6f, 0.4f, 1f), 1f);
         }
 
         /// <summary>
@@ -907,6 +1038,10 @@ namespace HashiraChronicles
             Eq("sword_moonfall", "Moonfall Edge", EquipSlot.Sword, 7, new StatBlock(600, 1300, 150, 0.1f, 0.4f, 0.2f, 0.2f), new StatBlock(50, 95, 12, 0.003f, 0.015f, 0.01f, 0.01f), "Mythic. A blade forged from a fallen piece of the moon.");
             Eq("haori_starweave", "Starweave Mantle", EquipSlot.Haori, 7, new StatBlock(3200, 260, 620, 0.05f, 0.1f, 0.3f, 0.1f), new StatBlock(260, 20, 50, 0.002f, 0.005f, 0.01f, 0.005f), "Mythic. Stitched from starlight; it glows softly in the dark.");
             Eq("acc_phoenixheart", "Phoenix Heart", EquipSlot.Accessory, 7, new StatBlock(1500, 500, 260, 0.08f, 0.3f, 0.2f, 0.3f), new StatBlock(110, 38, 20, 0.003f, 0.012f, 0.01f, 0.015f), "Mythic. Still warm. Specials hit 30% harder.");
+            // Abyssal set: only drops in the Lv 70+ Abyssal Hunts.
+            Eq("sword_abyss", "Abyssal Fang", EquipSlot.Sword, 6, new StatBlock(300, 1100, 80, 0.09f, 0.35f, 0.1f, 0.15f), new StatBlock(30, 85, 8, 0.003f, 0.012f), "Legendary. Hunted from the Abyss; it hungers for demons.");
+            Eq("haori_abyss", "Abyssal Shroud", EquipSlot.Haori, 6, new StatBlock(2600, 180, 520, 0.04f, 0.1f, 0.2f), new StatBlock(220, 15, 44, 0.002f), "Legendary. Woven from the dark between stars.");
+            Eq("acc_abyss_eye", "Eye of the Abyss", EquipSlot.Accessory, 6, new StatBlock(900, 380, 180, 0.07f, 0.3f, 0.2f, 0.2f), new StatBlock(70, 30, 14, 0.003f, 0.012f, 0.01f, 0.01f), "Legendary. It watches every demon at once.");
             Eq("acc_dragonscale", "Dragon Scale Amulet", EquipSlot.Accessory, 7, new StatBlock(1200, 420, 240, 0.08f, 0.35f, 0.3f, 0.25f), new StatBlock(90, 34, 18, 0.003f, 0.015f, 0.01f, 0.012f), "Mythic. Every stat, all at once.");
         }
 
@@ -1284,6 +1419,32 @@ namespace HashiraChronicles
                 q.rewards.expScrolls = xpScrolls[i];
                 q.rewards.exp *= 3;
                 if (i == 4) q.bossId = "boss_seal_guardian";
+            }
+
+            // 8 — Loot farm for high-level slayers: Lv 70+ leads only, guaranteed gear every clear.
+            ev = new EventDefinition { id = "E8", title = "Abyssal Hunts", subtitle = "Lv 70+ only · farm legendary & mythic gear", regionId = "demonland",
+                accent = new Color(0.75f, 0.3f, 1f), bannerEnemy = "boss_veyrath", prizeText = "Guaranteed gear drops every clear",
+                story = "Below the Ashen Wastes lies the Abyss, where the strongest demons hoard what they've taken: blades, mantles, charms of legend. Only slayers of level 70 and above can survive the descent. Every hunt brings loot back up — the deeper, the richer." };
+            Events.Add(ev);
+            string[] aNames = { "Abyss Gate", "Hollow Barracks", "Hoard of Blades", "The Drowned Cathedral", "Throne of Ash", "Heart of the Abyss" };
+            string[] aStory = { "The first descent. The demons here have never seen daylight.", "An army sleeps down here. Wake it up.", "Swords stacked like firewood — and their jealous guards.",
+                "A sunken cathedral full of stolen treasure and very angry knights.", "The ash kings sit on thrones of loot.", "The oldest demon guards the deepest hoard." };
+            int[] aLv = { 70, 78, 86, 94, 102, 110 };
+            for (int i = 0; i < 6; i++)
+            {
+                q = Quest(ev, i + 1, i < 2 ? 0 : i < 4 ? 1 : 2, aNames[i], aLv[i], aStory[i],
+                    i % 3 == 0 ? Wave("elite", 2, "demon_warrior", 3) : i % 3 == 1 ? Wave("corrupted_knight", 2, "flame_beast", 2) : Wave("castle_sentinel", 1, "elite", 2),
+                    Wave("elite", 1 + i / 2, "corrupted_knight", 2));
+                q.minLevel = 70;
+                q.lootRolls = 2 + i / 2;
+                q.rewards.coins = 60000 + i * 25000;
+                q.rewards.expScrolls = 30 + i * 12;
+                q.rewards.crystals = 20 + i * 10;
+                q.dropTable.Clear();
+                q.dropTable.AddRange(new[] { "sword_abyss", "haori_abyss", "acc_abyss_eye", "sword_abyss", "haori_abyss", "acc_abyss_eye", "sword_akatsuki", "haori_ember", "acc_suncrest", "sword_dawn", "haori_royal", "acc_earrings" });
+                if (i >= 3) q.dropTable.AddRange(new[] { "sword_moonfall", "haori_starweave", "acc_phoenixheart", "acc_dragonscale" });
+                if (i == 5) q.bossId = "boss_veyrath";
+                else if (i == 2) q.bossId = "boss_goken";
             }
 
             // 7 — Gold farm: replay for gold, and every demon here drops extra coins.

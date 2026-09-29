@@ -41,18 +41,7 @@ namespace HashiraChronicles
                     ScaleWeaponParts(0.72f);
                     break;
                 case Species.Skeleton:
-                    HideFace(true);
-                    for (int s = -1; s <= 1; s += 2)
-                    {
-                        var so = OnFace(faceC, faceR, s * 0.14f, -0.01f, 0.004f);
-                        Ball(so, Vector3.zero, new Vector3(0.14f, 0.15f, 0.03f), dark);
-                        Ball(so, new Vector3(0f, 0f, 0.012f), Vector3.one * 0.045f, glow);
-                    }
-                    var nose = OnFace(faceC, faceR, 0f, -0.12f, 0.004f);
-                    for (int s = -1; s <= 1; s += 2) Ball(nose, new Vector3(s * 0.012f, 0f, 0f), new Vector3(0.022f, 0.04f, 0.02f), dark, new Vector3(0f, 0f, s * 20f));
-                    var grin = OnFace(faceC, faceR, 0f, -0.23f, 0.004f);
-                    Ball(grin, Vector3.zero, new Vector3(0.2f, 0.06f, 0.025f), dark);
-                    for (int k = 0; k < 6; k++) Part(PrimitiveType.Capsule, grin, new Vector3(-0.075f + k * 0.03f, 0f, 0.008f), new Vector3(0.022f, 0.022f, 0.012f), ivory);
+                    SkullFace(dark, glow, ivory);
                     BoneBlade(def);
                     break;
                 case Species.Demon:
@@ -133,7 +122,28 @@ namespace HashiraChronicles
                     Bandages(wrap, wrapD);
                     break;
                 }
+                default:
+                    MoreSpecies(def, skin, dark, ivory, glow, glowC, R);
+                    break;
             }
+            Menace(def, R);
+        }
+
+        /// <summary>Skull face: dark sockets with glowing pupils, a nose hole and a grin of teeth.</summary>
+        void SkullFace(Material dark, Material glow, Material ivory)
+        {
+            HideFace(true);
+            for (int s = -1; s <= 1; s += 2)
+            {
+                var so = OnFace(faceC, faceR, s * 0.14f, -0.01f, 0.004f);
+                Ball(so, Vector3.zero, new Vector3(0.15f, 0.16f, 0.03f), dark);
+                Ball(so, new Vector3(0f, 0f, 0.012f), Vector3.one * 0.05f, glow);
+            }
+            var nose = OnFace(faceC, faceR, 0f, -0.12f, 0.004f);
+            for (int s = -1; s <= 1; s += 2) Ball(nose, new Vector3(s * 0.012f, 0f, 0f), new Vector3(0.022f, 0.04f, 0.02f), dark, new Vector3(0f, 0f, s * 20f));
+            var grin = OnFace(faceC, faceR, 0f, -0.23f, 0.004f);
+            Ball(grin, Vector3.zero, new Vector3(0.22f, 0.07f, 0.025f), dark);
+            for (int k = 0; k < 7; k++) Spike(grin, new Vector3(-0.078f + k * 0.026f, 0.02f, 0.008f), Vector3.down, 0.022f, 0.035f, ivory);
         }
 
         // ------------------------------------------------------------------ Face helpers
@@ -314,6 +324,40 @@ namespace HashiraChronicles
 
         // ------------------------------------------------------------------ Species strikes
 
+        /// <summary>The slayer's species flavour at a point (used by their special): claw rakes, bandages, bats...</summary>
+        public void SpeciesBurstAt(Vector3 at)
+        {
+            if (SpeciesKind == Species.Human) return;
+            Vector3 fwd = transform.forward;
+            switch (SpeciesKind)
+            {
+                case Species.Werewolf:
+                case Species.Yeti:
+                case Species.Zombie:
+                case Species.Gargoyle:
+                {
+                    var rot = Quaternion.LookRotation(fwd) * Quaternion.Euler(0f, 0f, 35f);
+                    for (int k = -1; k <= 1; k++)
+                        VFX.Flash(MeshFactory.SmoothCapsule(), at + rot * new Vector3(k * 0.2f, 0f, 0f), rot, new Vector3(0.04f, 0.1f, 0.04f), new Vector3(0.07f, 1f, 0.07f), new Color(1f, 0.95f, 0.9f, 0.9f), 0.22f);
+                    break;
+                }
+                case Species.Mummy:
+                    VFX.Flash(MeshFactory.RoundedCube(), at, Quaternion.Euler(Random.Range(0f, 360f), Random.Range(0f, 360f), 0f), new Vector3(0.12f, 0.3f, 0.02f), new Vector3(0.1f, 2.2f, 0.02f), new Color(0.95f, 0.9f, 0.72f, 0.9f), 0.3f);
+                    break;
+                case Species.Vampire:
+                    for (int k = 0; k < 5; k++) VFX.Flash(MeshFactory.SmoothSphere(), at + Random.insideUnitSphere * 0.8f, Quaternion.identity, new Vector3(0.08f, 0.04f, 0.08f), new Vector3(0.3f, 0.06f, 0.1f), new Color(0.35f, 0.05f, 0.15f, 0.9f), 0.3f);
+                    break;
+                case Species.Skeleton:
+                case Species.Reaper:
+                    VFX.HitSpark(at, new Color(0.95f, 0.92f, 0.82f), 12);
+                    VFX.Breath(at, new Color(0.55f, 0.35f, 1f), 8);
+                    break;
+                default:
+                    MoreStrike(4, true, at, fwd, transform.right);
+                    break;
+            }
+        }
+
         /// <summary>Extra strike effect in the slayer's own kind of attack (called with every attack).</summary>
         void SpeciesStrike(int step, bool heavy)
         {
@@ -349,6 +393,9 @@ namespace HashiraChronicles
                     break;
                 case Species.Demon:
                     VFX.Breath(at, new Color(1f, 0.45f, 0.12f), 6);
+                    break;
+                default:
+                    MoreStrike(step, heavy, at, fwd, right);
                     break;
             }
         }

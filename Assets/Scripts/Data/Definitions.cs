@@ -260,6 +260,10 @@ namespace HashiraChronicles
         public RewardBundle firstClearRewards = new RewardBundle();
         /// <summary>Possible equipment drops (30% chance of one on victory).</summary>
         public List<string> dropTable = new List<string>();
+        /// <summary>Guaranteed extra drops from the drop table on victory (loot-farming missions).</summary>
+        public int lootRolls;
+        /// <summary>The team's lead slayer must be at least this level to enter (0 = anyone).</summary>
+        public int minLevel;
         public string requiresMissionId;
         public ArenaTheme theme = new ArenaTheme();
 

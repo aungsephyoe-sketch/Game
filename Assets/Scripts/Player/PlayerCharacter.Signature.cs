@@ -24,6 +24,7 @@ namespace HashiraChronicles
             tag.multiplier *= 1.3f * (1f + 0.08f * Mathf.Max(0, Owned.stars - 2));
             Vector3 focus = target != null ? target.Position : Position + transform.forward * 5f;
             if (NewcomerIds.Contains(Def.id)) return NewcomerSpecial(tag, tally, focus);
+            if (UsesComposedSpecial) return ComposedSpecial(tag, tally, focus, color);
             switch (Def.id)
             {
                 case "ren_initiate": return DragonSpecial(tag, tally, focus, 1f);

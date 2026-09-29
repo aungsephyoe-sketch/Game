@@ -92,6 +92,8 @@ namespace HashiraChronicles
 
                 if (m.dropTable.Count > 0 && Random.value < 0.3f)
                     total.equipmentIds.Add(m.dropTable[Random.Range(0, m.dropTable.Count)]);
+                for (int i = 0; i < m.lootRolls && m.dropTable.Count > 0; i++)
+                    total.equipmentIds.Add(m.dropTable[Random.Range(0, m.dropTable.Count)]);
             }
             else
             {

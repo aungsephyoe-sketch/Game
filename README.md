@@ -36,6 +36,37 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Monster legion, a strong attack of their own, mythic cinematics, Abyssal Hunts (0.33.0)
+- **Sixteen more monster-folk** (22 in all; the roster stays mostly human), each with their own body, weapon, skills
+  and strike effects:
+  | Rarity | Slayers |
+  |---|---|
+  | Common | Grub (zombie, grasping claws), Kappi (kappa, webbed fists) |
+  | Rare | Brakka (orc, cleavers), Ssira (lizardfolk, spear), Kree (harpy, feather fans), Grimstone (gargoyle, stone claws) |
+  | Epic | Taurok (minotaur, double axe), Mossgut (troll, tree club), Karasu (tengu, feather fan), Hollow (ghost, lantern staff), Obelisk (rune golem, boulder fists) |
+  | Legendary | Vesper (vampire, crimson blade, bat wings), Kohaku (kitsune, five tails, foxfire), Blizz (yeti, frost claws), Jack Hollowbright (pumpkin knight) |
+  | Mythic | Mortis (soul reaper, scythe) |
+- **Scarier monsters** (cartoon-scary, never gory): glowing eyes, angry brows, a hunched glare, a ring of dark smoke
+  at their feet, bigger fangs and meaner palettes.
+- **Every strong attack is different** (`PlayerCharacter.Moves.cs`): twelve movement patterns (Leap Slam, Rising
+  Fang, Cyclone, Piercing Line, Cross Cut, Earth Stride, Crescent Wave, Meteor Dive, Hundred Strikes, Backflip
+  Volley, Vortex, Phantom Step) × six finishers (Twin Rings, Sky Pillar, Star Fracture, Spiral Blades, Shard
+  Rain, Implosion), assigned by roster order so no two slayers share one (72 combinations). The slayer sheet names
+  it.
+- **Every special is different**: slayers without a hand-made set piece (all monster-folk, the design-test six) get
+  a composed special — one of five openers × eight main acts × five finales, unique per slayer, flavoured by
+  species (bats, bones, bandages, claw rakes, foxfire...).
+- **Mythic strong attacks**: a heartbeat and a rising choir-like swell as the world darkens, rarity rings and
+  converging lightning, a reverse whoosh as the power locks in, then a held slow-motion beat on impact with a huge
+  layered boom (sub drop, glass shimmer, debris, hall reverb), sky bolts ringing the impact and a MYTHIC flash.
+  New procedural sounds: `myth_heart`, `myth_rise`, `myth_whoosh`, `myth_boom`.
+- **Summon banners**: the featured slayer looks out at you, wrapped in a living aura (a breathing glow ringed by
+  their rarity colour, rising energy, orbiting sparks and an energy ring at their feet).
+- **Easier levelling**: about half the EXP per level at high levels, cheaper training, and all slayer EXP doubled.
+- **Abyssal Hunts** (event, Lv 70+ lead slayer only): six repeatable hunts, Lv 70–110, each clear gives 2–4
+  guaranteed gear drops (a new Legendary Abyssal set; Mythic gear from the deeper hunts), plus big gold, XP and a
+  few diamonds.
+
 ### Owner unlock (0.32.1)
 - `bash tools/unlock_all.sh` puts an `unlock_all` file next to this Mac's save; at launch the game then adds every
   playable slayer to that save (new ones too). The file lives only on that computer, so no one else's game

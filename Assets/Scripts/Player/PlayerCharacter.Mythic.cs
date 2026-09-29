@@ -17,7 +17,11 @@ namespace HashiraChronicles
             Health.GrantInvulnerability(0.9f);
             if (cam != null) { cam.PlayUltimateCinematic(transform, 1.6f, 4.5f); cam.SetZoom(0.82f, 6f); }
             TimeController.SlowMotion(0.45f, 0.55f);
-            if (Audio != null) { Audio.PlayPitched("sp_activate", 0.7f, 1.15f); Audio.PlayPitched("buildup", 0.55f, 1.2f); }
+            SceneLighting.UltimateMood(c, 1.8f);
+            if (Audio != null) { Audio.Play("myth_heart", 0.9f); Audio.Play("myth_rise", 0.8f); Audio.PlayPitched("sp_activate", 0.5f, 1.15f); }
+            // A rune circle under the slayer and the rarity colours rippling out.
+            VFX.BurstDisc(Position, 3.5f, Color.Lerp(c, Color.white, 0.3f), 0.6f);
+            for (int tier = 2; tier <= 6; tier++) VFX.Shockwave(Position, 1.5f + tier * 0.6f, RarityInfo.Color(tier), 0.4f + tier * 0.05f);
             float t = 0f;
             const float dur = 0.55f;
             while (t < dur)
@@ -32,8 +36,15 @@ namespace HashiraChronicles
                 if (Random.value < 0.25f) VFX.HitStar(Position + Vector3.up * Random.Range(0.6f, 2.2f) + Random.insideUnitSphere * 0.8f, c, 0.4f, 0.1f);
                 yield return null;
             }
-            VFX.Pillar(Position, Color.Lerp(c, Color.white, 0.4f), 7f, 0.35f);
-            VFX.HitStar(Position + Vector3.up * 1.4f, c, 1.8f, 0.16f);
+            // Lightning converges on the slayer as the power locks in.
+            for (int i = 0; i < 5; i++)
+            {
+                Vector3 o = Position + Quaternion.Euler(0f, i * 72f, 0f) * Vector3.forward * 3.5f;
+                BoltFx.Strike(o + Vector3.up * 9f, Position + Vector3.up * 1.2f, Color.Lerp(c, Color.white, 0.5f), 0.25f, 0.2f, 0.4f);
+            }
+            if (Audio != null) Audio.Play("myth_whoosh", 0.9f);
+            VFX.Pillar(Position, Color.Lerp(c, Color.white, 0.4f), 9f, 0.4f);
+            VFX.HitStar(Position + Vector3.up * 1.4f, c, 2.2f, 0.18f);
             Visual.SetCharge(0f, c);
         }
 
@@ -42,6 +53,20 @@ namespace HashiraChronicles
             Color c = ElementColor;
             var cam = CameraController.Instance;
             Vector3 fwd = transform.forward;
+            // The blow lands like a headliner: a held beat of slow motion, the boom, sky bolts ringing the impact.
+            Vector3 hitAt = moveImpact;
+            TimeController.SlowMotion(0.25f, 0.4f);
+            if (Audio != null) Audio.Play("myth_boom", 1f);
+            if (cam != null) cam.Punch(1f, 0.3f);
+            VFX.HitStar(hitAt + Vector3.up * 1.4f, c, 3.4f, 0.25f);
+            for (int i = 0; i < 6; i++)
+            {
+                Vector3 o = hitAt + Quaternion.Euler(0f, i * 60f + 15f, 0f) * Vector3.forward * 3f;
+                BoltFx.Strike(o + Vector3.up * 14f, o, Color.Lerp(c, Color.white, 0.5f), 0.35f, 0.22f, 0.45f);
+            }
+            for (int tier = 2; tier <= 6; tier++) VFX.Shockwave(hitAt, 2f + tier * 1.3f, RarityInfo.Color(tier), 0.45f + tier * 0.06f);
+            DamageNumbers.SpawnText(hitAt + Vector3.up * 3.4f, "MYTHIC", Color.Lerp(RarityInfo.Color(6), Color.white, 0.3f), 64f);
+            yield return new WaitForSeconds(0.18f);
             for (int wave = 0; wave < 3; wave++)
             {
                 float r = 3.5f + wave * 2f;

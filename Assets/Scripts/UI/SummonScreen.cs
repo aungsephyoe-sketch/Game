@@ -11,6 +11,50 @@ namespace HashiraChronicles
         int bannerPick = 1;
         float bannerSwitchAt = -10f;
 
+        /// <summary>
+        /// A living aura behind the featured slayer: a breathing glow in their colour ringed by their rarity colour,
+        /// energy tongues rising off them, sparks orbiting and an energy ring at their feet. (No rotated shapes, so it
+        /// clips cleanly to the banner.)
+        /// </summary>
+        void BannerAura(Rect ar, Color glow, Color rare, float slide)
+        {
+            float t = Time.unscaledTime;
+            Vector2 c = new Vector2(ar.center.x, ar.y + ar.height * 0.45f);
+            float breathe = 0.5f + 0.5f * Mathf.Sin(t * 2.2f);
+            float R = ar.width * 0.5f;
+            for (int i = 5; i >= 1; i--)
+            {
+                Color col = i > 3 ? rare : glow;
+                UIStyles.CircleTex(c, R * (0.45f + i * 0.14f + breathe * 0.04f), new Color(col.r, col.g, col.b, (0.05f + 0.025f * (5 - i)) * slide));
+            }
+            // Energy tongues rising off the silhouette.
+            for (int i = 0; i < 16; i++)
+            {
+                float ph = Mathf.Repeat(t * (0.6f + (i % 4) * 0.12f) + i * 0.137f, 1f);
+                float x = c.x + Mathf.Sin(i * 2.4f) * R * 0.62f + Mathf.Sin(t * 3f + i) * 6f;
+                float y = ar.yMax - ar.height * 0.08f - ph * ar.height * 0.85f;
+                float hgt = 24f + 40f * Mathf.Sin(ph * Mathf.PI);
+                Color col = i % 3 == 0 ? rare : glow;
+                Round(new Rect(x - 5f, y - hgt, 10f, hgt), new Color(col.r, col.g, col.b, 0.35f * Mathf.Sin(ph * Mathf.PI) * slide), 5f);
+            }
+            // Sparks orbiting around the body.
+            for (int i = 0; i < 10; i++)
+            {
+                float a = t * 1.4f + i * Mathf.PI * 2f / 10f;
+                Vector2 p = c + new Vector2(Mathf.Cos(a) * R * 0.75f, Mathf.Sin(a) * R * 0.22f + Mathf.Sin(a * 2f) * 20f);
+                bool front = Mathf.Sin(a) > 0f;
+                UIStyles.CircleTex(p, front ? 4f : 2.5f, new Color(1f, 1f, 0.9f, (front ? 0.9f : 0.4f) * slide));
+            }
+            // Energy ring at the feet (a flat ellipse drawn as stacked strips).
+            Vector2 f = new Vector2(c.x, ar.yMax - ar.height * 0.06f);
+            for (int j = -6; j <= 6; j++)
+            {
+                float yy = j / 6f;
+                float w = Mathf.Sqrt(Mathf.Max(0f, 1f - yy * yy)) * R * 0.9f * (0.95f + 0.05f * breathe);
+                UIStyles.Rect(new Rect(f.x - w, f.y + j * 3f, w * 2f, 3f), new Color(rare.r, rare.g, rare.b, (0.12f + 0.1f * breathe) * (1f - Mathf.Abs(yy) * 0.6f) * slide));
+            }
+        }
+
         void DrawSummonBanner(PlayerData d, SummonStage st)
         {
             TopBar("SUMMON", GameScreen.MainMenu);
@@ -82,6 +126,7 @@ namespace HashiraChronicles
                 if (art != null)
                 {
                     var ar = new Rect(ac.x - h * 0.42f + (1f - slide) * 260f, -h * 0.02f + bob, h * 0.84f, h * 1.12f);
+                    BannerAura(ar, th0.glow, RarityInfo.Color(def0.rarity), slide);
                     var oc = GUI.color;
                     // Element halo, then the slayer.
                     GUI.color = new Color(th0.glow.r, th0.glow.g, th0.glow.b, 0.55f * slide);

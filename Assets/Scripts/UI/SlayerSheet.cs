@@ -55,6 +55,9 @@ namespace HashiraChronicles
                 : "Strong vs " + ElementChart.Name(ElementChart.StrongAgainst(def.element)) + " (+15%)   ·   weak vs " + ElementChart.Name(ElementChart.WeakTo(def.element)) + " (−15%)";
             GUI.Label(new Rect(x, y, w, 30f), "<color=#AAB0C8>" + hint + "</color>", UIStyles.Sized(UIStyles.Small, 19));
             y += 36f;
+            GUI.Label(new Rect(x, y, w, 30f), "<color=#FFD36B>Strong attack: " + PlayerCharacter.StrongName(def) + "</color>" +
+                (def.species != Species.Human ? "   ·   <color=#FF8A8A>" + def.species + "</color>" : ""), UIStyles.Sized(UIStyles.Small, 19));
+            y += 34f;
             if (!string.IsNullOrEmpty(def.description))
             {
                 var ds = new GUIStyle(UIStyles.Sized(UIStyles.Small, 19)) { wordWrap = true };

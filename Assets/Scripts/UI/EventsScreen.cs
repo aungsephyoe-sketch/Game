@@ -155,6 +155,11 @@ namespace HashiraChronicles
                     LockIcon(new Vector2(pb.center.x, pb.center.y - 6f), 34f, new Color(1f, 1f, 1f, 0.6f));
                     GUI.Label(new Rect(pb.x, pb.yMax - 18f, pb.width, 24f), "<color=#999999>Clear quest " + i + "</color>", UIStyles.Sized(UIStyles.Center, 15));
                 }
+                else if (q.minLevel > 0 && LeadLevel(d) < q.minLevel)
+                {
+                    LockIcon(new Vector2(pb.center.x, pb.center.y - 8f), 30f, new Color(0.8f, 0.5f, 1f, 0.8f));
+                    GUI.Label(new Rect(pb.x - 30f, pb.yMax - 18f, pb.width + 30f, 24f), "<color=#C9A6FF>Lead slayer Lv " + q.minLevel + "+</color>", UIStyles.Sized(UIStyles.Center, 15));
+                }
                 else if (FlatBtn(pb, cleared ? "REPLAY" : "PLAY", cleared ? new Color(0.2f, 0.24f, 0.4f) : TileRed, true, 26))
                 {
                     gm.SelectedMission = q;
@@ -165,5 +170,13 @@ namespace HashiraChronicles
         }
 
         Vector2 eventScroll;
+
+        /// <summary>Level of the team's lead slayer (gates the Lv 70+ hunts).</summary>
+        static int LeadLevel(PlayerData d)
+        {
+            if (d == null || d.team == null || d.team.Count == 0) return 0;
+            var c = d.GetCharacter(d.team[0]);
+            return c != null ? c.level : 0;
+        }
     }
 }
