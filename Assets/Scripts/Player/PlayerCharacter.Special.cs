@@ -117,6 +117,8 @@ namespace HashiraChronicles
             if (audio != null) audio.Play("sp_finish", 1f);
             GameEvents.RaiseImpact(1f);
             yield return new WaitForSeconds(0.35f);
+            // Mythics keep going: an encore of element strikes before the finale ends.
+            if (CharacterSystem.IsMythic(Def)) yield return MythicEncore(color, tally);
             FinishUltimateEffects();
             GameEvents.RaiseUltimateFinished(this, tally.total);
         }

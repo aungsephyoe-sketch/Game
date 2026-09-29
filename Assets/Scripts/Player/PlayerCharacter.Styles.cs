@@ -86,7 +86,7 @@ namespace HashiraChronicles
                 case Element.Water: id = "el_water"; break;
                 case Element.Beast: id = "el_wind"; break;
                 case Element.Light: id = "el_light"; break;
-                case Element.Earth: id = "slam"; break;
+                case Element.Earth: id = "el_earth"; break;
                 default: id = "el_dark"; break;
             }
             Audio.PlayVaried(id, volume, 0.12f);

@@ -12,12 +12,17 @@ namespace HashiraChronicles
         {
             var d = gm.Data;
             var st = gm.SummonHall;
+            bool guiWas = GUI.enabled;
+            if (sheetDef != null) GUI.enabled = false; // the sheet on top takes the clicks
             switch (st.Phase)
             {
                 case SummonStage.SummonPhase.Idle: DrawSummonBanner(d, st); break;
                 case SummonStage.SummonPhase.Summary: DrawSummonSummary(d, st); break;
                 default: DrawSummonReveal(st); break;
             }
+            GUI.enabled = guiWas;
+            if (st.Phase != SummonStage.SummonPhase.Idle && st.Phase != SummonStage.SummonPhase.Summary) sheetDef = null;
+            DrawSlayerSheet();
         }
 
         // ------------------------------------------------------------------ Missions board

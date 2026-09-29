@@ -79,9 +79,22 @@ namespace HashiraChronicles
                 var eq = GameDatabase.GetEquipment(item.defId);
                 if (eq != null) s = s + eq.BonusAt(item.level);
             }
+            // Mythics stand above everyone: tougher, harder-hitting, and they crit far more often and harder.
+            if (IsMythic(def))
+            {
+                s.hp *= 1.2f;
+                s.atk *= 1.22f;
+                s.def *= 1.15f;
+                s.crit += 0.12f;
+                s.critDmg += 0.4f;
+                s.specialDmg += 0.25f;
+                s.speed *= 1.05f;
+            }
             s.crit = Mathf.Clamp01(s.crit);
             return s;
         }
+
+        public static bool IsMythic(CharacterDefinition def) { return def != null && def.rarity >= 7; }
 
         public static int Power(PlayerData data, OwnedCharacter owned)
         {

@@ -127,6 +127,7 @@ namespace HashiraChronicles
                 GUI.Label(new Rect(tx, banner.y + 312f, tw2, 34f), "<color=#FFD36B>✦ Special: " + def0.ultimate.name + "</color>", UIStyles.Sized(UIStyles.Body, 22));
                 GUI.Label(new Rect(tx, banner.y + 350f, tw2, 60f), "<color=#FFB3C6>Every MYTHIC pulled on this banner is " + def0.displayName + ".</color>", UIStyles.Sized(UIStyles.Small, 19));
                 // 60-second trial at full power.
+                if (FlatBtn(new Rect(tx + 380f, banner.yMax - 118f, 220f, 72f), "DETAILS", new Color(0.25f, 0.4f, 0.8f), sheetDef == null, 26)) OpenSheet(def0);
                 var trial = new Rect(tx, banner.yMax - 130f, 360f, 96f);
                 float g = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f);
                 RoundFrame(Grow(trial, 4f + 2f * g), new Color(bc.r, bc.g, bc.b, 0.5f + 0.3f * g), 3f, 18f);
@@ -497,6 +498,8 @@ namespace HashiraChronicles
                 GUI.Label(new Rect(tx, rect.y + 72f, tw, 40f), r.def.displayName, UIStyles.Sized(UIStyles.H2, 24));
                 GUI.Label(new Rect(tx, rect.y + 108f, tw, 30f), "<color=#AAAAAA>" + r.def.versionTitle + "</color>", UIStyles.Sized(UIStyles.Small, 16));
                 GUI.Label(new Rect(tx, rect.y + 140f, tw, 40f), r.isNew ? "<color=#7CFF8A>NEW!</color>" : "<color=#FF9C7A>DUPLICATE</color>", UIStyles.Sized(UIStyles.Body, 22));
+                GUI.Label(new Rect(tx, rect.yMax - 30f, tw, 26f), "<color=#8890A8>tap for details</color>", UIStyles.Sized(UIStyles.Small, 14));
+                if (sheetDef == null && GUI.Button(rect, GUIContent.none, GUIStyle.none)) OpenSheet(r.def);
             }
             float by = H - 150f;
             if (FlatBtn(new Rect(W * 0.5f - 470f, by, 440f, 100f), "OK", new Color(0.2f, 0.24f, 0.4f), true, 36)) st.CloseSummary();

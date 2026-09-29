@@ -36,6 +36,28 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Mythic cinematics, slayer sheets, sticker posters (0.26.0)
+- **Fixed: the player floating and looking giant in co-op.**
+  - Specials lift the model off the ground (up to 8 m for Raiga's). When a move was interrupted, `StopAction` never put the model back down, so it hovered near the camera.
+  - Interrupting a move now resets the lift, and any leftover lift eases back to the feet whenever no move is running.
+- **Fixed: the end of the Gate of Frost map.**
+  - Background mountain ranges were placed in rings 150 m from the middle of the route, but routes are about 255 m long, so 4 of 36 mountains cut into the last places (Ice Cave Camp, Summit Pass and the summit arena).
+  - Each range is now pushed out until it clears the road and every place; the check in the harness now finds 0 overlaps on every map.
+- **Co-op teammates:** they dash nearly nonstop (every 0.3–0.55 s), swing about twice as fast, and their strong attacks (combo finishers, specials, ultimates) hit **10×** harder. They no longer chat during co-op missions.
+- **Gamer names:** simulated players use a shared list of real-world-style, silly, cute, sassy and powerful names (JakeTheSnake, NoodleNinja, MochiMuffin, QueenOfCrits, StormbreakerX...).
+- **Missions:** 12 daily and 10 weekly. New kinds: co-op clears, arena matches and wins, event quests, 3-star clears, ultimates, skills, perfect dodges and messaging a friend.
+- **Mythic slayers:**
+  - Stats: +20% HP, +22% ATK, +15% DEF, +12% crit rate, +40% crit damage and +25% special damage.
+  - Their strong attack becomes a short cinematic: the camera swings in and time slows while the element gathers, the blow lands, then three rolling aftershocks tear outward.
+  - Their special gets an encore: element strikes rain on nearby demons before a closing burst.
+- **Summon slayer sheet:** DETAILS on the banner, or tapping any pulled slayer, shows:
+  - action art, element, role and weapon, and the element matchup;
+  - stats at Lv.1 next to fully starred, awakened max level;
+  - every skill and the special, with what it does, its damage and its cooldown.
+- **Character list posters:** each card is a 2D sticker poster: an element-colour burst with slowly turning rays and a diagonal stripe, and the slayer in their action pose with a white sticker outline and a dark ink edge.
+- **Cooler sounds:** dash, crit, slam, impact, the ultimate start and finish, and every element (plus a new Earth rumble) are rebuilt with a whip-crack transient, a doppler body, a sub drop, a metallic shimmer and a room tail.
+- **Livelier, richer slayers:** a big sparkle in every eye (it blinks with the eye), rosy cheeks, richer saturated body colours, and little happy hops and wiggles when idle.
+
 ### Elements, faster co-op, softer slayers (0.25.0)
 - **Element cycle:** Water › Fire › Earth › Wind › Thunder › Water.
   - Hitting the element you beat deals **+15%**, and hitting the one that beats you deals **−15%**. Light and Dark are neutral.

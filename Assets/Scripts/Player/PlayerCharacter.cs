@@ -519,10 +519,16 @@ namespace HashiraChronicles
 
         IEnumerator ChargedRoutine()
         {
-            if (Def.style == CombatStyle.Ranged) { yield return RangedCharged(); yield break; }
-            if (Def.style == CombatStyle.Healer) { yield return HealerCharged(); yield break; }
-            if (Def.style == CombatStyle.Brawler) { yield return BrawlerCharged(); yield break; }
-            yield return StrongAttack();
+            // Mythics: a longer, cinematic strong attack — a gathering prelude, the blow, then rolling aftershocks.
+            bool mythic = CharacterSystem.IsMythic(Def);
+            if (mythic) yield return MythicPrelude();
+            IEnumerator blow;
+            if (Def.style == CombatStyle.Ranged) blow = RangedCharged();
+            else if (Def.style == CombatStyle.Healer) blow = HealerCharged();
+            else if (Def.style == CombatStyle.Brawler) blow = BrawlerCharged();
+            else blow = StrongAttack();
+            yield return blow;
+            if (mythic) yield return MythicAftershock();
         }
 
         // ------------------------------------------------------------------ Dodge / guard / parry

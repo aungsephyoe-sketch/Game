@@ -11,7 +11,7 @@ namespace HashiraChronicles
     public class SquishBounce : MonoBehaviour
     {
         CharacterVisual visual;
-        float squish, vel, t;
+        float squish, vel, t, hopTimer = 3f;
 
         public void Init(CharacterVisual v) { visual = v; t = Random.Range(0f, 10f); }
 
@@ -24,6 +24,16 @@ namespace HashiraChronicles
             if (dt <= 0f) return;
             t += dt;
             float moving = visual != null ? visual.MovingAmount : 0f;
+            // Idle life: every few seconds a little happy hop or wiggle.
+            if (moving < 0.1f)
+            {
+                hopTimer -= dt;
+                if (hopTimer <= 0f)
+                {
+                    hopTimer = Random.Range(2.5f, 6f);
+                    Poke(Random.value < 0.5f ? 0.1f : -0.07f);
+                }
+            }
             // Spring toward rest (stiff and underdamped: it wobbles).
             float acc = -squish * 260f - vel * 11f;
             vel += acc * dt;

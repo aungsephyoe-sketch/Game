@@ -86,7 +86,7 @@ Shader "Hashira/Toon"
                 fixed3 ambient = ShadeSH9(float4(n, 1.0));
                 fixed3 light = min(_LightColor0.rgb, 1.0);
                 fixed3 shadowTone = baseCol * lerp(_ShadowColor.rgb, fixed3(1, 1, 1), 0.15) * lerp(0.8, 0.66, _Crisp);
-                fixed3 midTone = baseCol * lerp(fixed3(1, 1, 1), light, 0.5) * 0.93;
+                fixed3 midTone = baseCol * lerp(fixed3(1, 1, 1), light, 0.5) * 0.97;
                 fixed3 litTone = baseCol * lerp(fixed3(1, 1, 1), light, 0.6) * 1.06;
                 fixed3 col = lerp(lerp(shadowTone, midTone, toMid), litTone, toLit);
                 col += baseCol * ambient * 0.26;
@@ -101,7 +101,8 @@ Shader "Hashira/Toon"
                 col += _RimColor.rgb * smoothstep(lerp(0.25, 0.4, _Crisp), lerp(0.65, 0.45, _Crisp), rim) * lerp(0.08, 0.16, _Crisp);
                 // Saturated, punchy colour.
                 float luma = dot(col, float3(0.299, 0.587, 0.114));
-                col = lerp(luma.xxx, col, lerp(1.12, 1.22, _Crisp));
+                // Rich, cartoony colour on bodies (soft shading keeps it from looking harsh).
+                col = lerp(luma.xxx, col, lerp(1.32, 1.22, _Crisp));
                 col = saturate(col);
                 col = min(col, 0.98);
                 col += _Emission.rgb;

@@ -28,6 +28,27 @@ namespace HashiraChronicles
                 }
             }
             if (Model != null && GetComponent<SquishBounce>() == null) gameObject.AddComponent<SquishBounce>().Init(this);
+            LivelyFace();
+        }
+
+        /// <summary>Livelier cartoon faces: a big sparkle in every eye (it blinks with the eye) and rosy cheeks.</summary>
+        void LivelyFace()
+        {
+            if (head == null) return;
+            var sparkle = MaterialFactory.Toon(Color.white, 0f, new Color(0.95f, 0.95f, 0.95f));
+            var blush = MaterialFactory.Transparent(new Color(1f, 0.42f, 0.5f, 0.42f));
+            foreach (var lid in head.GetComponentsInChildren<EyeLid>(true))
+            {
+                var e = lid.transform;
+                if (e.childCount == 0) continue;
+                // The first part of each eye is its white: its size is the eye's size.
+                Vector3 sc = e.GetChild(0).localScale;
+                float w = Mathf.Max(0.02f, sc.x), h = Mathf.Max(0.02f, sc.y);
+                Ball(e, new Vector3(-w * 0.2f, h * 0.24f, 0.014f), new Vector3(w * 0.36f, h * 0.32f, 0.018f), sparkle);
+                Ball(e, new Vector3(w * 0.2f, h * 0.02f, 0.014f), new Vector3(w * 0.12f, h * 0.11f, 0.016f), sparkle);
+                var cheek = MeshFactory.MeshObject(MeshFactory.SmoothSphere(), e, new Vector3(0f, -h * 1.05f, -0.008f), new Vector3(w * 0.95f, h * 0.42f, 0.01f), blush, false);
+                cheek.name = "Cheek";
+            }
         }
 
         void CartoonProportions(float strength)

@@ -247,6 +247,91 @@ namespace HashiraChronicles
             GUI.EndScrollView();
         }
 
+        /// <summary>
+        /// A 2D poster of the slayer, painted like a collectible sticker card: a bold burst in their element colour
+        /// with rays and a diagonal stripe, the slayer in their action pose (upper body) with a thick white sticker
+        /// outline and a dark ink edge.
+        /// </summary>
+        void PosterArt(Rect r, CharacterDefinition def, Color ec, float seed)
+        {
+            // Burst background.
+            Color deep = Color.Lerp(ec, new Color(0.08f, 0.04f, 0.16f), 0.55f), bright = Color.Lerp(ec, Color.white, 0.25f);
+            const int bands = 8;
+            for (int i = 0; i < bands; i++)
+            {
+                float f = i / (float)(bands - 1);
+                UIStyles.Rect(new Rect(r.x, r.y + r.height * i / bands, r.width, r.height / bands + 1f), Color.Lerp(bright, deep, f));
+            }
+            var saved = GUI.matrix;
+            Vector2 c = new Vector2(r.center.x, r.y + r.height * 0.42f);
+            GUI.BeginGroup(r);
+            Vector2 lc = c - r.position;
+            float t = Time.unscaledTime * 8f + seed * 40f;
+            for (int k = 0; k < 8; k++)
+            {
+                GUI.matrix = saved;
+                RotateGui(k * 45f + t, lc + r.position);
+                UIStyles.Rect(new Rect(lc.x, lc.y - r.height * 0.06f, r.height, r.height * 0.12f), new Color(1f, 1f, 1f, 0.09f));
+            }
+            GUI.matrix = saved;
+            // Diagonal stripe behind the shoulders.
+            RotateGui(-14f, lc + r.position);
+            UIStyles.Rect(new Rect(-40f, r.height * 0.62f, r.width + 80f, r.height * 0.18f), new Color(deep.r, deep.g, deep.b, 0.8f));
+            UIStyles.Rect(new Rect(-40f, r.height * 0.62f, r.width + 80f, 4f), new Color(1f, 1f, 1f, 0.5f));
+            GUI.matrix = saved;
+            UIStyles.CircleTex(lc, r.width * 0.42f, new Color(1f, 1f, 1f, 0.12f));
+            GUI.EndGroup();
+
+            // The slayer as a sticker: dark ink edge, white outline, then the art (action pose, upper body).
+            var art = ArtLibrary.CharacterAction(def);
+            Rect uv = new Rect(0.06f, 0.36f, 0.88f, 0.62f);
+            if (art == null) { art = ArtLibrary.Character(def); uv = new Rect(0.1f, 0.08f, 0.8f, 0.8f); }
+            if (art == null) return;
+            var ar = new Rect(r.x - 4f, r.y + 2f, r.width + 8f, r.height - 2f);
+            var old = GUI.color;
+            GUI.color = new Color(0.08f, 0.05f, 0.14f, 1f);
+            for (int i = 0; i < 8; i++)
+            {
+                Vector2 o = new Vector2(Mathf.Cos(i * Mathf.PI / 4f), Mathf.Sin(i * Mathf.PI / 4f)) * 6f;
+                GUI.DrawTextureWithTexCoords(new Rect(ar.x + o.x, ar.y + o.y, ar.width, ar.height), art, uv, true);
+            }
+            GUI.color = Color.white;
+            // White sticker outline: a flat-white silhouette of the art, drawn around it.
+            var sil = Silhouette(art);
+            if (sil != null)
+                for (int i = 0; i < 8; i++)
+                {
+                    Vector2 o = new Vector2(Mathf.Cos(i * Mathf.PI / 4f), Mathf.Sin(i * Mathf.PI / 4f)) * 3.5f;
+                    GUI.DrawTextureWithTexCoords(new Rect(ar.x + o.x, ar.y + o.y, ar.width, ar.height), sil, uv, true);
+                }
+            GUI.color = old;
+            GUI.DrawTextureWithTexCoords(ar, art, uv, true);
+        }
+
+        static Material stickerMat;
+        static readonly System.Collections.Generic.Dictionary<Texture, RenderTexture> silhouettes = new System.Collections.Generic.Dictionary<Texture, RenderTexture>();
+
+        /// <summary>A cached flat-white copy of a portrait's shape (baked once on the GPU), for sticker outlines.</summary>
+        static Texture Silhouette(Texture art)
+        {
+            RenderTexture rt;
+            if (silhouettes.TryGetValue(art, out rt) && rt != null && rt.IsCreated()) return rt;
+            if (stickerMat == null)
+            {
+                var sh = Shader.Find("GUI/Text Shader");
+                if (sh == null) return null;
+                stickerMat = new Material(sh) { color = Color.white };
+            }
+            rt = new RenderTexture(Mathf.Max(64, art.width / 2), Mathf.Max(64, art.height / 2), 0, RenderTextureFormat.ARGB32);
+            rt.Create();
+            // Blit switches the render target; put the GUI's back.
+            var prev = RenderTexture.active;
+            Graphics.Blit(art, rt, stickerMat);
+            RenderTexture.active = prev;
+            silhouettes[art] = rt;
+            return rt;
+        }
+
         /// <summary>A slayer you haven't unlocked: grey portrait, name, rarity and a big grey lock.</summary>
         void LockedCard(Rect r, CharacterDefinition def)
         {
@@ -316,10 +401,8 @@ namespace HashiraChronicles
             Round(new Rect(r.x + 12f, r.y + 9f, r.width - 24f, 14f), new Color(1f, 1f, 1f, 0.18f), 7f);
             // Face with aura, zoomed in on the face.
             var face = new Rect(r.x + 6f, r.y + 6f, r.width - 12f, r.width - 12f);
-            Aura(face.center, face.width * 0.5f, god ? GodColor : ec, maxed && !god);
-            if (god) Aura(face.center, face.width * 0.62f, new Color(1f, 0.85f, 0.3f), false);
-            var tex = ArtLibrary.Character(def);
-            if (tex != null) GUI.DrawTextureWithTexCoords(face, tex, new Rect(0.14f, 0.16f, 0.72f, 0.72f), true);
+            PosterArt(new Rect(r.x + 5f, r.y + 5f, r.width - 10f, r.height - 72f), def, god ? GodColor : ec, r.x * 0.013f);
+            if (maxed && !god) Aura(face.center, face.width * 0.45f, ec, true);
             // A little twinkle in the corner.
             float tw = Mathf.Max(0f, Mathf.Sin(Time.unscaledTime * 2.2f + r.x * 0.05f));
             UIStyles.Outlined(new Rect(r.xMax - 40f, r.y + 8f, 30f, 30f), "✦", UIStyles.Sized(UIStyles.Center, 20), new Color(1f, 1f, 0.9f, 0.3f + 0.6f * tw), 0f);
