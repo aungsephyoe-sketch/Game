@@ -254,58 +254,41 @@ namespace HashiraChronicles
         /// </summary>
         void PosterArt(Rect r, CharacterDefinition def, Color ec, float seed)
         {
-            // Burst background.
-            Color deep = Color.Lerp(ec, new Color(0.08f, 0.04f, 0.16f), 0.55f), bright = Color.Lerp(ec, Color.white, 0.25f);
-            const int bands = 8;
+            // Soft "sky" in the element's colour: brighter at the top, deeper at the bottom (no rotated shapes —
+            // IMGUI can't clip those to the scrolling grid).
+            Color top = Color.Lerp(ec, Color.white, 0.45f), bottom = Color.Lerp(ec, new Color(0.1f, 0.06f, 0.2f), 0.45f);
+            const int bands = 10;
             for (int i = 0; i < bands; i++)
             {
                 float f = i / (float)(bands - 1);
-                UIStyles.Rect(new Rect(r.x, r.y + r.height * i / bands, r.width, r.height / bands + 1f), Color.Lerp(bright, deep, f));
+                UIStyles.Rect(new Rect(r.x, r.y + r.height * i / bands, r.width, r.height / bands + 1f), Color.Lerp(top, bottom, f));
             }
-            var saved = GUI.matrix;
-            Vector2 c = new Vector2(r.center.x, r.y + r.height * 0.42f);
-            GUI.BeginGroup(r);
-            Vector2 lc = c - r.position;
-            float t = Time.unscaledTime * 8f + seed * 40f;
-            for (int k = 0; k < 8; k++)
-            {
-                GUI.matrix = saved;
-                RotateGui(k * 45f + t, lc + r.position);
-                UIStyles.Rect(new Rect(lc.x, lc.y - r.height * 0.06f, r.height, r.height * 0.12f), new Color(1f, 1f, 1f, 0.09f));
-            }
-            GUI.matrix = saved;
-            // Diagonal stripe behind the shoulders.
-            RotateGui(-14f, lc + r.position);
-            UIStyles.Rect(new Rect(-40f, r.height * 0.62f, r.width + 80f, r.height * 0.18f), new Color(deep.r, deep.g, deep.b, 0.8f));
-            UIStyles.Rect(new Rect(-40f, r.height * 0.62f, r.width + 80f, 4f), new Color(1f, 1f, 1f, 0.5f));
-            GUI.matrix = saved;
-            UIStyles.CircleTex(lc, r.width * 0.42f, new Color(1f, 1f, 1f, 0.12f));
-            GUI.EndGroup();
+            // A soft glow behind the head.
+            Vector2 c = new Vector2(r.center.x, r.y + r.height * 0.45f);
+            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 2f + seed);
+            for (int k = 3; k >= 1; k--) UIStyles.CircleTex(c, r.width * (0.2f + k * 0.1f), new Color(1f, 1f, 1f, 0.07f + 0.02f * pulse));
 
-            // The slayer as a sticker: dark ink edge, white outline, then the art (action pose, upper body).
+            // The slayer, head and shoulders, with a dark ink edge like a cartoon card portrait.
             var art = ArtLibrary.CharacterAction(def);
-            Rect uv = new Rect(0.06f, 0.36f, 0.88f, 0.62f);
-            if (art == null) { art = ArtLibrary.Character(def); uv = new Rect(0.1f, 0.08f, 0.8f, 0.8f); }
+            Rect uv = new Rect(0.1f, 0.42f, 0.8f, 0.56f);
+            if (art == null) { art = ArtLibrary.Character(def); uv = new Rect(0.08f, 0.06f, 0.84f, 0.84f); }
             if (art == null) return;
-            var ar = new Rect(r.x - 4f, r.y + 2f, r.width + 8f, r.height - 2f);
-            var old = GUI.color;
-            GUI.color = new Color(0.08f, 0.05f, 0.14f, 1f);
-            for (int i = 0; i < 8; i++)
-            {
-                Vector2 o = new Vector2(Mathf.Cos(i * Mathf.PI / 4f), Mathf.Sin(i * Mathf.PI / 4f)) * 6f;
-                GUI.DrawTextureWithTexCoords(new Rect(ar.x + o.x, ar.y + o.y, ar.width, ar.height), art, uv, true);
-            }
-            GUI.color = Color.white;
-            // White sticker outline: a flat-white silhouette of the art, drawn around it.
+            var ar = new Rect(r.x, r.y + 4f, r.width, r.height - 4f);
             var sil = Silhouette(art);
+            var old = GUI.color;
             if (sil != null)
-                for (int i = 0; i < 8; i++)
+            {
+                GUI.color = new Color(0.07f, 0.05f, 0.12f, 1f);
+                for (int i = 0; i < 4; i++)
                 {
-                    Vector2 o = new Vector2(Mathf.Cos(i * Mathf.PI / 4f), Mathf.Sin(i * Mathf.PI / 4f)) * 3.5f;
+                    Vector2 o = new Vector2(Mathf.Cos(i * Mathf.PI / 2f + 0.78f), Mathf.Sin(i * Mathf.PI / 2f + 0.78f)) * 3f;
                     GUI.DrawTextureWithTexCoords(new Rect(ar.x + o.x, ar.y + o.y, ar.width, ar.height), sil, uv, true);
                 }
+            }
             GUI.color = old;
             GUI.DrawTextureWithTexCoords(ar, art, uv, true);
+            // Glossy highlight across the top of the window.
+            UIStyles.Rect(new Rect(r.x, r.y, r.width, r.height * 0.18f), new Color(1f, 1f, 1f, 0.1f));
         }
 
         static Material stickerMat;
@@ -332,27 +315,29 @@ namespace HashiraChronicles
             return rt;
         }
 
-        /// <summary>A slayer you haven't unlocked: grey portrait, name, rarity and a big grey lock.</summary>
+        /// <summary>A slayer you haven't unlocked: the same card frame in grey, a shadowed portrait and a big lock.</summary>
         void LockedCard(Rect r, CharacterDefinition def)
         {
             Color rc = RarityInfo.Color(def.rarity);
-            Round(Offset(r, 0f, 4f), new Color(0f, 0f, 0f, 0.4f), 12f);
-            Round(r, new Color(0.1f, 0.1f, 0.13f, 0.95f), 12f);
-            var face = new Rect(r.x + 8f, r.y + 8f, r.width - 16f, r.width - 16f);
+            CardFrame(r, Color.Lerp(rc, new Color(0.35f, 0.35f, 0.4f), 0.8f), false, false, false);
+            var win = new Rect(r.x + 10f, r.y + 10f, r.width - 20f, r.height - 70f);
+            Round(Grow(win, 2f), new Color(0.05f, 0.04f, 0.1f), 12f);
+            Round(win, new Color(0.12f, 0.12f, 0.16f), 10f);
             var tex = ArtLibrary.Character(def);
-            var o = GUI.color;
             if (tex != null)
             {
-                GUI.color = new Color(0.32f, 0.32f, 0.36f, 1f);
-                GUI.DrawTexture(face, tex, ScaleMode.ScaleAndCrop, true);
+                var o = GUI.color;
+                GUI.color = new Color(0.3f, 0.3f, 0.34f, 1f);
+                GUI.DrawTextureWithTexCoords(win, tex, new Rect(0.08f, 0.06f, 0.84f, 0.84f), true);
+                GUI.color = o;
             }
-            GUI.color = o;
-            Round(face, new Color(0.15f, 0.15f, 0.2f, 0.45f), 10f);
-            LockIcon(new Vector2(face.center.x, face.center.y + 6f), 56f, new Color(0.62f, 0.62f, 0.66f));
-            Round(new Rect(r.x + 2f, r.yMax - 64f, r.width - 4f, 62f), new Color(0f, 0f, 0f, 0.55f), 10f);
-            GUI.Label(new Rect(r.x + 10f, r.yMax - 64f, r.width - 20f, 30f), "<color=#9A9AA2>" + def.displayName + "</color>", UIStyles.Sized(UIStyles.Small, 17));
-            UIStyles.Colored(new Rect(r.x + 10f, r.yMax - 34f, r.width - 20f, 26f), RarityInfo.Name(def.rarity), UIStyles.Sized(UIStyles.Small, 15), Color.Lerp(rc, Color.gray, 0.5f));
-            RoundFrame(r, new Color(1f, 1f, 1f, 0.08f), 2f, 12f);
+            LockIcon(new Vector2(win.center.x, win.center.y + 4f), 56f, new Color(0.7f, 0.7f, 0.74f));
+            var rib = new Rect(win.x, win.yMax - 24f, win.width, 24f);
+            UIStyles.Rect(rib, new Color(0f, 0f, 0f, 0.5f));
+            UIStyles.Colored(rib, RarityInfo.Name(def.rarity), UIStyles.Sized(UIStyles.Center, 15), Color.Lerp(rc, Color.gray, 0.5f));
+            var plate = new Rect(r.x + 16f, r.yMax - 52f, r.width - 32f, 34f);
+            Round(plate, new Color(0.1f, 0.1f, 0.13f), 10f);
+            GUI.Label(plate, "<color=#9A9AA2>" + def.displayName + "</color>", UIStyles.Sized(UIStyles.Center, 17));
             if (GUI.Button(r, GUIContent.none, GUIStyle.none))
             {
                 gm.Audio.Play("click", 0.4f);
@@ -383,7 +368,10 @@ namespace HashiraChronicles
                 UIStyles.CircleTex(c, radius * (0.55f + i * 0.14f + p * 0.05f), new Color(col.r, col.g, col.b, (maxed ? 0.1f : 0.07f) + 0.02f * p));
         }
 
-        /// <summary>Roster card: the slayer's face over an aura, level (red and MAX at the cap), rarity stars, element badge.</summary>
+        /// <summary>
+        /// Roster card in a collectible-card style: a thick bevelled frame in the rarity's colour, the slayer's
+        /// portrait filling the window, an element gem in the corner, a level plate and stars at the bottom.
+        /// </summary>
         void SlayerCard(Rect r, CharacterDefinition def, OwnedCharacter c, bool selected, int teamIndex)
         {
             Color ec = ElementChart.ColorOf(def.element);
@@ -391,44 +379,61 @@ namespace HashiraChronicles
             bool maxed = ExperienceSystem.IsMaxed(c);
             bool god = ExperienceSystem.IsGod(c);
             if (god) rc = GodColor;
-            // The selected card bobs gently.
-            if (selected) r.y -= 3f + 3f * Mathf.Sin(Time.unscaledTime * 4f);
-            Round(Offset(r, 0f, 5f), new Color(0f, 0f, 0f, 0.35f), 22f);
-            // Soft pastel card in the slayer's element, rounder corners.
-            Color pastel = Color.Lerp(ec, Color.white, 0.55f);
-            Round(r, Color.Lerp(new Color(0.12f, 0.1f, 0.2f), rc, 0.25f), 22f);
-            Round(new Rect(r.x + 5f, r.y + 5f, r.width - 10f, r.height * 0.66f), new Color(pastel.r, pastel.g, pastel.b, 0.28f), 18f);
-            Round(new Rect(r.x + 12f, r.y + 9f, r.width - 24f, 14f), new Color(1f, 1f, 1f, 0.18f), 7f);
-            // Face with aura, zoomed in on the face.
-            var face = new Rect(r.x + 6f, r.y + 6f, r.width - 12f, r.width - 12f);
-            PosterArt(new Rect(r.x + 5f, r.y + 5f, r.width - 10f, r.height - 72f), def, god ? GodColor : ec, r.x * 0.013f);
-            if (maxed && !god) Aura(face.center, face.width * 0.45f, ec, true);
-            // A little twinkle in the corner.
-            float tw = Mathf.Max(0f, Mathf.Sin(Time.unscaledTime * 2.2f + r.x * 0.05f));
-            UIStyles.Outlined(new Rect(r.xMax - 40f, r.y + 8f, 30f, 30f), "✦", UIStyles.Sized(UIStyles.Center, 20), new Color(1f, 1f, 0.9f, 0.3f + 0.6f * tw), 0f);
-            Round(new Rect(r.x + 2f, r.yMax - 64f, r.width - 4f, 62f), new Color(0f, 0f, 0f, 0.55f), 10f);
-            UIStyles.CircleTex(new Vector2(r.x + 22f, r.yMax - 82f), 17f, Color.Lerp(ec, Color.black, 0.2f));
-            GUI.DrawTexture(new Rect(r.x + 10f, r.yMax - 94f, 24f, 24f), IconFactory.Get(IconFactory.ForElement(def.element)), ScaleMode.ScaleToFit, true);
-            if (god)
-            {
-                float p = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f);
-                UIStyles.Outlined(new Rect(r.x + 12f, r.yMax - 64f, r.width - 20f, 32f), "Lv. " + c.level + "  <size=17>GOD</size>", UIStyles.Sized(UIStyles.Body, 22), Color.Lerp(GodColor, new Color(1f, 0.85f, 0.3f), p), 2f);
-            }
-            else if (maxed)
-            {
-                float p = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 5f);
-                UIStyles.Outlined(new Rect(r.x + 12f, r.yMax - 64f, r.width - 20f, 32f), "Lv. " + c.level + "  <size=16>MAX</size>", UIStyles.Sized(UIStyles.Body, 22), new Color(1f, 0.25f + 0.15f * p, 0.2f), 2f);
-            }
-            else GUI.Label(new Rect(r.x + 12f, r.yMax - 64f, r.width - 20f, 32f), "Lv. " + c.level, UIStyles.Sized(UIStyles.Body, 22));
-            StarStrip(new Vector2(r.x + 8f, r.yMax - 32f), c.stars, Mathf.Min(20f, (r.width - 16f) / 6.2f), c.awaken);
-            RoundFrame(r, god ? Color.Lerp(GodColor, new Color(1f, 0.85f, 0.3f), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f)) : maxed ? new Color(1f, 0.2f, 0.15f) : selected ? new Color(0.45f, 0.85f, 1f) : Color.Lerp(rc, Color.black, 0.2f), selected || maxed ? 4f : 2f, 12f);
+            if (selected) r.y -= 4f + 2f * Mathf.Sin(Time.unscaledTime * 4f);
+            CardFrame(r, rc, selected, god, maxed);
+            // Portrait window.
+            var win = new Rect(r.x + 10f, r.y + 10f, r.width - 20f, r.height - 70f);
+            Round(Grow(win, 2f), new Color(0.05f, 0.04f, 0.1f), 12f);
+            GUI.BeginGroup(win);
+            PosterArt(new Rect(0f, 0f, win.width, win.height), def, god ? GodColor : ec, win.x * 0.013f);
+            GUI.EndGroup();
+            // Rarity ribbon at the bottom of the window.
+            var rib = new Rect(win.x, win.yMax - 24f, win.width, 24f);
+            UIStyles.Rect(rib, new Color(0f, 0f, 0f, 0.45f));
+            UIStyles.Outlined(rib, god ? "GOD" : RarityInfo.Name(c.stars), UIStyles.Sized(UIStyles.Center, 15), Color.Lerp(rc, Color.white, 0.3f), 1.5f);
+            // Level plate.
+            var plate = new Rect(r.x + 16f, r.yMax - 58f, r.width - 32f, 30f);
+            Round(plate, Color.Lerp(rc, Color.black, 0.55f), 10f);
+            Round(new Rect(plate.x + 3f, plate.y + 2f, plate.width - 6f, 10f), new Color(1f, 1f, 1f, 0.15f), 5f);
+            string lv = "Lv. " + c.level + (god ? "  GOD" : maxed ? "  MAX" : "");
+            Color lvc = god ? Color.Lerp(GodColor, new Color(1f, 0.85f, 0.3f), 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f)) : maxed ? new Color(1f, 0.4f, 0.3f) : Color.white;
+            UIStyles.Outlined(plate, lv, UIStyles.Sized(UIStyles.Center, 20), lvc, 2f);
+            StarStrip(new Vector2(r.center.x - Mathf.Min(19f, (r.width - 40f) / 6.2f) * 3.1f, r.yMax - 25f), c.stars, Mathf.Min(19f, (r.width - 40f) / 6.2f), c.awaken);
+            // Element gem, half over the frame.
+            var gem = new Vector2(r.x + 18f, r.y + 18f);
+            UIStyles.CircleTex(gem, 19f, new Color(0.06f, 0.05f, 0.12f));
+            UIStyles.CircleTex(gem, 16f, Color.Lerp(ec, Color.black, 0.25f));
+            UIStyles.CircleTex(gem + new Vector2(-4f, -5f), 7f, new Color(1f, 1f, 1f, 0.25f));
+            GUI.DrawTexture(new Rect(gem.x - 11f, gem.y - 11f, 22f, 22f), IconFactory.Get(IconFactory.ForElement(def.element)), ScaleMode.ScaleToFit, true);
             if (teamIndex >= 0)
             {
-                UIStyles.CircleTex(new Vector2(r.xMax - 20f, r.y + 20f), 16f, TileGreen);
-                GUI.Label(new Rect(r.xMax - 36f, r.y + 4f, 32f, 32f), (teamIndex + 1).ToString(), UIStyles.Sized(UIStyles.Center, 20));
+                var tb = new Vector2(r.xMax - 18f, r.y + 18f);
+                UIStyles.CircleTex(tb, 18f, new Color(0.06f, 0.05f, 0.12f));
+                UIStyles.CircleTex(tb, 15f, TileGreen);
+                UIStyles.Outlined(new Rect(tb.x - 16f, tb.y - 16f, 32f, 32f), (teamIndex + 1).ToString(), UIStyles.Sized(UIStyles.Center, 20), Color.white, 2f);
             }
-            // Rarity name.
-            UIStyles.Outlined(new Rect(r.x + 36f, r.yMax - 98f, r.width - 44f, 26f), god ? "GOD" : RarityInfo.Name(c.stars), UIStyles.Sized(UIStyles.Right, 14), rc, 1.5f);
+        }
+
+        /// <summary>A thick card frame: ink edge, a metal body in the rarity colour lit from the top, a bevel highlight.</summary>
+        void CardFrame(Rect r, Color rc, bool selected, bool god, bool maxed)
+        {
+            Round(Offset(r, 0f, 6f), new Color(0f, 0f, 0f, 0.4f), 18f);
+            if (selected)
+            {
+                float g = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 5f);
+                Round(Grow(r, 7f), new Color(0.45f, 0.9f, 1f, 0.35f + 0.3f * g), 22f);
+            }
+            Round(Grow(r, 3f), new Color(0.06f, 0.05f, 0.12f), 19f);
+            Color light = Color.Lerp(rc, Color.white, 0.35f), dark = Color.Lerp(rc, Color.black, 0.4f);
+            Round(r, dark, 16f);
+            Round(new Rect(r.x, r.y, r.width, r.height * 0.55f), Color.Lerp(light, rc, 0.4f), 16f);
+            Round(new Rect(r.x + 5f, r.y + 5f, r.width - 10f, r.height - 10f), Color.Lerp(rc, dark, 0.35f), 13f);
+            Round(new Rect(r.x + 8f, r.y + 3f, r.width - 16f, 6f), new Color(1f, 1f, 1f, 0.35f), 3f);
+            if (god || maxed)
+            {
+                float p = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 3f);
+                RoundFrame(r, god ? new Color(1f, 0.85f, 0.3f, 0.5f + 0.4f * p) : new Color(1f, 0.25f, 0.2f, 0.5f + 0.4f * p), 3f, 16f);
+            }
         }
 
         void DrawRosterDetail(Rect card, PlayerData d, bool manage = false)

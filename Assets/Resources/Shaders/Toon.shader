@@ -90,12 +90,16 @@ Shader "Hashira/Toon"
                 fixed3 litTone = baseCol * lerp(fixed3(1, 1, 1), light, 0.6) * 1.06;
                 fixed3 col = lerp(lerp(shadowTone, midTone, toMid), litTone, toLit);
                 col += baseCol * ambient * 0.26;
+                // Toy-figure volume on bodies: a soft sky light from above and a gentle bounce below, so rounded
+                // shapes read as smooth, chunky 3D forms (not shine). Weapons keep their flat cel look.
+                float sky = saturate(n.y * 0.5 + 0.5);
+                col *= lerp(1.0, lerp(0.9, 1.08, sky), 1.0 - _Crisp);
 
                 // Bright cartoon highlight: a small hard spot.
                 float3 h = normalize(l + v);
                 // Matte on bodies (a faint soft sheen), a hard glint on weapons.
                 float spec = smoothstep(lerp(0.9, 0.955, _Crisp), lerp(0.99, 0.965, _Crisp), dot(n, h)) * step(0.5, shadow);
-                col += spec * lerp(0.05, 0.22, _Crisp);
+                col += spec * lerp(0.07, 0.22, _Crisp);
 
                 float rim = pow(1.0 - saturate(dot(n, v)), _RimPower) * saturate(ndl + 0.5);
                 col += _RimColor.rgb * smoothstep(lerp(0.25, 0.4, _Crisp), lerp(0.65, 0.45, _Crisp), rim) * lerp(0.08, 0.16, _Crisp);

@@ -36,6 +36,18 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Collectible cards and toy-figure shading (0.27.0)
+- **Character list cards fixed**: the diagonal "light rays" on the posters were rotated rectangles, which IMGUI
+  can't clip, so they poked out of the cards as long colour sticks. The posters now use no rotation at all: an
+  element gradient, pulsing glows and the slayer's action art with a dark ink edge, all clipped to the card.
+- **Collectible-card style roster**: every slayer is a thick, bevelled card in their rarity colour (lit from the
+  top, dark ink edge), a portrait window, a rarity ribbon, a level plate (GOD/MAX highlighted), stars, an element
+  gem in the corner and a team badge. The selected card floats and glows. Locked slayers use the same frame in grey
+  with a lock over a shadowed portrait.
+- **Toy-figure shading**: bodies get a soft sky light from above and a gentle darker underside, so the chunky shapes
+  read as smooth 3D figures, plus a slightly broader soft sheen. Weapons keep their crisp cel look.
+- All characters remain original designs; the style is inspired by mobile hero games, nothing is copied.
+
 ### Mythic cinematics, slayer sheets, sticker posters (0.26.0)
 - **Fixed: the player floating and looking giant in co-op.**
   - Specials lift the model off the ground (up to 8 m for Raiga's). When a move was interrupted, `StopAction` never put the model back down, so it hovered near the camera.
