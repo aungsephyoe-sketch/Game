@@ -134,6 +134,11 @@ namespace HashiraChronicles
                 // Kept as its own part so it can blink.
                 e.gameObject.AddComponent<EyeLid>();
                 if (head.GetComponentInParent<Blinker>() == null) gameObject.AddComponent<Blinker>();
+                if (PaintedEye(e, s, w, h, (hr.x + hr.y) * 0.5f, iris, irisLow, flick))
+                {
+                    EyeBrow(hc, hr, s, x, y, h, brow, browThick, mBrow);
+                    continue;
+                }
                 Ball(e, new Vector3(0f, 0f, -0.006f), new Vector3(w, h, 0.032f), white);
                 // Iris: a dark rim, the colour, a darker upper band (the lid's shadow) and a bright lower glow.
                 Ball(e, new Vector3(0f, -h * 0.05f, -0.003f), new Vector3(w * 0.76f, h * 0.88f, 0.03f), mRim);
@@ -157,13 +162,18 @@ namespace HashiraChronicles
                 // Lid crease above the eye and a soft lower lash.
                 Part(PrimitiveType.Capsule, e, new Vector3(-s * w * 0.04f, lidBottom + h * 0.16f, 0.004f), new Vector3(0.007f, w * 0.34f, 0.008f), crease, new Vector3(0f, 0f, 90f + s * 6f));
                 Part(PrimitiveType.Capsule, e, new Vector3(0f, -h * 0.47f, 0.004f), new Vector3(0.011f, w * 0.28f, 0.011f), lowLash, new Vector3(0f, 0f, 90f));
-                // Brow: a thick inner end tapering to the outer end.
-                var b = OnFace(hc, hr, s * (x + 0.01f), y + h * 0.5f + 0.055f);
-                var bb = J("Brow", b, new Vector3(0f, 0f, 0.004f));
-                bb.localRotation = Quaternion.Euler(0f, 0f, s * brow);
-                Part(PrimitiveType.Capsule, bb, new Vector3(-s * 0.018f, 0f, 0f), new Vector3(browThick * 1.25f, 0.036f, 0.016f), mBrow, new Vector3(0f, 0f, 90f));
-                Part(PrimitiveType.Capsule, bb, new Vector3(s * 0.02f, -0.003f, 0f), new Vector3(browThick * 0.8f, 0.034f, 0.015f), mBrow, new Vector3(0f, 0f, 90f - s * 10f));
+                EyeBrow(hc, hr, s, x, y, h, brow, browThick, mBrow);
             }
+        }
+
+        /// <summary>Brow: a thick inner end tapering to the outer end.</summary>
+        void EyeBrow(Vector3 hc, Vector3 hr, int s, float x, float y, float h, float brow, float browThick, Material mBrow)
+        {
+            var b = OnFace(hc, hr, s * (x + 0.01f), y + h * 0.5f + 0.055f);
+            var bb = J("Brow", b, new Vector3(0f, 0f, 0.004f));
+            bb.localRotation = Quaternion.Euler(0f, 0f, s * brow);
+            Part(PrimitiveType.Capsule, bb, new Vector3(-s * 0.018f, 0f, 0f), new Vector3(browThick * 1.25f, 0.036f, 0.016f), mBrow, new Vector3(0f, 0f, 90f));
+            Part(PrimitiveType.Capsule, bb, new Vector3(s * 0.02f, -0.003f, 0f), new Vector3(browThick * 0.8f, 0.034f, 0.015f), mBrow, new Vector3(0f, 0f, 90f - s * 10f));
         }
 
         void Blush(Vector3 hc, Vector3 hr, float alpha)

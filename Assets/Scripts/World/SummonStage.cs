@@ -796,6 +796,8 @@ namespace HashiraChronicles
             if (on)
             {
                 if (blackMat == null) blackMat = MaterialFactory.Toon(Color.black, 0.04f);
+                // The smooth body must be in place before every renderer is blacked out.
+                shown.CompleteMelt();
                 silhouetteRenderers.Clear();
                 savedMaterials.Clear();
                 foreach (var r in shown.GetComponentsInChildren<Renderer>())

@@ -34,7 +34,8 @@ namespace HashiraChronicles
 
             // The hit-flash list now points at the merged meshes.
             renderers.Clear();
-            foreach (var r in Model.GetComponentsInChildren<MeshRenderer>(true)) renderers.Add(r);
+            foreach (var r in Model.GetComponentsInChildren<Renderer>(true))
+                if (r is MeshRenderer || r is SkinnedMeshRenderer) renderers.Add(r);
         }
 
         /// <summary>True when a transform only holds a mesh (nothing that animates or needs to stay separate).</summary>

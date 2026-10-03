@@ -212,6 +212,25 @@ namespace HashiraChronicles
         }
 
         static readonly Dictionary<string, Mesh> lathes = new Dictionary<string, Mesh>();
+        // What each shared character mesh is, so CharacterVisual can melt parts into one smooth surface.
+        static readonly Dictionary<Mesh, Vector2[]> latheProfiles = new Dictionary<Mesh, Vector2[]>();
+        static readonly Dictionary<Mesh, string> latheKeys = new Dictionary<Mesh, string>();
+        static readonly HashSet<Mesh> sphereMeshes = new HashSet<Mesh>();
+
+        /// <summary>The (radius, height) profile and cache key of a mesh made by <see cref="Lathe"/>.</summary>
+        public static bool LatheInfo(Mesh m, out Vector2[] profile, out string key)
+        {
+            key = null;
+            profile = null;
+            if (m == null || !latheProfiles.TryGetValue(m, out profile)) return false;
+            latheKeys.TryGetValue(m, out key);
+            return true;
+        }
+
+        /// <summary>True for the unit-diameter spheres made here (any resolution).</summary>
+        public static bool IsSphere(Mesh m) { return m != null && sphereMeshes.Contains(m); }
+        public static bool IsRoundedCube(Mesh m) { return m != null && roundedCube != null && m == roundedCube; }
+        public static bool IsCone(Mesh m) { return m != null && cone != null && m == cone; }
 
         /// <summary>Smooth surface of revolution around Y from a (radius, height) profile, bottom to top, capped.</summary>
         public static Mesh Lathe(string key, Vector2[] profile, int segments = 28)
@@ -276,6 +295,8 @@ namespace HashiraChronicles
             m.SetTriangles(t, 0);
             m.RecalculateBounds();
             lathes[key] = m;
+            latheProfiles[m] = (Vector2[])profile.Clone();
+            latheKeys[m] = key;
             return m;
         }
 
@@ -318,6 +339,7 @@ namespace HashiraChronicles
             m.SetTriangles(t, 0);
             m.RecalculateBounds();
             spheres[key] = m;
+            sphereMeshes.Add(m);
             return m;
         }
 
@@ -352,6 +374,7 @@ namespace HashiraChronicles
             smoothSphere.SetNormals(n);
             smoothSphere.SetTriangles(t, 0);
             smoothSphere.RecalculateBounds();
+            sphereMeshes.Add(smoothSphere);
             return smoothSphere;
         }
 

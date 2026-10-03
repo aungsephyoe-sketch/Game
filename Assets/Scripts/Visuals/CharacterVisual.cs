@@ -1003,6 +1003,7 @@ namespace HashiraChronicles
 
         void Update()
         {
+            PollMelt();
             if (driver != null)
             {
                 driver.SetSpeed(dead ? 0f : (sprinting ? 1f : moving * 0.7f), Time.deltaTime);

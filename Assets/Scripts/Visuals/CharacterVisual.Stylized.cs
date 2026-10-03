@@ -81,6 +81,8 @@ namespace HashiraChronicles
                 if (!def.npc && def.species == Species.Human) SignatureWeapon(def, mTrim, mA, mGlow, elem);
             }
             SurfaceTextures(def);
+            // Melt the body parts into smooth sculpted surfaces (they skip the merge below while that runs).
+            PrepareMelt(def);
             deferOptimize = false;
             OptimizeParts();
         }

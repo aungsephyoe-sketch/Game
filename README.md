@@ -36,6 +36,30 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Sculpted bodies and painted eyes (0.35.0)
+- **Smooth, sculpted bodies.** Slayers are no longer a pile of overlapping balls, tubes and boxes. After a slayer
+  is built, its body parts are melted into a few continuous surfaces: torso and hips, each arm, each leg, and
+  the head with its jaw, ears and snouts. Every seam becomes a soft fillet, the inner outlines and the creases
+  where parts used to cut into each other are gone, and the U-shaped jaw blends into the cheeks instead of
+  showing a ridge. Arms, legs and the waist are skinned to the rig (weights come from which parts were nearest),
+  so elbows, knees and the waist bend smoothly (`Visuals/SdfMesher.cs`, `Visuals/CharacterVisual.SmoothBody.cs`).
+  - How: every part becomes a signed distance field, the fields are joined with a smooth minimum, sampled on a
+    grid only near the surface, and turned back into a watertight mesh (surface nets). Normals come from the
+    field's gradient, so the shading is smooth.
+  - Colours stay crisp: each vertex stores its distance to each original colour's parts (up to eight per body
+    piece), and the new `ToonSkin` shader paints every pixel with the nearest, anti-aliased. Cloth, hair and skin
+    keep their painted textures, drawn in the rest pose so they don't swim when limbs move.
+  - Trims, belts, armour plates, thin panels, props, glowing parts, hands, hair and faces stay separate crisp pieces.
+  - The meshing runs on a worker thread (the parts show until it's done) and is cached per slayer, so a slayer's
+    second appearance is instant. Posters wait for the sculpted body before they're snapped; the summon reveal and
+    the team silhouettes finish it first. If the shader isn't supported, the old parts are kept.
+- **Painted eyes.** Each eye is one small patch bent to the face and drawn per pixel by the new `PaintedEye`
+  shader: almond opening, a gradient iris with fine streaks and a dark rim, a pupil, three highlights, a thick
+  lash line with a flick at the outer corner and a fine lower lash. It's razor sharp at poster size. Blinks and
+  expressions now close a real lid over the eye instead of squashing it, so a happy squint shows the bottom of
+  the iris under a lowered lid and a blink closes into a curved lash line (`Visuals/CharacterVisual.PaintedEyes.cs`).
+- Switches: `GameConfig.SmoothBodies` and `GameConfig.PaintedEyes`.
+
 ### Gear details in the shop (0.34.1)
 - Tap any accessory in the shop (anywhere but its BUY button) for a details popup: its painted art floating in a
   rarity glow, rarity and slot, every stat at Lv 1 and at max level side by side, the special effect explained in

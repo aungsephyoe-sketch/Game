@@ -280,11 +280,12 @@ namespace HashiraChronicles
                     foreach (var v in lineupVisuals)
                     {
                         if (v == null) continue;
+                        v.CompleteMelt();
                         foreach (var rend in v.GetComponentsInChildren<Renderer>(true))
                         {
                             silhouetteSaved[rend] = rend.sharedMaterials;
                             var m0 = rend.sharedMaterial;
-                            bool glow = !(rend is MeshRenderer) || (m0 != null && m0.shader != null && (m0.shader.name.Contains("Additive") || m0.shader.name.Contains("Transparent")));
+                            bool glow = !(rend is MeshRenderer || rend is SkinnedMeshRenderer) || (m0 != null && m0.shader != null && (m0.shader.name.Contains("Additive") || m0.shader.name.Contains("Transparent")));
                             if (glow) { rend.enabled = false; continue; }
                             var mats = new Material[rend.sharedMaterials.Length];
                             for (int k = 0; k < mats.Length; k++) mats[k] = silhouetteMat;

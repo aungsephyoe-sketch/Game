@@ -45,7 +45,7 @@ namespace HashiraChronicles
                 // The first part of each eye is its white: its size is the eye's size.
                 Vector3 sc = e.GetChild(0).localScale;
                 float w = Mathf.Max(0.02f, sc.x), h = Mathf.Max(0.02f, sc.y);
-                if (e.GetComponentsInChildren<MeshRenderer>(true).Length < 6)
+                if (e.Find("PaintedEye") == null && e.GetComponentsInChildren<MeshRenderer>(true).Length < 6)
                 {
                     // Simple eyes (villagers): add sparkles. The detailed hero eyes carry their own highlights.
                     Ball(e, new Vector3(-w * 0.2f, h * 0.24f, 0.014f), new Vector3(w * 0.36f, h * 0.32f, 0.018f), sparkle);

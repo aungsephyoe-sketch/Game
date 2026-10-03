@@ -110,8 +110,32 @@ namespace HashiraChronicles
             return null;
         }
 
+        // A posed subject parked (inactive, so nothing moves) while its smooth body is meshed on a worker thread.
+        Transform waitHolder;
+        CharacterVisual waitVisual;
+        string waitKey;
+        CharacterDefinition waitDef;
+        bool waitPoster, waitFull, waitAction;
+        float waitHeight, waitHeadY;
+        int waitFrames;
+
         void LateUpdate()
         {
+            if (waitHolder != null)
+            {
+                waitFrames++;
+                if (waitVisual != null && !waitVisual.MeltReady && waitFrames < 120) return;
+                var holder = waitHolder;
+                waitHolder = null;
+                holder.gameObject.SetActive(true);
+                try
+                {
+                    if (waitVisual != null) waitVisual.CompleteMelt();
+                    Shoot(waitKey, holder, waitVisual, waitDef, waitPoster, waitFull, waitAction, waitHeight, waitHeadY);
+                }
+                catch (System.Exception ex) { Debug.LogWarning("[PortraitStudio] " + waitKey + ": " + ex.Message); if (holder != null) Destroy(holder.gameObject); }
+                return;
+            }
             if (queue.Count == 0) return;
             string key = queue.Dequeue();
             queued.Remove(key);
@@ -166,6 +190,20 @@ namespace HashiraChronicles
             }
             if (v == null) { Destroy(holder.gameObject); return; }
             v.enabled = false; // freeze the pose for the snapshot
+            if (!v.MeltReady)
+            {
+                // Wait (frozen) for the sculpted body, then shoot.
+                waitHolder = holder; waitVisual = v; waitKey = key; waitDef = heroDef;
+                waitPoster = poster; waitFull = full; waitAction = action; waitHeight = height; waitHeadY = headY; waitFrames = 0;
+                holder.gameObject.SetActive(false);
+                return;
+            }
+            v.CompleteMelt();
+            Shoot(key, holder, v, heroDef, poster, full, action, height, headY);
+        }
+
+        void Shoot(string key, Transform holder, CharacterVisual v, CharacterDefinition heroDef, bool poster, bool full, bool action, float height, float headY)
+        {
             foreach (var t in holder.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = Layer;
             foreach (var ps in holder.GetComponentsInChildren<ParticleSystem>(true)) ps.gameObject.SetActive(false);
 

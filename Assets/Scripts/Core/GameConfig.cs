@@ -14,7 +14,11 @@ namespace HashiraChronicles
         public const string Subtitle = "A story of dawn and eclipse · original characters";
         /// <summary>Every mission uses the new-standard worlds (Forest, Snow Mountain, Volcano).</summary>
         public const bool NewWorlds = true;
-        public const string Version = "0.34.1";
+        public const string Version = "0.35.0";
+        /// <summary>Hand-painted eyes drawn per pixel on the face (PaintedEye shader) instead of stacked discs.</summary>
+        public const bool PaintedEyes = true;
+        /// <summary>Melt each slayer's body parts into smooth, skinned sculpted surfaces (see SdfMesher).</summary>
+        public const bool SmoothBodies = true;
         /// <summary>Build every slayer on the premium jointed rig (false = the original chibi builder).</summary>
         public const bool PremiumRoster = true;
         /// <summary>The game's art direction is the simple chibi style built in code; imported models are off.</summary>
