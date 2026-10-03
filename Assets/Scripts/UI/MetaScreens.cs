@@ -233,8 +233,12 @@ namespace HashiraChronicles
             TopBar("SOLMERE MARKET", GameScreen.MainMenu);
             // Tabs: supplies (XP packs, chests, diamonds) and accessories for gold.
             string[] tabs = { "DIAMONDS", "SUPPLIES", "ACCESSORIES", "MYTHIC EXCHANGE" };
+            if (shopTab != 2) gearInfo = null;
+            bool guiWas = GUI.enabled;
+            GUI.enabled = guiWas && gearInfo == null;
             for (int t = 0; t < 4; t++)
                 if (FlatBtn(new Rect(safe.x + 30f + t * 260f, safe.y + 120f, 240f, 60f), tabs[t], shopTab == t ? TileRed : TileNavy, true, t == 3 ? 18 : 22)) shopTab = t;
+            GUI.enabled = guiWas;
             if (shopTab == 0) { DrawDiamondPacks(d); return; }
             if (shopTab == 2) { DrawAccessoryShop(d); return; }
             if (shopTab == 3) { DrawMythicExchange(d); return; }
@@ -362,6 +366,8 @@ namespace HashiraChronicles
         void DrawAccessoryShop(PlayerData d)
         {
             var list = ShopSystem.Accessories();
+            bool guiWas = GUI.enabled;
+            if (gearInfo != null) GUI.enabled = false; // the popup on top takes the taps
             float cw = 400f, ch = 300f, gap = 22f;
             var view = new Rect(safe.x + 30f, safe.y + 200f, safe.width - 60f, H - safe.y - 230f);
             int cols = Mathf.Max(1, Mathf.FloorToInt((view.width - 20f + gap) / (cw + gap)));
@@ -404,8 +410,18 @@ namespace HashiraChronicles
                 }
                 CoinIcon(new Vector2(br.x + 90f, br.center.y), 32f);
                 GUI.Label(new Rect(br.x + 112f, br.y, br.width - 120f, br.height), "BUY  " + price.ToString("N0"), UIStyles.Sized(UIStyles.Body, 24));
+                GUI.Label(new Rect(r.xMax - 150f, r.y + 90f, 134f, 24f), "<color=#8FA0C8>ⓘ tap for details</color>", UIStyles.Sized(UIStyles.Right, 14));
+                // Tap anywhere on the card except the buy button: show what it does.
+                if (GUI.Button(new Rect(r.x, r.y, r.width, r.height - 90f), GUIContent.none, GUIStyle.none))
+                {
+                    gearInfo = e;
+                    gearInfoAt = Time.unscaledTime;
+                    gm.Audio.Play("click", 0.5f);
+                }
             }
             GUI.EndScrollView();
+            GUI.enabled = guiWas;
+            DrawGearInfo(d);
         }
 
         // ------------------------------------------------------------------ Cutscene overlay

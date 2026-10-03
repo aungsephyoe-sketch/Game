@@ -36,6 +36,12 @@ cape, pelt, armour, bell), movement personality (steady, nervous, aggressive, gr
 sly, light) and idle fidgets. Portraits for every menu are rendered live from the same models
 (`PortraitStudio`), so the art is always one cohesive set. See [docs/ART_BIBLE.md](docs/ART_BIBLE.md).
 
+### Gear details in the shop (0.34.1)
+- Tap any accessory in the shop (anywhere but its BUY button) for a details popup: its painted art floating in a
+  rarity glow, rarity and slot, every stat at Lv 1 and at max level side by side, the special effect explained in
+  plain words (what triggers it and when it's worth it), where it drops, how many you own, and BUY. Tap outside or
+  ✕ to close; the shop behind is locked while it's open (`UI/GearInfo.cs`).
+
 ### Ad-style promos, accessories with effects and painted art (0.34.0)
 - **Home carousel**: one slide per event (plus summon, village and forge), and every slide plays like a video ad
   each time it comes on: a white flash, the art zooming in from the side behind speed lines, the chip popping,
